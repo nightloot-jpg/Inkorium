@@ -4,6 +4,7 @@ import { AuthLayout } from '../components/layouts/AuthLayout'
 import { getAuthSession } from '../auth'
 
 import appCss from '../styles/app.css?url'
+import '../styles/app.css'
 
 interface RouterContext {
   session: any
