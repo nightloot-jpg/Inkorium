@@ -4,10 +4,21 @@ import { Button } from '../components/ui/Button'
 import { MiniPlayer } from '../components/music/MiniPlayer'
 import { useState } from 'react'
 import { Heart, MessageCircle, Share2 } from 'lucide-react'
+import { LoginForm } from '../components/auth/LoginForm'
 
 export const Route = createFileRoute('/')({
-  component: Home,
+  component: Index,
 })
+
+function Index() {
+  const { session } = Route.useRouteContext()
+
+  if (!session) {
+    return <LoginForm />
+  }
+
+  return <Home />
+}
 
 function Home() {
   const [showPlayer, setShowPlayer] = useState(false)
