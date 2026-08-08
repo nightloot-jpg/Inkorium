@@ -11,7 +11,8 @@ export function AuthFooter({ text, linkText, linkTo }: AuthFooterProps) {
   return (
     <div className="mt-8 text-center">
       <p className="text-sm text-text-muted">
-        {text} <Link to={linkTo as any} className="font-semibold text-primary hover:underline hover:text-primary-hover transition-colors">{linkText}</Link>
+        {text && <span>{text} </span>}
+        <Link to={linkTo as any} className="font-semibold text-primary hover:underline hover:text-primary-hover transition-colors">{linkText}</Link>
       </p>
     </div>
   )

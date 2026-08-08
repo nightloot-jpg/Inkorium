@@ -42,13 +42,19 @@ function ForgotPassword() {
     setGlobalError('')
 
     const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/update-password`,
+        redirectTo: "https://inkorium.es/update-password",
     })
 
     setIsLoading(false)
 
     if (error) {
-      setGlobalError(error.message)
+      if (error.message.includes('send') || error.message.includes('email')) {
+        setGlobalError(t('auth.forgotPassword.errors.sendFailed'))
+      } else if (error.message.includes('rate limit')) {
+         setGlobalError(t('auth.forgotPassword.errors.unexpected'))
+      } else {
+        setGlobalError(t('auth.forgotPassword.errors.unexpected'))
+      }
       return
     }
 
