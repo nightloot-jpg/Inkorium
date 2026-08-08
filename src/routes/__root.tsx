@@ -1,5 +1,6 @@
-import { HeadContent, Scripts, createRootRoute, useRouterState } from '@tanstack/react-router'
+import { HeadContent, Scripts, createRootRoute, Outlet, useRouterState } from '@tanstack/react-router'
 import { AppLayout } from '../components/layout/AppLayout'
+import { AuthLayout } from '../components/layouts/AuthLayout'
 
 import appCss from '../styles/app.css?url'
 
@@ -43,8 +44,9 @@ export const Route = createRootRoute({
 function RootDocument({ children }: { children: React.ReactNode }) {
   const routerState = useRouterState()
 
-  // Conditionally render the AppLayout based on the route
-  const isAuthRoute = routerState.location.pathname.startsWith('/login')
+  // Conditionally render the layouts based on the route
+  const authRoutes = ['/login', '/register', '/forgot-password', '/update-password']
+  const isAuthRoute = authRoutes.some(route => routerState.location.pathname.startsWith(route))
 
   return (
     <html lang="es">
@@ -53,25 +55,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {isAuthRoute ? (
-          children
+          <AuthLayout>
+              {children}
+          </AuthLayout>
         ) : (
           <AppLayout>
             {children}
           </AppLayout>
         )}
 
-        {/* Development Tools */}
-        {/* <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        /> */}
         <Scripts />
       </body>
     </html>

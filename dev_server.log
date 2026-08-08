@@ -3,9 +3,52 @@
 > vite dev --port 3000
 
 
-  VITE v8.2.1  ready in 1308 ms
+  VITE v8.2.1  ready in 2244 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: use --host to expose
-3:00:18 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/routes/__root.tsx
-3:00:18 PM [vite] (ssr) page reload src/routes/__root.tsx
+[Client] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch
+
+  ...
+    <SafeFragment fallback={function fallback}>
+      <MatchInnerImpl match={{id:"/forgo...", ...}}>
+        <Lazy>
+          <ForgotPassword>
+            <AuthCard title="Recuperar ..." description="Introduce ..." error="" data-tsd-source="/src/route...">
+              <_c className="w-full sha..." data-tsd-source="/src/compo...">
+                <div ref={null} className="text-text-..." data-tsd-source="/src/compo...">
+                  <_c3>
+                  <_c9 className="px-8 pb-8" data-tsd-source="/src/compo...">
+                    <div ref={null} className="p-6 pt-0 m..." data-tsd-source="/src/compo...">
+                      <form onSubmit={function} className="space-y-5" data-tsd-source="/src/route...">
+                        <FormField name="email" control={{...}} label="Email" type="email" disabled={false} ...>
+                          <div className="space-y-1.5" data-tsd-source="/src/compo...">
+                            <label>
+                            <Controller name="email" control={{...}} render={function render} ...>
+                              <_c type="email" placeholder="" disabled={false} error={undefined} name="email" value="" ...>
+                                <div className="w-full" data-tsd-source="/src/compo...">
+                                  <input
+                                    type="email"
+                                    className="flex h-10 w-full rounded-md border border-border bg-surface px-3 py-2 t..."
+                                    ref={function}
+                                    placeholder=""
+                                    disabled={false}
+                                    name="email"
+                                    value=""
+                                    onChange={function}
+                                    onBlur={function}
+                                    data-tsd-source="/src/components/auth/FormField.tsx:32:11"
+-                                   style={{}}
+                                  >
+                        ...
+                      ...
