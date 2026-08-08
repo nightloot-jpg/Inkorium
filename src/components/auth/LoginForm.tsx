@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { supabase } from '../../lib/supabase'
 import { useTranslations } from '../../hooks/useTranslations'
 import { AuthCard } from './AuthCard'
@@ -14,6 +14,7 @@ import { Checkbox } from '../ui/Checkbox'
 export function LoginForm() {
   const { t } = useTranslations()
   const navigate = useNavigate()
+  const router = useRouter()
   const [globalError, setGlobalError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -55,6 +56,7 @@ export function LoginForm() {
 
     // Success, redirect to home. Wait for layout change to propagate
     // if already on home, we might need router to invalidate
+    await router.invalidate()
     navigate({ to: '/', replace: true })
   }
 
