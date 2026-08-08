@@ -10,6 +10,7 @@
   --color-text-main: var(--text-main);
   --color-text-muted: var(--text-muted);
   --color-accent: var(--accent);
+  --color-error: var(--error);
 
   --font-sans: 'Inter', sans-serif;
   --font-inter: 'Inter', sans-serif;
@@ -22,9 +23,9 @@
 
 @layer base {
   :root {
-    /* Brand Colors - Nostalgia 2026 (Tuenti/MySpace modernizado) */
-    --primary: #0052cc; /* Tuenti Blue */
-    --primary-hover: #0040a2;
+    /* Brand Colors - Inkorium Login Update */
+    --primary: #233B5D;
+    --primary-hover: #1b2e49;
 
     /* Backgrounds & Surfaces */
     --background: #f4f7f9;
@@ -38,9 +39,10 @@
     --text-main: #181c1e;
     --text-muted: #434654;
 
-    /* Accents (MySpace neon vibes but refined) */
-    --accent: #1da1f2;
+    /* Accents and States */
+    --accent: #233B5D;
     --accent-magenta: #ff005a;
+    --error: #ba1a1a;
 
     /* Radii */
     --radius-sm: 0.25rem;
