@@ -17,20 +17,21 @@ export const Route = createFileRoute('/forgot-password')({
 
 function ForgotPassword() {
   const { t } = useTranslations()
+
   const [globalError, setGlobalError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
 
   const forgotPasswordSchema = z.object({
-    email: z.string().min(1, t('auth.validation.emailRequired')).email(t('auth.validation.emailInvalid')),
+    email: z
+      .string()
+      .min(1, t('auth.validation.emailRequired'))
+      .email(t('auth.validation.emailInvalid')),
   })
 
   type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>
 
-  const {
-    control,
-    handleSubmit,
-  } = useForm<ForgotPasswordFormValues>({
+  const { control, handleSubmit } = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: '',
@@ -41,20 +42,29 @@ function ForgotPassword() {
     setIsLoading(true)
     setGlobalError('')
 
+    const origin =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : 'https://www.inkorium.es'
+
     const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/update-password`,
+      redirectTo: `${origin}/update-password`,
     })
 
     setIsLoading(false)
 
     if (error) {
-      if (error.message.includes('send') || error.message.includes('email')) {
+      if (
+        error.message.includes('send') ||
+        error.message.includes('email')
+      ) {
         setGlobalError(t('auth.forgotPassword.errors.sendFailed'))
       } else if (error.message.includes('rate limit')) {
-         setGlobalError(t('auth.forgotPassword.errors.unexpected'))
+        setGlobalError(t('auth.forgotPassword.errors.unexpected'))
       } else {
         setGlobalError(t('auth.forgotPassword.errors.unexpected'))
       }
+
       return
     }
 
@@ -62,13 +72,13 @@ function ForgotPassword() {
   }
 
   if (isSuccess) {
-      return (
-          <AuthSuccess
-              title={t('auth.forgotPassword.success.title')}
-              message={t('auth.forgotPassword.success.message')}
-              backToLoginText={t('auth.forgotPassword.backToLogin')}
-          />
-      )
+    return (
+      <AuthSuccess
+        title={t('auth.forgotPassword.success.title')}
+        message={t('auth.forgotPassword.success.message')}
+        backToLoginText={t('auth.forgotPassword.backToLogin')}
+      />
+    )
   }
 
   return (
