@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+
+  --font-sans: 'Inter', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-full: var(--radius-full);
+}
+
+@layer base {
+  :root {
+    /* Brand Colors - Nostalgia 2026 (Tuenti/MySpace modernizado) */
+    --primary: #0052cc; /* Tuenti Blue */
+    --primary-hover: #0040a2;
+
+    /* Backgrounds & Surfaces */
+    --background: #f4f7f9;
+    --surface: #ffffff;
+    --surface-hover: #f8fafb;
+
+    /* Borders */
+    --border: #e1e8ed;
+
+    /* Text */
+    --text-main: #181c1e;
+    --text-muted: #434654;
+
+    /* Accents (MySpace neon vibes but refined) */
+    --accent: #1da1f2;
+    --accent-magenta: #ff005a;
+
+    /* Radii */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 1rem;
+    --radius-full: 9999px;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--background);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+}
+
+@layer utilities {
+  .shadow-soft {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  }
+}
