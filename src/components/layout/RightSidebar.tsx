@@ -1,46 +1,33 @@
+import { useTranslations } from '@/hooks/useTranslations';
+import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
 
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/Avatar"
-import { Badge } from "../ui/Badge"
+export const RightSidebar = () => {
+  const { t } = useTranslations();
 
-export function RightSidebar() {
   return (
-    <aside className="w-[280px] shrink-0 hidden xl:block py-6 pl-6 space-y-6">
-      {/* Online Friends Mini Widget */}
-      <div className="rounded-lg border border-border bg-surface p-4 shadow-soft">
-        <h4 className="text-sm font-semibold mb-3 flex items-center justify-between">
-          <span>Online Now</span>
-          <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">12</Badge>
-        </h4>
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-center gap-3 cursor-pointer group">
+    <div className="p-4 flex flex-col gap-6">
+      <div>
+        <h3 className="font-semibold text-slate-500 mb-3 text-sm">{t('rightSidebar.online')}</h3>
+        <div className="flex flex-col gap-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded-lg">
               <div className="relative">
-                <Avatar shape="square" size="sm" className="border border-border">
-                  <AvatarImage src={`https://i.pravatar.cc/150?u=${i}`} />
-                  <AvatarFallback>U</AvatarFallback>
+                <Avatar>
+                  <AvatarFallback>{`U${i}`}</AvatarFallback>
                 </Avatar>
-                <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-surface bg-green-500" />
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
               </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">User {i}</p>
-                <p className="text-xs text-text-muted truncate">Listening to music...</p>
-              </div>
+              <span className="text-sm font-medium">User {i}</span>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Tuenti-style "Tus fotos" or recent activity */}
-      <div className="rounded-lg border border-border bg-surface p-4 shadow-soft">
-        <h4 className="text-sm font-semibold mb-3">Recent Photos</h4>
-        <div className="grid grid-cols-3 gap-2">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="aspect-square bg-surface-hover rounded-sm border border-border cursor-pointer hover:border-primary transition-colors overflow-hidden">
-               <img src={`https://picsum.photos/seed/${i}/100/100`} alt="Recent" className="w-full h-full object-cover" />
-            </div>
-          ))}
-        </div>
+      <div>
+         <h3 className="font-semibold text-slate-500 mb-3 text-sm">{t('rightSidebar.birthdays')}</h3>
+         <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+           Hoy es el cumpleaños de <strong>Juan</strong>
+         </div>
       </div>
-    </aside>
-  )
-}
+    </div>
+  );
+};

@@ -1,55 +1,46 @@
-import * as React from "react"
-import { Home, Users, Image as ImageIcon, Calendar, Settings, Flame } from "lucide-react"
-import { cn } from "../../lib/utils"
+import { Link } from '@tanstack/react-router';
+import { useTranslations } from '@/hooks/useTranslations';
+import {
+  Home, User, Users, Image, Video, Calendar,
+  MessagesSquare, Store, Gamepad2, Bookmark, Settings, LogOut
+} from 'lucide-react';
 
-interface NavItemProps {
-  icon: React.ElementType
-  label: string
-  isActive?: boolean
-  badge?: number
-}
+export const LeftSidebar = () => {
+  const { t } = useTranslations();
 
-function NavItem({ icon: Icon, label, isActive, badge }: NavItemProps) {
+  const links = [
+    { to: '/', icon: Home, label: t('nav.feed') },
+    { to: '/profile', icon: User, label: t('nav.profile') },
+    { to: '/friends', icon: Users, label: t('nav.friends') },
+    { to: '/photos', icon: Image, label: t('nav.photos') },
+    { to: '/videos', icon: Video, label: t('nav.videos') },
+    { to: '/events', icon: Calendar, label: t('nav.events') },
+    { to: '/groups', icon: Users, label: t('nav.groups') },
+    { to: '/messages', icon: MessagesSquare, label: t('nav.messages') },
+    { to: '/marketplace', icon: Store, label: t('nav.marketplace') },
+    { to: '/gaming', icon: Gamepad2, label: t('nav.gaming') },
+    { to: '/memories', icon: Calendar, label: t('nav.memories') },
+    { to: '/saved', icon: Bookmark, label: t('nav.saved') },
+    { to: '/settings', icon: Settings, label: t('nav.settings') },
+  ];
+
   return (
-    <a
-      href="#"
-      className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
-        isActive
-          ? "bg-primary/10 text-primary font-medium"
-          : "text-text-muted hover:bg-surface hover:text-text-main"
-      )}
-    >
-      <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-text-muted")} />
-      <span className="flex-1 text-sm">{label}</span>
-      {badge !== undefined && badge > 0 && (
-        <span className="bg-accent-magenta text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-          {badge}
-        </span>
-      )}
-    </a>
-  )
-}
-
-export function LeftSidebar() {
-  return (
-    <aside className="w-[240px] shrink-0 hidden md:block py-6 pr-6">
-      <nav className="space-y-1">
-        <NavItem icon={Home} label="Feed" isActive />
-        <NavItem icon={Users} label="Friends" badge={3} />
-        <NavItem icon={ImageIcon} label="Photos" />
-        <NavItem icon={Calendar} label="Events" />
-        <NavItem icon={Flame} label="Trending" />
-      </nav>
-
-      <div className="mt-8 pt-4 border-t border-border">
-        <h4 className="px-3 mb-2 text-xs font-semibold text-text-muted uppercase tracking-wider">
-          Customization
-        </h4>
-        <nav className="space-y-1">
-          <NavItem icon={Settings} label="Profile Theme" />
-        </nav>
-      </div>
-    </aside>
-  )
-}
+    <div className="p-4 flex flex-col gap-2">
+      {links.map((link) => (
+        <Link
+          key={link.to}
+          to={link.to}
+          className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 text-slate-700 transition-colors [&.active]:bg-slate-200 [&.active]:text-[#233B5D] [&.active]:font-semibold"
+        >
+          <link.icon className="w-5 h-5" />
+          <span>{link.label}</span>
+        </Link>
+      ))}
+      <hr className="my-2 border-slate-200" />
+      <button className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 text-red-600 transition-colors w-full text-left">
+        <LogOut className="w-5 h-5" />
+        <span>{t('nav.logout')}</span>
+      </button>
+    </div>
+  );
+};

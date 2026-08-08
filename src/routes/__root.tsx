@@ -1,84 +1,36 @@
-import { HeadContent, Scripts, createRootRoute, Outlet, useRouterState, createRootRouteWithContext } from '@tanstack/react-router'
-import { AppLayout } from '../components/layout/AppLayout'
-import { AuthLayout } from '../components/layouts/AuthLayout'
-import { getAuthSession } from '../auth'
+import { createRootRoute, Outlet, HeadContent, Scripts } from '@tanstack/react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { Suspense } from 'react';
 
-import appCss from '../styles/app.css?url'
-import '../styles/app.css'
+const queryClient = new QueryClient();
 
-interface RouterContext {
-  session: any
-}
+const TanStackRouterDevtools =
+  process.env.NODE_ENV === 'production'
+    ? () => null
+    : React.lazy(() =>
+        import('@tanstack/router-devtools').then((res) => ({
+          default: res.TanStackRouterDevtools,
+        })),
+      );
 
-export const Route = createRootRouteWithContext<RouterContext>()({
-  beforeLoad: async () => {
-    const session = await getAuthSession()
-    return { session }
-  },
-  head: () => ({
-    meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'Inkorium',
-      },
-    ],
-    links: [
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
-      {
-        rel: 'preconnect',
-        href: 'https://fonts.googleapis.com',
-      },
-      {
-        rel: 'preconnect',
-        href: 'https://fonts.gstatic.com',
-        crossOrigin: 'anonymous',
-      },
-      {
-        rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
-      }
-    ],
-  }),
-  shellComponent: RootDocument,
-})
-
-function RootDocument({ children }: { children: React.ReactNode }) {
-  const routerState = useRouterState()
-  // @ts-ignore
-  const session = routerState.context?.session
-
-  // Conditionally render the layouts based on the route
-  const authRoutes = ['/login', '/register', '/forgot-password', '/update-password']
-  const isAuthRoute = authRoutes.some(route => routerState.location.pathname.startsWith(route))
-  const isRootAuth = routerState.location.pathname === '/' && !session
-
-  return (
+export const Route = createRootRoute({
+  component: () => (
     <html lang="es">
       <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Inkorium</title>
         <HeadContent />
       </head>
       <body>
-        {(isAuthRoute || isRootAuth) ? (
-          <AuthLayout>
-              {children}
-          </AuthLayout>
-        ) : (
-          <AppLayout>
-            {children}
-          </AppLayout>
-        )}
-
+        <QueryClientProvider client={queryClient}>
+          <Outlet />
+          <Suspense fallback={null}>
+            <TanStackRouterDevtools />
+          </Suspense>
+        </QueryClientProvider>
         <Scripts />
       </body>
     </html>
-  )
-}
+  ),
+});

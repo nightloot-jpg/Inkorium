@@ -1,0 +1,68 @@
+{
+  "auth": {
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "submit": "Entrar",
+    "noAccount": "¿No tienes cuenta?",
+    "createAccount": "Crear cuenta",
+    "hasAccount": "¿Ya tienes cuenta?",
+    "updatePassword": "Actualizar contraseña"
+  },
+  "nav": {
+    "feed": "Inicio",
+    "profile": "Mi Perfil",
+    "friends": "Amigos",
+    "photos": "Fotos",
+    "videos": "Vídeos",
+    "events": "Eventos",
+    "groups": "Grupos",
+    "messages": "Mensajes",
+    "marketplace": "Marketplace",
+    "gaming": "Gaming",
+    "memories": "Recuerdos",
+    "saved": "Guardados",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión"
+  },
+  "feed": {
+    "createPost": "Crear publicación",
+    "whatsOnYourMind": "¿Qué estás pensando?",
+    "post": "Publicar",
+    "like": "Me gusta",
+    "comment": "Comentar",
+    "share": "Compartir",
+    "stories": "Historias"
+  },
+  "rightSidebar": {
+    "online": "Usuarios online",
+    "birthdays": "Cumpleaños",
+    "upcomingEvents": "Eventos próximos",
+    "trending": "Tendencias",
+    "suggestions": "Sugerencias de amistad"
+  },
+  "profile": {
+    "edit": "Editar perfil",
+    "follow": "Seguir",
+    "followers": "Seguidores",
+    "following": "Siguiendo",
+    "posts": "Publicaciones",
+    "photos": "Fotos",
+    "videos": "Vídeos",
+    "friends": "Amigos",
+    "about": "Información",
+    "events": "Eventos"
+  },
+  "settings": {
+    "account": "Cuenta",
+    "security": "Seguridad",
+    "privacy": "Privacidad",
+    "notifications": "Notificaciones",
+    "theme": "Tema",
+    "language": "Idioma",
+    "activeSessions": "Sesiones activas",
+    "deleteAccount": "Eliminar cuenta"
+  }
+}

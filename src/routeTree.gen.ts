@@ -9,129 +9,694 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as UpdatePasswordRouteImport } from './routes/update-password'
+import { Route as appRouteRouteImport } from './routes/(app)/route'
+import { Route as authRouteRouteImport } from './routes/(auth)/route'
+import { Route as R404RouteImport } from './routes/404'
+import { Route as appIndexRouteImport } from './routes/(app)/index'
+import { Route as appAboutRouteImport } from './routes/(app)/about'
+import { Route as appFriendsRouteImport } from './routes/(app)/friends'
+import { Route as appGamingRouteImport } from './routes/(app)/gaming'
+import { Route as appHelpRouteImport } from './routes/(app)/help'
+import { Route as appMarketplaceRouteImport } from './routes/(app)/marketplace'
+import { Route as appMemoriesRouteImport } from './routes/(app)/memories'
+import { Route as appNotificationsRouteImport } from './routes/(app)/notifications'
+import { Route as appPhotosRouteImport } from './routes/(app)/photos'
+import { Route as appPrivacyRouteImport } from './routes/(app)/privacy'
+import { Route as appSavedRouteImport } from './routes/(app)/saved'
+import { Route as appSearchRouteImport } from './routes/(app)/search'
+import { Route as appSettingsRouteImport } from './routes/(app)/settings'
+import { Route as appTermsRouteImport } from './routes/(app)/terms'
+import { Route as appTrendingRouteImport } from './routes/(app)/trending'
+import { Route as appVideosRouteImport } from './routes/(app)/videos'
+import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
+import { Route as authLoginRouteImport } from './routes/(auth)/login'
+import { Route as authRegisterRouteImport } from './routes/(auth)/register'
+import { Route as authUpdatePasswordRouteImport } from './routes/(auth)/update-password'
+import { Route as appEventsIndexRouteImport } from './routes/(app)/events.index'
+import { Route as appEventsIdRouteImport } from './routes/(app)/events.$id'
+import { Route as appGroupsIndexRouteImport } from './routes/(app)/groups.index'
+import { Route as appGroupsIdRouteImport } from './routes/(app)/groups.$id'
+import { Route as appMessagesIndexRouteImport } from './routes/(app)/messages.index'
+import { Route as appMessagesChatIdRouteImport } from './routes/(app)/messages.$chatId'
+import { Route as appProfileIndexRouteImport } from './routes/(app)/profile.index'
+import { Route as appProfileUsernameRouteImport } from './routes/(app)/profile.$username'
 
-const IndexRoute = IndexRouteImport.update({
+const appRouteRoute = appRouteRouteImport.update({
+  id: '/(app)',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authRouteRoute = authRouteRouteImport.update({
+  id: '/(auth)',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const R404Route = R404RouteImport.update({
+  id: '/404',
+  path: '/404',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appIndexRoute = appIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => appRouteRoute,
 } as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+const appAboutRoute = appAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appFriendsRoute = appFriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appGamingRoute = appGamingRouteImport.update({
+  id: '/gaming',
+  path: '/gaming',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appHelpRoute = appHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appMarketplaceRoute = appMarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appMemoriesRoute = appMemoriesRouteImport.update({
+  id: '/memories',
+  path: '/memories',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appNotificationsRoute = appNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appPhotosRoute = appPhotosRouteImport.update({
+  id: '/photos',
+  path: '/photos',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appPrivacyRoute = appPrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appSavedRoute = appSavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appSearchRoute = appSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appSettingsRoute = appSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appTermsRoute = appTermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appTrendingRoute = appTrendingRouteImport.update({
+  id: '/trending',
+  path: '/trending',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appVideosRoute = appVideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const authForgotPasswordRoute = authForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => authRouteRoute,
 } as any)
-const LoginRoute = LoginRouteImport.update({
+const authLoginRoute = authLoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => authRouteRoute,
 } as any)
-const RegisterRoute = RegisterRouteImport.update({
+const authRegisterRoute = authRegisterRouteImport.update({
   id: '/register',
   path: '/register',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => authRouteRoute,
 } as any)
-const UpdatePasswordRoute = UpdatePasswordRouteImport.update({
+const authUpdatePasswordRoute = authUpdatePasswordRouteImport.update({
   id: '/update-password',
   path: '/update-password',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => authRouteRoute,
+} as any)
+const appEventsIndexRoute = appEventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appEventsIdRoute = appEventsIdRouteImport.update({
+  id: '/events/$id',
+  path: '/events/$id',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appGroupsIndexRoute = appGroupsIndexRouteImport.update({
+  id: '/groups/',
+  path: '/groups/',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appGroupsIdRoute = appGroupsIdRouteImport.update({
+  id: '/groups/$id',
+  path: '/groups/$id',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appMessagesIndexRoute = appMessagesIndexRouteImport.update({
+  id: '/messages/',
+  path: '/messages/',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appMessagesChatIdRoute = appMessagesChatIdRouteImport.update({
+  id: '/messages/$chatId',
+  path: '/messages/$chatId',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appProfileIndexRoute = appProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appProfileUsernameRoute = appProfileUsernameRouteImport.update({
+  id: '/profile/$username',
+  path: '/profile/$username',
+  getParentRoute: () => appRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
-  '/update-password': typeof UpdatePasswordRoute
+  '/404': typeof R404Route
+  '/about': typeof appAboutRoute
+  '/friends': typeof appFriendsRoute
+  '/gaming': typeof appGamingRoute
+  '/help': typeof appHelpRoute
+  '/marketplace': typeof appMarketplaceRoute
+  '/memories': typeof appMemoriesRoute
+  '/notifications': typeof appNotificationsRoute
+  '/photos': typeof appPhotosRoute
+  '/privacy': typeof appPrivacyRoute
+  '/saved': typeof appSavedRoute
+  '/search': typeof appSearchRoute
+  '/settings': typeof appSettingsRoute
+  '/terms': typeof appTermsRoute
+  '/trending': typeof appTrendingRoute
+  '/videos': typeof appVideosRoute
+  '/forgot-password': typeof authForgotPasswordRoute
+  '/login': typeof authLoginRoute
+  '/register': typeof authRegisterRoute
+  '/update-password': typeof authUpdatePasswordRoute
+  '/': typeof appIndexRoute
+  '/events/$id': typeof appEventsIdRoute
+  '/groups/$id': typeof appGroupsIdRoute
+  '/messages/$chatId': typeof appMessagesChatIdRoute
+  '/profile/$username': typeof appProfileUsernameRoute
+  '/events/': typeof appEventsIndexRoute
+  '/groups/': typeof appGroupsIndexRoute
+  '/messages/': typeof appMessagesIndexRoute
+  '/profile/': typeof appProfileIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
-  '/update-password': typeof UpdatePasswordRoute
+  '/404': typeof R404Route
+  '/about': typeof appAboutRoute
+  '/friends': typeof appFriendsRoute
+  '/gaming': typeof appGamingRoute
+  '/help': typeof appHelpRoute
+  '/marketplace': typeof appMarketplaceRoute
+  '/memories': typeof appMemoriesRoute
+  '/notifications': typeof appNotificationsRoute
+  '/photos': typeof appPhotosRoute
+  '/privacy': typeof appPrivacyRoute
+  '/saved': typeof appSavedRoute
+  '/search': typeof appSearchRoute
+  '/settings': typeof appSettingsRoute
+  '/terms': typeof appTermsRoute
+  '/trending': typeof appTrendingRoute
+  '/videos': typeof appVideosRoute
+  '/forgot-password': typeof authForgotPasswordRoute
+  '/login': typeof authLoginRoute
+  '/register': typeof authRegisterRoute
+  '/update-password': typeof authUpdatePasswordRoute
+  '/': typeof appIndexRoute
+  '/events/$id': typeof appEventsIdRoute
+  '/groups/$id': typeof appGroupsIdRoute
+  '/messages/$chatId': typeof appMessagesChatIdRoute
+  '/profile/$username': typeof appProfileUsernameRoute
+  '/events': typeof appEventsIndexRoute
+  '/groups': typeof appGroupsIndexRoute
+  '/messages': typeof appMessagesIndexRoute
+  '/profile': typeof appProfileIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
-  '/update-password': typeof UpdatePasswordRoute
+  '/(app)': typeof appRouteRouteWithChildren
+  '/(auth)': typeof authRouteRouteWithChildren
+  '/404': typeof R404Route
+  '/(app)/about': typeof appAboutRoute
+  '/(app)/friends': typeof appFriendsRoute
+  '/(app)/gaming': typeof appGamingRoute
+  '/(app)/help': typeof appHelpRoute
+  '/(app)/marketplace': typeof appMarketplaceRoute
+  '/(app)/memories': typeof appMemoriesRoute
+  '/(app)/notifications': typeof appNotificationsRoute
+  '/(app)/photos': typeof appPhotosRoute
+  '/(app)/privacy': typeof appPrivacyRoute
+  '/(app)/saved': typeof appSavedRoute
+  '/(app)/search': typeof appSearchRoute
+  '/(app)/settings': typeof appSettingsRoute
+  '/(app)/terms': typeof appTermsRoute
+  '/(app)/trending': typeof appTrendingRoute
+  '/(app)/videos': typeof appVideosRoute
+  '/(auth)/forgot-password': typeof authForgotPasswordRoute
+  '/(auth)/login': typeof authLoginRoute
+  '/(auth)/register': typeof authRegisterRoute
+  '/(auth)/update-password': typeof authUpdatePasswordRoute
+  '/(app)/': typeof appIndexRoute
+  '/(app)/events/$id': typeof appEventsIdRoute
+  '/(app)/groups/$id': typeof appGroupsIdRoute
+  '/(app)/messages/$chatId': typeof appMessagesChatIdRoute
+  '/(app)/profile/$username': typeof appProfileUsernameRoute
+  '/(app)/events/': typeof appEventsIndexRoute
+  '/(app)/groups/': typeof appGroupsIndexRoute
+  '/(app)/messages/': typeof appMessagesIndexRoute
+  '/(app)/profile/': typeof appProfileIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/forgot-password' | '/login' | '/register' | '/update-password'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/forgot-password' | '/login' | '/register' | '/update-password'
-  id:
-    | '__root__'
-    | '/'
+    | '/404'
+    | '/about'
+    | '/friends'
+    | '/gaming'
+    | '/help'
+    | '/marketplace'
+    | '/memories'
+    | '/notifications'
+    | '/photos'
+    | '/privacy'
+    | '/saved'
+    | '/search'
+    | '/settings'
+    | '/terms'
+    | '/trending'
+    | '/videos'
     | '/forgot-password'
     | '/login'
     | '/register'
     | '/update-password'
+    | '/'
+    | '/events/$id'
+    | '/groups/$id'
+    | '/messages/$chatId'
+    | '/profile/$username'
+    | '/events/'
+    | '/groups/'
+    | '/messages/'
+    | '/profile/'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/404'
+    | '/about'
+    | '/friends'
+    | '/gaming'
+    | '/help'
+    | '/marketplace'
+    | '/memories'
+    | '/notifications'
+    | '/photos'
+    | '/privacy'
+    | '/saved'
+    | '/search'
+    | '/settings'
+    | '/terms'
+    | '/trending'
+    | '/videos'
+    | '/forgot-password'
+    | '/login'
+    | '/register'
+    | '/update-password'
+    | '/'
+    | '/events/$id'
+    | '/groups/$id'
+    | '/messages/$chatId'
+    | '/profile/$username'
+    | '/events'
+    | '/groups'
+    | '/messages'
+    | '/profile'
+  id:
+    | '__root__'
+    | '/(app)'
+    | '/(auth)'
+    | '/404'
+    | '/(app)/about'
+    | '/(app)/friends'
+    | '/(app)/gaming'
+    | '/(app)/help'
+    | '/(app)/marketplace'
+    | '/(app)/memories'
+    | '/(app)/notifications'
+    | '/(app)/photos'
+    | '/(app)/privacy'
+    | '/(app)/saved'
+    | '/(app)/search'
+    | '/(app)/settings'
+    | '/(app)/terms'
+    | '/(app)/trending'
+    | '/(app)/videos'
+    | '/(auth)/forgot-password'
+    | '/(auth)/login'
+    | '/(auth)/register'
+    | '/(auth)/update-password'
+    | '/(app)/'
+    | '/(app)/events/$id'
+    | '/(app)/groups/$id'
+    | '/(app)/messages/$chatId'
+    | '/(app)/profile/$username'
+    | '/(app)/events/'
+    | '/(app)/groups/'
+    | '/(app)/messages/'
+    | '/(app)/profile/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  ForgotPasswordRoute: typeof ForgotPasswordRoute
-  LoginRoute: typeof LoginRoute
-  RegisterRoute: typeof RegisterRoute
-  UpdatePasswordRoute: typeof UpdatePasswordRoute
+  appRouteRoute: typeof appRouteRouteWithChildren
+  authRouteRoute: typeof authRouteRouteWithChildren
+  R404Route: typeof R404Route
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/(app)': {
+      id: '/(app)'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof appRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(auth)': {
+      id: '/(auth)'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof authRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/404': {
+      id: '/404'
+      path: '/404'
+      fullPath: '/404'
+      preLoaderRoute: typeof R404RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/': {
+      id: '/(app)/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof appIndexRouteImport
+      parentRoute: typeof appRouteRoute
     }
-    '/forgot-password': {
-      id: '/forgot-password'
+    '/(app)/about': {
+      id: '/(app)/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof appAboutRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/friends': {
+      id: '/(app)/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof appFriendsRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/gaming': {
+      id: '/(app)/gaming'
+      path: '/gaming'
+      fullPath: '/gaming'
+      preLoaderRoute: typeof appGamingRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/help': {
+      id: '/(app)/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof appHelpRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/marketplace': {
+      id: '/(app)/marketplace'
+      path: '/marketplace'
+      fullPath: '/marketplace'
+      preLoaderRoute: typeof appMarketplaceRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/memories': {
+      id: '/(app)/memories'
+      path: '/memories'
+      fullPath: '/memories'
+      preLoaderRoute: typeof appMemoriesRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/notifications': {
+      id: '/(app)/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof appNotificationsRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/photos': {
+      id: '/(app)/photos'
+      path: '/photos'
+      fullPath: '/photos'
+      preLoaderRoute: typeof appPhotosRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/privacy': {
+      id: '/(app)/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof appPrivacyRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/saved': {
+      id: '/(app)/saved'
+      path: '/saved'
+      fullPath: '/saved'
+      preLoaderRoute: typeof appSavedRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/search': {
+      id: '/(app)/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof appSearchRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/settings': {
+      id: '/(app)/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof appSettingsRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/terms': {
+      id: '/(app)/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof appTermsRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/trending': {
+      id: '/(app)/trending'
+      path: '/trending'
+      fullPath: '/trending'
+      preLoaderRoute: typeof appTrendingRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/videos': {
+      id: '/(app)/videos'
+      path: '/videos'
+      fullPath: '/videos'
+      preLoaderRoute: typeof appVideosRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(auth)/forgot-password': {
+      id: '/(auth)/forgot-password'
       path: '/forgot-password'
       fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof authForgotPasswordRouteImport
+      parentRoute: typeof authRouteRoute
     }
-    '/login': {
-      id: '/login'
+    '/(auth)/login': {
+      id: '/(auth)/login'
       path: '/login'
       fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof authLoginRouteImport
+      parentRoute: typeof authRouteRoute
     }
-    '/register': {
-      id: '/register'
+    '/(auth)/register': {
+      id: '/(auth)/register'
       path: '/register'
       fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof authRegisterRouteImport
+      parentRoute: typeof authRouteRoute
     }
-    '/update-password': {
-      id: '/update-password'
+    '/(auth)/update-password': {
+      id: '/(auth)/update-password'
       path: '/update-password'
       fullPath: '/update-password'
-      preLoaderRoute: typeof UpdatePasswordRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof authUpdatePasswordRouteImport
+      parentRoute: typeof authRouteRoute
+    }
+    '/(app)/events/': {
+      id: '/(app)/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof appEventsIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/events/$id': {
+      id: '/(app)/events/$id'
+      path: '/events/$id'
+      fullPath: '/events/$id'
+      preLoaderRoute: typeof appEventsIdRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/groups/': {
+      id: '/(app)/groups/'
+      path: '/groups'
+      fullPath: '/groups/'
+      preLoaderRoute: typeof appGroupsIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/groups/$id': {
+      id: '/(app)/groups/$id'
+      path: '/groups/$id'
+      fullPath: '/groups/$id'
+      preLoaderRoute: typeof appGroupsIdRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/messages/': {
+      id: '/(app)/messages/'
+      path: '/messages'
+      fullPath: '/messages/'
+      preLoaderRoute: typeof appMessagesIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/messages/$chatId': {
+      id: '/(app)/messages/$chatId'
+      path: '/messages/$chatId'
+      fullPath: '/messages/$chatId'
+      preLoaderRoute: typeof appMessagesChatIdRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/profile/': {
+      id: '/(app)/profile/'
+      path: '/profile'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof appProfileIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/profile/$username': {
+      id: '/(app)/profile/$username'
+      path: '/profile/$username'
+      fullPath: '/profile/$username'
+      preLoaderRoute: typeof appProfileUsernameRouteImport
+      parentRoute: typeof appRouteRoute
     }
   }
 }
 
+interface appRouteRouteChildren {
+  appAboutRoute: typeof appAboutRoute
+  appFriendsRoute: typeof appFriendsRoute
+  appGamingRoute: typeof appGamingRoute
+  appHelpRoute: typeof appHelpRoute
+  appMarketplaceRoute: typeof appMarketplaceRoute
+  appMemoriesRoute: typeof appMemoriesRoute
+  appNotificationsRoute: typeof appNotificationsRoute
+  appPhotosRoute: typeof appPhotosRoute
+  appPrivacyRoute: typeof appPrivacyRoute
+  appSavedRoute: typeof appSavedRoute
+  appSearchRoute: typeof appSearchRoute
+  appSettingsRoute: typeof appSettingsRoute
+  appTermsRoute: typeof appTermsRoute
+  appTrendingRoute: typeof appTrendingRoute
+  appVideosRoute: typeof appVideosRoute
+  appIndexRoute: typeof appIndexRoute
+  appEventsIdRoute: typeof appEventsIdRoute
+  appGroupsIdRoute: typeof appGroupsIdRoute
+  appMessagesChatIdRoute: typeof appMessagesChatIdRoute
+  appProfileUsernameRoute: typeof appProfileUsernameRoute
+  appEventsIndexRoute: typeof appEventsIndexRoute
+  appGroupsIndexRoute: typeof appGroupsIndexRoute
+  appMessagesIndexRoute: typeof appMessagesIndexRoute
+  appProfileIndexRoute: typeof appProfileIndexRoute
+}
+
+const appRouteRouteChildren: appRouteRouteChildren = {
+  appAboutRoute: appAboutRoute,
+  appFriendsRoute: appFriendsRoute,
+  appGamingRoute: appGamingRoute,
+  appHelpRoute: appHelpRoute,
+  appMarketplaceRoute: appMarketplaceRoute,
+  appMemoriesRoute: appMemoriesRoute,
+  appNotificationsRoute: appNotificationsRoute,
+  appPhotosRoute: appPhotosRoute,
+  appPrivacyRoute: appPrivacyRoute,
+  appSavedRoute: appSavedRoute,
+  appSearchRoute: appSearchRoute,
+  appSettingsRoute: appSettingsRoute,
+  appTermsRoute: appTermsRoute,
+  appTrendingRoute: appTrendingRoute,
+  appVideosRoute: appVideosRoute,
+  appIndexRoute: appIndexRoute,
+  appEventsIdRoute: appEventsIdRoute,
+  appGroupsIdRoute: appGroupsIdRoute,
+  appMessagesChatIdRoute: appMessagesChatIdRoute,
+  appProfileUsernameRoute: appProfileUsernameRoute,
+  appEventsIndexRoute: appEventsIndexRoute,
+  appGroupsIndexRoute: appGroupsIndexRoute,
+  appMessagesIndexRoute: appMessagesIndexRoute,
+  appProfileIndexRoute: appProfileIndexRoute,
+}
+
+const appRouteRouteWithChildren = appRouteRoute._addFileChildren(
+  appRouteRouteChildren,
+)
+
+interface authRouteRouteChildren {
+  authForgotPasswordRoute: typeof authForgotPasswordRoute
+  authLoginRoute: typeof authLoginRoute
+  authRegisterRoute: typeof authRegisterRoute
+  authUpdatePasswordRoute: typeof authUpdatePasswordRoute
+}
+
+const authRouteRouteChildren: authRouteRouteChildren = {
+  authForgotPasswordRoute: authForgotPasswordRoute,
+  authLoginRoute: authLoginRoute,
+  authRegisterRoute: authRegisterRoute,
+  authUpdatePasswordRoute: authUpdatePasswordRoute,
+}
+
+const authRouteRouteWithChildren = authRouteRoute._addFileChildren(
+  authRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  ForgotPasswordRoute: ForgotPasswordRoute,
-  LoginRoute: LoginRoute,
-  RegisterRoute: RegisterRoute,
-  UpdatePasswordRoute: UpdatePasswordRoute,
+  appRouteRoute: appRouteRouteWithChildren,
+  authRouteRoute: authRouteRouteWithChildren,
+  R404Route: R404Route,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

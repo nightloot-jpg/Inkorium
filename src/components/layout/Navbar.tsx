@@ -1,45 +1,36 @@
+import { Link } from '@tanstack/react-router';
+import { Search, Bell, MessageCircle, Music, Menu } from 'lucide-react';
+import { useUIStore } from '@/stores/uiStore';
+import { Logo } from '@/components/ui/Logo';
+import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
 
-import { Logo } from "../ui/Logo"
-import { SearchInput } from "../ui/SearchInput"
-import { IconButton } from "../ui/IconButton"
-import { Music, Bell, MessageSquare, Menu } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/Avatar"
+export const Navbar = () => {
+  const toggleSidebar = useUIStore((state) => state.toggleSidebar);
 
-export function Navbar() {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-surface/80 backdrop-blur-md">
-      <div className="container mx-auto px-4 h-14 flex items-center justify-between gap-4 max-w-[1280px]">
-        {/* Left section: Logo */}
-        <div className="flex items-center gap-4 w-[240px] shrink-0">
-          <IconButton variant="ghost" className="md:hidden">
-            <Menu className="h-5 w-5" />
-          </IconButton>
+    <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b z-50 flex items-center px-4 justify-between">
+      <div className="flex items-center gap-4">
+        <button onClick={toggleSidebar} className="md:hidden p-2">
+          <Menu className="w-6 h-6 text-slate-600" />
+        </button>
+        <Link to="/" className="text-xl font-bold text-[#233B5D]">
           <Logo />
-        </div>
-
-        {/* Center section: Search */}
-        <div className="flex-1 max-w-xl hidden md:flex items-center">
-          <SearchInput className="w-full" />
-        </div>
-
-        {/* Right section: Actions & Profile */}
-        <div className="flex items-center justify-end gap-2 shrink-0">
-          <IconButton variant="ghost">
-            <Music className="h-5 w-5" />
-          </IconButton>
-          <IconButton variant="ghost">
-            <MessageSquare className="h-5 w-5" />
-          </IconButton>
-          <IconButton variant="ghost">
-            <Bell className="h-5 w-5" />
-          </IconButton>
-          <div className="h-8 w-px bg-border mx-1 hidden sm:block" />
-          <Avatar shape="square" size="sm" className="cursor-pointer border border-border">
-            <AvatarImage src="https://github.com/shadcn.png" />
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
+        </Link>
+        <div className="hidden md:flex relative ml-4">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input type="text" placeholder="Buscar..." className="pl-10 pr-4 py-2 rounded-full bg-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-[#233B5D]" />
         </div>
       </div>
+      <div className="flex items-center gap-3">
+        <button className="p-2 hover:bg-slate-100 rounded-full"><Music className="w-5 h-5 text-slate-600" /></button>
+        <button className="p-2 hover:bg-slate-100 rounded-full"><MessageCircle className="w-5 h-5 text-slate-600" /></button>
+        <button className="p-2 hover:bg-slate-100 rounded-full"><Bell className="w-5 h-5 text-slate-600" /></button>
+        <Link to="/profile">
+          <Avatar>
+            <AvatarFallback>U</AvatarFallback>
+          </Avatar>
+        </Link>
+      </div>
     </header>
-  )
-}
+  );
+};
