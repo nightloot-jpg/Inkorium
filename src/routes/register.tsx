@@ -50,7 +50,7 @@ function Register() {
     setIsLoading(true)
     setGlobalError('')
 
-    const { error } = await supabase.auth.signUp({
+    const { error, data: signUpData } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
@@ -65,6 +65,11 @@ function Register() {
     if (error) {
       setGlobalError(error.message)
       return
+    }
+
+    if (signUpData?.user && signUpData.user.identities && signUpData.user.identities.length === 0) {
+        setGlobalError("Este email ya está registrado")
+        return
     }
 
     setIsSuccess(true)
