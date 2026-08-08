@@ -27,13 +27,17 @@ export const es = {
     },
     forgotPassword: {
       title: 'Recuperar contraseña',
-      description: 'Introduce tu email y te enviaremos un enlace para restablecer tu contraseña.',
+      description: 'Introduce el correo asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.',
       emailLabel: 'Email',
       submit: 'Enviar enlace de recuperación',
-      backToLogin: 'Volver al inicio de sesión',
+      backToLogin: '← Volver al inicio de sesión',
       success: {
-        title: '✓ Enlace enviado',
-        message: 'Revisa tu bandeja de entrada para restablecer tu contraseña.',
+        title: 'Revisa tu correo',
+        message: 'Hemos enviado un enlace para restablecer tu contraseña.\nSi existe una cuenta asociada a ese correo, recibirás un email con las instrucciones.',
+      },
+      errors: {
+        sendFailed: 'No se ha podido enviar el correo.',
+        unexpected: 'Ha ocurrido un error inesperado.',
       }
     },
     updatePassword: {
