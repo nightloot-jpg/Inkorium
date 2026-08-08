@@ -1,10 +1,19 @@
-import { HeadContent, Scripts, createRootRoute, Outlet, useRouterState } from '@tanstack/react-router'
+import { HeadContent, Scripts, createRootRoute, Outlet, useRouterState, createRootRouteWithContext } from '@tanstack/react-router'
 import { AppLayout } from '../components/layout/AppLayout'
 import { AuthLayout } from '../components/layouts/AuthLayout'
+import { getAuthSession } from '../auth'
 
 import appCss from '../styles/app.css?url'
 
-export const Route = createRootRoute({
+interface RouterContext {
+  session: any
+}
+
+export const Route = createRootRouteWithContext<RouterContext>()({
+  beforeLoad: async () => {
+    const session = await getAuthSession()
+    return { session }
+  },
   head: () => ({
     meta: [
       {
@@ -43,10 +52,13 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const routerState = useRouterState()
+  // @ts-ignore
+  const session = routerState.context?.session
 
   // Conditionally render the layouts based on the route
   const authRoutes = ['/login', '/register', '/forgot-password', '/update-password']
   const isAuthRoute = authRoutes.some(route => routerState.location.pathname.startsWith(route))
+  const isRootAuth = routerState.location.pathname === '/' && !session
 
   return (
     <html lang="es">
@@ -54,7 +66,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {isAuthRoute ? (
+        {(isAuthRoute || isRootAuth) ? (
           <AuthLayout>
               {children}
           </AuthLayout>

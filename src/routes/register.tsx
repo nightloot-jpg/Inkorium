@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { Button } from '../components/ui/Button'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -12,6 +12,11 @@ import { AuthFooter } from '../components/auth/AuthFooter'
 import { AuthSuccess } from '../components/auth/AuthSuccess'
 
 export const Route = createFileRoute('/register')({
+  beforeLoad: ({ context }) => {
+    if (context.session) {
+      throw redirect({ to: '/' })
+    }
+  },
   component: Register,
 })
 
