@@ -1,133 +1,168 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Checkbox } from '../components/ui/Checkbox'
 import { useState } from 'react'
 import { Hexagon } from 'lucide-react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { supabase } from '../lib/supabase'
 
 export const Route = createFileRoute('/login')({
   component: Login,
 })
 
+const loginSchema = z.object({
+  email: z.string().min(1, 'El email es obligatorio').email('Por favor, introduzca un email válido.'),
+  password: z.string().min(1, 'La contraseña es obligatoria'),
+  remember: z.boolean().default(false).optional(),
+})
+
+type LoginFormValues = z.infer<typeof loginSchema>
+
 function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const navigate = useNavigate()
+  const [globalError, setGlobalError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
-    let hasError = false
-    const newErrors: { email?: string; password?: string } = {}
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      remember: false,
+    },
+  })
 
-    if (!email) {
-      newErrors.email = 'Email is required.'
-      hasError = true
-    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
-      newErrors.email = 'Please enter a valid email address.'
-      hasError = true
-    }
+  const onSubmit = async (data: LoginFormValues) => {
+    setIsLoading(true)
+    setGlobalError('')
 
-    if (!password) {
-      newErrors.password = 'Password is required.'
-      hasError = true
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters.'
-      hasError = true
-    }
+    const { error } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
+    })
 
-    if (hasError) {
-      setErrors(newErrors)
+    setIsLoading(false)
+
+    if (error) {
+      setGlobalError(error.message)
       return
     }
 
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      // Login simulation complete
-    }, 1500)
+    // Success, redirect to home
+    navigate({ to: '/' })
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-100 via-pink-50 to-white relative overflow-hidden font-sans">
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden font-sans bg-[#F9FAFB]">
 
       {/* Decorative blurry background circles to mimic the reference image gradient vibe */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-      <div className="absolute top-0 right-0 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-20 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#E8EBF2] rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
+      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#FCE8F3] rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
+      <div className="absolute bottom-[-10%] left-[20%] w-[50%] h-[50%] bg-[#EBE9F5] rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
 
-      <div className="w-full max-w-md p-6 relative z-10">
-        <Card className="w-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] border-0 rounded-2xl bg-white">
-          <CardHeader className="space-y-4 pb-6 pt-10 px-8 text-center">
-            <div className="mx-auto bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-2">
-              {/* Placeholder logo matching reference request */}
-              <Hexagon className="w-8 h-8 text-primary fill-primary" />
+      <div className="w-full max-w-[440px] p-6 relative z-10">
+        {/* Placeholder Logo on top */}
+        <div className="flex justify-center mb-8">
+            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-soft">
+                <Hexagon className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <CardTitle className="text-2xl font-semibold tracking-tight text-text-main mb-1.5">Welcome back</CardTitle>
-              <CardDescription className="text-sm text-text-muted">
-                Please enter your details to sign in.
-              </CardDescription>
-            </div>
+        </div>
+
+        <Card className="w-full shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-border/50 rounded-2xl bg-white/80 backdrop-blur-xl">
+          <CardHeader className="space-y-2 pb-6 pt-8 px-8 text-center">
+            <CardTitle className="text-2xl font-semibold tracking-tight text-text-main">Bienvenido de nuevo</CardTitle>
+            {globalError && (
+              <p className="text-sm text-error mt-2">{globalError}</p>
+            )}
           </CardHeader>
           <CardContent className="px-8 pb-8">
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-text-main">
                   Email
                 </label>
-                <Input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  error={errors.email}
+                <Controller
+                  name="email"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      type="email"
+                      placeholder=""
+                      {...field}
+                      error={errors.email?.message}
+                      disabled={isLoading}
+                    />
+                  )}
                 />
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-text-main">
-                  Password
+                  Contraseña
                 </label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  error={errors.password}
+                <Controller
+                  name="password"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      type="password"
+                      placeholder=""
+                      {...field}
+                      error={errors.password?.message}
+                      disabled={isLoading}
+                    />
+                  )}
                 />
               </div>
 
               <div className="flex items-center justify-between py-1">
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="remember" />
+                  <Controller
+                    name="remember"
+                    control={control}
+                    render={({ field }) => (
+                      <Checkbox
+                        id="remember"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={isLoading}
+                      />
+                    )}
+                  />
                   <label
                     htmlFor="remember"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-text-muted"
                   >
-                    Remember me
+                    Recordarme
                   </label>
                 </div>
                 <a href="#" className="text-sm font-medium text-primary hover:underline hover:text-primary-hover transition-colors">
-                  Forgot password?
+                  ¿Olvidó su contraseña?
                 </a>
               </div>
 
               <Button
                 type="submit"
                 className="w-full h-11 text-base font-medium rounded-lg"
-                isLoading={loading}
+                isLoading={isLoading}
               >
-                Sign in
+                Iniciar sesión
               </Button>
             </form>
+
+            <div className="mt-8 text-center">
+              <p className="text-sm text-text-muted">
+                ¿No tiene cuenta? <a href="#" className="font-semibold text-primary hover:underline hover:text-primary-hover transition-colors">Regístrese</a>
+              </p>
+            </div>
           </CardContent>
-          <CardFooter className="flex justify-center pb-8 border-t border-border/40 pt-6">
-            <p className="text-sm text-text-muted">
-              Don't have an account? <a href="#" className="font-semibold text-primary hover:underline hover:text-primary-hover transition-colors">Sign up</a>
-            </p>
-          </CardFooter>
         </Card>
       </div>
     </div>
