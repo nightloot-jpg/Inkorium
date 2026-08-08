@@ -1,8 +1,7 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
+import { AppLayout } from '../components/layout/AppLayout'
 
-import appCss from '../styles.css?url'
+import appCss from '../styles/app.css?url'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -15,7 +14,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Inkorium',
       },
     ],
     links: [
@@ -23,6 +22,19 @@ export const Route = createRootRoute({
         rel: 'stylesheet',
         href: appCss,
       },
+      {
+        rel: 'preconnect',
+        href: 'https://fonts.googleapis.com',
+      },
+      {
+        rel: 'preconnect',
+        href: 'https://fonts.gstatic.com',
+        crossOrigin: 'anonymous',
+      },
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
+      }
     ],
   }),
   shellComponent: RootDocument,
@@ -35,8 +47,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
-        <TanStackDevtools
+        <AppLayout>
+            {children}
+        </AppLayout>
+
+        {/* Development Tools */}
+        {/* <TanStackDevtools
           config={{
             position: 'bottom-right',
           }}
@@ -46,7 +62,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               render: <TanStackRouterDevtoolsPanel />,
             },
           ]}
-        />
+        /> */}
         <Scripts />
       </body>
     </html>
