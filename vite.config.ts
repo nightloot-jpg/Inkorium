@@ -10,10 +10,10 @@ const config = defineConfig({
   resolve: { tsconfigPaths: true },
   plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
   server: {
-    allowedHosts: ['inkorium.es', 'www.inkorium.es']
+    allowedHosts: ['.inkorium.es', 'inkorium.es', 'www.inkorium.es']
   },
   preview: {
-    allowedHosts: ['inkorium.es', 'www.inkorium.es']
+    allowedHosts: ['.inkorium.es', 'inkorium.es', 'www.inkorium.es']
   }
 })
 
