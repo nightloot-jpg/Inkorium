@@ -38,7 +38,7 @@ const navigation = [
   { to: '/groups', label: 'Grupos', icon: Users2 },
   { to: '/saved', label: 'Inklog', icon: Bookmark },
   { to: '/videos', label: 'Música', icon: Music },
-  { to: '/notes', label: 'Notas', icon: FileText },
+  { to: '/saved', label: 'Notas', icon: FileText },
   { to: '/gaming', label: 'Juegos', icon: Gamepad2 },
   { to: '/saved', label: 'Favoritos', icon: Star },
   { to: '/saved', label: 'Guardados', icon: Bookmark },
@@ -204,7 +204,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             </section>
 
             <section className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
-              <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-extrabold uppercase">Notas recientes</h2><Link to="/notes" className="text-xs font-semibold text-[#0759d6]">Ver todas</Link></div>
+              <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-extrabold uppercase">Notas recientes</h2><Link to="/saved" className="text-xs font-semibold text-[#0759d6]">Ver todas</Link></div>
               {['Ideas para el nuevo proyecto', 'Lista de películas', 'Frases que inspiran'].map((note) => <div className="flex items-center gap-2 py-2 text-sm" key={note}><FileText size={16} className="text-slate-400" /><span>{note}</span></div>)}
             </section>
           </div>
