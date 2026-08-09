@@ -20,7 +20,10 @@ export const es = {
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
     "fullName": "Nombre completo",
     "resetPasswordInstructions": "Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.",
-    "resetPasswordSuccess": "Si la dirección coincide con una cuenta, te enviaremos un enlace de restablecimiento de contraseña."
+    "resetPasswordSuccess": "Si la dirección coincide con una cuenta, te enviaremos un enlace de restablecimiento de contraseña.",
+    "welcomeBack": "Bienvenido de nuevo",
+    "emailPlaceholder": "ejemplo@correo.com",
+    "rememberMe": "Recordarme"
   },
   "navigation": {
     "feed": "Inicio",

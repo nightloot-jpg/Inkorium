@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslations } from '../hooks/useTranslations';
 import { useLogin } from '../features/auth/hooks/useAuth';
@@ -21,18 +21,39 @@ function Login() {
   const { t } = useTranslations();
   const loginMutation = useLogin();
   const [authError, setAuthError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
 
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('inkorium_remember_email');
+    const savedPassword = localStorage.getItem('inkorium_remember_password');
+    if (savedEmail && savedPassword) {
+      setValue('email', savedEmail);
+      setValue('password', savedPassword);
+      setRememberMe(true);
+    }
+  }, [setValue]);
+
   const onSubmit = (data: LoginFormValues) => {
     setAuthError(null);
     loginMutation.mutate(data, {
+      onSuccess: () => {
+        if (rememberMe) {
+          localStorage.setItem('inkorium_remember_email', data.email);
+          localStorage.setItem('inkorium_remember_password', data.password);
+        } else {
+          localStorage.removeItem('inkorium_remember_email');
+          localStorage.removeItem('inkorium_remember_password');
+        }
+      },
       onError: (error: any) => {
         setAuthError(error?.message || t('common.error'));
       },
@@ -40,20 +61,31 @@ function Login() {
   };
 
   return (
-    <div className="flex flex-col">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {authError && (
-          <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
-            {authError}
-          </div>
-        )}
+    <>
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-[#3b4d61] tracking-tight">
+          {t('auth.welcomeBack')}
+        </h1>
+      </div>
 
+      {authError && (
+        <div className="p-3 mb-6 text-sm text-red-500 bg-red-50 rounded-md">
+          {authError}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-1">
+            {t('auth.email')}
+          </label>
           <div className="mt-1">
             <input
+              id="email"
               type="email"
-              placeholder={t('auth.email')}
-              className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#233B5D] focus:border-[#233B5D] sm:text-base"
+              autoComplete="email"
+              placeholder={t('auth.emailPlaceholder')}
+              className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
               {...register('email')}
             />
             {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
@@ -61,49 +93,65 @@ function Login() {
         </div>
 
         <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-1">
+            {t('auth.password')}
+          </label>
           <div className="mt-1">
             <input
+              id="password"
               type="password"
-              placeholder={t('auth.password')}
-              className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#233B5D] focus:border-[#233B5D] sm:text-base"
+              autoComplete="current-password"
+              placeholder="••••••••••••"
+              className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-slate-500 focus:border-slate-500 sm:text-sm tracking-widest"
               {...register('password')}
             />
             {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={loginMutation.isPending}
-          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-bold text-white bg-[#233B5D] hover:bg-[#1a2d48] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#233B5D] transition-colors"
-        >
-          {loginMutation.isPending ? t('common.loading') : t('auth.login')}
-        </button>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <input
+              id="remember-me"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 text-slate-600 focus:ring-slate-500 border-gray-300 rounded cursor-pointer"
+            />
+            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 cursor-pointer">
+              {t('auth.rememberMe')}
+            </label>
+          </div>
+          <div className="text-sm">
+            <Link
+              to="/forgot-password"
+              className="font-medium text-gray-600 hover:text-gray-900"
+            >
+              {t('auth.forgotPassword')}
+            </Link>
+          </div>
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            disabled={loginMutation.isPending}
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#2c435f] hover:bg-[#1e2e42] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors duration-200"
+          >
+            {loginMutation.isPending ? t('common.loading') : t('auth.login')}
+          </button>
+        </div>
       </form>
 
-      <div className="mt-4 text-center">
-        <Link
-          to="/forgot-password"
-          className="text-sm font-medium text-[#233B5D] hover:underline"
-        >
-          {t('auth.forgotPassword')}
-        </Link>
-      </div>
-
-      <div className="mt-6 mb-4 relative">
-        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-gray-300" />
-        </div>
-      </div>
-
-      <div className="text-center mt-6">
+      <div className="mt-8 text-center text-sm text-gray-600">
+        {t('auth.dontHaveAccount')}{' '}
         <Link
           to="/register"
-          className="w-auto inline-flex justify-center py-3 px-6 border border-transparent rounded-md shadow-sm text-base font-bold text-white bg-[#42b72a] hover:bg-[#36a420] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#42b72a] transition-colors"
+          className="font-medium text-[#3b4d61] hover:underline"
         >
-          {t('auth.createAccount')}
+          {t('auth.register')}
         </Link>
       </div>
-    </div>
+    </>
   );
 }
