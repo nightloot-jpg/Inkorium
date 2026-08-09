@@ -11,16 +11,19 @@ export function AuthLayout({ children }: AuthLayoutProps) {
 
   if (isLoginRoute) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-[#f1f5f9] font-sans">
-        <main className="w-full max-w-md relative mt-16">
-          <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 z-10 w-24 h-24 flex items-center justify-center">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#72a8cb] font-sans">
+        <div className="mb-6 flex flex-col items-center">
+          <div className="flex items-center space-x-2">
             <img
               alt="Inkorium Logo"
-              className="w-24 h-24 object-contain block drop-shadow-sm"
+              className="w-12 h-12 object-contain block drop-shadow-md"
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuDh21j_EsxY-EHMnu9xhZtPSz5YQfwkXZ4S_xxWcNjGNc6cyd781tFfLlj7eJRT4BjyfBEbSp64wFH4vhu4Lbwkr_gG5UcEZDKKSJb6v-jlyqPTGH41GMGkBVBr-Bgxt6MHr9OHBWN44oJ9BHKQRRw8IvQFQ4abAKjf7nM3vCzAE_sLFrVmGdSBWkOxjZpPJGoFsv2zd9dwqQnyksVUB4Ln_ZXghRi-wti-IBI9nX0iWqcZXlFNwi5i5Bt6rVJTbpmUpg"
             />
+            <span className="text-4xl font-bold text-[#145380] tracking-tight">inkorium</span>
           </div>
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 pt-12 pb-8 px-8 sm:px-10 mt-8">
+        </div>
+        <main className="w-full max-w-[420px]">
+          <div className="bg-white shadow-[0_0_8px_rgba(0,0,0,0.15)] flex flex-col">
             {children}
           </div>
         </main>

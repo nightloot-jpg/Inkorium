@@ -62,94 +62,98 @@ function Login() {
 
   return (
     <>
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-[#3b4d61] tracking-tight">
-          {t('auth.welcomeBack')}
+      <div className="bg-gradient-to-b from-[#e2edf5] to-[#cdddec] border-b border-[#a9c2d7] px-4 py-2">
+        <h1 className="text-[15px] font-bold text-[#555] font-arial">
+          {t('auth.login')}
         </h1>
       </div>
 
-      {authError && (
-        <div className="p-3 mb-6 text-sm text-red-500 bg-red-50 rounded-md">
-          {authError}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-1">
-            {t('auth.email')}
-          </label>
-          <div className="mt-1">
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder={t('auth.emailPlaceholder')}
-              className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#3b4d61] focus:border-[#3b4d61] sm:text-sm"
-              {...register('email')}
-            />
-            {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
+      <div className="p-6">
+        {authError && (
+          <div className="p-2 mb-4 text-sm text-red-600 bg-red-50 border border-red-200 text-center">
+            {authError}
           </div>
-        </div>
+        )}
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-1">
-            {t('auth.password')}
-          </label>
-          <div className="mt-1">
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••••••"
-              className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#3b4d61] focus:border-[#3b4d61] sm:text-sm tracking-widest"
-              {...register('password')}
-            />
-            {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="flex items-center">
-            <input
-              id="remember-me"
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 text-[#3b4d61] focus:ring-[#3b4d61] border-gray-300 rounded cursor-pointer"
-            />
-            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 cursor-pointer">
-              {t('auth.rememberMe')}
+            <label htmlFor="email" className="w-1/3 text-right pr-4 text-[13px] font-bold text-gray-500 font-arial">
+              E-mail
             </label>
+            <div className="w-2/3">
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                className="w-full px-2 py-1.5 border border-[#cccccc] shadow-inner text-[13px] focus:outline-none focus:border-[#72a8cb]"
+                {...register('email')}
+              />
+              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
+            </div>
           </div>
-          <div className="text-sm">
-            <Link
-              to="/forgot-password"
-              className="font-medium text-gray-600 hover:text-gray-900"
-            >
-              {t('auth.forgotPassword')}
-            </Link>
+
+          <div className="flex items-center">
+            <label htmlFor="password" className="w-1/3 text-right pr-4 text-[13px] font-bold text-gray-500 font-arial">
+              Contraseña
+            </label>
+            <div className="w-2/3">
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                className="w-full px-2 py-1.5 border border-[#cccccc] shadow-inner text-[13px] focus:outline-none focus:border-[#72a8cb]"
+                {...register('password')}
+              />
+              {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
+            </div>
           </div>
-        </div>
 
-        <div>
-          <button
-            type="submit"
-            disabled={loginMutation.isPending}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#3b4d61] hover:bg-[#2c3b4a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3b4d61] transition-colors duration-200"
-          >
-            {loginMutation.isPending ? t('common.loading') : t('auth.login')}
-          </button>
-        </div>
-      </form>
+          <div className="flex items-center pt-1">
+            <div className="w-1/3"></div>
+            <div className="w-2/3 flex items-center">
+              <input
+                id="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-[13px] w-[13px] border-gray-300 rounded-sm focus:ring-0 mr-2"
+              />
+              <label htmlFor="remember-me" className="text-[12px] text-gray-400 font-arial">
+                Recordarme en este equipo
+              </label>
+            </div>
+          </div>
 
-      <div className="mt-8 text-center text-sm text-gray-600">
-        {t('auth.dontHaveAccount')}{' '}
+          <div className="flex items-center pt-2">
+            <div className="w-1/3"></div>
+            <div className="w-2/3">
+              <button
+                type="submit"
+                disabled={loginMutation.isPending}
+                className="bg-gradient-to-b from-[#8ebad6] to-[#6998bf] border border-[#5281a9] text-white text-[13px] font-bold px-6 py-1.5 rounded-[2px] shadow-sm hover:from-[#7facca] hover:to-[#5c8bb3] focus:outline-none"
+              >
+                {loginMutation.isPending ? t('common.loading') : 'Entrar'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div className="bg-[#f0f4f7] border-t border-[#e2e2e2] py-2 text-center">
         <Link
-          to="/register"
-          className="font-medium text-[#3b4d61] hover:underline"
+          to="/forgot-password"
+          className="text-[12px] text-[#5586b0] hover:underline font-arial"
         >
-          {t('auth.register')}
+          ¿Tienes problemas para entrar?
+        </Link>
+      </div>
+
+      <div className="absolute -bottom-10 left-0 right-0 text-center">
+        <Link
+          to="/forgot-password"
+          className="text-[13px] text-white hover:underline font-arial"
+        >
+          ¿Has olvidado tu contraseña?
         </Link>
       </div>
     </>
