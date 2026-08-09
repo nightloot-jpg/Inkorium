@@ -85,7 +85,7 @@ function Login() {
               type="email"
               autoComplete="email"
               placeholder={t('auth.emailPlaceholder')}
-              className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-slate-500 focus:border-slate-500 sm:text-sm"
+              className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#3b4d61] focus:border-[#3b4d61] sm:text-sm"
               {...register('email')}
             />
             {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
@@ -102,7 +102,7 @@ function Login() {
               type="password"
               autoComplete="current-password"
               placeholder="••••••••••••"
-              className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-slate-500 focus:border-slate-500 sm:text-sm tracking-widest"
+              className="appearance-none block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#3b4d61] focus:border-[#3b4d61] sm:text-sm tracking-widest"
               {...register('password')}
             />
             {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
@@ -116,7 +116,7 @@ function Login() {
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 text-slate-600 focus:ring-slate-500 border-gray-300 rounded cursor-pointer"
+              className="h-4 w-4 text-[#3b4d61] focus:ring-[#3b4d61] border-gray-300 rounded cursor-pointer"
             />
             <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 cursor-pointer">
               {t('auth.rememberMe')}
@@ -136,7 +136,7 @@ function Login() {
           <button
             type="submit"
             disabled={loginMutation.isPending}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#2c435f] hover:bg-[#1e2e42] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors duration-200"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#3b4d61] hover:bg-[#2c3b4a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3b4d61] transition-colors duration-200"
           >
             {loginMutation.isPending ? t('common.loading') : t('auth.login')}
           </button>
