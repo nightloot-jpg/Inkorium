@@ -1,0 +1,33 @@
+export const en = {
+  common: {
+    loading: 'Loading...',
+    error: 'An error occurred',
+    save: 'Save',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    edit: 'Edit',
+  },
+  auth: {
+    login: 'Log in',
+    register: 'Sign up',
+    email: 'Email',
+    password: 'Password',
+    forgotPassword: 'Forgot password?',
+  },
+  navigation: {
+    feed: 'Home',
+    profile: 'Profile',
+    friends: 'Friends',
+    photos: 'Photos',
+    videos: 'Videos',
+    events: 'Events',
+    groups: 'Groups',
+    messages: 'Messages',
+    notifications: 'Notifications',
+    marketplace: 'Marketplace',
+    gaming: 'Gaming',
+    saved: 'Saved',
+    settings: 'Settings',
+    logout: 'Log out',
+  },
+} as const;

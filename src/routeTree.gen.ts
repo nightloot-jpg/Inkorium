@@ -10,80 +10,390 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as UpdatePasswordRouteImport } from './routes/update-password'
+import { Route as ProtectedRouteImport } from './routes/_protected'
+import { Route as PublicRouteImport } from './routes/_public'
+import { Route as ProtectedEventsRouteImport } from './routes/_protected.events'
+import { Route as ProtectedFeedRouteImport } from './routes/_protected.feed'
+import { Route as ProtectedFriendsRouteImport } from './routes/_protected.friends'
+import { Route as ProtectedGamingRouteImport } from './routes/_protected.gaming'
+import { Route as ProtectedGroupsRouteImport } from './routes/_protected.groups'
+import { Route as ProtectedMarketplaceRouteImport } from './routes/_protected.marketplace'
+import { Route as ProtectedMemoriesRouteImport } from './routes/_protected.memories'
+import { Route as ProtectedMessagesRouteImport } from './routes/_protected.messages'
+import { Route as ProtectedNotificationsRouteImport } from './routes/_protected.notifications'
+import { Route as ProtectedPhotosRouteImport } from './routes/_protected.photos'
+import { Route as ProtectedProfileRouteImport } from './routes/_protected.profile'
+import { Route as ProtectedSavedRouteImport } from './routes/_protected.saved'
+import { Route as ProtectedSearchRouteImport } from './routes/_protected.search'
+import { Route as ProtectedSettingsRouteImport } from './routes/_protected.settings'
+import { Route as ProtectedTrendingRouteImport } from './routes/_protected.trending'
+import { Route as ProtectedVideosRouteImport } from './routes/_protected.videos'
+import { Route as PublicAboutRouteImport } from './routes/_public.about'
+import { Route as PublicForgotPasswordRouteImport } from './routes/_public.forgot-password'
+import { Route as PublicHelpRouteImport } from './routes/_public.help'
+import { Route as PublicLoginRouteImport } from './routes/_public.login'
+import { Route as PublicPrivacyRouteImport } from './routes/_public.privacy'
+import { Route as PublicRegisterRouteImport } from './routes/_public.register'
+import { Route as PublicTermsRouteImport } from './routes/_public.terms'
+import { Route as PublicUpdatePasswordRouteImport } from './routes/_public.update-password'
+import { Route as ProtectedEventsIdRouteImport } from './routes/_protected.events.$id'
+import { Route as ProtectedGroupsIdRouteImport } from './routes/_protected.groups.$id'
+import { Route as ProtectedMessagesChatIdRouteImport } from './routes/_protected.messages.$chatId'
+import { Route as ProtectedProfileUsernameRouteImport } from './routes/_protected.profile.$username'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+const ProtectedRoute = ProtectedRouteImport.update({
+  id: '/_protected',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicRoute = PublicRouteImport.update({
+  id: '/_public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtectedEventsRoute = ProtectedEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedFeedRoute = ProtectedFeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedFriendsRoute = ProtectedFriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedGamingRoute = ProtectedGamingRouteImport.update({
+  id: '/gaming',
+  path: '/gaming',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedGroupsRoute = ProtectedGroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedMarketplaceRoute = ProtectedMarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedMemoriesRoute = ProtectedMemoriesRouteImport.update({
+  id: '/memories',
+  path: '/memories',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedMessagesRoute = ProtectedMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedNotificationsRoute = ProtectedNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedPhotosRoute = ProtectedPhotosRouteImport.update({
+  id: '/photos',
+  path: '/photos',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedProfileRoute = ProtectedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedSavedRoute = ProtectedSavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedSearchRoute = ProtectedSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedSettingsRoute = ProtectedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedTrendingRoute = ProtectedTrendingRouteImport.update({
+  id: '/trending',
+  path: '/trending',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedVideosRoute = ProtectedVideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const PublicAboutRoute = PublicAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicForgotPasswordRoute = PublicForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => PublicRoute,
 } as any)
-const LoginRoute = LoginRouteImport.update({
+const PublicHelpRoute = PublicHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicLoginRoute = PublicLoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => PublicRoute,
 } as any)
-const RegisterRoute = RegisterRouteImport.update({
+const PublicPrivacyRoute = PublicPrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicRegisterRoute = PublicRegisterRouteImport.update({
   id: '/register',
   path: '/register',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => PublicRoute,
 } as any)
-const UpdatePasswordRoute = UpdatePasswordRouteImport.update({
+const PublicTermsRoute = PublicTermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicUpdatePasswordRoute = PublicUpdatePasswordRouteImport.update({
   id: '/update-password',
   path: '/update-password',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => PublicRoute,
 } as any)
+const ProtectedEventsIdRoute = ProtectedEventsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ProtectedEventsRoute,
+} as any)
+const ProtectedGroupsIdRoute = ProtectedGroupsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ProtectedGroupsRoute,
+} as any)
+const ProtectedMessagesChatIdRoute = ProtectedMessagesChatIdRouteImport.update({
+  id: '/$chatId',
+  path: '/$chatId',
+  getParentRoute: () => ProtectedMessagesRoute,
+} as any)
+const ProtectedProfileUsernameRoute =
+  ProtectedProfileUsernameRouteImport.update({
+    id: '/$username',
+    path: '/$username',
+    getParentRoute: () => ProtectedProfileRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
-  '/update-password': typeof UpdatePasswordRoute
+  '/events': typeof ProtectedEventsRouteWithChildren
+  '/feed': typeof ProtectedFeedRoute
+  '/friends': typeof ProtectedFriendsRoute
+  '/gaming': typeof ProtectedGamingRoute
+  '/groups': typeof ProtectedGroupsRouteWithChildren
+  '/marketplace': typeof ProtectedMarketplaceRoute
+  '/memories': typeof ProtectedMemoriesRoute
+  '/messages': typeof ProtectedMessagesRouteWithChildren
+  '/notifications': typeof ProtectedNotificationsRoute
+  '/photos': typeof ProtectedPhotosRoute
+  '/profile': typeof ProtectedProfileRouteWithChildren
+  '/saved': typeof ProtectedSavedRoute
+  '/search': typeof ProtectedSearchRoute
+  '/settings': typeof ProtectedSettingsRoute
+  '/trending': typeof ProtectedTrendingRoute
+  '/videos': typeof ProtectedVideosRoute
+  '/about': typeof PublicAboutRoute
+  '/forgot-password': typeof PublicForgotPasswordRoute
+  '/help': typeof PublicHelpRoute
+  '/login': typeof PublicLoginRoute
+  '/privacy': typeof PublicPrivacyRoute
+  '/register': typeof PublicRegisterRoute
+  '/terms': typeof PublicTermsRoute
+  '/update-password': typeof PublicUpdatePasswordRoute
+  '/events/$id': typeof ProtectedEventsIdRoute
+  '/groups/$id': typeof ProtectedGroupsIdRoute
+  '/messages/$chatId': typeof ProtectedMessagesChatIdRoute
+  '/profile/$username': typeof ProtectedProfileUsernameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
-  '/update-password': typeof UpdatePasswordRoute
+  '/events': typeof ProtectedEventsRouteWithChildren
+  '/feed': typeof ProtectedFeedRoute
+  '/friends': typeof ProtectedFriendsRoute
+  '/gaming': typeof ProtectedGamingRoute
+  '/groups': typeof ProtectedGroupsRouteWithChildren
+  '/marketplace': typeof ProtectedMarketplaceRoute
+  '/memories': typeof ProtectedMemoriesRoute
+  '/messages': typeof ProtectedMessagesRouteWithChildren
+  '/notifications': typeof ProtectedNotificationsRoute
+  '/photos': typeof ProtectedPhotosRoute
+  '/profile': typeof ProtectedProfileRouteWithChildren
+  '/saved': typeof ProtectedSavedRoute
+  '/search': typeof ProtectedSearchRoute
+  '/settings': typeof ProtectedSettingsRoute
+  '/trending': typeof ProtectedTrendingRoute
+  '/videos': typeof ProtectedVideosRoute
+  '/about': typeof PublicAboutRoute
+  '/forgot-password': typeof PublicForgotPasswordRoute
+  '/help': typeof PublicHelpRoute
+  '/login': typeof PublicLoginRoute
+  '/privacy': typeof PublicPrivacyRoute
+  '/register': typeof PublicRegisterRoute
+  '/terms': typeof PublicTermsRoute
+  '/update-password': typeof PublicUpdatePasswordRoute
+  '/events/$id': typeof ProtectedEventsIdRoute
+  '/groups/$id': typeof ProtectedGroupsIdRoute
+  '/messages/$chatId': typeof ProtectedMessagesChatIdRoute
+  '/profile/$username': typeof ProtectedProfileUsernameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
-  '/update-password': typeof UpdatePasswordRoute
+  '/_protected': typeof ProtectedRouteWithChildren
+  '/_public': typeof PublicRouteWithChildren
+  '/_protected/events': typeof ProtectedEventsRouteWithChildren
+  '/_protected/feed': typeof ProtectedFeedRoute
+  '/_protected/friends': typeof ProtectedFriendsRoute
+  '/_protected/gaming': typeof ProtectedGamingRoute
+  '/_protected/groups': typeof ProtectedGroupsRouteWithChildren
+  '/_protected/marketplace': typeof ProtectedMarketplaceRoute
+  '/_protected/memories': typeof ProtectedMemoriesRoute
+  '/_protected/messages': typeof ProtectedMessagesRouteWithChildren
+  '/_protected/notifications': typeof ProtectedNotificationsRoute
+  '/_protected/photos': typeof ProtectedPhotosRoute
+  '/_protected/profile': typeof ProtectedProfileRouteWithChildren
+  '/_protected/saved': typeof ProtectedSavedRoute
+  '/_protected/search': typeof ProtectedSearchRoute
+  '/_protected/settings': typeof ProtectedSettingsRoute
+  '/_protected/trending': typeof ProtectedTrendingRoute
+  '/_protected/videos': typeof ProtectedVideosRoute
+  '/_public/about': typeof PublicAboutRoute
+  '/_public/forgot-password': typeof PublicForgotPasswordRoute
+  '/_public/help': typeof PublicHelpRoute
+  '/_public/login': typeof PublicLoginRoute
+  '/_public/privacy': typeof PublicPrivacyRoute
+  '/_public/register': typeof PublicRegisterRoute
+  '/_public/terms': typeof PublicTermsRoute
+  '/_public/update-password': typeof PublicUpdatePasswordRoute
+  '/_protected/events/$id': typeof ProtectedEventsIdRoute
+  '/_protected/groups/$id': typeof ProtectedGroupsIdRoute
+  '/_protected/messages/$chatId': typeof ProtectedMessagesChatIdRoute
+  '/_protected/profile/$username': typeof ProtectedProfileUsernameRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/forgot-password' | '/login' | '/register' | '/update-password'
+    | '/'
+    | '/events'
+    | '/feed'
+    | '/friends'
+    | '/gaming'
+    | '/groups'
+    | '/marketplace'
+    | '/memories'
+    | '/messages'
+    | '/notifications'
+    | '/photos'
+    | '/profile'
+    | '/saved'
+    | '/search'
+    | '/settings'
+    | '/trending'
+    | '/videos'
+    | '/about'
+    | '/forgot-password'
+    | '/help'
+    | '/login'
+    | '/privacy'
+    | '/register'
+    | '/terms'
+    | '/update-password'
+    | '/events/$id'
+    | '/groups/$id'
+    | '/messages/$chatId'
+    | '/profile/$username'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/forgot-password' | '/login' | '/register' | '/update-password'
+  to:
+    | '/'
+    | '/events'
+    | '/feed'
+    | '/friends'
+    | '/gaming'
+    | '/groups'
+    | '/marketplace'
+    | '/memories'
+    | '/messages'
+    | '/notifications'
+    | '/photos'
+    | '/profile'
+    | '/saved'
+    | '/search'
+    | '/settings'
+    | '/trending'
+    | '/videos'
+    | '/about'
+    | '/forgot-password'
+    | '/help'
+    | '/login'
+    | '/privacy'
+    | '/register'
+    | '/terms'
+    | '/update-password'
+    | '/events/$id'
+    | '/groups/$id'
+    | '/messages/$chatId'
+    | '/profile/$username'
   id:
     | '__root__'
     | '/'
-    | '/forgot-password'
-    | '/login'
-    | '/register'
-    | '/update-password'
+    | '/_protected'
+    | '/_public'
+    | '/_protected/events'
+    | '/_protected/feed'
+    | '/_protected/friends'
+    | '/_protected/gaming'
+    | '/_protected/groups'
+    | '/_protected/marketplace'
+    | '/_protected/memories'
+    | '/_protected/messages'
+    | '/_protected/notifications'
+    | '/_protected/photos'
+    | '/_protected/profile'
+    | '/_protected/saved'
+    | '/_protected/search'
+    | '/_protected/settings'
+    | '/_protected/trending'
+    | '/_protected/videos'
+    | '/_public/about'
+    | '/_public/forgot-password'
+    | '/_public/help'
+    | '/_public/login'
+    | '/_public/privacy'
+    | '/_public/register'
+    | '/_public/terms'
+    | '/_public/update-password'
+    | '/_protected/events/$id'
+    | '/_protected/groups/$id'
+    | '/_protected/messages/$chatId'
+    | '/_protected/profile/$username'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ForgotPasswordRoute: typeof ForgotPasswordRoute
-  LoginRoute: typeof LoginRoute
-  RegisterRoute: typeof RegisterRoute
-  UpdatePasswordRoute: typeof UpdatePasswordRoute
+  ProtectedRoute: typeof ProtectedRouteWithChildren
+  PublicRoute: typeof PublicRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -95,53 +405,337 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/forgot-password': {
-      id: '/forgot-password'
+    '/_protected': {
+      id: '/_protected'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ProtectedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_protected/events': {
+      id: '/_protected/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof ProtectedEventsRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/feed': {
+      id: '/_protected/feed'
+      path: '/feed'
+      fullPath: '/feed'
+      preLoaderRoute: typeof ProtectedFeedRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/friends': {
+      id: '/_protected/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof ProtectedFriendsRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/gaming': {
+      id: '/_protected/gaming'
+      path: '/gaming'
+      fullPath: '/gaming'
+      preLoaderRoute: typeof ProtectedGamingRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/groups': {
+      id: '/_protected/groups'
+      path: '/groups'
+      fullPath: '/groups'
+      preLoaderRoute: typeof ProtectedGroupsRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/marketplace': {
+      id: '/_protected/marketplace'
+      path: '/marketplace'
+      fullPath: '/marketplace'
+      preLoaderRoute: typeof ProtectedMarketplaceRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/memories': {
+      id: '/_protected/memories'
+      path: '/memories'
+      fullPath: '/memories'
+      preLoaderRoute: typeof ProtectedMemoriesRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/messages': {
+      id: '/_protected/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof ProtectedMessagesRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/notifications': {
+      id: '/_protected/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof ProtectedNotificationsRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/photos': {
+      id: '/_protected/photos'
+      path: '/photos'
+      fullPath: '/photos'
+      preLoaderRoute: typeof ProtectedPhotosRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/profile': {
+      id: '/_protected/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProtectedProfileRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/saved': {
+      id: '/_protected/saved'
+      path: '/saved'
+      fullPath: '/saved'
+      preLoaderRoute: typeof ProtectedSavedRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/search': {
+      id: '/_protected/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof ProtectedSearchRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/settings': {
+      id: '/_protected/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof ProtectedSettingsRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/trending': {
+      id: '/_protected/trending'
+      path: '/trending'
+      fullPath: '/trending'
+      preLoaderRoute: typeof ProtectedTrendingRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/videos': {
+      id: '/_protected/videos'
+      path: '/videos'
+      fullPath: '/videos'
+      preLoaderRoute: typeof ProtectedVideosRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_public/about': {
+      id: '/_public/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof PublicAboutRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/forgot-password': {
+      id: '/_public/forgot-password'
       path: '/forgot-password'
       fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof PublicForgotPasswordRouteImport
+      parentRoute: typeof PublicRoute
     }
-    '/login': {
-      id: '/login'
+    '/_public/help': {
+      id: '/_public/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof PublicHelpRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/login': {
+      id: '/_public/login'
       path: '/login'
       fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof PublicLoginRouteImport
+      parentRoute: typeof PublicRoute
     }
-    '/register': {
-      id: '/register'
+    '/_public/privacy': {
+      id: '/_public/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PublicPrivacyRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/register': {
+      id: '/_public/register'
       path: '/register'
       fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof PublicRegisterRouteImport
+      parentRoute: typeof PublicRoute
     }
-    '/update-password': {
-      id: '/update-password'
+    '/_public/terms': {
+      id: '/_public/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof PublicTermsRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/update-password': {
+      id: '/_public/update-password'
       path: '/update-password'
       fullPath: '/update-password'
-      preLoaderRoute: typeof UpdatePasswordRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof PublicUpdatePasswordRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_protected/events/$id': {
+      id: '/_protected/events/$id'
+      path: '/$id'
+      fullPath: '/events/$id'
+      preLoaderRoute: typeof ProtectedEventsIdRouteImport
+      parentRoute: typeof ProtectedEventsRoute
+    }
+    '/_protected/groups/$id': {
+      id: '/_protected/groups/$id'
+      path: '/$id'
+      fullPath: '/groups/$id'
+      preLoaderRoute: typeof ProtectedGroupsIdRouteImport
+      parentRoute: typeof ProtectedGroupsRoute
+    }
+    '/_protected/messages/$chatId': {
+      id: '/_protected/messages/$chatId'
+      path: '/$chatId'
+      fullPath: '/messages/$chatId'
+      preLoaderRoute: typeof ProtectedMessagesChatIdRouteImport
+      parentRoute: typeof ProtectedMessagesRoute
+    }
+    '/_protected/profile/$username': {
+      id: '/_protected/profile/$username'
+      path: '/$username'
+      fullPath: '/profile/$username'
+      preLoaderRoute: typeof ProtectedProfileUsernameRouteImport
+      parentRoute: typeof ProtectedProfileRoute
     }
   }
 }
 
+interface ProtectedEventsRouteChildren {
+  ProtectedEventsIdRoute: typeof ProtectedEventsIdRoute
+}
+
+const ProtectedEventsRouteChildren: ProtectedEventsRouteChildren = {
+  ProtectedEventsIdRoute: ProtectedEventsIdRoute,
+}
+
+const ProtectedEventsRouteWithChildren = ProtectedEventsRoute._addFileChildren(
+  ProtectedEventsRouteChildren,
+)
+
+interface ProtectedGroupsRouteChildren {
+  ProtectedGroupsIdRoute: typeof ProtectedGroupsIdRoute
+}
+
+const ProtectedGroupsRouteChildren: ProtectedGroupsRouteChildren = {
+  ProtectedGroupsIdRoute: ProtectedGroupsIdRoute,
+}
+
+const ProtectedGroupsRouteWithChildren = ProtectedGroupsRoute._addFileChildren(
+  ProtectedGroupsRouteChildren,
+)
+
+interface ProtectedMessagesRouteChildren {
+  ProtectedMessagesChatIdRoute: typeof ProtectedMessagesChatIdRoute
+}
+
+const ProtectedMessagesRouteChildren: ProtectedMessagesRouteChildren = {
+  ProtectedMessagesChatIdRoute: ProtectedMessagesChatIdRoute,
+}
+
+const ProtectedMessagesRouteWithChildren =
+  ProtectedMessagesRoute._addFileChildren(ProtectedMessagesRouteChildren)
+
+interface ProtectedProfileRouteChildren {
+  ProtectedProfileUsernameRoute: typeof ProtectedProfileUsernameRoute
+}
+
+const ProtectedProfileRouteChildren: ProtectedProfileRouteChildren = {
+  ProtectedProfileUsernameRoute: ProtectedProfileUsernameRoute,
+}
+
+const ProtectedProfileRouteWithChildren =
+  ProtectedProfileRoute._addFileChildren(ProtectedProfileRouteChildren)
+
+interface ProtectedRouteChildren {
+  ProtectedEventsRoute: typeof ProtectedEventsRouteWithChildren
+  ProtectedFeedRoute: typeof ProtectedFeedRoute
+  ProtectedFriendsRoute: typeof ProtectedFriendsRoute
+  ProtectedGamingRoute: typeof ProtectedGamingRoute
+  ProtectedGroupsRoute: typeof ProtectedGroupsRouteWithChildren
+  ProtectedMarketplaceRoute: typeof ProtectedMarketplaceRoute
+  ProtectedMemoriesRoute: typeof ProtectedMemoriesRoute
+  ProtectedMessagesRoute: typeof ProtectedMessagesRouteWithChildren
+  ProtectedNotificationsRoute: typeof ProtectedNotificationsRoute
+  ProtectedPhotosRoute: typeof ProtectedPhotosRoute
+  ProtectedProfileRoute: typeof ProtectedProfileRouteWithChildren
+  ProtectedSavedRoute: typeof ProtectedSavedRoute
+  ProtectedSearchRoute: typeof ProtectedSearchRoute
+  ProtectedSettingsRoute: typeof ProtectedSettingsRoute
+  ProtectedTrendingRoute: typeof ProtectedTrendingRoute
+  ProtectedVideosRoute: typeof ProtectedVideosRoute
+}
+
+const ProtectedRouteChildren: ProtectedRouteChildren = {
+  ProtectedEventsRoute: ProtectedEventsRouteWithChildren,
+  ProtectedFeedRoute: ProtectedFeedRoute,
+  ProtectedFriendsRoute: ProtectedFriendsRoute,
+  ProtectedGamingRoute: ProtectedGamingRoute,
+  ProtectedGroupsRoute: ProtectedGroupsRouteWithChildren,
+  ProtectedMarketplaceRoute: ProtectedMarketplaceRoute,
+  ProtectedMemoriesRoute: ProtectedMemoriesRoute,
+  ProtectedMessagesRoute: ProtectedMessagesRouteWithChildren,
+  ProtectedNotificationsRoute: ProtectedNotificationsRoute,
+  ProtectedPhotosRoute: ProtectedPhotosRoute,
+  ProtectedProfileRoute: ProtectedProfileRouteWithChildren,
+  ProtectedSavedRoute: ProtectedSavedRoute,
+  ProtectedSearchRoute: ProtectedSearchRoute,
+  ProtectedSettingsRoute: ProtectedSettingsRoute,
+  ProtectedTrendingRoute: ProtectedTrendingRoute,
+  ProtectedVideosRoute: ProtectedVideosRoute,
+}
+
+const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
+  ProtectedRouteChildren,
+)
+
+interface PublicRouteChildren {
+  PublicAboutRoute: typeof PublicAboutRoute
+  PublicForgotPasswordRoute: typeof PublicForgotPasswordRoute
+  PublicHelpRoute: typeof PublicHelpRoute
+  PublicLoginRoute: typeof PublicLoginRoute
+  PublicPrivacyRoute: typeof PublicPrivacyRoute
+  PublicRegisterRoute: typeof PublicRegisterRoute
+  PublicTermsRoute: typeof PublicTermsRoute
+  PublicUpdatePasswordRoute: typeof PublicUpdatePasswordRoute
+}
+
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicAboutRoute: PublicAboutRoute,
+  PublicForgotPasswordRoute: PublicForgotPasswordRoute,
+  PublicHelpRoute: PublicHelpRoute,
+  PublicLoginRoute: PublicLoginRoute,
+  PublicPrivacyRoute: PublicPrivacyRoute,
+  PublicRegisterRoute: PublicRegisterRoute,
+  PublicTermsRoute: PublicTermsRoute,
+  PublicUpdatePasswordRoute: PublicUpdatePasswordRoute,
+}
+
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ForgotPasswordRoute: ForgotPasswordRoute,
-  LoginRoute: LoginRoute,
-  RegisterRoute: RegisterRoute,
-  UpdatePasswordRoute: UpdatePasswordRoute,
+  ProtectedRoute: ProtectedRouteWithChildren,
+  PublicRoute: PublicRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
