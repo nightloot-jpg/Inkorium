@@ -13,6 +13,25 @@ export const useLogin = () => {
   });
 };
 
+export const useRegister = () => {
+  const setUser = useAuthStore((state) => state.setUser);
+
+  return useMutation({
+    mutationFn: authService.register,
+    onSuccess: (data: any) => {
+      if (data.user) {
+        setUser(data.user);
+      }
+    }
+  });
+};
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: authService.resetPassword,
+  });
+}
+
 export const useLogout = () => {
   const logout = useAuthStore((state) => state.logout);
 
