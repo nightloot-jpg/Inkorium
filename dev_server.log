@@ -3,7 +3,19 @@
 > vite dev --port 3000
 
 
-  VITE v8.2.1  ready in 1379 ms
+  VITE v8.2.1  ready in 2243 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: use --host to expose
+11:03:58 PM [vite] (client) [optimizer] bundling dependencies...
+Error in renderToReadableStream: Error: supabaseUrl is required.
+    at validateSupabaseUrl (file:///app/node_modules/@supabase/supabase-js/dist/index.mjs:375:25)
+    at new SupabaseClient (file:///app/node_modules/@supabase/supabase-js/dist/index.mjs:618:19)
+    at createClient (file:///app/node_modules/@supabase/supabase-js/dist/index.mjs:858:9)
+    at /app/src/lib/supabase.ts:6:25
+    at ESModulesEvaluator.runInlinedModule (file:///app/node_modules/vite/dist/node/module-runner.js:1015:3)
+    at ModuleRunner.directRequest (file:///app/node_modules/vite/dist/node/module-runner.js:1268:59)
+    at ModuleRunner.cachedRequest (file:///app/node_modules/vite/dist/node/module-runner.js:1175:73)
+    at /app/src/features/auth/services/auth.service.ts:1:1
+    at ESModulesEvaluator.runInlinedModule (file:///app/node_modules/vite/dist/node/module-runner.js:1015:3)
+    at ModuleRunner.directRequest (file:///app/node_modules/vite/dist/node/module-runner.js:1268:59) { componentStack: [Getter] }
