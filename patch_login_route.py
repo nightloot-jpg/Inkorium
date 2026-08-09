@@ -1,66 +1,13 @@
-import { useState, useEffect } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { useTranslations } from '../hooks/useTranslations';
-import { useLogin } from '../features/auth/hooks/useAuth';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import '../styles/login.css';
+import re
 
-export const Route = createFileRoute('/_public/login')({
-  component: Login,
-});
+with open('src/routes/_public.login.tsx', 'r') as f:
+    content = f.read()
 
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
+# 1. Add css import
+content = content.replace("import { z } from 'zod';", "import { z } from 'zod';\nimport '../styles/login.css';")
 
-type LoginFormValues = z.infer<typeof loginSchema>;
-
-function Login() {
-  const { t } = useTranslations();
-  const loginMutation = useLogin();
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [rememberMe, setRememberMe] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-  });
-
-  useEffect(() => {
-    const savedEmail = localStorage.getItem('inkorium_remember_email');
-    const savedPassword = localStorage.getItem('inkorium_remember_password');
-    if (savedEmail && savedPassword) {
-      setValue('email', savedEmail);
-      setValue('password', savedPassword);
-      setRememberMe(true);
-    }
-  }, [setValue]);
-
-  const onSubmit = (data: LoginFormValues) => {
-    setAuthError(null);
-    loginMutation.mutate(data, {
-      onSuccess: () => {
-        if (rememberMe) {
-          localStorage.setItem('inkorium_remember_email', data.email);
-          localStorage.setItem('inkorium_remember_password', data.password);
-        } else {
-          localStorage.removeItem('inkorium_remember_email');
-          localStorage.removeItem('inkorium_remember_password');
-        }
-      },
-      onError: (error: any) => {
-        setAuthError(error?.message || t('common.error'));
-      },
-    });
-  };
-
+# 2. Replace the return structure
+replacement = """
   return (
     <div className="ik-login-card">
       <h1>{t('auth.welcomeBack')}</h1>
@@ -129,4 +76,11 @@ function Login() {
       </div>
     </div>
   );
-}
+"""
+
+pattern = r"  return \(\n    <>\n.*    </>\n  \);"
+
+new_content = re.sub(pattern, replacement.strip('\n'), content, flags=re.DOTALL)
+
+with open('src/routes/_public.login.tsx', 'w') as f:
+    f.write(new_content)

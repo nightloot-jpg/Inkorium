@@ -1,0 +1,176 @@
+/* =========================================================
+   src/styles/login.css
+   Importar SOLO en src/routes/_public.login.tsx:
+     import "../styles/login.css";
+   (se aplica igual aunque el wrapper .ik-login-page /
+   .ik-login-wrapper viva en AuthLayout.tsx, porque el CSS
+   es global una vez importado)
+   ========================================================= */
+
+:root{
+  --ik-bg: #eef1f6;
+  --ik-card-bg: #ffffff;
+  --ik-text: #2f3b52;
+  --ik-text-muted: #6b7688;
+  --ik-border: #dde2ea;
+  --ik-primary: #4a5a78;
+  --ik-primary-hover: #3b4a63;
+  --ik-radius: 16px;
+  --ik-input-radius: 10px;
+  --ik-error: #b3413a;
+  --ik-error-bg: #fbeceb;
+}
+
+/* ---------- BLOQUE A: va en AuthLayout.tsx (wrapper de página) ---------- */
+
+.ik-login-page{
+  background: var(--ik-bg);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.ik-login-wrapper{
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ik-login-logo{
+  width: 88px;
+  height: 88px;
+  margin-bottom: 28px;
+}
+.ik-login-logo img,
+.ik-login-logo svg{
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+/* ---------- BLOQUE B: va en _public.login.tsx (tarjeta + formulario) ---------- */
+
+.ik-login-card{
+  width: 100%;
+  background: var(--ik-card-bg);
+  border-radius: var(--ik-radius);
+  box-shadow: 0 10px 30px rgba(47, 59, 82, 0.08);
+  padding: 40px 36px;
+  box-sizing: border-box;
+}
+
+.ik-login-card h1{
+  margin: 0 0 28px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ik-text);
+}
+
+.ik-login-error{
+  background: var(--ik-error-bg);
+  color: var(--ik-error);
+  border-radius: var(--ik-input-radius);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.ik-field{
+  margin-bottom: 20px;
+}
+.ik-field label{
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ik-text);
+}
+.ik-field input[type="email"],
+.ik-field input[type="text"],
+.ik-field input[type="password"]{
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--ik-border);
+  border-radius: var(--ik-input-radius);
+  font-size: 15px;
+  color: var(--ik-text);
+  background: #fff;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.ik-field input::placeholder{
+  color: #a7b0c0;
+}
+.ik-field input:focus{
+  outline: none;
+  border-color: var(--ik-primary);
+  box-shadow: 0 0 0 3px rgba(74, 90, 120, 0.15);
+}
+.ik-field input:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.ik-login-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 24px;
+  font-size: 14px;
+}
+.ik-login-row label{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ik-text-muted);
+  cursor: pointer;
+}
+.ik-login-row input[type="checkbox"]{
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ik-primary);
+}
+.ik-login-row a{
+  color: var(--ik-primary);
+  text-decoration: none;
+}
+.ik-login-row a:hover{
+  text-decoration: underline;
+}
+
+.ik-login-card button[type="submit"],
+.ik-login-card .ik-submit{
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: var(--ik-input-radius);
+  background: var(--ik-primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, opacity .15s ease;
+}
+.ik-login-card button[type="submit"]:hover,
+.ik-login-card .ik-submit:hover{
+  background: var(--ik-primary-hover);
+}
+.ik-login-card button[type="submit"]:disabled,
+.ik-login-card .ik-submit:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px){
+  .ik-login-card{
+    padding: 32px 24px;
+  }
+}
