@@ -1,9 +1,24 @@
-import { createRouter } from '@tanstack/react-router';
+import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { routeTree } from './routeTree.gen';
+import { QueryClient } from '@tanstack/react-query';
 
-export const router = createRouter({
-  routeTree,
-  context: {
-    auth: { isAuthenticated: false },
-  },
-});
+export function getRouter() {
+  const queryClient = new QueryClient();
+  const router = createTanStackRouter({
+    routeTree,
+    context: {
+      auth: { isAuthenticated: false },
+    },
+    scrollRestoration: true,
+    defaultPreload: 'intent',
+    defaultPreloadStaleTime: 0,
+  });
+
+  return router;
+}
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: ReturnType<typeof getRouter>;
+  }
+}
