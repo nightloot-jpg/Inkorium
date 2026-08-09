@@ -20,7 +20,10 @@ export const en = {
     "alreadyHaveAccount": "Already have an account?",
     "fullName": "Full name",
     "resetPasswordInstructions": "Enter your email and we will send you a link to reset your password.",
-    "resetPasswordSuccess": "If the email matches an account, we will send you a password reset link."
+    "resetPasswordSuccess": "If the email matches an account, we will send you a password reset link.",
+    "welcomeBack": "Welcome back",
+    "emailPlaceholder": "example@email.com",
+    "rememberMe": "Remember me"
   },
   "navigation": {
     "feed": "Home",
