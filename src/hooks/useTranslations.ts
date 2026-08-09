@@ -1,16 +1,36 @@
-import { es } from '../locales/es';
+import { useCallback } from 'react';
+import { translations } from '../i18n';
+import type { Translations } from '../i18n';
+import { useUiStore } from '../stores/uiStore'; // We will create this in the next step
 
-// In the future this could be expanded to support multiple languages, context, etc.
-type LocaleKeys = typeof es;
+type NestedKeyOf<ObjectType extends object> = {
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
+    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
+    : `${Key}`;
+}[keyof ObjectType & (string | number)];
 
-function getNestedTranslation(obj: any, path: string): string {
-  return path.split('.').reduce((acc, part) => acc && acc[part], obj) || path;
-}
+export type TranslationKey = NestedKeyOf<Translations>;
 
 export function useTranslations() {
-  const t = (key: string): string => {
-    return getNestedTranslation(es, key);
-  };
+  const { language } = useUiStore();
 
-  return { t };
+  const t = useCallback(
+    (key: TranslationKey): string => {
+      const keys = key.split('.');
+      let current: any = translations[language];
+
+      for (const k of keys) {
+        if (current[k] === undefined) {
+          console.warn(`Translation key not found: ${key}`);
+          return key;
+        }
+        current = current[k];
+      }
+
+      return current as string;
+    },
+    [language]
+  );
+
+  return { t, language };
 }
