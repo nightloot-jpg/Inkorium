@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useTranslations } from '../hooks/useTranslations';
 import { useLogin } from '../features/auth/hooks/useAuth';
 import { useForm } from 'react-hook-form';
@@ -20,9 +20,18 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 function Login() {
   const { t } = useTranslations();
+  const navigate = useNavigate();
   const loginMutation = useLogin();
   const [authError, setAuthError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+
+    if (searchParams.has('email') || searchParams.has('password')) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   const {
     register,
@@ -42,6 +51,8 @@ function Login() {
         if (!rememberMe) {
           localStorage.removeItem('inkorium_remember_email');
         }
+
+        navigate({ to: '/feed' });
       },
       onError: (error: any) => {
         setAuthError(error?.message || t('common.error'));
