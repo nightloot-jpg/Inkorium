@@ -1,4 +1,4 @@
-import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, HeadContent, Outlet } from '@tanstack/react-router';
 import appCss from '../styles/app.css?url';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
@@ -17,6 +17,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   }),
   component: () => (
     <QueryClientProvider client={queryClient}>
+      <HeadContent />
       <Outlet />
       {import.meta.env.DEV && <TanStackRouterDevtools position="bottom-right" />}
     </QueryClientProvider>
