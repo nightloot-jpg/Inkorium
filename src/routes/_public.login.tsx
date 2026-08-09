@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslations } from '../hooks/useTranslations';
 import { useLogin } from '../features/auth/hooks/useAuth';
@@ -27,32 +27,20 @@ function Login() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
 
-  useEffect(() => {
-    const savedEmail = localStorage.getItem('inkorium_remember_email');
-    const savedPassword = localStorage.getItem('inkorium_remember_password');
-    if (savedEmail && savedPassword) {
-      setValue('email', savedEmail);
-      setValue('password', savedPassword);
-      setRememberMe(true);
-    }
-  }, [setValue]);
-
   const onSubmit = (data: LoginFormValues) => {
     setAuthError(null);
+
     loginMutation.mutate(data, {
       onSuccess: () => {
-        if (rememberMe) {
-          localStorage.setItem('inkorium_remember_email', data.email);
-          localStorage.setItem('inkorium_remember_password', data.password);
-        } else {
+        // Never persist passwords in localStorage. Supabase manages the
+        // authenticated session; remember-me is intentionally UI-only.
+        if (!rememberMe) {
           localStorage.removeItem('inkorium_remember_email');
-          localStorage.removeItem('inkorium_remember_password');
         }
       },
       onError: (error: any) => {
@@ -65,11 +53,7 @@ function Login() {
     <div className="ik-login-card">
       <h1>{t('auth.welcomeBack')}</h1>
 
-      {authError && (
-        <div className="ik-login-error">
-          {authError}
-        </div>
-      )}
+      {authError && <div className="ik-login-error">{authError}</div>}
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="ik-field">
@@ -82,7 +66,9 @@ function Login() {
             disabled={loginMutation.isPending}
             {...register('email')}
           />
-          {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
+          {errors.email && (
+            <p className="ik-field-error">{errors.email.message}</p>
+          )}
         </div>
 
         <div className="ik-field">
@@ -95,22 +81,23 @@ function Login() {
             disabled={loginMutation.isPending}
             {...register('password')}
           />
-          {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
+          {errors.password && (
+            <p className="ik-field-error">{errors.password.message}</p>
+          )}
         </div>
 
         <div className="ik-login-row">
-          <label>
+          <label className="ik-remember-label" htmlFor="remember-me">
             <input
               id="remember-me"
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
+              disabled={loginMutation.isPending}
             />
             {t('auth.rememberMe')}
           </label>
-          <Link to="/forgot-password">
-            {t('auth.forgotPassword')}
-          </Link>
+          <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
         </div>
 
         <button type="submit" disabled={loginMutation.isPending}>
@@ -118,14 +105,9 @@ function Login() {
         </button>
       </form>
 
-      <div className="mt-8 text-center text-sm text-gray-600">
+      <div className="ik-login-register">
         {t('auth.dontHaveAccount')}{' '}
-        <Link
-          to="/register"
-          className="font-medium text-[#3b4d61] hover:underline"
-        >
-          {t('auth.register')}
-        </Link>
+        <Link to="/register">{t('auth.register')}</Link>
       </div>
     </div>
   );
