@@ -1,16 +1,40 @@
+import { supabase } from '../../../lib/supabase';
+
 export const authService = {
-  login: async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ user: { id: '1', email: 'test@test.com', name: 'Test User', username: 'testuser' } });
-      }, 1000);
+  login: async ({ email, password }: any) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
+    if (error) throw error;
+    return { user: data.user };
   },
-  logout: async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true });
-      }, 500);
+
+  register: async ({ email, password, fullName }: any) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
     });
+    if (error) throw error;
+    return { user: data.user };
+  },
+
+  resetPassword: async ({ email }: any) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/update-password`,
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  logout: async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    return { success: true };
   },
 };
