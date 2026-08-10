@@ -1,30 +1,17 @@
 import { supabase } from '../../../lib/supabase';
+import { loginFn, registerFn, logoutFn } from '../../../auth';
 
 export const authService = {
   login: async ({ email, password }: any) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-    return { user: data.user };
+    return await loginFn({ data: { email, password } });
   },
 
   register: async ({ email, password, fullName }: any) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-    if (error) throw error;
-    return { user: data.user };
+    return await registerFn({ data: { email, password, fullName } });
   },
 
   resetPassword: async ({ email }: any) => {
+    // Reset password could also be moved to server fn, but for now we keep it
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/update-password` : 'https://www.inkorium.es/update-password',
     });
@@ -33,8 +20,6 @@ export const authService = {
   },
 
   signOut: async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    return { success: true };
+    return await logoutFn();
   },
 };

@@ -1,28 +1,15 @@
 import { useMutation } from '@tanstack/react-query';
 import { authService } from '../services/auth.service';
-import { useAuthStore } from '../../../stores/authStore';
 
 export const useLogin = () => {
-  const setUser = useAuthStore((state) => state.setUser);
-
   return useMutation({
     mutationFn: authService.login,
-    onSuccess: (data: any) => {
-      setUser(data.user);
-    },
   });
 };
 
 export const useRegister = () => {
-  const setUser = useAuthStore((state) => state.setUser);
-
   return useMutation({
     mutationFn: authService.register,
-    onSuccess: (data: any) => {
-      if (data.user) {
-        setUser(data.user);
-      }
-    }
   });
 };
 
@@ -33,12 +20,7 @@ export const useResetPassword = () => {
 }
 
 export const useLogout = () => {
-  const signOut = useAuthStore((state) => state.signOut);
-
   return useMutation({
     mutationFn: authService.signOut,
-    onSuccess: () => {
-      signOut();
-    },
   });
 };
