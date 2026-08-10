@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
 import { Camera, Video, StickyNote, BarChart3, Link2, MoreHorizontal, X, Loader2 } from 'lucide-react';
-import { useAuthStore } from '../../../stores/authStore';
+import { useAuth } from '../../../hooks/useAuth';
 
 export function PostComposer({
  onSubmit, isLoading }: { onSubmit: (content: string, type: string, photos: File[]) => void, isLoading: boolean }) {
-  const user = useAuthStore(state => state.user);
+  const { user } = useAuth();
   const [content, setContent] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -19,7 +19,7 @@ export function PostComposer({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newPhotos = Array.from(e.target.files);
-      setPhotos(prev => [...prev, ...newPhotos].slice(0, 4)); // Limit to 4 for now in UI
+      setPhotos(prev => [...prev, ...newPhotos].slice(0, 4));
     }
   };
 
