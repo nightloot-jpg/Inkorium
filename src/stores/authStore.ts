@@ -19,11 +19,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   }
 }));
 
-// Initialize from session
-supabase.auth.getSession().then(({ data: { session } }) => {
-  useAuthStore.getState().setUser(session?.user ?? null);
-});
+if (typeof window !== 'undefined') {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    useAuthStore.getState().setUser(session?.user ?? null);
+  });
+}
 
-supabase.auth.onAuthStateChange((_event, session) => {
-  useAuthStore.getState().setUser(session?.user ?? null);
-});
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((_event, session) => {
+    useAuthStore.getState().setUser(session?.user ?? null);
+  });
+}
