@@ -72,6 +72,21 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
         <aside className="hidden w-[260px] shrink-0 xl:block">
           <div className="sticky top-24 space-y-4">
+
+            <section className="rounded-sm border border-slate-200 bg-white p-4 shadow-none">
+              <div className="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-bold text-slate-700">Inklog</h3>
+                <Link to="/inklog" className="text-xs text-[#233B5D] hover:underline">Ver todos →</Link>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                {[1,2,3,4,5,6].map(i => (
+                  <Link key={i} to="/inklog" className="aspect-square bg-slate-100 hover:opacity-80 transition block border border-slate-200">
+                     <img src={`https://picsum.photos/seed/${i+50}/100`} alt="" className="w-full h-full object-cover" />
+                  </Link>
+                ))}
+              </div>
+            </section>
+
             <section className="rounded-sm border border-slate-200 bg-white p-4 shadow-none">
               <h3 className="mb-3 text-sm font-bold text-slate-700 border-b border-slate-100 pb-2">Conectados ahora</h3>
               <div className="space-y-3">
