@@ -3,6 +3,7 @@ import { useRouter } from '@tanstack/react-router';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useTranslations } from '../hooks/useTranslations';
 import { useLogin } from '../features/auth/hooks/useAuth';
+import { supabase } from '../lib/supabase';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -47,15 +48,21 @@ function Login() {
     setAuthError(null);
 
     loginMutation.mutate(data, {
-      onSuccess: async () => {
-        // Never persist passwords in localStorage. Supabase manages the
-        // authenticated session; remember-me is intentionally UI-only.
+      onSuccess: async (result) => {
+        // Keep the browser Supabase client in sync with the session created by
+        // the server function. This is required because feed mutations and
+        // realtime use the browser client after navigation.
+        if (result.session) {
+          const { error } = await supabase.auth.setSession(result.session);
+          if (error) throw error;
+        }
+
         if (!rememberMe) {
           localStorage.removeItem('inkorium_remember_email');
         }
 
         await router.invalidate();
-        navigate({ to: '/feed' });
+        await navigate({ to: '/feed' });
       },
       onError: (error: any) => {
         setAuthError(error?.message || t('common.error'));
