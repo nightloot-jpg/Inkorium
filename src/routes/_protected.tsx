@@ -3,8 +3,8 @@ import { MainLayout } from '../layouts/MainLayout';
 
 
 export const Route = createFileRoute('/_protected')({
-  beforeLoad: () => {
-    if (false) {
+  beforeLoad: ({ context }) => {
+    if (!context.auth.isAuthenticated) {
       throw redirect({
         to: '/login',
       });
