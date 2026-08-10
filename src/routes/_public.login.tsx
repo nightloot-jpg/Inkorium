@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRouter } from '@tanstack/react-router';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useTranslations } from '../hooks/useTranslations';
 import { useLogin } from '../features/auth/hooks/useAuth';
@@ -21,6 +22,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 function Login() {
   const { t } = useTranslations();
   const navigate = useNavigate();
+  const router = useRouter();
   const loginMutation = useLogin();
   const [authError, setAuthError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
@@ -45,13 +47,14 @@ function Login() {
     setAuthError(null);
 
     loginMutation.mutate(data, {
-      onSuccess: () => {
+      onSuccess: async () => {
         // Never persist passwords in localStorage. Supabase manages the
         // authenticated session; remember-me is intentionally UI-only.
         if (!rememberMe) {
           localStorage.removeItem('inkorium_remember_email');
         }
 
+        await router.invalidate();
         navigate({ to: '/feed' });
       },
       onError: (error: any) => {

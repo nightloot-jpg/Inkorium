@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { Home, Users, MessageSquare, Bell, Calendar, Image as ImageIcon, Music, Gamepad2, Settings, LogOut, Search, StickyNote } from 'lucide-react';
-import { useAuthStore } from '../stores/authStore';
+import { useAuth } from '../hooks/useAuth';
+import { useLogout } from '../features/auth/hooks/useAuth';
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const user = useAuthStore(state => state.user);
-  const signOut = useAuthStore(state => state.signOut);
+  const { user } = useAuth();
+  const logoutMutation = useLogout();
   const navigate = useNavigate();
+  const router = useRouter();
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate({ to: '/login' });
+
+    logoutMutation.mutate(undefined, { onSuccess: async () => { await router.invalidate(); navigate({ to: '/login' }); } });
   };
 
   return (

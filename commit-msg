@@ -1,0 +1,5 @@
+fix(auth): resolve hydration mismatch (#418) and fix router context sync
+
+- Removed synchronous state mutation of Zustand from `__root.tsx`.
+- Introduced unified `useAuth` hook pulling the initial state from `useRouteContext` (SSR/hydration) and smoothly transitioning to Zustand's store post-hydration.
+- Modified `login`, `register`, and `logout` to properly await `router.invalidate()` before navigation to sync guards with fresh session.
