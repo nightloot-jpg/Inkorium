@@ -55,7 +55,7 @@ export const loginFn = createServerFn({ method: 'POST' })
         password: data.password,
     });
     if (error) throw error;
-    return { user: authData.user };
+    return { user: authData.user, session: authData.session };
 });
 
 export const registerFn = createServerFn({ method: 'POST' })
@@ -72,7 +72,7 @@ export const registerFn = createServerFn({ method: 'POST' })
         },
     });
     if (error) throw error;
-    return { user: authData.user };
+    return { user: authData.user, session: authData.session };
 });
 
 export const logoutFn = createServerFn({ method: 'POST' }).handler(async () => {
