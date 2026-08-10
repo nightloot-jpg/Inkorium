@@ -5,7 +5,7 @@ import type { Inklog } from '../types';
 
 export function InklogCard({ inklog }: { inklog: Inklog }) {
   return (
-    <article className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm break-inside-avoid mb-4">
+    <article className="overflow-hidden rounded border border-slate-200 bg-white shadow-none">
       <div className="relative aspect-[4/5] bg-slate-100">
         <img className="h-full w-full object-cover" src={inklog.photo_url} alt={inklog.caption || ''} />
       </div>
