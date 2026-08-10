@@ -21,6 +21,18 @@ const config = defineConfig({
   },
   preview: {
     allowedHosts,
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.names?.some(name => name.includes('app.css'))) {
+            return 'assets/[name][extname]'
+          }
+          return 'assets/[name]-[hash][extname]'
+        }
+      }
+    }
   }
 })
 
