@@ -2,6 +2,7 @@ import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanst
 import appCss from '../styles/app.css?url';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
+import { getAuthSession } from '../auth';
 
 export interface MyRouterContext {
   auth: {
@@ -12,6 +13,14 @@ export interface MyRouterContext {
 const queryClient = new QueryClient();
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+  beforeLoad: async () => {
+    const session = await getAuthSession();
+    return {
+      auth: {
+        isAuthenticated: !!session,
+      },
+    };
+  },
   head: () => ({
     links: [{ rel: 'stylesheet', href: appCss }],
   }),

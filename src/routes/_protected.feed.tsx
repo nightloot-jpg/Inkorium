@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { PostComposer, FeedList } from '../features/feed/components';
 import { useFeed } from '../features/feed/hooks/useFeed';
-import { Link } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_protected/feed')({
   component: Feed,
