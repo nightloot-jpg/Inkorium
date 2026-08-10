@@ -12,6 +12,9 @@ RUN npm install --legacy-peer-deps
 # Copy the rest of the application
 COPY . .
 
+# Ensure clean build state inside docker
+RUN rm -rf .output .vinxi .tanstack .nitro node_modules/.vite node_modules/.cache
+
 # Build the application
 RUN npm run build
 
