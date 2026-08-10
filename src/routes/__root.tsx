@@ -4,7 +4,7 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { getAuthSession } from '../auth';
 import { useAuthStore } from '../stores/authStore';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 import type { Session, User } from '@supabase/supabase-js';
@@ -37,11 +37,13 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => {
     const { auth } = Route.useRouteContext();
     const setUser = useAuthStore((state) => state.setUser);
-    const [isInitialized, setIsInitialized] = useState(false);
 
-    if (!isInitialized) {
-        setUser(auth.user);
-        setIsInitialized(true);
+    // Using useRef to ensure it runs only once per instance immediately without triggering a re-render warning
+    const isInitialized = useRef(false);
+    if (!isInitialized.current) {
+        // We mutate the store state synchronously before children render
+        useAuthStore.setState({ user: auth.user, isAuthenticated: !!auth.user });
+        isInitialized.current = true;
     }
 
     useEffect(() => {
