@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useCallback } from 'react';
 import { translations } from '../i18n';
 import type { Translations } from '../i18n';
@@ -12,7 +13,13 @@ type NestedKeyOf<ObjectType extends object> = {
 export type TranslationKey = NestedKeyOf<Translations>;
 
 export function useTranslations() {
-  const { language } = useUiStore();
+
+  const storeLanguage = useUiStore((state) => state.language);
+  const [language, setLanguage] = useState<'es' | 'en'>('es');
+  useEffect(() => {
+    setLanguage(storeLanguage);
+  }, [storeLanguage]);
+
 
   const t = useCallback(
     (key: TranslationKey): string => {
