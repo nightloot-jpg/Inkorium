@@ -27,11 +27,11 @@ export function PostComposer({ onSubmit, isLoading }: { onSubmit: (content: stri
   };
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm mb-4">
-      <div className="flex gap-3 p-5 pb-4">
-        <img className="h-12 w-12 rounded-full object-cover" src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'User'}`} alt={user?.user_metadata?.full_name || 'User'} />
+    <section className="overflow-hidden rounded border border-slate-200 bg-white shadow-none mb-4">
+      <div className="flex gap-3 p-4 pb-3">
+        <img className="h-10 w-10 rounded-sm object-cover" src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'User'}`} alt={user?.user_metadata?.full_name || 'User'} />
         <textarea
-          className="flex-1 resize-none rounded-lg border border-slate-100 p-4 text-sm text-slate-700 shadow-inner outline-none transition focus:border-[#233B5D] focus:ring-1 focus:ring-[#233B5D]"
+          className="flex-1 resize-none rounded-sm border border-slate-200 p-3 text-sm text-slate-700 shadow-none outline-none transition focus:border-[#233B5D] focus:ring-1 focus:ring-[#233B5D]"
           placeholder={`¿Qué estás pensando, ${user?.user_metadata?.full_name?.split(' ')[0] || ''}?`}
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -86,7 +86,7 @@ export function PostComposer({ onSubmit, isLoading }: { onSubmit: (content: stri
 
 function ComposerAction({ icon: Icon, label, accent = false, onClick }: { icon: typeof Camera; label: string; accent?: boolean; onClick?: () => void }) {
   return (
-    <button onClick={onClick} className="flex items-center justify-center gap-2 px-2 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+    <button onClick={onClick} className="flex items-center justify-center gap-2 px-2 py-2.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100">
       <Icon size={18} className={accent ? 'text-green-600' : 'text-slate-700'} />
       {label}
     </button>

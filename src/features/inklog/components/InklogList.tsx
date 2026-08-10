@@ -29,9 +29,9 @@ export function InklogList() {
   }
 
   return (
-    <div className="columns-1 sm:columns-2 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {data.pages.map((page, i) => (
-        <div key={i} className="contents">
+        <div key={i} >
           {page.data.map((inklog) => (
             <InklogCard key={inklog.id} inklog={inklog} />
           ))}

@@ -48,8 +48,8 @@ export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdi
   };
 
   return (
-    <article className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm mb-4">
-      <header className="flex items-center gap-3 px-5 pt-5 relative">
+    <article className="overflow-hidden rounded border border-slate-200 bg-white shadow-none mb-3">
+      <header className="flex items-center gap-3 px-4 pt-3 relative">
         <img className="h-11 w-11 rounded-full object-cover" src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${post.profiles?.full_name || 'User'}`} alt={post.profiles?.full_name || 'User'} />
         <div className="flex-1">
           <p className="text-sm font-bold">{post.profiles?.full_name}</p>
@@ -68,7 +68,7 @@ export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdi
               <MoreHorizontal size={20} />
             </button>
             {showOptions && (
-              <div className="absolute right-0 top-10 w-32 bg-white border border-slate-100 rounded-md shadow-lg z-10 py-1">
+              <div className="absolute right-0 top-10 w-32 bg-white border border-slate-100 rounded-sm shadow-lg z-10 py-1">
                 <button
                   onClick={() => { setIsEditing(true); setShowOptions(false); }}
                   className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
@@ -87,7 +87,7 @@ export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdi
         )}
       </header>
 
-      <div className="px-5 py-4 text-sm leading-6">
+      <div className="px-4 py-3 text-sm leading-6">
         {isEditing ? (
           <div className="space-y-2">
             <textarea
@@ -107,9 +107,9 @@ export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdi
       </div>
 
       {post.photos && post.photos.length > 0 && (
-        <div className={`grid gap-1 px-5 ${post.photos.length === 1 ? 'grid-cols-1' : post.photos.length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+        <div className={`grid gap-1 px-4 ${post.photos.length === 1 ? 'grid-cols-1' : post.photos.length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
           {post.photos.slice(0, 4).map((photo, index) => (
-            <div className={`relative aspect-square overflow-hidden rounded-md ${post.photos.length === 3 && index === 0 ? 'col-span-2' : ''}`} key={photo.id}>
+            <div className={`relative aspect-square overflow-hidden rounded-sm ${post.photos.length === 3 && index === 0 ? 'col-span-2' : ''}`} key={photo.id}>
               <img className="h-full w-full object-cover" src={photo.url} alt={photo.caption || ''} />
               {index === 3 && post.photos.length > 4 && (
                 <div className="absolute inset-0 grid place-items-center bg-slate-950/55 text-2xl font-bold text-white">
@@ -143,7 +143,7 @@ export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdi
       </div>
 
       {showComments && (
-        <div className="px-5 pb-5 pt-2 border-t border-slate-50 bg-slate-50/50">
+        <div className="px-4 pb-4 pt-2 border-t border-slate-50 bg-slate-50/50">
           <div className="space-y-4 mb-4 max-h-60 overflow-y-auto pr-2">
             {post.comments?.map(comment => (
               <div key={comment.id} className="flex gap-2">
@@ -175,7 +175,7 @@ function PostAction({ icon: Icon, label, active, onClick, activeClass }: { icon:
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-center gap-2 rounded-md py-2 text-sm font-medium transition hover:bg-slate-50 ${active ? activeClass || 'text-[#233B5D]' : 'text-slate-700'}`}
+      className={`flex items-center justify-center gap-2 rounded-sm py-2 text-sm font-medium transition hover:bg-slate-50 ${active ? activeClass || 'text-[#233B5D]' : 'text-slate-700'}`}
     >
       <Icon size={18} className={active ? 'fill-current' : ''} />
       {label}
