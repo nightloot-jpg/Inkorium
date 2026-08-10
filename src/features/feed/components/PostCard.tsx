@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Edit, Trash, Check, X } from 'lucide-react';
-import { useAuthStore } from '../../../stores/authStore';
+import { useAuth } from '../../../hooks/useAuth';
 import type { Post } from '../types';
 
 interface PostCardProps {
@@ -16,7 +16,7 @@ interface PostCardProps {
 
 export function PostCard({
  post, onLike, onUnlike, onAddComment, onDelete, onEdit }: PostCardProps) {
-  const user = useAuthStore(state => state.user);
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || '');
   const [showComments, setShowComments] = useState(false);
@@ -128,18 +128,8 @@ export function PostCard({
       </div>
 
       <div className="grid grid-cols-3 px-3 py-2">
-        <PostAction
-          icon={Heart}
-          label="Me gusta"
-          active={isLiked}
-          onClick={handleLikeToggle}
-          activeClass="text-red-500"
-        />
-        <PostAction
-          icon={MessageCircle}
-          label="Comentar"
-          onClick={() => setShowComments(!showComments)}
-        />
+        <PostAction icon={Heart} label="Me gusta" active={isLiked} onClick={handleLikeToggle} activeClass="text-red-500" />
+        <PostAction icon={MessageCircle} label="Comentar" onClick={() => setShowComments(!showComments)} />
         <PostAction icon={Share2} label="Compartir" />
       </div>
 
@@ -174,10 +164,7 @@ export function PostCard({
 
 function PostAction({ icon: Icon, label, active, onClick, activeClass }: { icon: typeof Heart; label: string; active?: boolean; onClick?: () => void; activeClass?: string }) {
   return (
-    <button
-      onClick={onClick}
-      className={`flex items-center justify-center gap-2 rounded-sm py-2 text-sm font-medium transition hover:bg-slate-50 ${active ? activeClass || 'text-[#233B5D]' : 'text-slate-700'}`}
-    >
+    <button onClick={onClick} className={`flex items-center justify-center gap-2 rounded-sm py-2 text-sm font-medium transition hover:bg-slate-50 ${active ? activeClass || 'text-[#233B5D]' : 'text-slate-700'}`}>
       <Icon size={18} className={active ? 'fill-current' : ''} />
       {label}
     </button>
