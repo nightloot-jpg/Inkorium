@@ -6,9 +6,6 @@ import type { Inklog } from '../types';
 
 export function InklogCard({
  inklog }: { inklog: Inklog }) {
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => { setIsMounted(true); }, []);
-
   return (
     <article className="overflow-hidden rounded border border-slate-200 bg-white shadow-none">
       <div className="relative aspect-[4/5] bg-slate-100">
@@ -20,7 +17,7 @@ export function InklogCard({
           <img className="h-8 w-8 rounded-full object-cover" src={inklog.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${inklog.profiles?.full_name || 'User'}`} alt="" />
           <div className="flex-1 min-w-0">
             <p className="truncate text-sm font-bold">{inklog.profiles?.full_name}</p>
-            <p className="text-xs text-slate-500">{isMounted ? formatDistanceToNow(new Date(inklog.created_at), { addSuffix: true, locale: es }) : "hace un momento"}</p>
+            <p className="text-xs text-slate-500"><span suppressHydrationWarning>{formatDistanceToNow(new Date(inklog.created_at), { addSuffix: true, locale: es })}</span></p>
           </div>
         </div>
 

@@ -16,9 +16,6 @@ interface PostCardProps {
 
 export function PostCard({
  post, onLike, onUnlike, onAddComment, onDelete, onEdit }: PostCardProps) {
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => { setIsMounted(true); }, []);
-
   const user = useAuthStore(state => state.user);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || '');
@@ -26,8 +23,8 @@ export function PostCard({
   const [commentContent, setCommentContent] = useState('');
   const [showOptions, setShowOptions] = useState(false);
 
-  const isLiked = post.likes?.some(like => like.user_id === (isMounted ? user?.id : null));
-  const isOwner = post.user_id === (isMounted ? user?.id : null);
+  const isLiked = post.likes?.some(like => like.user_id === user?.id);
+  const isOwner = post.user_id === user?.id;
 
   const handleLikeToggle = () => {
     if (isLiked) {
@@ -58,7 +55,7 @@ export function PostCard({
         <div className="flex-1">
           <p className="text-sm font-bold">{post.profiles?.full_name}</p>
           <p className="text-xs text-slate-500">
-            {isMounted ? formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es }) : "hace un momento"} · 🌐
+            <span suppressHydrationWarning>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}</span> · 🌐
           </p>
         </div>
 
@@ -160,7 +157,7 @@ export function PostCard({
             ))}
           </div>
           <form onSubmit={handleCommentSubmit} className="flex gap-2">
-            <img className="h-8 w-8 rounded-full object-cover" src={(isMounted ? user?.user_metadata : null)?.avatar_url || `https://ui-avatars.com/api/?name=${(isMounted ? user?.user_metadata : null)?.full_name || 'User'}`} alt="" />
+            <img className="h-8 w-8 rounded-full object-cover" src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'User'}`} alt="" />
             <input
               type="text"
               value={commentContent}
