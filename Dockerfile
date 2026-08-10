@@ -15,6 +15,15 @@ COPY . .
 # Ensure clean build state inside docker
 RUN rm -rf .output .vinxi .tanstack .nitro node_modules/.vite node_modules/.cache
 
+
+# Arguments passed by Coolify
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+
+# Set them as ENV variables so they are available during build (Vite requires them)
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
 # Build the application
 RUN npm run build
 
