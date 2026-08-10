@@ -1,28 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getCookies, setCookie } from '@tanstack/react-start/server'
-import { createServerClient } from '@supabase/ssr'
 import type { Database } from './types/supabase'
-
-export function getSupabaseServerClient() {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || 'http://localhost:54321'
-  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'ey'
-
-  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return Object.entries(getCookies()).map(([name, value]) => ({ name, value }))
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          // Keep Supabase's cookie options intact. In particular, do not force
-          // HttpOnly here: the browser Supabase client must be able to share
-          // the same SSR session cookie after a server-side login.
-          setCookie(name, value, options)
-        })
-      },
-    },
-  })
-}
+import { getSupabaseServerClient } from './lib/supabase.server'
 
 export const getAuthSession = createServerFn({ method: 'GET' }).handler(async () => {
   const supabase = getSupabaseServerClient()

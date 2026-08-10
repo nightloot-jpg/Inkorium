@@ -1,4 +1,4 @@
-import { createRootRouteWithContext, HeadContent, Outlet, Scripts, useRouter } from '@tanstack/react-router';
+import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
 import appCss from '../styles/app.css?url';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
@@ -35,7 +35,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   }),
 
   component: () => {
-    const router = useRouter();
     const setUser = useAuthStore((state) => state.setUser);
     const { auth } = Route.useRouteContext();
 
@@ -46,19 +45,20 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     }, [auth.user]);
 
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            // For purely client-side session changes (like token refresh)
-            // we can sync to store, and we should also invalidate router to keep context updated.
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (_event, session) => {
+            // Only sync the client-side store. The router context is the
+            // authoritative source (populated by __root.beforeLoad) and is
+            // revalidated explicitly by login/register/logout flows. Calling
+            // router.invalidate() here was the source of hydration mismatch
+            // #418 because the re-render landed mid-transition and produced
+            // a different `auth.user` between SSR markup and client paint.
             setUser(session?.user ?? null);
-
-            // Invalidate router context on auth changes if needed
-            if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-               await router.invalidate();
-            }
-        });
+          }
+        );
 
         return () => subscription.unsubscribe();
-    }, [setUser, router]);
+    }, [setUser]);
 
     return (
       <QueryClientProvider client={queryClient}>
