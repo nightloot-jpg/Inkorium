@@ -39,7 +39,7 @@
     "react-intersection-observer": "^11.0.0",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.1.18",
-    "zod": "^3.23.8",
+    "zod": "^3.25.76",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
@@ -52,7 +52,6 @@
     "nitro": "npm:nitro-nightly@latest",
     "supabase": "^2.113.0",
     "typescript": "^6.0.2",
-    "vinxi": "^0.5.11",
     "vite": "^8.2.1"
   },
   "pnpm": {
