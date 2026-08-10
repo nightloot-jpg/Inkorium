@@ -1,39 +1,24 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { feedService } from '../services/feed.service';
-import { useEffect } from 'react';
-import { supabase } from '../../../lib/supabase';
+import { useRealtime } from '../../../lib/realtime/useRealtime';
 
 export const useFeed = () => {
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const postsSubscription = supabase
-      .channel('public:posts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['feed'] });
-      })
-      .subscribe();
+  useRealtime({
+    table: 'posts',
+    onEvent: () => queryClient.invalidateQueries({ queryKey: ['feed'] }),
+  });
 
-    const commentsSubscription = supabase
-      .channel('public:comments')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['feed'] });
-      })
-      .subscribe();
+  useRealtime({
+    table: 'comments',
+    onEvent: () => queryClient.invalidateQueries({ queryKey: ['feed'] }),
+  });
 
-    const likesSubscription = supabase
-      .channel('public:likes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['feed'] });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(postsSubscription);
-      supabase.removeChannel(commentsSubscription);
-      supabase.removeChannel(likesSubscription);
-    };
-  }, [queryClient]);
+  useRealtime({
+    table: 'likes',
+    onEvent: () => queryClient.invalidateQueries({ queryKey: ['feed'] }),
+  });
 
   const feedQuery = useInfiniteQuery({
     queryKey: ['feed'],

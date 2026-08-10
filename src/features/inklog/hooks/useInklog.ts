@@ -1,23 +1,14 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inklogService } from '../services/inklog.service';
-import { useEffect } from 'react';
-import { supabase } from '../../../lib/supabase';
+import { useRealtime } from '../../../lib/realtime/useRealtime';
 
 export const useInklog = () => {
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const subscription = supabase
-      .channel('public:inklogs')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inklogs' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['inklogs'] });
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, [queryClient]);
+  useRealtime({
+    table: 'inklogs',
+    onEvent: () => queryClient.invalidateQueries({ queryKey: ['inklogs'] }),
+  });
 
   const inklogQuery = useInfiniteQuery({
     queryKey: ['inklogs'],
