@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Camera, Video, StickyNote, BarChart3, Link2, MoreHorizontal, X, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../../stores/authStore';
 

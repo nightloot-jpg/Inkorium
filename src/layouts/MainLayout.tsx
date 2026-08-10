@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { Home, Users, MessageSquare, Bell, Calendar, Image as ImageIcon, Music, Gamepad2, Settings, LogOut, Search, StickyNote } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';

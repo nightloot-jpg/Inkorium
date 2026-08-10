@@ -1,11 +1,11 @@
-import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
+import { createRootRouteWithContext, HeadContent, Outlet, Scripts, useRouter } from '@tanstack/react-router';
 import appCss from '../styles/app.css?url';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { getAuthSession } from '../auth';
-import { useAuthStore } from '../stores/authStore';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../stores/authStore';
 
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -35,24 +35,30 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   }),
 
   component: () => {
-    const { auth } = Route.useRouteContext();
+    const router = useRouter();
     const setUser = useAuthStore((state) => state.setUser);
+    const { auth } = Route.useRouteContext();
 
-    // Using useRef to ensure it runs only once per instance immediately without triggering a re-render warning
-    const isInitialized = useRef(false);
-    if (!isInitialized.current) {
-        // We mutate the store state synchronously before children render
+    // Sync context to Zustand if needed, but not during render.
+    // Auth context from SSR is the authoritative source.
+    useEffect(() => {
         useAuthStore.setState({ user: auth.user, isAuthenticated: !!auth.user });
-        isInitialized.current = true;
-    }
+    }, [auth.user]);
 
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            // For purely client-side session changes (like token refresh)
+            // we can sync to store, and we should also invalidate router to keep context updated.
             setUser(session?.user ?? null);
+
+            // Invalidate router context on auth changes if needed
+            if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+               await router.invalidate();
+            }
         });
 
         return () => subscription.unsubscribe();
-    }, [setUser]);
+    }, [setUser, router]);
 
     return (
       <QueryClientProvider client={queryClient}>

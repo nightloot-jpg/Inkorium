@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Heart, MessageCircle } from 'lucide-react';
