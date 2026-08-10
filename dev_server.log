@@ -3,7 +3,15 @@
 > vite dev --port 3000
 
 
-  VITE v8.2.1  ready in 1379 ms
+  VITE v8.2.1  ready in 1567 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: use --host to expose
+12:12:50 AM [vite] (client) hmr update /src/styles/app.css?direct, /src/routes/_protected.tsx
+12:12:50 AM [vite] (ssr) page reload src/routes/_protected.tsx
+12:12:50 AM [vite] (client) hmr update /src/styles/app.css?direct, /src/routes/index.tsx
+12:12:50 AM [vite] (ssr) page reload src/routes/index.tsx
+12:30:07 AM [vite] (client) page reload src/routeTree.gen.ts
+12:30:07 AM [vite] (ssr) page reload src/routeTree.gen.ts
+12:30:07 AM [vite] (client) page reload src/routeTree.gen.ts
+12:30:07 AM [vite] (ssr) page reload src/routeTree.gen.ts

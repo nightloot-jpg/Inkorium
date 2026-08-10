@@ -33,12 +33,12 @@ export const useResetPassword = () => {
 }
 
 export const useLogout = () => {
-  const logout = useAuthStore((state) => state.logout);
+  const signOut = useAuthStore((state) => state.signOut);
 
   return useMutation({
-    mutationFn: authService.logout,
+    mutationFn: authService.signOut,
     onSuccess: () => {
-      logout();
+      signOut();
     },
   });
 };

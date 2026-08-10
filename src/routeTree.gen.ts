@@ -15,11 +15,16 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as ProtectedEventsRouteImport } from './routes/_protected.events'
 import { Route as ProtectedFeedRouteImport } from './routes/_protected.feed'
 import { Route as ProtectedFriendsRouteImport } from './routes/_protected.friends'
+import { Route as ProtectedGamesRouteImport } from './routes/_protected.games'
 import { Route as ProtectedGamingRouteImport } from './routes/_protected.gaming'
 import { Route as ProtectedGroupsRouteImport } from './routes/_protected.groups'
+import { Route as ProtectedInklogRouteImport } from './routes/_protected.inklog'
+import { Route as ProtectedListsRouteImport } from './routes/_protected.lists'
 import { Route as ProtectedMarketplaceRouteImport } from './routes/_protected.marketplace'
 import { Route as ProtectedMemoriesRouteImport } from './routes/_protected.memories'
 import { Route as ProtectedMessagesRouteImport } from './routes/_protected.messages'
+import { Route as ProtectedMusicRouteImport } from './routes/_protected.music'
+import { Route as ProtectedNotesRouteImport } from './routes/_protected.notes'
 import { Route as ProtectedNotificationsRouteImport } from './routes/_protected.notifications'
 import { Route as ProtectedPhotosRouteImport } from './routes/_protected.photos'
 import { Route as ProtectedProfileRouteImport } from './routes/_protected.profile'
@@ -69,6 +74,11 @@ const ProtectedFriendsRoute = ProtectedFriendsRouteImport.update({
   path: '/friends',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedGamesRoute = ProtectedGamesRouteImport.update({
+  id: '/games',
+  path: '/games',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const ProtectedGamingRoute = ProtectedGamingRouteImport.update({
   id: '/gaming',
   path: '/gaming',
@@ -77,6 +87,16 @@ const ProtectedGamingRoute = ProtectedGamingRouteImport.update({
 const ProtectedGroupsRoute = ProtectedGroupsRouteImport.update({
   id: '/groups',
   path: '/groups',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedInklogRoute = ProtectedInklogRouteImport.update({
+  id: '/inklog',
+  path: '/inklog',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedListsRoute = ProtectedListsRouteImport.update({
+  id: '/lists',
+  path: '/lists',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedMarketplaceRoute = ProtectedMarketplaceRouteImport.update({
@@ -92,6 +112,16 @@ const ProtectedMemoriesRoute = ProtectedMemoriesRouteImport.update({
 const ProtectedMessagesRoute = ProtectedMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedMusicRoute = ProtectedMusicRouteImport.update({
+  id: '/music',
+  path: '/music',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedNotesRoute = ProtectedNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedNotificationsRoute = ProtectedNotificationsRouteImport.update({
@@ -201,11 +231,16 @@ export interface FileRoutesByFullPath {
   '/events': typeof ProtectedEventsRouteWithChildren
   '/feed': typeof ProtectedFeedRoute
   '/friends': typeof ProtectedFriendsRoute
+  '/games': typeof ProtectedGamesRoute
   '/gaming': typeof ProtectedGamingRoute
   '/groups': typeof ProtectedGroupsRouteWithChildren
+  '/inklog': typeof ProtectedInklogRoute
+  '/lists': typeof ProtectedListsRoute
   '/marketplace': typeof ProtectedMarketplaceRoute
   '/memories': typeof ProtectedMemoriesRoute
   '/messages': typeof ProtectedMessagesRouteWithChildren
+  '/music': typeof ProtectedMusicRoute
+  '/notes': typeof ProtectedNotesRoute
   '/notifications': typeof ProtectedNotificationsRoute
   '/photos': typeof ProtectedPhotosRoute
   '/profile': typeof ProtectedProfileRouteWithChildren
@@ -232,11 +267,16 @@ export interface FileRoutesByTo {
   '/events': typeof ProtectedEventsRouteWithChildren
   '/feed': typeof ProtectedFeedRoute
   '/friends': typeof ProtectedFriendsRoute
+  '/games': typeof ProtectedGamesRoute
   '/gaming': typeof ProtectedGamingRoute
   '/groups': typeof ProtectedGroupsRouteWithChildren
+  '/inklog': typeof ProtectedInklogRoute
+  '/lists': typeof ProtectedListsRoute
   '/marketplace': typeof ProtectedMarketplaceRoute
   '/memories': typeof ProtectedMemoriesRoute
   '/messages': typeof ProtectedMessagesRouteWithChildren
+  '/music': typeof ProtectedMusicRoute
+  '/notes': typeof ProtectedNotesRoute
   '/notifications': typeof ProtectedNotificationsRoute
   '/photos': typeof ProtectedPhotosRoute
   '/profile': typeof ProtectedProfileRouteWithChildren
@@ -266,11 +306,16 @@ export interface FileRoutesById {
   '/_protected/events': typeof ProtectedEventsRouteWithChildren
   '/_protected/feed': typeof ProtectedFeedRoute
   '/_protected/friends': typeof ProtectedFriendsRoute
+  '/_protected/games': typeof ProtectedGamesRoute
   '/_protected/gaming': typeof ProtectedGamingRoute
   '/_protected/groups': typeof ProtectedGroupsRouteWithChildren
+  '/_protected/inklog': typeof ProtectedInklogRoute
+  '/_protected/lists': typeof ProtectedListsRoute
   '/_protected/marketplace': typeof ProtectedMarketplaceRoute
   '/_protected/memories': typeof ProtectedMemoriesRoute
   '/_protected/messages': typeof ProtectedMessagesRouteWithChildren
+  '/_protected/music': typeof ProtectedMusicRoute
+  '/_protected/notes': typeof ProtectedNotesRoute
   '/_protected/notifications': typeof ProtectedNotificationsRoute
   '/_protected/photos': typeof ProtectedPhotosRoute
   '/_protected/profile': typeof ProtectedProfileRouteWithChildren
@@ -299,11 +344,16 @@ export interface FileRouteTypes {
     | '/events'
     | '/feed'
     | '/friends'
+    | '/games'
     | '/gaming'
     | '/groups'
+    | '/inklog'
+    | '/lists'
     | '/marketplace'
     | '/memories'
     | '/messages'
+    | '/music'
+    | '/notes'
     | '/notifications'
     | '/photos'
     | '/profile'
@@ -330,11 +380,16 @@ export interface FileRouteTypes {
     | '/events'
     | '/feed'
     | '/friends'
+    | '/games'
     | '/gaming'
     | '/groups'
+    | '/inklog'
+    | '/lists'
     | '/marketplace'
     | '/memories'
     | '/messages'
+    | '/music'
+    | '/notes'
     | '/notifications'
     | '/photos'
     | '/profile'
@@ -363,11 +418,16 @@ export interface FileRouteTypes {
     | '/_protected/events'
     | '/_protected/feed'
     | '/_protected/friends'
+    | '/_protected/games'
     | '/_protected/gaming'
     | '/_protected/groups'
+    | '/_protected/inklog'
+    | '/_protected/lists'
     | '/_protected/marketplace'
     | '/_protected/memories'
     | '/_protected/messages'
+    | '/_protected/music'
+    | '/_protected/notes'
     | '/_protected/notifications'
     | '/_protected/photos'
     | '/_protected/profile'
@@ -440,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedFriendsRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/games': {
+      id: '/_protected/games'
+      path: '/games'
+      fullPath: '/games'
+      preLoaderRoute: typeof ProtectedGamesRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/gaming': {
       id: '/_protected/gaming'
       path: '/gaming'
@@ -452,6 +519,20 @@ declare module '@tanstack/react-router' {
       path: '/groups'
       fullPath: '/groups'
       preLoaderRoute: typeof ProtectedGroupsRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/inklog': {
+      id: '/_protected/inklog'
+      path: '/inklog'
+      fullPath: '/inklog'
+      preLoaderRoute: typeof ProtectedInklogRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/lists': {
+      id: '/_protected/lists'
+      path: '/lists'
+      fullPath: '/lists'
+      preLoaderRoute: typeof ProtectedListsRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/marketplace': {
@@ -473,6 +554,20 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/messages'
       preLoaderRoute: typeof ProtectedMessagesRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/music': {
+      id: '/_protected/music'
+      path: '/music'
+      fullPath: '/music'
+      preLoaderRoute: typeof ProtectedMusicRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/notes': {
+      id: '/_protected/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof ProtectedNotesRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/notifications': {
@@ -668,11 +763,16 @@ interface ProtectedRouteChildren {
   ProtectedEventsRoute: typeof ProtectedEventsRouteWithChildren
   ProtectedFeedRoute: typeof ProtectedFeedRoute
   ProtectedFriendsRoute: typeof ProtectedFriendsRoute
+  ProtectedGamesRoute: typeof ProtectedGamesRoute
   ProtectedGamingRoute: typeof ProtectedGamingRoute
   ProtectedGroupsRoute: typeof ProtectedGroupsRouteWithChildren
+  ProtectedInklogRoute: typeof ProtectedInklogRoute
+  ProtectedListsRoute: typeof ProtectedListsRoute
   ProtectedMarketplaceRoute: typeof ProtectedMarketplaceRoute
   ProtectedMemoriesRoute: typeof ProtectedMemoriesRoute
   ProtectedMessagesRoute: typeof ProtectedMessagesRouteWithChildren
+  ProtectedMusicRoute: typeof ProtectedMusicRoute
+  ProtectedNotesRoute: typeof ProtectedNotesRoute
   ProtectedNotificationsRoute: typeof ProtectedNotificationsRoute
   ProtectedPhotosRoute: typeof ProtectedPhotosRoute
   ProtectedProfileRoute: typeof ProtectedProfileRouteWithChildren
@@ -687,11 +787,16 @@ const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedEventsRoute: ProtectedEventsRouteWithChildren,
   ProtectedFeedRoute: ProtectedFeedRoute,
   ProtectedFriendsRoute: ProtectedFriendsRoute,
+  ProtectedGamesRoute: ProtectedGamesRoute,
   ProtectedGamingRoute: ProtectedGamingRoute,
   ProtectedGroupsRoute: ProtectedGroupsRouteWithChildren,
+  ProtectedInklogRoute: ProtectedInklogRoute,
+  ProtectedListsRoute: ProtectedListsRoute,
   ProtectedMarketplaceRoute: ProtectedMarketplaceRoute,
   ProtectedMemoriesRoute: ProtectedMemoriesRoute,
   ProtectedMessagesRoute: ProtectedMessagesRouteWithChildren,
+  ProtectedMusicRoute: ProtectedMusicRoute,
+  ProtectedNotesRoute: ProtectedNotesRoute,
   ProtectedNotificationsRoute: ProtectedNotificationsRoute,
   ProtectedPhotosRoute: ProtectedPhotosRoute,
   ProtectedProfileRoute: ProtectedProfileRouteWithChildren,
