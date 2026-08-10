@@ -1,9 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Camera, Video, StickyNote, BarChart3, Link2, MoreHorizontal, X, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../../stores/authStore';
 
-export function PostComposer({ onSubmit, isLoading }: { onSubmit: (content: string, type: string, photos: File[]) => void, isLoading: boolean }) {
-  const { user } = useAuthStore();
+export function PostComposer({
+ onSubmit, isLoading }: { onSubmit: (content: string, type: string, photos: File[]) => void, isLoading: boolean }) {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
+
+  const user = useAuthStore(state => state.user);
   const [content, setContent] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,10 +33,10 @@ export function PostComposer({ onSubmit, isLoading }: { onSubmit: (content: stri
   return (
     <section className="overflow-hidden rounded border border-slate-200 bg-white shadow-none mb-4">
       <div className="flex gap-3 p-4 pb-3">
-        <img className="h-10 w-10 rounded-sm object-cover" src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'User'}`} alt={user?.user_metadata?.full_name || 'User'} />
+        <img className="h-10 w-10 rounded-sm object-cover" src={(isMounted ? user?.user_metadata : null)?.avatar_url || `https://ui-avatars.com/api/?name=${(isMounted ? user?.user_metadata : null)?.full_name || 'User'}`} alt={(isMounted ? user?.user_metadata : null)?.full_name || 'User'} />
         <textarea
           className="flex-1 resize-none rounded-sm border border-slate-200 p-3 text-sm text-slate-700 shadow-none outline-none transition focus:border-[#233B5D] focus:ring-1 focus:ring-[#233B5D]"
-          placeholder={`¿Qué estás pensando, ${user?.user_metadata?.full_name?.split(' ')[0] || ''}?`}
+          placeholder={`¿Qué estás pensando, ${(isMounted ? user?.user_metadata : null)?.full_name?.split(' ')[0] || ''}?`}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={3}

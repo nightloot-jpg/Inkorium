@@ -1,9 +1,13 @@
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Home, Users, MessageSquare, Bell, Calendar, Image as ImageIcon, Music, Gamepad2, Settings, LogOut, Search, StickyNote } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const { user, signOut } = useAuthStore();
+  const user = useAuthStore(state => state.user);
+  const signOut = useAuthStore(state => state.signOut);
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -29,13 +33,13 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="flex items-center gap-4">
-          <Link to="/profile/$username" params={{ username: user?.user_metadata?.username || 'me' }} className="hidden md:flex items-center gap-2 rounded-sm hover:bg-white/10 px-3 py-1.5 transition text-white">
+          <Link to="/profile/$username" params={{ username: (isMounted ? user?.user_metadata : null)?.username || 'me' }} className="hidden md:flex items-center gap-2 rounded-sm hover:bg-white/10 px-3 py-1.5 transition text-white">
             <img
-              src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'User'}`}
+              src={(isMounted ? user?.user_metadata : null)?.avatar_url || `https://ui-avatars.com/api/?name=${(isMounted ? user?.user_metadata : null)?.full_name || 'User'}`}
               alt="Profile"
               className="h-8 w-8 rounded-full"
             />
-            <span className="text-sm font-medium">{user?.user_metadata?.full_name?.split(' ')[0] || 'Perfil'}</span>
+            <span className="text-sm font-medium">{(isMounted ? user?.user_metadata : null)?.full_name?.split(' ')[0] || 'Perfil'}</span>
           </Link>
           <button onClick={handleSignOut} className="rounded-sm p-2 text-white hover:bg-white/10 transition" aria-label="Cerrar sesión">
             <LogOut size={20} />
@@ -47,7 +51,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         <aside className="hidden w-[280px] shrink-0 lg:block">
           <nav className="sticky top-24 space-y-1">
             <NavItem to="/feed" icon={Home} label="Inicio" />
-            <NavItem to="/profile/$username" params={{ username: user?.user_metadata?.username || 'me' }} icon={Users} label="Mi Perfil" />
+            <NavItem to="/profile/$username" params={{ username: (isMounted ? user?.user_metadata : null)?.username || 'me' }} icon={Users} label="Mi Perfil" />
             <NavItem to="/friends" icon={Users} label="Amigos" />
             <NavItem to="/messages" icon={MessageSquare} label="Mensajes" badge="3" />
             <NavItem to="/notifications" icon={Bell} label="Notificaciones" badge="5" />

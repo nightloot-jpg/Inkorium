@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Heart, MessageCircle, Share2, MoreHorizontal, Edit, Trash, Check, X } from 'lucide-react';
@@ -14,16 +14,20 @@ interface PostCardProps {
   onEdit: (postId: string, content: string) => void;
 }
 
-export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdit }: PostCardProps) {
-  const { user } = useAuthStore();
+export function PostCard({
+ post, onLike, onUnlike, onAddComment, onDelete, onEdit }: PostCardProps) {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
+
+  const user = useAuthStore(state => state.user);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || '');
   const [showComments, setShowComments] = useState(false);
   const [commentContent, setCommentContent] = useState('');
   const [showOptions, setShowOptions] = useState(false);
 
-  const isLiked = post.likes?.some(like => like.user_id === user?.id);
-  const isOwner = post.user_id === user?.id;
+  const isLiked = post.likes?.some(like => like.user_id === (isMounted ? user?.id : null));
+  const isOwner = post.user_id === (isMounted ? user?.id : null);
 
   const handleLikeToggle = () => {
     if (isLiked) {
@@ -54,7 +58,7 @@ export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdi
         <div className="flex-1">
           <p className="text-sm font-bold">{post.profiles?.full_name}</p>
           <p className="text-xs text-slate-500">
-            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })} · 🌐
+            {isMounted ? formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es }) : "hace un momento"} · 🌐
           </p>
         </div>
 
@@ -156,7 +160,7 @@ export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdi
             ))}
           </div>
           <form onSubmit={handleCommentSubmit} className="flex gap-2">
-            <img className="h-8 w-8 rounded-full object-cover" src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'User'}`} alt="" />
+            <img className="h-8 w-8 rounded-full object-cover" src={(isMounted ? user?.user_metadata : null)?.avatar_url || `https://ui-avatars.com/api/?name=${(isMounted ? user?.user_metadata : null)?.full_name || 'User'}`} alt="" />
             <input
               type="text"
               value={commentContent}

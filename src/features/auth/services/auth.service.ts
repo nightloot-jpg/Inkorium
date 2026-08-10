@@ -26,7 +26,7 @@ export const authService = {
 
   resetPassword: async ({ email }: any) => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/update-password`,
+      redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/update-password` : 'https://www.inkorium.es/update-password',
     });
     if (error) throw error;
     return data;
