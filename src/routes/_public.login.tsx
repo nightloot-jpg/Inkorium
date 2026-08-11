@@ -71,64 +71,77 @@ function Login() {
   };
 
   return (
-    <div className="ik-login-card">
-      <h1>{t('auth.welcomeBack')}</h1>
-
-      {authError && <div className="ik-login-error">{authError}</div>}
-
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="ik-field">
-          <label htmlFor="email">{t('auth.email')}</label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder={t('auth.emailPlaceholder')}
-            disabled={loginMutation.isPending}
-            {...register('email')}
-          />
-          {errors.email && (
-            <p className="ik-field-error">{errors.email.message}</p>
-          )}
+    <div className="ik-login-page">
+      <div className="ik-login-wrapper">
+        <div className="ik-login-header">
+          <img src="/logo.png" alt="Inkorium Logo" />
+          <h1>INKORIUM</h1>
         </div>
 
-        <div className="ik-field">
-          <label htmlFor="password">{t('auth.password')}</label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            placeholder="••••••••••••"
-            disabled={loginMutation.isPending}
-            {...register('password')}
-          />
-          {errors.password && (
-            <p className="ik-field-error">{errors.password.message}</p>
-          )}
+        <div className="ik-login-card">
+          {authError && <div className="ik-login-error">{authError}</div>}
+
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="ik-field">
+              <label htmlFor="email">E-mail</label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                disabled={loginMutation.isPending}
+                {...register('email')}
+              />
+              {errors.email && (
+                <p className="ik-field-error">{errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="ik-field">
+              <label htmlFor="password">Contraseña</label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                disabled={loginMutation.isPending}
+                {...register('password')}
+              />
+              {errors.password && (
+                <p className="ik-field-error">{errors.password.message}</p>
+              )}
+            </div>
+
+            <div className="ik-login-row">
+              <label className="ik-remember-label" htmlFor="remember-me">
+                <input
+                  id="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={loginMutation.isPending}
+                />
+                {t('auth.rememberMe')}
+              </label>
+            </div>
+
+            <button type="submit" disabled={loginMutation.isPending}>
+              {loginMutation.isPending ? t('common.loading') : t('auth.login')}
+            </button>
+
+            <div className="ik-login-register">
+              <Link to="/forgot-password">¿Tienes problemas para entrar? ¿Has olvidado tu contraseña?</Link>
+              <br/><br/>
+              {t('auth.dontHaveAccount')}{' '}
+              <Link to="/register">{t('auth.register')}</Link>
+            </div>
+          </form>
         </div>
 
-        <div className="ik-login-row">
-          <label className="ik-remember-label" htmlFor="remember-me">
-            <input
-              id="remember-me"
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              disabled={loginMutation.isPending}
-            />
-            {t('auth.rememberMe')}
-          </label>
-          <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
+        <div className="ik-login-footer">
+          <span>Blog</span>
+          <span>Empleo</span>
+          <span>Información Legal</span>
+          <span>© Inkorium 2024</span>
         </div>
-
-        <button type="submit" disabled={loginMutation.isPending}>
-          {loginMutation.isPending ? t('common.loading') : t('auth.login')}
-        </button>
-      </form>
-
-      <div className="ik-login-register">
-        {t('auth.dontHaveAccount')}{' '}
-        <Link to="/register">{t('auth.register')}</Link>
       </div>
     </div>
   );
