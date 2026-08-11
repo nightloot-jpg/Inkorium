@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import type { Database } from './types/supabase'
 import { getSupabaseServerClient } from './lib/supabase.server'
 
 export const getAuthSession = createServerFn({ method: 'GET' }).handler(async () => {

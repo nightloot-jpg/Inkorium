@@ -1,19 +1,20 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getSupabaseServerClient } from '../../../lib/supabase.server'
 
 async function requireUser() {
-  const supabase = getSupabaseServerClient()
-  const { data, error } = await supabase.auth.getUser()
+  const { getSupabaseServerClient } = await import('../../../lib/supabase.server');
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase.auth.getUser();
 
-  if (error || !data.user) throw new Error('Not authenticated')
+  if (error || !data.user) throw new Error('Not authenticated');
 
-  return { supabase, user: data.user }
+  return { supabase, user: data.user };
 }
 
 export const getPostsFn = createServerFn({ method: 'GET' })
   .validator((data: { pageParam?: number }) => data)
   .handler(async ({ data }) => {
-    const supabase = getSupabaseServerClient()
+    const { getSupabaseServerClient } = await import('../../../lib/supabase.server');
+    const supabase = getSupabaseServerClient();
     const limit = 10
     const pageParam = data.pageParam ?? 0
     const from = pageParam * limit
