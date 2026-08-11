@@ -3,10 +3,7 @@ import { PostComposer, FeedList } from '../features/feed/components';
 import { useFeed } from '../features/feed/hooks/useFeed';
 
 export const Route = createFileRoute('/_protected/feed')({
-  // The feed is a dynamic, authenticated client surface. Keep the protected
-  // parent route SSR/auth guard, but do not render this route component into
-  // the initial server HTML. This removes the Feed tree from the SSR/client
-  // hydration comparison while preserving the normal client navigation flow.
+  // Keep the protected route/auth guard, but let the feed data/UI hydrate on the client.
   ssr: 'data-only',
   component: Feed,
 });
@@ -14,13 +11,12 @@ export const Route = createFileRoute('/_protected/feed')({
 function Feed() {
   const { createPost } = useFeed();
 
-  const handleCreatePost = (content: string, type: string, photos: File[]) => {
-    createPost.mutate({ content, type, photos });
-  };
-
   return (
-    <div className="mx-auto w-full space-y-4 pt-4 px-2 sm:px-0">
-      <PostComposer onSubmit={handleCreatePost} isLoading={createPost.isPending} />
+    <div className="w-full space-y-4">
+      <PostComposer
+        onSubmit={(content, type, photos) => createPost.mutate({ content, type, photos })}
+        isLoading={createPost.isPending}
+      />
       <FeedList />
     </div>
   );
