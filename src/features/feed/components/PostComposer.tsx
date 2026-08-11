@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { BarChart3, Camera, FileText, Globe2, Link2, Loader2, MoreHorizontal, Music2, Video, X } from 'lucide-react';
+import { BarChart3, Camera, FileText, Globe2, Loader2, MoreHorizontal, Music2, Video, X } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 
 export function PostComposer({
@@ -24,22 +24,22 @@ export function PostComposer({
   };
 
   return (
-    <section className="overflow-hidden rounded-[3px] border border-[#d9e1ea] bg-white shadow-[0_1px_4px_rgba(27,48,76,.06)]">
+    <section className="overflow-hidden rounded border border-slate-200 bg-white shadow-sm">
       <div className="flex items-start gap-4 p-5">
-        <img src={avatar} alt={name} className="h-12 w-12 shrink-0 rounded-full object-cover" />
+        <img src={avatar} alt={name} className="h-14 w-14 shrink-0 rounded-full object-cover" />
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={2}
           placeholder={`¿Qué estás pensando, ${name}?`}
-          className="min-h-[60px] flex-1 resize-none rounded-[2px] border border-[#d7dfe8] px-4 py-3 text-[15px] text-[#26364d] outline-none placeholder:text-[#8795a8] focus:border-[#77a2d5]"
+          className="h-16 flex-1 resize-none rounded border border-slate-300 px-4 py-3 text-base text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-400"
         />
       </div>
 
       {photos.length > 0 && (
         <div className="grid grid-cols-4 gap-2 px-5 pb-4">
           {photos.map((photo, index) => (
-            <div key={`${photo.name}-${index}`} className="relative aspect-square overflow-hidden bg-[#eef2f6]">
+            <div key={`${photo.name}-${index}`} className="relative aspect-square overflow-hidden bg-slate-100">
               <img src={URL.createObjectURL(photo)} alt="" className="h-full w-full object-cover" />
               <button type="button" onClick={() => setPhotos((items) => items.filter((_, i) => i !== index))} className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white"><X size={13} /></button>
             </div>
@@ -47,7 +47,7 @@ export function PostComposer({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center border-t border-[#edf0f4] px-3">
+      <div className="flex flex-wrap items-center border-t border-slate-100 px-3">
         <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files && setPhotos((items) => [...items, ...Array.from(e.target.files!)].slice(0, 4))} />
         <Action icon={<FileText size={18} />} label="Estado" />
         <Action icon={<Camera size={18} />} label="Foto" onClick={() => inputRef.current?.click()} />
@@ -58,9 +58,9 @@ export function PostComposer({
         <Action icon={<MoreHorizontal size={18} />} label="Más" />
       </div>
 
-      <div className="flex items-center justify-end gap-4 border-t border-[#edf0f4] px-5 py-3">
-        <button type="button" className="flex items-center gap-2 text-sm font-medium text-[#64758b] hover:text-[#285b98]"><Globe2 size={17} />Público<MoreHorizontal size={14} /></button>
-        <button type="button" onClick={submit} disabled={isLoading || (!content.trim() && photos.length === 0)} className="min-w-[112px] rounded-[3px] bg-[#6c9fe3] px-7 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5e91d5] disabled:cursor-not-allowed disabled:opacity-45">
+      <div className="flex items-center justify-end gap-4 border-t border-slate-100 px-5 py-3">
+        <button type="button" className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-700"><Globe2 size={17} />Público<MoreHorizontal size={14} /></button>
+        <button type="button" onClick={submit} disabled={isLoading || (!content.trim() && photos.length === 0)} className="min-w-28 rounded bg-blue-500 px-7 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-45">
           {isLoading ? <Loader2 size={18} className="mx-auto animate-spin" /> : 'Publicar'}
         </button>
       </div>
@@ -69,5 +69,5 @@ export function PostComposer({
 }
 
 function Action({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
-  return <button type="button" onClick={onClick} className="flex items-center gap-2 px-3.5 py-3.5 text-sm font-medium text-[#33445b] hover:bg-[#f5f7fa]">{icon}{label}</button>;
+  return <button type="button" onClick={onClick} className="flex items-center gap-2 px-3.5 py-3.5 text-sm font-medium text-slate-700 hover:bg-slate-50">{icon}{label}</button>;
 }
