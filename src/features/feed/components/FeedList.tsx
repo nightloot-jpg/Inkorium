@@ -61,7 +61,7 @@ export function FeedList() {
 
                     <div className="bg-[#151515] text-white">
                       <div className="flex min-h-[112px] items-center">
-                        <div className="grid h-28 w-28 shrink-0 place-items-center overflow-hidden bg-[#272727]">
+                        <div className="relative grid h-28 w-28 shrink-0 place-items-center overflow-hidden bg-[#272727]">
                           <img src="https://picsum.photos/seed/inkorium-music/240/240" alt="Portada musical" className="h-full w-full object-cover opacity-90" />
                           <PlayCircle size={48} className="absolute text-white drop-shadow-lg" />
                         </div>
