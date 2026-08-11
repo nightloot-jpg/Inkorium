@@ -1,5 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
-
+<<<<<<< SEARCH
+export const Route = createFileRoute('/_protected/notifications')({
+  component: () => <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">notifications page</div>,
+});
+=======
 export const Route = createFileRoute('/_protected/notifications')({
   component: () => (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -21,3 +24,4 @@ export const Route = createFileRoute('/_protected/notifications')({
     </div>
   ),
 });
+>>>>>>> REPLACE
