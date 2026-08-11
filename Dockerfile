@@ -15,7 +15,6 @@ COPY . .
 # Ensure clean build state inside docker
 RUN rm -rf .output .vinxi .tanstack .nitro node_modules/.vite node_modules/.cache
 
-
 # Arguments passed by Coolify
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
@@ -36,22 +35,20 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Supabase server functions read these at runtime via process.env.
-# Build-stage ENV values do not carry across Docker stages, so redeclare the
-# Coolify build args and expose them in the production container as well.
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
-# Copy necessary files from the builder
+# Copy only what the production image needs
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/package-lock.json ./
 COPY --from=builder /app/.output ./.output
 
-# Install production dependencies only
-RUN npm install --legacy-peer-deps --omit=dev
+# Use the lockfile exactly in production. Do not run lifecycle scripts here:
+# the application is already fully built and the runtime does not need dev tooling.
+RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts
 
 EXPOSE 3000
 
-# Start the application
 CMD ["npm", "run", "start"]
