@@ -35,6 +35,14 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
+# Supabase server functions read these at runtime via process.env.
+# Build-stage ENV values do not carry across Docker stages, so redeclare the
+# Coolify build args and expose them in the production container as well.
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
 # Copy necessary files from the builder
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/package-lock.json ./

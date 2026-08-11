@@ -11,8 +11,14 @@ import type { Database } from '../types/supabase'
  * this client must never be imported from client code.
  */
 export function getSupabaseServerClient() {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || 'http://localhost:54321'
-  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'ey'
+  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'Supabase server configuration is missing: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be available at runtime.',
+    )
+  }
 
   return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
