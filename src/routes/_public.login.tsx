@@ -74,8 +74,8 @@ function Login() {
     <div className="ik-login-page">
       <div className="ik-login-wrapper">
         <div className="ik-login-header">
-          <img src="/logo.png" alt="Inkorium Logo" />
-          <h1>INKORIUM</h1>
+          <img src="/tuenti_inkorium_logo.svg" alt="Inkorium Logo" />
+          <h1>inkorium</h1>
         </div>
 
         <div className="ik-login-card">

@@ -45,18 +45,18 @@ body {
 }
 
 .ik-login-header img {
-  height: 50px;
-  margin-right: 15px;
+  height: 60px;
+  margin-right: 5px;
 }
 
 .ik-login-header h1 {
   margin: 0;
-  font-size: 48px;
-  font-weight: bold;
-  color: #ffffff;
-  letter-spacing: -2px;
-  font-family: "Arial Rounded MT Bold", Arial, sans-serif;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+  font-size: 56px;
+  font-weight: 800;
+  color: #005697;
+  letter-spacing: -3px;
+  font-family: "Arial Rounded MT Bold", "Helvetica Rounded", Arial, sans-serif;
+  text-shadow: none;
 }
 
 .ik-login-card {

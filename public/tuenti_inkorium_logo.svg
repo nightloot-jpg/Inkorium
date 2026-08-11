@@ -1,0 +1,20 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tuenti style bubble -->
+  <path d="M40 20 h100 c15 0 25 10 25 25 v90 c0 15 -10 25 -25 25 h-15 v20 c0 5 -8 8 -13 4 l-20 -24 h-52 c-15 0 -25 -10 -25 -25 v-90 c0 -15 10 -25 25 -25 z" fill="#ffffff" />
+
+  <!-- Inkorium mark: dot for i, k stem, k arms -->
+  <!-- Dark Blue: #005697 (approximating Tuenti blue) -->
+  <g fill="#005697">
+    <!-- Dot (i) -->
+    <circle cx="70" cy="65" r="12" />
+
+    <!-- K vertical stem -->
+    <rect x="58" y="85" width="24" height="60" rx="3" />
+
+    <!-- K top arm -->
+    <path d="M125 85 h-26 l-17 25 h26 z" />
+
+    <!-- K bottom arm -->
+    <path d="M125 145 h-26 l-20 -25 l12 -10 z" />
+  </g>
+</svg>
