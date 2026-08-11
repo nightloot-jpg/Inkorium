@@ -7,7 +7,7 @@ import {
   getPostsFn,
   likePostFn,
   unlikePostFn,
-} from './feed.server';
+} from './feed.functions';
 
 export const feedService = {
   getPosts: async ({ pageParam = 0 }: { pageParam?: number }) => {
