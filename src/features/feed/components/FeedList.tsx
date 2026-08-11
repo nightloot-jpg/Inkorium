@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MessageCircle, PlayCircle, Share2 } from 'lucide-react';
 import { PostCard } from './PostCard';
 import { useFeed } from '../hooks/useFeed';
 
@@ -16,34 +16,31 @@ export function FeedList() {
     unlikePost,
     addComment,
     deletePost,
-    editPost
+    editPost,
   } = useFeed();
 
   useEffect(() => {
-    if (inView && hasNextPage) {
-      fetchNextPage();
-    }
+    if (inView && hasNextPage) fetchNextPage();
   }, [inView, fetchNextPage, hasNextPage]);
 
   if (status === 'pending') {
-    return <div className="flex justify-center py-8"><Loader2 className="animate-spin text-[#233B5D]" /></div>;
+    return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#315f9f]" /></div>;
   }
 
   if (status === 'error') {
-    return <div className="text-center py-8 text-red-500">Error al cargar el feed.</div>;
+    return <div className="border border-[#d9e0e8] bg-white py-10 text-center text-red-500">Error al cargar el feed.</div>;
   }
 
   return (
     <div className="space-y-4">
-      {data.pages.map((page, i) => (
-        <div key={i} className="space-y-4">
+      {data.pages.map((page, pageIndex) => (
+        <div key={pageIndex} className="space-y-4">
           {page.data.map((post, postIndex) => {
-            // Mock a music player visually on the first post of the first page to match the reference
-            const isMockMusicPost = i === 0 && postIndex === 0;
+            const isFeaturedMusicPost = pageIndex === 0 && postIndex === 0;
 
             return (
               <div key={post.id}>
-                 <PostCard
+                <PostCard
                   post={post}
                   onLike={(id) => likePost.mutate(id)}
                   onUnlike={(id) => unlikePost.mutate(id)}
@@ -52,49 +49,36 @@ export function FeedList() {
                   onEdit={(id, content) => editPost.mutate({ postId: id, content })}
                 />
 
-                {isMockMusicPost && (
-                  <div className="overflow-hidden rounded border border-slate-200 bg-white shadow-none mb-4 -mt-2">
-                    <header className="flex items-center gap-3 px-4 pt-4 relative">
-                      <img className="h-12 w-12 rounded-sm object-cover border border-slate-200" src="https://i.pravatar.cc/150?img=5" alt="User" />
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-[#233B5D] hover:underline cursor-pointer">Carlos Ruiz</p>
-                        <p className="text-xs text-slate-500">hace 2 horas</p>
+                {isFeaturedMusicPost && (
+                  <article className="mt-[-1px] overflow-hidden border border-[#d9e0e8] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+                    <header className="flex items-center gap-3 px-5 py-4">
+                      <img src="https://i.pravatar.cc/150?img=5" alt="Carlos Ruiz" className="h-12 w-12 rounded-full border border-[#d9e0e8] object-cover" />
+                      <div>
+                        <p className="text-[15px] font-bold text-[#1e2e43]">Carlos Ruiz</p>
+                        <p className="text-xs text-[#8290a3]">hace 2 horas · 🌐</p>
                       </div>
                     </header>
-                    <div className="px-4 py-3 text-sm leading-6">
-                      <p>¡Qué temazo!</p>
-                    </div>
 
-                    <div className="px-4 pb-2">
-                      <div className="bg-[#181818] rounded flex p-3 gap-4 items-center">
-                         <img src="https://picsum.photos/100/100?random=1" alt="Album cover" className="w-16 h-16 rounded object-cover shadow-lg" />
-                         <div className="flex-1 text-white">
-                           <p className="font-bold text-sm">Canción de ejemplo</p>
-                           <p className="text-xs text-slate-400">Artista Desconocido</p>
-                           <div className="mt-2 w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                             <div className="bg-[#1DB954] w-1/3 h-full"></div>
-                           </div>
-                         </div>
-                         <button className="h-10 w-10 bg-white rounded-full flex items-center justify-center shrink-0 hover:scale-105 transition">
-                           <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-black border-b-8 border-b-transparent ml-1"></div>
-                         </button>
+                    <div className="bg-[#151515] text-white">
+                      <div className="flex min-h-[112px] items-center">
+                        <div className="relative grid h-28 w-28 shrink-0 place-items-center overflow-hidden bg-[#272727]">
+                          <img src="https://picsum.photos/seed/inkorium-music/240/240" alt="Portada musical" className="h-full w-full object-cover opacity-90" />
+                          <PlayCircle size={48} className="absolute text-white drop-shadow-lg" />
+                        </div>
+                        <div className="min-w-0 flex-1 px-6 py-4">
+                          <p className="truncate text-lg font-bold">MHR, EFY & SNEZ! - Hola</p>
+                          <p className="mt-1 text-sm text-[#a9a9a9]">MHR MUSIC</p>
+                        </div>
+                        <span className="self-start px-5 pt-4 text-sm font-semibold text-white">5:05</span>
                       </div>
                     </div>
 
-                    <div className="mx-4 mt-1 flex items-center gap-4 border-t border-slate-100 pt-3 pb-3 text-xs font-bold text-[#233B5D]">
-                      <button className="hover:underline flex items-center gap-1">
-                         Me gusta (12)
-                      </button>
-                      <span className="text-slate-300">•</span>
-                      <button className="hover:underline flex items-center gap-1">
-                        Comentar (3)
-                      </button>
-                      <span className="text-slate-300">•</span>
-                      <button className="hover:underline flex items-center gap-1">
-                        Compartir
-                      </button>
+                    <div className="grid grid-cols-3 border-t border-[#edf0f4] px-3 py-1">
+                      <button className="flex items-center justify-center gap-2 py-3 text-sm font-semibold text-[#7a8798] hover:bg-[#f5f7fa]"><span>♡</span> Me gusta</button>
+                      <button className="flex items-center justify-center gap-2 py-3 text-sm font-semibold text-[#7a8798] hover:bg-[#f5f7fa]"><MessageCircle size={17} /> Comentar</button>
+                      <button className="flex items-center justify-center gap-2 py-3 text-sm font-semibold text-[#7a8798] hover:bg-[#f5f7fa]"><Share2 size={17} /> Compartir</button>
                     </div>
-                  </div>
+                  </article>
                 )}
               </div>
             );
@@ -102,14 +86,8 @@ export function FeedList() {
         </div>
       ))}
 
-      <div ref={ref} className="py-4 text-center">
-        {isFetchingNextPage ? (
-          <Loader2 className="animate-spin mx-auto text-[#233B5D]" />
-        ) : hasNextPage ? (
-          <span className="text-sm text-slate-500">Cargando más...</span>
-        ) : (
-          <span className="text-sm text-slate-500">No hay más publicaciones</span>
-        )}
+      <div ref={ref} className="py-5 text-center">
+        {isFetchingNextPage ? <Loader2 className="mx-auto animate-spin text-[#315f9f]" /> : hasNextPage ? <span className="text-sm text-[#8290a3]">Cargando más...</span> : <span className="text-sm text-[#8290a3]">No hay más publicaciones</span>}
       </div>
     </div>
   );
