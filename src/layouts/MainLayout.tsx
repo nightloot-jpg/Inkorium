@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouter } from '@tanstack/react-router';
-import { Bell, CalendarDays, ChevronDown, Home, Image as ImageIcon, LogOut, Music2, Settings, Users, Video } from 'lucide-react';
+import { Bell, CalendarDays, ChevronDown, LogOut, Music2, Users } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useLogout } from '../features/auth/hooks/useAuth';
 
@@ -34,13 +34,13 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-slate-50 text-slate-800">
       <header className="h-14 bg-blue-800 text-white shadow-sm">
         <div className="mx-auto flex h-full w-full max-w-screen-2xl items-center px-4">
-          <Link to="/feed" className="flex h-full w-44 shrink-0 items-center gap-2">
+          <Link to="/friends" className="flex h-full w-44 shrink-0 items-center gap-2">
             <img src="/tuenti_inkorium_logo.svg" alt="Inkorium" style={{ width: 32, height: 32, display: 'block', objectFit: 'contain' }} />
             <span className="text-xl font-extrabold tracking-tight">inkorium</span>
           </Link>
 
           <nav className="hidden h-full md:flex">
-            <HeaderLink to="/feed" label="Inicio" active />
+            <HeaderLink to="/friends" label="Inicio" active />
             <HeaderLink to="/messages" label="Mensajes" badge="3" />
             <HeaderLink to="/friends" label="Personas" />
             <HeaderLink to="/events" label="Música" icon={<Music2 size={16} />} />
@@ -80,16 +80,16 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             </section>
 
             <section className="border border-slate-200 bg-white p-3">
-              <SideNavItem to="/feed" icon={<Home size={19} />} label="Novedades" active />
-              <SideNavItem to="/feed" icon={<ImageIcon size={19} />} label="Fotos" />
-              <SideNavItem to="/feed" icon={<Video size={19} />} label="Vídeos" />
+              <SideNavItem to="/friends" label="Novedades" active />
+              <SideNavItem to="/friends" label="Fotos" />
+              <SideNavItem to="/friends" label="Vídeos" />
               <SideNavItem to="/events" icon={<Music2 size={19} />} label="Música" />
               <SideNavItem to="/events" icon={<CalendarDays size={19} />} label="Eventos" />
               <SideNavItem to="/friends" icon={<Users size={19} />} label="Grupos" />
               <SideNavItem to="/friends" icon={<Users size={19} />} label="Páginas" />
-              <SideNavItem to="/feed" icon={<span className="inline-flex h-5 w-5 items-end justify-center gap-0.5"><i className="h-2 w-0.5 bg-current" /><i className="h-3.5 w-0.5 bg-current" /><i className="h-5 w-0.5 bg-current" /></span>} label="Encuestas" />
-              <SideNavItem to="/feed" icon={<span className="inline-flex h-5 w-5 items-center justify-center text-xl">♡</span>} label="Guardados" />
-              <SideNavItem to="/feed" icon={<Settings size={19} />} label="Configuración" />
+              <SideNavItem to="/friends" label="Encuestas" />
+              <SideNavItem to="/friends" label="Guardados" />
+              <SideNavItem to="/friends" label="Configuración" />
             </section>
 
             <section className="border border-slate-200 bg-white p-4">
@@ -122,12 +122,12 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function HeaderLink({ to, label, active = false, badge, icon }: { to: '/feed' | '/messages' | '/friends' | '/events'; label: string; active?: boolean; badge?: string; icon?: React.ReactNode }) {
+function HeaderLink({ to, label, active = false, badge, icon }: { to: '/friends' | '/messages' | '/events'; label: string; active?: boolean; badge?: string; icon?: React.ReactNode }) {
   return <Link to={to} className={`relative flex h-full items-center gap-2 px-4 text-sm font-bold ${active ? 'border-b-4 border-white bg-blue-700' : 'hover:bg-blue-700'}`}>{icon}{label}{badge && <span className="absolute right-1 top-1 rounded-full bg-red-500 px-1.5 text-[9px] leading-4">{badge}</span>}</Link>;
 }
 
-function SideNavItem({ to, icon, label, active = false }: { to: '/feed' | '/events' | '/friends'; icon: React.ReactNode; label: string; active?: boolean }) {
-  return <Link to={to} className={`flex items-center gap-3 px-3 py-2.5 text-sm ${active ? 'rounded bg-slate-100 font-bold text-blue-800' : 'text-slate-700 hover:bg-slate-50'}`}>{icon}<span>{label}</span></Link>;
+function SideNavItem({ to, icon, label, active = false }: { to: '/events' | '/friends'; icon?: React.ReactNode; label: string; active?: boolean }) {
+  return <Link to={to} className={`flex items-center gap-3 px-3 py-2.5 text-sm ${active ? 'rounded bg-slate-100 font-bold text-blue-800' : 'text-slate-700 hover:bg-slate-50'}`}>{icon ?? <span className="h-5 w-5" />}<span>{label}</span></Link>;
 }
 
 function RightCard({ title, action, children }: { title: string; action: string; children: React.ReactNode }) {
