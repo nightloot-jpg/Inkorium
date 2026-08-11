@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Edit, Trash, Check, X } from 'lucide-react';
+import { Check, Edit, Heart, MessageCircle, MoreHorizontal, Share2, Trash, X } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import type { Post } from '../types';
 
@@ -14,8 +14,7 @@ interface PostCardProps {
   onEdit: (postId: string, content: string) => void;
 }
 
-export function PostCard({
- post, onLike, onUnlike, onAddComment, onDelete, onEdit }: PostCardProps) {
+export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdit }: PostCardProps) {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || '');
@@ -23,141 +22,103 @@ export function PostCard({
   const [commentContent, setCommentContent] = useState('');
   const [showOptions, setShowOptions] = useState(false);
 
-  const isLiked = post.likes?.some(like => like.user_id === user?.id);
+  const isLiked = post.likes?.some((like) => like.user_id === user?.id);
   const isOwner = post.user_id === user?.id;
 
   const handleLikeToggle = () => {
-    if (isLiked) {
-      onUnlike(post.id);
-    } else {
-      onLike(post.id);
-    }
+    if (isLiked) onUnlike(post.id);
+    else onLike(post.id);
   };
 
-  const handleCommentSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCommentSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     if (!commentContent.trim()) return;
     onAddComment(post.id, commentContent);
     setCommentContent('');
   };
 
   const handleSaveEdit = () => {
-    if (editContent.trim() !== post.content) {
-      onEdit(post.id, editContent);
-    }
+    if (editContent.trim() !== post.content) onEdit(post.id, editContent);
     setIsEditing(false);
   };
 
   return (
-    <article className="overflow-hidden rounded border border-slate-200 bg-white shadow-none mb-4">
-      <header className="flex items-center gap-3 px-4 pt-4 relative">
-        <img className="h-12 w-12 rounded-sm object-cover border border-slate-200" src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${post.profiles?.full_name || 'User'}`} alt={post.profiles?.full_name || 'User'} />
-        <div className="flex-1">
-          <p className="text-sm font-bold text-[#233B5D] hover:underline cursor-pointer">{post.profiles?.full_name}</p>
-          <p className="text-xs text-slate-500">
-            <span suppressHydrationWarning>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}</span>
+    <article className="overflow-hidden border border-[#d9e0e8] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+      <header className="flex items-center gap-3 px-5 py-4">
+        <img
+          src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.profiles?.full_name || 'User')}`}
+          alt={post.profiles?.full_name || 'User'}
+          className="h-12 w-12 rounded-full border border-[#d9e0e8] object-cover"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-bold text-[#1e2e43]">{post.profiles?.full_name || 'Usuario'}</p>
+          <p className="text-xs text-[#8290a3]">
+            <span suppressHydrationWarning>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}</span> · 🌐
           </p>
         </div>
 
         {isOwner && (
           <div className="relative">
-            <button
-              onClick={() => setShowOptions(!showOptions)}
-              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
-              aria-label="Más opciones"
-            >
+            <button onClick={() => setShowOptions((value) => !value)} className="rounded-full p-2 text-[#718096] hover:bg-[#f1f4f7]" aria-label="Más opciones">
               <MoreHorizontal size={20} />
             </button>
             {showOptions && (
-              <div className="absolute right-0 top-10 w-32 bg-white border border-slate-100 rounded-sm shadow-lg z-10 py-1">
-                <button
-                  onClick={() => { setIsEditing(true); setShowOptions(false); }}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
-                >
-                  <Edit size={16} /> Editar
-                </button>
-                <button
-                  onClick={() => { onDelete(post.id); setShowOptions(false); }}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
-                >
-                  <Trash size={16} /> Eliminar
-                </button>
+              <div className="absolute right-0 top-10 z-10 w-32 border border-[#dce2ea] bg-white py-1 shadow-lg">
+                <button onClick={() => { setIsEditing(true); setShowOptions(false); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-[#f5f7fa]"><Edit size={15} />Editar</button>
+                <button onClick={() => { onDelete(post.id); setShowOptions(false); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"><Trash size={15} />Eliminar</button>
               </div>
             )}
           </div>
         )}
       </header>
 
-      <div className="px-4 py-3 text-sm leading-6">
-        {isEditing ? (
-          <div className="space-y-2">
-            <textarea
-              className="w-full resize-none rounded-lg border border-slate-200 p-3 outline-none focus:border-[#233B5D]"
-              rows={3}
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-            />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setIsEditing(false)} className="flex items-center gap-1 rounded px-3 py-1 text-xs text-slate-600 hover:bg-slate-100"><X size={14}/> Cancelar</button>
-              <button onClick={handleSaveEdit} className="flex items-center gap-1 rounded bg-[#233B5D] px-3 py-1 text-xs text-white hover:bg-[#1a2c45]"><Check size={14}/> Guardar</button>
-            </div>
+      {isEditing ? (
+        <div className="px-5 pb-4">
+          <textarea className="w-full resize-none border border-[#d4dce6] p-3 outline-none focus:border-[#5b8fd4]" rows={3} value={editContent} onChange={(event) => setEditContent(event.target.value)} />
+          <div className="mt-2 flex justify-end gap-2">
+            <button onClick={() => setIsEditing(false)} className="flex items-center gap-1 px-3 py-1.5 text-xs text-[#718096]"><X size={14} />Cancelar</button>
+            <button onClick={handleSaveEdit} className="flex items-center gap-1 bg-[#315f9f] px-3 py-1.5 text-xs font-bold text-white"><Check size={14} />Guardar</button>
           </div>
-        ) : (
-          <p className="whitespace-pre-wrap">{post.content}</p>
-        )}
-      </div>
+        </div>
+      ) : (
+        post.content && <div className="px-5 pb-4 text-[15px] leading-6 text-[#33445b] whitespace-pre-wrap">{post.content}</div>
+      )}
 
       {post.photos && post.photos.length > 0 && (
-        <div className={`grid gap-1 px-4 ${post.photos.length === 1 ? 'grid-cols-1' : post.photos.length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+        <div className={`grid gap-1 px-5 ${post.photos.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
           {post.photos.slice(0, 4).map((photo, index) => (
-            <div className={`relative aspect-square overflow-hidden rounded-sm ${post.photos.length === 3 && index === 0 ? 'col-span-2' : ''}`} key={photo.id}>
+            <div key={photo.id} className={`relative aspect-square overflow-hidden ${post.photos.length === 3 && index === 0 ? 'col-span-2' : ''}`}>
               <img className="h-full w-full object-cover" src={photo.url} alt={photo.caption || ''} />
-              {index === 3 && post.photos.length > 4 && (
-                <div className="absolute inset-0 grid place-items-center bg-slate-950/55 text-2xl font-bold text-white">
-                  +{post.photos.length - 4}
-                </div>
-              )}
+              {index === 3 && post.photos.length > 4 && <div className="absolute inset-0 grid place-items-center bg-black/50 text-2xl font-bold text-white">+{post.photos.length - 4}</div>}
             </div>
           ))}
         </div>
       )}
 
-      <div className="mx-5 mt-4 flex items-center justify-between border-b border-slate-100 pb-3 text-xs text-slate-500">
-        <span className="flex items-center gap-1"><Heart size={14} className={post.likes?.length > 0 ? "fill-red-500 text-red-500" : ""} /> {post.likes?.length || 0}</span>
+      <div className="mx-5 flex items-center justify-between border-b border-[#e8edf2] py-3 text-xs text-[#8290a3]">
+        <span className="flex items-center gap-1"><Heart size={14} className={post.likes?.length ? 'fill-[#7c9dcc] text-[#7c9dcc]' : ''} /> {post.likes?.length || 0}</span>
         <span>{post.comments?.length || 0} comentarios · {post.post_shares?.length || 0} compartidos</span>
       </div>
 
-      <div className="grid grid-cols-3 px-3 py-2">
-        <PostAction icon={Heart} label="Me gusta" active={isLiked} onClick={handleLikeToggle} activeClass="text-red-500" />
-        <PostAction icon={MessageCircle} label="Comentar" onClick={() => setShowComments(!showComments)} />
-        <PostAction icon={Share2} label="Compartir" />
+      <div className="grid grid-cols-3 px-3 py-1">
+        <PostAction icon={<Heart size={18} />} label="Me gusta" active={isLiked} onClick={handleLikeToggle} />
+        <PostAction icon={<MessageCircle size={18} />} label="Comentar" onClick={() => setShowComments((value) => !value)} />
+        <PostAction icon={<Share2 size={18} />} label="Compartir" />
       </div>
 
       {showComments && (
-        <div className="px-4 pb-4 pt-3 border-t border-slate-100 bg-slate-50">
-          <div className="space-y-3 mb-4 max-h-60 overflow-y-auto pr-2">
-            {post.comments?.map(comment => (
+        <div className="border-t border-[#e8edf2] bg-[#f7f9fb] px-5 pb-4 pt-3">
+          <div className="mb-4 max-h-60 space-y-3 overflow-y-auto">
+            {post.comments?.map((comment) => (
               <div key={comment.id} className="flex gap-2">
-                <img className="h-8 w-8 rounded-sm object-cover border border-slate-200" src={comment.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${comment.profiles?.full_name || 'User'}`} alt="" />
-                <div className="flex-1 text-sm">
-                  <p>
-                    <span className="font-bold text-[#233B5D] hover:underline cursor-pointer mr-1">{comment.profiles?.full_name}</span>
-                    <span className="text-slate-700">{comment.content}</span>
-                  </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Hace un momento</p>
-                </div>
+                <img className="h-8 w-8 rounded-full border border-[#d9e0e8] object-cover" src={comment.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.profiles?.full_name || 'User')}`} alt="" />
+                <p className="flex-1 text-sm"><span className="font-bold text-[#1e2e43]">{comment.profiles?.full_name}</span> <span className="text-[#4a5b71]">{comment.content}</span></p>
               </div>
             ))}
           </div>
           <form onSubmit={handleCommentSubmit} className="flex gap-2">
-            <img className="h-8 w-8 rounded-sm object-cover border border-slate-200" src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'User'}`} alt="" />
-            <input
-              type="text"
-              value={commentContent}
-              onChange={(e) => setCommentContent(e.target.value)}
-              placeholder="Escribe un comentario..."
-              className="flex-1 border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-[#233B5D] shadow-inner"
-            />
+            <img className="h-8 w-8 rounded-full object-cover" src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.full_name || 'User')}`} alt="" />
+            <input value={commentContent} onChange={(event) => setCommentContent(event.target.value)} placeholder="Escribe un comentario..." className="flex-1 border border-[#d4dce6] bg-white px-3 py-2 text-sm outline-none focus:border-[#5b8fd4]" />
           </form>
         </div>
       )}
@@ -165,4 +126,10 @@ export function PostCard({
   );
 }
 
-// Componente PostAction eliminado ya que los botones de acción ahora son texto simple (estilo Tuenti)
+function PostAction({ icon, label, active = false, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
+  return (
+    <button onClick={onClick} className={`flex items-center justify-center gap-2 px-2 py-3 text-sm font-semibold transition hover:bg-[#f5f7fa] ${active ? 'text-[#315f9f]' : 'text-[#77869a]'}`}>
+      {icon}{label}
+    </button>
+  );
+}
