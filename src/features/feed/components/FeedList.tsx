@@ -5,7 +5,18 @@ import { PostCard } from './PostCard';
 
 export function FeedList() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const { data, status, hasNextPage, fetchNextPage, isFetchingNextPage, likePost, unlikePost, addComment, deletePost, editPost } = useFeed();
+  const {
+    data,
+    status,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    likePost,
+    unlikePost,
+    addComment,
+    deletePost,
+    editPost,
+  } = useFeed();
 
   useEffect(() => {
     const element = loadMoreRef.current;
@@ -15,7 +26,7 @@ export function FeedList() {
       ([entry]) => {
         if (entry.isIntersecting && !isFetchingNextPage) fetchNextPage();
       },
-      { rootMargin: '500px 0px' },
+      { rootMargin: '400px 0px' },
     );
 
     observer.observe(element);
@@ -23,22 +34,29 @@ export function FeedList() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   if (status === 'pending') {
-    return <FeedMessage><Loader2 className="animate-spin text-blue-600" /></FeedMessage>;
+    return <div className="feed-message"><Loader2 className="animate-spin" style={{ color: '#075db0' }} /></div>;
   }
 
   if (status === 'error') {
-    return <FeedMessage><span className="text-sm text-red-600">No se ha podido cargar el feed.</span></FeedMessage>;
+    return (
+      <div className="feed-message">
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ margin: 0, color: '#d92727', fontWeight: 600 }}>No se ha podido cargar el feed.</p>
+          <p style={{ margin: '6px 0 0', color: '#8a94a3', fontSize: 12 }}>Comprueba tu sesión e inténtalo de nuevo.</p>
+        </div>
+      </div>
+    );
   }
 
   const pages = data?.pages ?? [];
   const posts = pages.flatMap((page) => page.data);
 
   if (posts.length === 0) {
-    return <FeedMessage><span className="text-sm text-slate-500">Todavía no hay publicaciones.</span></FeedMessage>;
+    return <div className="feed-message"><span style={{ color: '#7b8797', fontSize: 14 }}>Todavía no hay publicaciones.</span></div>;
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {pages.map((page, pageIndex) => page.data.map((post, postIndex) => (
         <PostCard
           key={post.id}
@@ -51,14 +69,9 @@ export function FeedList() {
           onEdit={(id, content) => editPost.mutate({ postId: id, content })}
         />
       )))}
-
-      <div ref={loadMoreRef} className="flex min-h-12 items-center justify-center py-2">
-        {isFetchingNextPage ? <Loader2 className="animate-spin text-blue-600" /> : hasNextPage ? <span className="text-xs text-slate-400">Cargando más publicaciones...</span> : <span className="text-xs text-slate-400">No hay más publicaciones</span>}
+      <div ref={loadMoreRef} style={{ minHeight: 36, display: 'grid', placeItems: 'center', color: '#8a94a3', fontSize: 12 }}>
+        {isFetchingNextPage ? <Loader2 className="animate-spin" size={18} /> : hasNextPage ? 'Cargando más publicaciones…' : 'No hay más publicaciones'}
       </div>
     </div>
   );
-}
-
-function FeedMessage({ children }: { children: React.ReactNode }) {
-  return <div className="flex min-h-44 items-center justify-center border border-slate-200 bg-white shadow-sm">{children}</div>;
 }

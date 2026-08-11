@@ -35,7 +35,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       <header className="h-14 bg-blue-800 text-white shadow-sm">
         <div className="mx-auto flex h-full w-full max-w-screen-2xl items-center px-4">
           <Link to="/feed" className="flex h-full w-44 shrink-0 items-center gap-2">
-            <img src="/tuenti_inkorium_logo.svg" alt="Inkorium" className="h-8 w-8 brightness-0 invert" />
+            <img src="/tuenti_inkorium_logo.svg" alt="Inkorium" style={{ width: 32, height: 32, display: 'block', objectFit: 'contain' }} />
             <span className="text-xl font-extrabold tracking-tight">inkorium</span>
           </Link>
 

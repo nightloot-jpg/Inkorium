@@ -6,10 +6,7 @@ const PAGE_SIZE = 10;
 export const feedService = {
   async getPosts({ pageParam = 0 }: { pageParam?: number }) {
     const result = await getPostsFn({ data: { pageParam, limit: PAGE_SIZE } });
-    return {
-      data: result.data as unknown as Post[],
-      nextPage: result.nextPage,
-    };
+    return { data: result.data as unknown as Post[], nextPage: result.nextPage };
   },
 
   async createPost({ content, type, photos }: { content: string; type: string; photos: File[] }) {

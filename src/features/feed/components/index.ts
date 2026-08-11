@@ -1,4 +1,4 @@
-export * from './FeedPage';
-export * from './FeedList';
-export * from './PostCard';
-export * from './PostComposer';
+export { FeedPage } from './FeedPage';
+export { FeedList } from './FeedList';
+export { PostCard } from './PostCard';
+export { PostComposer } from './PostComposer';

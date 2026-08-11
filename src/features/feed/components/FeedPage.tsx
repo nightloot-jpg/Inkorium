@@ -6,7 +6,7 @@ export function FeedPage() {
   const { createPost } = useFeed();
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="feed-page">
       <PostComposer
         isLoading={createPost.isPending}
         onSubmit={(content, type, photos) => createPost.mutate({ content, type, photos })}

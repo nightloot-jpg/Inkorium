@@ -7,9 +7,9 @@ const FEED_QUERY_KEY = ['feed'] as const;
 
 export function useFeed() {
   const queryClient = useQueryClient();
-  const [hydrated, setHydrated] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  useEffect(() => setHydrated(true), []);
+  useEffect(() => setReady(true), []);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: FEED_QUERY_KEY });
 
@@ -22,8 +22,9 @@ export function useFeed() {
     queryFn: ({ pageParam }) => feedService.getPosts({ pageParam }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextPage,
-    enabled: hydrated,
+    enabled: ready,
     staleTime: 15_000,
+    retry: 1,
   });
 
   const createPost = useMutation({ mutationFn: feedService.createPost, onSuccess: refresh });
@@ -33,13 +34,5 @@ export function useFeed() {
   const deletePost = useMutation({ mutationFn: feedService.deletePost, onSuccess: refresh });
   const editPost = useMutation({ mutationFn: feedService.editPost, onSuccess: refresh });
 
-  return {
-    ...feed,
-    createPost,
-    likePost,
-    unlikePost,
-    addComment,
-    deletePost,
-    editPost,
-  };
+  return { ...feed, createPost, likePost, unlikePost, addComment, deletePost, editPost };
 }

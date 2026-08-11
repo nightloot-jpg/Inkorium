@@ -26,29 +26,36 @@ export function PostComposer({ isLoading, onSubmit }: PostComposerProps) {
 
   const addPhotos = (files: FileList | null) => {
     if (!files) return;
-    const images = Array.from(files).filter((file) => file.type.startsWith('image/')).slice(0, 4 - photos.length);
+    const images = Array.from(files)
+      .filter((file) => file.type.startsWith('image/'))
+      .slice(0, 4 - photos.length);
     if (images.length) setPhotos((current) => [...current, ...images]);
   };
 
   return (
-    <section className="overflow-hidden border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-start gap-4 p-4 sm:p-5">
-        <img src={avatar} alt={name} className="h-12 w-12 shrink-0 rounded-full object-cover" />
+    <section className="feed-card">
+      <div className="feed-composer-top">
+        <img src={avatar} alt="" className="feed-avatar" />
         <textarea
           value={content}
           onChange={(event) => setContent(event.target.value)}
           rows={2}
           placeholder={`¿Qué estás pensando, ${name}?`}
-          className="min-h-14 flex-1 resize-none border border-slate-300 px-4 py-3 text-base text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-500"
+          className="feed-composer-input"
         />
       </div>
 
       {photos.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 px-4 pb-4 sm:grid-cols-4 sm:px-5">
+        <div className="feed-post-media two" style={{ paddingBottom: 16 }}>
           {photos.map((photo, index) => (
-            <div key={`${photo.name}-${index}`} className="relative aspect-square overflow-hidden bg-slate-100">
-              <img src={URL.createObjectURL(photo)} alt="Vista previa" className="h-full w-full object-cover" />
-              <button type="button" onClick={() => setPhotos((current) => current.filter((_, i) => i !== index))} className="absolute right-2 top-2 rounded-full bg-black/70 p-1.5 text-white" aria-label="Quitar foto">
+            <div key={`${photo.name}-${index}`} style={{ position: 'relative' }}>
+              <img src={URL.createObjectURL(photo)} alt="Vista previa" />
+              <button
+                type="button"
+                onClick={() => setPhotos((current) => current.filter((_, i) => i !== index))}
+                aria-label="Quitar foto"
+                style={{ position: 'absolute', right: 8, top: 8, border: 0, borderRadius: 999, padding: 6, background: 'rgba(0,0,0,.7)', color: '#fff', cursor: 'pointer' }}
+              >
                 <X size={14} />
               </button>
             </div>
@@ -56,9 +63,9 @@ export function PostComposer({ isLoading, onSubmit }: PostComposerProps) {
         </div>
       )}
 
-      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={(event) => addPhotos(event.target.files)} />
+      <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={(event) => addPhotos(event.target.files)} />
 
-      <div className="flex flex-wrap items-center border-t border-slate-100 px-2">
+      <div className="feed-composer-actions">
         <ComposerAction icon={<FileText size={18} />} label="Estado" />
         <ComposerAction icon={<Camera size={18} />} label="Foto" onClick={() => inputRef.current?.click()} />
         <ComposerAction icon={<Video size={18} />} label="Vídeo" />
@@ -68,11 +75,16 @@ export function PostComposer({ isLoading, onSubmit }: PostComposerProps) {
         <ComposerAction icon={<MoreHorizontal size={18} />} label="Más" />
       </div>
 
-      <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 sm:px-5">
-        <button type="button" className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-700">
+      <div className="feed-composer-bottom">
+        <button type="button" className="feed-action" style={{ padding: 0 }}>
           <Globe2 size={17} /> Público <MoreHorizontal size={14} />
         </button>
-        <button type="button" onClick={submit} disabled={isLoading || (!content.trim() && photos.length === 0)} className="min-w-28 bg-blue-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={isLoading || (!content.trim() && photos.length === 0)}
+          className="feed-publish"
+        >
           {isLoading ? <Loader2 size={18} className="mx-auto animate-spin" /> : 'Publicar'}
         </button>
       </div>
@@ -82,7 +94,7 @@ export function PostComposer({ isLoading, onSubmit }: PostComposerProps) {
 
 function ComposerAction({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="flex items-center gap-2 px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
+    <button type="button" onClick={onClick} className="feed-action">
       {icon}
       <span>{label}</span>
     </button>

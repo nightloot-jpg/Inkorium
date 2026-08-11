@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
+import { getSupabaseServerClient } from '../../../lib/supabase.server';
 
 async function requireUser() {
-  const { getSupabaseServerClient } = await import('../../../lib/supabase.server');
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) throw new Error('Not authenticated');
@@ -11,8 +11,7 @@ async function requireUser() {
 export const getPostsFn = createServerFn({ method: 'GET' })
   .validator((data: { pageParam?: number; limit?: number }) => data)
   .handler(async ({ data }) => {
-    const { getSupabaseServerClient } = await import('../../../lib/supabase.server');
-    const supabase = getSupabaseServerClient();
+    const { supabase } = await requireUser();
     const limit = Math.min(Math.max(data.limit ?? 10, 1), 20);
     const pageParam = Math.max(data.pageParam ?? 0, 0);
     const from = pageParam * limit;
@@ -49,15 +48,9 @@ export const createPostFn = createServerFn({ method: 'POST' })
     const content = data.get('content')?.toString().trim() ?? '';
     const type = data.get('type')?.toString() || 'text';
     const photos = data.getAll('photos').filter((value): value is File => value instanceof File);
-
     if (!content && photos.length === 0) throw new Error('La publicación está vacía');
 
-    const { data: post, error } = await supabase
-      .from('posts')
-      .insert({ user_id: user.id, content, type } as any)
-      .select()
-      .single();
-
+    const { data: post, error } = await supabase.from('posts').insert({ user_id: user.id, content, type } as any).select().single();
     if (error) throw error;
 
     for (const photo of photos.slice(0, 4)) {
@@ -67,11 +60,7 @@ export const createPostFn = createServerFn({ method: 'POST' })
       if (uploadError) throw uploadError;
 
       const { data: publicUrl } = supabase.storage.from('photos').getPublicUrl(path);
-      const { error: photoError } = await supabase.from('photos').insert({
-        user_id: user.id,
-        post_id: (post as any).id,
-        url: publicUrl.publicUrl,
-      } as any);
+      const { error: photoError } = await supabase.from('photos').insert({ user_id: user.id, post_id: (post as any).id, url: publicUrl.publicUrl } as any);
       if (photoError) throw photoError;
     }
 
@@ -106,7 +95,6 @@ export const addCommentFn = createServerFn({ method: 'POST' })
       .insert({ user_id: user.id, post_id: data.postId, content, parent_id: data.parentId || null } as any)
       .select('*, profiles(*)')
       .single();
-
     if (error) throw error;
     return comment;
   });
@@ -124,10 +112,6 @@ export const editPostFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { supabase, user } = await requireUser();
     const content = data.content.trim();
-    const { error } = await supabase
-      .from('posts')
-      .update({ content, updated_at: new Date().toISOString() } as any)
-      .eq('id', data.postId)
-      .eq('user_id', user.id);
+    const { error } = await supabase.from('posts').update({ content, updated_at: new Date().toISOString() } as any).eq('id', data.postId).eq('user_id', user.id);
     if (error) throw error;
   });
