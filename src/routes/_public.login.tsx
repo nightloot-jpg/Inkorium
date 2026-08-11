@@ -26,7 +26,6 @@ function Login() {
   const router = useRouter();
   const loginMutation = useLogin();
   const [authError, setAuthError] = useState<string | null>(null);
-  const [rememberMe, setRememberMe] = useState(false);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -57,10 +56,6 @@ function Login() {
           if (error) throw error;
         }
 
-        if (!rememberMe) {
-          localStorage.removeItem('inkorium_remember_email');
-        }
-
         await router.invalidate();
         await navigate({ to: '/feed' });
       },
@@ -71,65 +66,63 @@ function Login() {
   };
 
   return (
-    <div className="ik-login-card">
-      <h1>{t('auth.welcomeBack')}</h1>
-
-      {authError && <div className="ik-login-error">{authError}</div>}
-
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="ik-field">
-          <label htmlFor="email">{t('auth.email')}</label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder={t('auth.emailPlaceholder')}
-            disabled={loginMutation.isPending}
-            {...register('email')}
-          />
-          {errors.email && (
-            <p className="ik-field-error">{errors.email.message}</p>
-          )}
+    <main className="ik-login-page">
+      <div className="ik-login-wrapper">
+        <div className="ik-login-brand" aria-label="inkorium">
+          <span>inko</span><span>rium</span>
         </div>
 
-        <div className="ik-field">
-          <label htmlFor="password">{t('auth.password')}</label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            placeholder="••••••••••••"
-            disabled={loginMutation.isPending}
-            {...register('password')}
-          />
-          {errors.password && (
-            <p className="ik-field-error">{errors.password.message}</p>
-          )}
+        <section className="ik-login-card" aria-labelledby="login-title">
+          <h1 id="login-title" className="sr-only">{t('auth.welcomeBack')}</h1>
+
+          {authError && <div className="ik-login-error" role="alert">{authError}</div>}
+
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="ik-field">
+              <label htmlFor="email" className="sr-only">{t('auth.email')}</label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder={t('auth.emailPlaceholder') || t('auth.email')}
+                disabled={loginMutation.isPending}
+                {...register('email')}
+              />
+              {errors.email && (
+                <p className="ik-field-error">{errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="ik-field">
+              <label htmlFor="password" className="sr-only">{t('auth.password')}</label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                placeholder={t('auth.password')}
+                disabled={loginMutation.isPending}
+                {...register('password')}
+              />
+              {errors.password && (
+                <p className="ik-field-error">{errors.password.message}</p>
+              )}
+            </div>
+
+            <button type="submit" disabled={loginMutation.isPending}>
+              {loginMutation.isPending ? t('common.loading') : t('auth.login')}
+            </button>
+          </form>
+
+          <Link className="ik-login-forgot" to="/forgot-password">
+            {t('auth.forgotPassword')}
+          </Link>
+        </section>
+
+        <div className="ik-login-register">
+          <span>{t('auth.dontHaveAccount')}</span>{' '}
+          <Link to="/register">{t('auth.register')}</Link>
         </div>
-
-        <div className="ik-login-row">
-          <label className="ik-remember-label" htmlFor="remember-me">
-            <input
-              id="remember-me"
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              disabled={loginMutation.isPending}
-            />
-            {t('auth.rememberMe')}
-          </label>
-          <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
-        </div>
-
-        <button type="submit" disabled={loginMutation.isPending}>
-          {loginMutation.isPending ? t('common.loading') : t('auth.login')}
-        </button>
-      </form>
-
-      <div className="ik-login-register">
-        {t('auth.dontHaveAccount')}{' '}
-        <Link to="/register">{t('auth.register')}</Link>
       </div>
-    </div>
+    </main>
   );
 }
