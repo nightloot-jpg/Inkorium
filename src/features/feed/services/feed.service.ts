@@ -1,32 +1,13 @@
 import { supabase } from '../../../lib/supabase';
 import type { Post } from '../types';
+import { getPostsFn } from './feed.server';
 
 export const feedService = {
   getPosts: async ({ pageParam = 0 }: { pageParam?: number }) => {
-    const limit = 10;
-    const from = pageParam * limit;
-    const to = from + limit - 1;
-
-    const { data, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        profiles!inner(*),
-        photos(*),
-        comments(
-          *,
-          profiles(*)
-        ),
-        likes(*),
-        post_shares(id)
-      `)
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (error) throw error;
+    const result = await getPostsFn({ data: { pageParam } });
     return {
-      data: data as unknown as Post[],
-      nextPage: data.length === limit ? pageParam + 1 : undefined,
+      data: result.data as unknown as Post[],
+      nextPage: result.nextPage,
     };
   },
 
@@ -46,7 +27,6 @@ export const feedService = {
 
     if (error) throw error;
 
-    // Upload photos if any
     if (photos.length > 0) {
       for (const photo of photos) {
         const fileExt = photo.name.split('.').pop();
@@ -80,10 +60,7 @@ export const feedService = {
 
     const { error } = await supabase
       .from('likes')
-      .insert({
-        user_id: userData.user.id,
-        post_id: postId
-      } as any);
+      .insert({ user_id: userData.user.id, post_id: postId } as any);
 
     if (error) throw error;
   },

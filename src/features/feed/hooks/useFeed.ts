@@ -24,6 +24,7 @@ export const useFeed = () => {
     queryKey: ['feed'],
     queryFn: feedService.getPosts,
     initialPageParam: 0,
+    enabled: typeof window !== 'undefined',
     getNextPageParam: (lastPage) => lastPage.nextPage,
   });
 
