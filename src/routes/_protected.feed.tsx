@@ -19,7 +19,7 @@ function Feed() {
   };
 
   return (
-    <div className="mx-auto max-w-[770px] space-y-4 pt-4">
+    <div className="mx-auto w-full space-y-4 pt-4 px-2 sm:px-0">
       <PostComposer onSubmit={handleCreatePost} isLoading={createPost.isPending} />
       <FeedList />
     </div>

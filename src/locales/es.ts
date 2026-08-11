@@ -40,5 +40,13 @@ export const es = {
     "saved": "Guardado",
     "settings": "Configuración",
     "logout": "Cerrar sesión"
+  },
+  "feed": {
+    "comingSoon": "Próximamente",
+    "videoSoon": "La subida de vídeos estará disponible pronto.",
+    "musicSoon": "El módulo de música estará disponible pronto.",
+    "pollSoon": "Las encuestas estarán disponibles pronto.",
+    "newsSoon": "El módulo de noticias estará disponible pronto.",
+    "chatSoon": "El sistema de chat estará disponible pronto."
   }
 } as const;

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Camera, Video, StickyNote, BarChart3, Link2, MoreHorizontal, X, Loader2 } from 'lucide-react';
+import { Camera, Video, Music, BarChart3, Newspaper, MoreHorizontal, X, Loader2 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 
 export function PostComposer({

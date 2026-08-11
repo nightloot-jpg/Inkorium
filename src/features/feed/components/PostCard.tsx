@@ -49,13 +49,13 @@ export function PostCard({
   };
 
   return (
-    <article className="overflow-hidden rounded border border-slate-200 bg-white shadow-none mb-3">
-      <header className="flex items-center gap-3 px-4 pt-3 relative">
-        <img className="h-11 w-11 rounded-full object-cover" src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${post.profiles?.full_name || 'User'}`} alt={post.profiles?.full_name || 'User'} />
+    <article className="overflow-hidden rounded border border-slate-200 bg-white shadow-none mb-4">
+      <header className="flex items-center gap-3 px-4 pt-4 relative">
+        <img className="h-12 w-12 rounded-sm object-cover border border-slate-200" src={post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${post.profiles?.full_name || 'User'}`} alt={post.profiles?.full_name || 'User'} />
         <div className="flex-1">
-          <p className="text-sm font-bold">{post.profiles?.full_name}</p>
+          <p className="text-sm font-bold text-[#233B5D] hover:underline cursor-pointer">{post.profiles?.full_name}</p>
           <p className="text-xs text-slate-500">
-            <span suppressHydrationWarning>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}</span> · 🌐
+            <span suppressHydrationWarning>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}</span>
           </p>
         </div>
 
@@ -134,26 +134,29 @@ export function PostCard({
       </div>
 
       {showComments && (
-        <div className="px-4 pb-4 pt-2 border-t border-slate-50 bg-slate-50/50">
-          <div className="space-y-4 mb-4 max-h-60 overflow-y-auto pr-2">
+        <div className="px-4 pb-4 pt-3 border-t border-slate-100 bg-slate-50">
+          <div className="space-y-3 mb-4 max-h-60 overflow-y-auto pr-2">
             {post.comments?.map(comment => (
               <div key={comment.id} className="flex gap-2">
-                <img className="h-8 w-8 rounded-full object-cover" src={comment.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${comment.profiles?.full_name || 'User'}`} alt="" />
-                <div className="flex-1 bg-white p-3 rounded-lg border border-slate-100 shadow-sm text-sm">
-                  <p className="font-bold mb-1">{comment.profiles?.full_name}</p>
-                  <p className="text-slate-700">{comment.content}</p>
+                <img className="h-8 w-8 rounded-sm object-cover border border-slate-200" src={comment.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${comment.profiles?.full_name || 'User'}`} alt="" />
+                <div className="flex-1 text-sm">
+                  <p>
+                    <span className="font-bold text-[#233B5D] hover:underline cursor-pointer mr-1">{comment.profiles?.full_name}</span>
+                    <span className="text-slate-700">{comment.content}</span>
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Hace un momento</p>
                 </div>
               </div>
             ))}
           </div>
           <form onSubmit={handleCommentSubmit} className="flex gap-2">
-            <img className="h-8 w-8 rounded-full object-cover" src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'User'}`} alt="" />
+            <img className="h-8 w-8 rounded-sm object-cover border border-slate-200" src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'User'}`} alt="" />
             <input
               type="text"
               value={commentContent}
               onChange={(e) => setCommentContent(e.target.value)}
               placeholder="Escribe un comentario..."
-              className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm outline-none focus:border-[#233B5D]"
+              className="flex-1 border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none focus:border-[#233B5D] shadow-inner"
             />
           </form>
         </div>
@@ -162,11 +165,4 @@ export function PostCard({
   );
 }
 
-function PostAction({ icon: Icon, label, active, onClick, activeClass }: { icon: typeof Heart; label: string; active?: boolean; onClick?: () => void; activeClass?: string }) {
-  return (
-    <button onClick={onClick} className={`flex items-center justify-center gap-2 rounded-sm py-2 text-sm font-medium transition hover:bg-slate-50 ${active ? activeClass || 'text-[#233B5D]' : 'text-slate-700'}`}>
-      <Icon size={18} className={active ? 'fill-current' : ''} />
-      {label}
-    </button>
-  );
-}
+// Componente PostAction eliminado ya que los botones de acción ahora son texto simple (estilo Tuenti)

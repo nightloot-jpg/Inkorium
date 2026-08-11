@@ -18,8 +18,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       <header className="sticky top-0 z-50 flex h-[54px] items-center justify-between bg-gradient-to-r from-[#233B5D] to-[#1b2e49] text-white px-4 md:px-8">
         <div className="flex items-center gap-4">
-          <Link to="/feed" className="text-2xl font-bold tracking-tighter text-white">
-            Inkorium
+          <Link to="/feed" className="flex items-center gap-2">
+            <img src="/tuenti_inkorium_logo.svg" alt="Inkorium Logo" className="h-8 brightness-0 invert" />
+            <span className="text-2xl font-bold tracking-tighter text-white hidden sm:block">Inkorium</span>
           </Link>
           <div className="hidden md:flex relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
@@ -31,101 +32,173 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <Link to="/profile/$username" params={{ username: user?.user_metadata?.username || 'me' }} className="hidden md:flex items-center gap-2 rounded-sm hover:bg-white/10 px-3 py-1.5 transition text-white">
+        {/* Mobile menu button could go here if needed, but per requirements we are matching the desktop view for now. The left aside hides and goes to a mobile menu, which we will handle by keeping it responsive. */}
+
+        {/* Center Icons (Home, Messages, Notifications, Search) - Replicating classic Tuenti header feel */}
+        <div className="hidden md:flex flex-1 items-center justify-center gap-6">
+           <Link to="/feed" className="text-white/80 hover:text-white transition flex flex-col items-center gap-1">
+             <Home size={20} />
+             <span className="text-[10px] font-bold uppercase tracking-wider hidden lg:block">Inicio</span>
+           </Link>
+           <Link to="/messages" className="text-white/80 hover:text-white transition flex flex-col items-center gap-1 relative">
+             <MessageSquare size={20} />
+             <span className="text-[10px] font-bold uppercase tracking-wider hidden lg:block">Mensajes</span>
+             <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 rounded-full border border-[#233B5D]">3</span>
+           </Link>
+           <Link to="/notifications" className="text-white/80 hover:text-white transition flex flex-col items-center gap-1 relative">
+             <Bell size={20} />
+             <span className="text-[10px] font-bold uppercase tracking-wider hidden lg:block">Notificaciones</span>
+             <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 rounded-full border border-[#233B5D]">5</span>
+           </Link>
+        </div>
+
+        <div className="flex items-center gap-2 md:gap-4">
+          <Link to="/profile/$username" params={{ username: user?.user_metadata?.username || 'me' }} className="flex items-center gap-2 rounded-sm hover:bg-white/10 px-2 py-1 transition text-white">
             <img
               src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'User'}`}
               alt="Profile"
-              className="h-8 w-8 rounded-full"
+              className="h-7 w-7 rounded-full border border-white/20"
             />
-            <span className="text-sm font-medium">{user?.user_metadata?.full_name?.split(' ')[0] || 'Perfil'}</span>
+            <span className="text-sm font-bold hidden sm:block">{user?.user_metadata?.full_name?.split(' ')[0] || 'Perfil'}</span>
           </Link>
-          <button onClick={handleSignOut} className="rounded-sm p-2 text-white hover:bg-white/10 transition" aria-label="Cerrar sesión">
-            <LogOut size={20} />
+
+          <button onClick={handleSignOut} className="rounded-sm p-1.5 text-white/80 hover:text-white hover:bg-white/10 transition" aria-label="Cerrar sesión">
+            <LogOut size={18} />
           </button>
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-7xl gap-4 p-4">
-        <aside className="hidden w-[280px] shrink-0 lg:block">
-          <nav className="sticky top-24 space-y-1">
-            <NavItem to="/feed" icon={Home} label="Inicio" />
-            <NavItem to="/profile/$username" params={{ username: user?.user_metadata?.username || 'me' }} icon={Users} label="Mi Perfil" />
-            <NavItem to="/friends" icon={Users} label="Amigos" />
-            <NavItem to="/messages" icon={MessageSquare} label="Mensajes" badge="3" />
-            <NavItem to="/notifications" icon={Bell} label="Notificaciones" badge="5" />
+      <div className="mx-auto flex max-w-7xl gap-4 p-4 lg:px-8">
+        {/* Left Column */}
+        <aside className="hidden w-[260px] shrink-0 md:block">
+          <div className="sticky top-20 space-y-6">
 
-            <div className="my-4 border-t border-slate-200"></div>
-
-            <NavItem to="/inklog" icon={ImageIcon} label="Inklog" />
-            <NavItem to="/events" icon={Calendar} label="Eventos" />
-            <NavItem to="/notes" icon={StickyNote} label="Notas" />
-            <NavItem to="/music" icon={Music} label="Música" />
-            <NavItem to="/games" icon={Gamepad2} label="Juegos" />
-
-            <div className="my-4 border-t border-slate-200"></div>
-
-            <NavItem to="/settings" icon={Settings} label="Ajustes" />
-          </nav>
-        </aside>
-
-        <main className="flex-1 min-w-0">
-          {children}
-        </main>
-
-        <aside className="hidden w-[260px] shrink-0 xl:block">
-          <div className="sticky top-24 space-y-4">
-
-            <section className="rounded-sm border border-slate-200 bg-white p-4 shadow-none">
-              <div className="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
-                <h3 className="text-sm font-bold text-slate-700">Inklog</h3>
-                <Link to="/inklog" className="text-xs text-[#233B5D] hover:underline">Ver todos →</Link>
+            {/* User Profile Summary */}
+            <div className="flex items-center gap-3">
+              <img
+                src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user?.user_metadata?.full_name || 'User'}`}
+                alt="Profile"
+                className="h-14 w-14 rounded-full border border-slate-200 object-cover"
+              />
+              <div>
+                <p className="font-bold text-[#233B5D] leading-tight">{user?.user_metadata?.full_name || 'Usuario'}</p>
+                <Link to="/profile/$username" params={{ username: user?.user_metadata?.username || 'me' }} className="text-xs text-slate-500 hover:underline">Ver mi perfil</Link>
               </div>
-              <div className="grid grid-cols-3 gap-1">
-                {[1,2,3,4,5,6].map(i => (
-                  <Link key={i} to="/inklog" className="aspect-square bg-slate-100 hover:opacity-80 transition block border border-slate-200">
-                     <img src={`https://picsum.photos/seed/${i+50}/100`} alt="" className="w-full h-full object-cover" />
-                  </Link>
-                ))}
-              </div>
-            </section>
+            </div>
 
-            <section className="rounded-sm border border-slate-200 bg-white p-4 shadow-none">
-              <h3 className="mb-3 text-sm font-bold text-slate-700 border-b border-slate-100 pb-2">Conectados ahora</h3>
-              <div className="space-y-3">
-                {[1,2,3].map(i => (
-                  <div key={i} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 -mx-1 rounded-sm transition">
+            {/* Navigation Menu */}
+            <nav className="space-y-0.5">
+              <NavItem to="/feed" icon={Home} label="Inicio" />
+              <NavItem to="/friends" icon={Users} label="Amigos" badge="142" />
+              <NavItem to="/messages" icon={MessageSquare} label="Mensajes" badge="3" />
+              <NavItem to="/notifications" icon={Bell} label="Notificaciones" badge="5" />
+            </nav>
+
+            <div className="border-t border-slate-200"></div>
+
+            {/* Conectados ahora */}
+            <section>
+              <div className="flex justify-between items-center mb-2 px-2">
+                 <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Amigos Conectados (12)</h3>
+                 <Link to="/friends" className="text-xs text-[#233B5D] hover:underline">Ver todos</Link>
+              </div>
+
+              <div className="space-y-1">
+                {[1,2,3,4,5].map(i => (
+                  <div key={i} className="flex items-center gap-3 cursor-pointer hover:bg-slate-200/50 p-2 rounded-sm transition">
                     <div className="relative">
-                      <img src={`https://i.pravatar.cc/150?img=${i+10}`} alt="User" className="h-10 w-10 rounded-full" />
-                      <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500"></div>
+                      <img src={`https://i.pravatar.cc/150?img=${i+20}`} alt="User" className="h-8 w-8 rounded-full" />
+                      <div className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-slate-50 bg-green-500"></div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium">Amigo {i}</p>
-                      <p className="truncate text-xs text-slate-500">Escuchando Spotify</p>
+                      <p className="truncate text-sm font-medium text-slate-700">Amigo {i}</p>
+                      {i === 2 && <p className="truncate text-[10px] text-slate-500">Escuchando a Melendi</p>}
                     </div>
                   </div>
                 ))}
-              </div>
-            </section>
-
-            <section className="rounded-sm border border-slate-200 bg-white p-4 shadow-none">
-              <h3 className="mb-3 text-sm font-bold text-slate-700 border-b border-slate-100 pb-2">Próximos Eventos</h3>
-              <div className="space-y-4">
-                <div className="flex gap-3">
-                  <div className="flex h-10 w-10 flex-col items-center justify-center rounded-sm bg-blue-50 border border-blue-100 text-blue-600">
-                    <span className="text-xs font-bold uppercase">Oct</span>
-                    <span className="text-lg font-bold leading-none">15</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate font-medium text-sm">Fiesta Universitaria</p>
-                    <p className="text-xs text-slate-500">22:00 · Sala Riviera</p>
-                  </div>
-                </div>
               </div>
             </section>
           </div>
         </aside>
+
+        {/* Center Column - Feed/Content */}
+        <main className="flex-1 min-w-0">
+          {children}
+        </main>
+
+        {/* Right Column */}
+        <aside className="hidden w-[280px] shrink-0 xl:block">
+          <div className="sticky top-20 space-y-4">
+
+            {/* Solicitudes de amistad */}
+            <section className="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="bg-slate-50 border-b border-slate-100 px-4 py-2 flex justify-between items-center">
+                <h3 className="text-xs font-bold text-slate-700">Solicitudes de amistad</h3>
+                <span className="text-xs font-bold text-slate-500">2</span>
+              </div>
+              <div className="p-3 space-y-3">
+                <div className="flex gap-2">
+                  <img src="https://i.pravatar.cc/150?img=12" alt="User" className="h-10 w-10 rounded-sm object-cover" />
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate text-sm font-bold text-[#233B5D]">María López</p>
+                    <p className="text-xs text-slate-500 mb-2">15 amigos en común</p>
+                    <div className="flex gap-2">
+                      <button className="flex-1 rounded bg-[#233B5D] py-1 text-xs font-bold text-white hover:bg-[#1a2c45]">Aceptar</button>
+                      <button className="flex-1 rounded bg-slate-100 py-1 text-xs font-bold text-slate-600 hover:bg-slate-200 border border-slate-200">Ignorar</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Eventos */}
+            <section className="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="bg-slate-50 border-b border-slate-100 px-4 py-2 flex justify-between items-center">
+                <h3 className="text-xs font-bold text-slate-700">Eventos próximos</h3>
+                <Link to="/events" className="text-xs text-[#233B5D] hover:underline">Ver todos</Link>
+              </div>
+              <div className="p-3 space-y-3">
+                <div className="flex gap-3 items-center group cursor-pointer">
+                  <div className="flex h-12 w-12 flex-col items-center justify-center rounded bg-slate-100 border border-slate-200 text-[#233B5D]">
+                    <span className="text-[10px] font-bold uppercase text-red-500">Hoy</span>
+                    <span className="text-lg font-bold leading-none">24</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate font-bold text-sm text-[#233B5D] group-hover:underline">Cumpleaños de Laura</p>
+                    <p className="text-xs text-slate-500">¡Escríbele algo en su tablón!</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 items-center group cursor-pointer">
+                  <div className="flex h-12 w-12 flex-col items-center justify-center rounded bg-slate-100 border border-slate-200 text-[#233B5D]">
+                    <span className="text-[10px] font-bold uppercase">Sáb</span>
+                    <span className="text-lg font-bold leading-none">28</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate font-bold text-sm text-[#233B5D] group-hover:underline">Concierto en la Plaza</p>
+                    <p className="text-xs text-slate-500">22:00 · 3 amigos asisten</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Publicidad o Banner Extra (opcional, como en el antiguo Tuenti) */}
+            <div className="rounded-md border border-slate-200 bg-white p-2">
+               <img src="https://picsum.photos/300/150" alt="Ad" className="w-full rounded h-[120px] object-cover opacity-80 hover:opacity-100 transition" />
+            </div>
+
+          </div>
+        </aside>
       </div>
+
+      {/* Floating Chat Button */}
+      <button
+        onClick={() => alert("Próximamente: El sistema de chat estará disponible pronto.")}
+        className="fixed bottom-0 right-10 bg-[#233B5D] text-white px-6 py-2 rounded-t-md font-bold text-sm shadow-[0_-2px_10px_rgba(0,0,0,0.2)] hover:bg-[#1a2c45] transition flex items-center gap-2 z-50 border border-b-0 border-[#1a2c45]"
+      >
+        <MessageSquare size={16} />
+        Chat (0)
+      </button>
     </div>
   );
 }
@@ -134,13 +207,13 @@ function NavItem({ to, params, icon: Icon, label, badge }: { to: string, params?
   return (
     <Link
       to={to as any} params={params}
-      className="flex items-center justify-between rounded-sm px-2 py-1.5 text-slate-600 transition hover:bg-slate-200 [&.active]:bg-slate-200/50 [&.active]:text-[#233B5D] [&.active]:font-bold text-sm"
+      className="flex items-center justify-between rounded-sm px-3 py-2 text-slate-700 transition hover:bg-slate-200/50 [&.active]:bg-white [&.active]:border [&.active]:border-slate-200 [&.active]:text-[#233B5D] [&.active]:font-bold [&.active]:shadow-sm text-sm"
     >
       <div className="flex items-center gap-3">
-        <Icon size={16} className="text-slate-500" />
+        <Icon size={18} className="text-slate-500 [&.active]:text-[#233B5D]" />
         <span className="text-sm">{label}</span>
       </div>
-      {badge && <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">{badge}</span>}
+      {badge && <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white leading-none">{badge}</span>}
     </Link>
   );
 }
