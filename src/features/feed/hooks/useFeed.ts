@@ -1,9 +1,19 @@
+import { useEffect, useState } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { feedService } from '../services/feed.service';
 import { useRealtime } from '../../../lib/realtime/useRealtime';
 
 export const useFeed = () => {
   const queryClient = useQueryClient();
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Keep the first client render identical to SSR. React 19 treats a
+  // server/client branch in render (for example typeof window) as a possible
+  // hydration mismatch. The feed starts disabled on both sides and is enabled
+  // only after hydration completes.
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useRealtime({
     table: 'posts',
@@ -24,7 +34,7 @@ export const useFeed = () => {
     queryKey: ['feed'],
     queryFn: feedService.getPosts,
     initialPageParam: 0,
-    enabled: typeof window !== 'undefined',
+    enabled: isMounted,
     getNextPageParam: (lastPage) => lastPage.nextPage,
   });
 
