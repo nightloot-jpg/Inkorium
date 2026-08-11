@@ -1,92 +1,45 @@
 import { useEffect, useState } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { feedService } from '../services/feed.service';
 import { useRealtime } from '../../../lib/realtime/useRealtime';
+import { feedService } from '../services/feed.service';
 
-export const useFeed = () => {
+const FEED_QUERY_KEY = ['feed'] as const;
+
+export function useFeed() {
   const queryClient = useQueryClient();
-  const [isMounted, setIsMounted] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
-  // Keep the first client render identical to SSR. React 19 treats a
-  // server/client branch in render (for example typeof window) as a possible
-  // hydration mismatch. The feed starts disabled on both sides and is enabled
-  // only after hydration completes.
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  useEffect(() => setHydrated(true), []);
 
-  useRealtime({
-    table: 'posts',
-    onEvent: () => queryClient.invalidateQueries({ queryKey: ['feed'] }),
-  });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: FEED_QUERY_KEY });
 
-  useRealtime({
-    table: 'comments',
-    onEvent: () => queryClient.invalidateQueries({ queryKey: ['feed'] }),
-  });
+  useRealtime({ table: 'posts', onEvent: refresh });
+  useRealtime({ table: 'comments', onEvent: refresh });
+  useRealtime({ table: 'likes', onEvent: refresh });
 
-  useRealtime({
-    table: 'likes',
-    onEvent: () => queryClient.invalidateQueries({ queryKey: ['feed'] }),
-  });
-
-  const feedQuery = useInfiniteQuery({
-    queryKey: ['feed'],
-    queryFn: feedService.getPosts,
+  const feed = useInfiniteQuery({
+    queryKey: FEED_QUERY_KEY,
+    queryFn: ({ pageParam }) => feedService.getPosts({ pageParam }),
     initialPageParam: 0,
-    enabled: isMounted,
     getNextPageParam: (lastPage) => lastPage.nextPage,
+    enabled: hydrated,
+    staleTime: 15_000,
   });
 
-  const createPost = useMutation({
-    mutationFn: feedService.createPost,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['feed'] });
-    },
-  });
-
-  const deletePost = useMutation({
-    mutationFn: feedService.deletePost,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['feed'] });
-    },
-  });
-
-  const editPost = useMutation({
-    mutationFn: feedService.editPost,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['feed'] });
-    },
-  });
-
-  const likePost = useMutation({
-    mutationFn: feedService.likePost,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['feed'] });
-    },
-  });
-
-  const unlikePost = useMutation({
-    mutationFn: feedService.unlikePost,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['feed'] });
-    },
-  });
-
-  const addComment = useMutation({
-    mutationFn: feedService.addComment,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['feed'] });
-    },
-  });
+  const createPost = useMutation({ mutationFn: feedService.createPost, onSuccess: refresh });
+  const likePost = useMutation({ mutationFn: feedService.likePost, onSuccess: refresh });
+  const unlikePost = useMutation({ mutationFn: feedService.unlikePost, onSuccess: refresh });
+  const addComment = useMutation({ mutationFn: feedService.addComment, onSuccess: refresh });
+  const deletePost = useMutation({ mutationFn: feedService.deletePost, onSuccess: refresh });
+  const editPost = useMutation({ mutationFn: feedService.editPost, onSuccess: refresh });
 
   return {
-    ...feedQuery,
+    ...feed,
     createPost,
-    deletePost,
-    editPost,
     likePost,
     unlikePost,
     addComment,
+    deletePost,
+    editPost,
   };
-};
+}

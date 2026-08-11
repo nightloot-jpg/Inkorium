@@ -1,52 +1,42 @@
 import type { Post } from '../types';
-import {
-  addCommentFn,
-  createPostFn,
-  deletePostFn,
-  editPostFn,
-  getPostsFn,
-  likePostFn,
-  unlikePostFn,
-} from './feed.functions';
+import { addCommentFn, createPostFn, deletePostFn, editPostFn, getPostsFn, likePostFn, unlikePostFn } from './feed.functions';
+
+const PAGE_SIZE = 10;
 
 export const feedService = {
-  getPosts: async ({ pageParam = 0 }: { pageParam?: number }) => {
-    const result = await getPostsFn({ data: { pageParam } });
+  async getPosts({ pageParam = 0 }: { pageParam?: number }) {
+    const result = await getPostsFn({ data: { pageParam, limit: PAGE_SIZE } });
     return {
       data: result.data as unknown as Post[],
       nextPage: result.nextPage,
     };
   },
 
-  createPost: async ({ content, type, photos }: { content: string, type: string, photos: File[] }) => {
+  async createPost({ content, type, photos }: { content: string; type: string; photos: File[] }) {
     const formData = new FormData();
     formData.set('content', content);
     formData.set('type', type);
-
-    for (const photo of photos) {
-      formData.append('photos', photo, photo.name);
-    }
-
+    photos.forEach((photo) => formData.append('photos', photo, photo.name));
     return createPostFn({ data: formData });
   },
 
-  likePost: async (postId: string) => {
+  async likePost(postId: string) {
     await likePostFn({ data: { postId } });
   },
 
-  unlikePost: async (postId: string) => {
+  async unlikePost(postId: string) {
     await unlikePostFn({ data: { postId } });
   },
 
-  addComment: async ({ postId, content, parentId }: { postId: string, content: string, parentId?: string }) => {
+  async addComment({ postId, content, parentId }: { postId: string; content: string; parentId?: string }) {
     return addCommentFn({ data: { postId, content, parentId } });
   },
 
-  deletePost: async (postId: string) => {
+  async deletePost(postId: string) {
     await deletePostFn({ data: { postId } });
   },
 
-  editPost: async ({ postId, content }: { postId: string, content: string }) => {
+  async editPost({ postId, content }: { postId: string; content: string }) {
     await editPostFn({ data: { postId, content } });
   },
 };
