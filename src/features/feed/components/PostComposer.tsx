@@ -1,49 +1,14 @@
 import { useRef, useState } from 'react';
-import { BarChart3, Camera, FileText, Globe2, MoreHorizontal, Music2, Video, Loader2 } from 'lucide-react';
+import { BarChart3, Camera, FileText, Globe2, Loader2, MoreHorizontal, Music2, Video, X } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 
-export function PostComposer({ isLoading, onSubmit }: { isLoading: boolean; onSubmit: (content: string) => void }) {
-  const { user } = useAuth();
-  const [content, setContent] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  const name = user?.user_metadata?.full_name?.split(' ')[0] || user?.user_metadata?.username || 'Usuario';
-  const avatar = user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=e8eef7&color=164b88`;
+interface Props { isLoading: boolean; onSubmit: (content: string, type: string, photos: File[]) => void; }
 
-  const publish = () => {
-    const value = content.trim();
-    if (!value || isLoading) return;
-    onSubmit(value);
-    setContent('');
-  };
-
-  return (
-    <section className="feed-card">
-      <div className="feed-composer-top">
-        <img src={avatar} alt="" className="feed-avatar" />
-        <textarea
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          rows={2}
-          placeholder={`¿Qué estás pensando, ${name}?`}
-          className="feed-composer-input"
-        />
-      </div>
-      <div className="feed-composer-actions">
-        <button type="button" className="feed-action"><FileText size={18} />Estado</button>
-        <button type="button" className="feed-action" onClick={() => inputRef.current?.click()}><Camera size={18} />Foto</button>
-        <button type="button" className="feed-action"><Video size={18} />Vídeo</button>
-        <button type="button" className="feed-action"><Music2 size={18} />Música</button>
-        <button type="button" className="feed-action"><BarChart3 size={18} />Encuesta</button>
-        <button type="button" className="feed-action"><FileText size={18} />Noticia</button>
-        <button type="button" className="feed-action"><MoreHorizontal size={18} />Más</button>
-      </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" />
-      <div className="feed-composer-bottom">
-        <button type="button" className="feed-action"><Globe2 size={17} />Público <MoreHorizontal size={14} /></button>
-        <button type="button" className="feed-publish" disabled={isLoading || !content.trim()} onClick={publish}>
-          {isLoading ? <Loader2 className="mx-auto animate-spin" size={18} /> : 'Publicar'}
-        </button>
-      </div>
-    </section>
-  );
+export function PostComposer({ isLoading, onSubmit }: Props) {
+  const { user } = useAuth(); const [content,setContent]=useState(''); const [photos,setPhotos]=useState<File[]>([]); const inputRef=useRef<HTMLInputElement>(null);
+  const name=user?.user_metadata?.full_name?.split(' ')[0] || 'Usuario'; const avatar=user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.full_name || 'User')}`;
+  const submit=()=>{const text=content.trim();if(!text&&!photos.length)return;onSubmit(text,photos.length?'photo':'text',photos);setContent('');setPhotos([]);if(inputRef.current)inputRef.current.value='';};
+  const addPhotos=(files:FileList|null)=>{if(!files)return;const images=Array.from(files).filter(f=>f.type.startsWith('image/')).slice(0,4-photos.length);if(images.length)setPhotos(c=>[...c,...images]);};
+  return <section className="feed-card overflow-hidden"><div className="feed-composer-top"><img src={avatar} alt="" className="feed-avatar"/><textarea value={content} onChange={e=>setContent(e.target.value)} rows={2} placeholder={`¿Qué estás pensando, ${name}?`} className="feed-composer-input"/></div>{photos.length>0&&<div className="grid grid-cols-4 gap-2 px-[18px] pb-4">{photos.map((p,i)=><div key={`${p.name}-${i}`} className="relative aspect-square overflow-hidden"><img src={URL.createObjectURL(p)} alt="" className="h-full w-full object-cover"/><button type="button" onClick={()=>setPhotos(c=>c.filter((_,n)=>n!==i))} className="absolute right-2 top-2 rounded-full bg-black/70 p-1.5 text-white"><X size={14}/></button></div>)}</div>}<input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={e=>addPhotos(e.target.files)}/><div className="feed-composer-actions"><Action icon={<FileText size={18}/>} label="Estado"/><Action icon={<Camera size={18}/>} label="Foto" onClick={()=>inputRef.current?.click()}/><Action icon={<Video size={18}/>} label="Vídeo"/><Action icon={<Music2 size={18}/>} label="Música"/><Action icon={<BarChart3 size={18}/>} label="Encuesta"/><Action icon={<FileText size={18}/>} label="Noticia"/><Action icon={<MoreHorizontal size={18}/>} label="Más"/></div><div className="feed-composer-bottom"><button type="button" className="flex items-center gap-2 text-sm text-[#667484]"><Globe2 size={17}/>Público <MoreHorizontal size={14}/></button><button type="button" onClick={submit} disabled={isLoading||(!content.trim()&&!photos.length)} className="feed-publish">{isLoading?<Loader2 size={18} className="mx-auto animate-spin"/>:'Publicar'}</button></div></section>;
 }
+function Action({icon,label,onClick}:{icon:React.ReactNode;label:string;onClick?:()=>void}){return <button type="button" onClick={onClick} className="feed-action">{icon}{label}</button>}
