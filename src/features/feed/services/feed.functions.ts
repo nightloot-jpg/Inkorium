@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import type { CreateFeedPostInput, FeedPost } from '../types';
+import type { FeedPost } from '../types';
 
 async function getServerSupabase() {
   const { getSupabaseServerClient } = await import('../../../lib/supabase.server');
@@ -9,7 +9,7 @@ async function getServerSupabase() {
 async function requireUser() {
   const supabase = await getServerSupabase();
   const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) throw new Error('Not authenticated');
+  if (error || !data.user) throw new Error('No autenticado');
   return { supabase, user: data.user };
 }
 
@@ -17,27 +17,28 @@ export const getFeedFn = createServerFn({ method: 'GET' }).handler(async (): Pro
   const { supabase, user } = await requireUser();
   const { data, error } = await supabase
     .from('posts')
-    .select('id,user_id,content,type,created_at,profiles!posts_user_id_fkey(full_name,avatar_url),photos(url),likes(user_id),comments(id),post_shares(id)')
+    .select('id,user_id,content,type,created_at,profiles(*),photos(url),likes(user_id),comments(id),post_shares(id)')
     .order('created_at', { ascending: false })
     .limit(20);
 
   if (error) throw new Error(`Feed query failed: ${error.message}`);
 
   return (data ?? []).map((post: any) => {
-    const name = post.profiles?.full_name || 'Usuario';
+    const profile = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+    const name = profile?.full_name || 'Usuario';
     const likes = post.likes ?? [];
     return {
       id: post.id,
       userId: post.user_id,
       authorName: name,
-      authorAvatar: post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=e8eef7&color=164b88`,
+      authorAvatar: profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=e8eef7&color=164b88`,
       createdAt: post.created_at,
       content: post.content || '',
       kind: post.type === 'music' ? 'music' : post.type === 'photo' ? 'photo' : 'text',
       title: post.content?.split('\n')[0] || undefined,
       subtitle: post.type === 'music' ? 'MHR MUSIC' : undefined,
       duration: post.type === 'music' ? '5:05' : undefined,
-      image: post.photos?.[0]?.url || undefined,
+      image: Array.isArray(post.photos) ? post.photos[0]?.url : post.photos?.url,
       likes: likes.length,
       liked: likes.some((like: any) => like.user_id === user.id),
       comments: post.comments?.length || 0,
@@ -53,15 +54,9 @@ export const createFeedPostFn = createServerFn({ method: 'POST' })
     const content = data.get('content')?.toString().trim() || '';
     const type = data.get('type')?.toString() === 'photo' ? 'photo' : 'text';
     const photos = data.getAll('photos').filter((value): value is File => value instanceof File).slice(0, 4);
-
     if (!content && photos.length === 0) throw new Error('La publicación está vacía');
 
-    const { data: post, error } = await supabase
-      .from('posts')
-      .insert({ user_id: user.id, content, type } as any)
-      .select('id,user_id,content,type,created_at')
-      .single();
-
+    const { data: post, error } = await supabase.from('posts').insert({ user_id: user.id, content, type } as any).select('id,user_id,content,type,created_at').single();
     if (error) throw new Error(`Create post failed: ${error.message}`);
 
     for (const photo of photos) {
@@ -73,7 +68,6 @@ export const createFeedPostFn = createServerFn({ method: 'POST' })
       const { error: photoError } = await supabase.from('photos').insert({ user_id: user.id, post_id: post.id, url: publicUrl.publicUrl } as any);
       if (photoError) throw new Error(`Photo record failed: ${photoError.message}`);
     }
-
     return post;
   });
 
