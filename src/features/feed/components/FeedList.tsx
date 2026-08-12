@@ -1,64 +1,38 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { useInView } from 'react-intersection-observer';
 import { Loader2 } from 'lucide-react';
-import { useFeed } from '../hooks/useFeed';
 import { PostCard } from './PostCard';
+import { useFeed } from '../hooks/useFeed';
 
 export function FeedList() {
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const { data, status, hasNextPage, fetchNextPage, isFetchingNextPage, likePost, unlikePost, addComment, deletePost, editPost } = useFeed();
+  const { ref, inView } = useInView({ rootMargin: '300px' });
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, likePost, unlikePost, addComment, deletePost, editPost } = useFeed();
 
   useEffect(() => {
-    const element = loadMoreRef.current;
-    if (!element || !hasNextPage) return;
+    if (inView && hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !isFetchingNextPage) fetchNextPage();
-      },
-      { rootMargin: '500px 0px' },
-    );
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
-  if (status === 'pending') {
-    return <FeedMessage><Loader2 className="animate-spin text-blue-600" /></FeedMessage>;
-  }
-
-  if (status === 'error') {
-    return <FeedMessage><span className="text-sm text-red-600">No se ha podido cargar el feed.</span></FeedMessage>;
-  }
-
-  const pages = data?.pages ?? [];
-  const posts = pages.flatMap((page) => page.data);
-
-  if (posts.length === 0) {
-    return <FeedMessage><span className="text-sm text-slate-500">Todavía no hay publicaciones.</span></FeedMessage>;
-  }
+  if (status === 'pending') return <div className="flex min-h-[180px] items-center justify-center rounded-[2px] border border-[#dfe4ea] bg-white"><Loader2 className="animate-spin text-[#3c72b6]" /></div>;
+  if (status === 'error') return <div className="rounded-[2px] border border-[#dfe4ea] bg-white px-5 py-12 text-center text-red-500">Error al cargar el feed.</div>;
 
   return (
-    <div className="flex flex-col gap-4">
-      {pages.map((page, pageIndex) => page.data.map((post, postIndex) => (
+    <div className="space-y-4">
+      {data.pages.map((page, pageIndex) => page.data.map((post, postIndex) => (
         <PostCard
           key={post.id}
           post={post}
           musicVariant={pageIndex === 0 && postIndex < 2}
           onLike={(id) => likePost.mutate(id)}
           onUnlike={(id) => unlikePost.mutate(id)}
-          onComment={(id, content) => addComment.mutate({ postId: id, content })}
+          onAddComment={(id, content) => addComment.mutate({ postId: id, content })}
           onDelete={(id) => deletePost.mutate(id)}
           onEdit={(id, content) => editPost.mutate({ postId: id, content })}
         />
       )))}
 
-      <div ref={loadMoreRef} className="flex min-h-12 items-center justify-center py-2">
-        {isFetchingNextPage ? <Loader2 className="animate-spin text-blue-600" /> : hasNextPage ? <span className="text-xs text-slate-400">Cargando más publicaciones...</span> : <span className="text-xs text-slate-400">No hay más publicaciones</span>}
+      <div ref={ref} className="flex min-h-14 items-center justify-center py-4">
+        {isFetchingNextPage ? <Loader2 className="animate-spin text-[#3c72b6]" /> : hasNextPage ? <span className="text-xs text-[#8491a3]">Cargando más publicaciones...</span> : <span className="text-xs text-[#9aa5b3]">No hay más publicaciones</span>}
       </div>
     </div>
   );
-}
-
-function FeedMessage({ children }: { children: React.ReactNode }) {
-  return <div className="flex min-h-44 items-center justify-center border border-slate-200 bg-white shadow-sm">{children}</div>;
 }
