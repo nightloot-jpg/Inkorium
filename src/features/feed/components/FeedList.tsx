@@ -2,19 +2,4 @@ import { Loader2 } from 'lucide-react';
 import { useFeed } from '../hooks/useFeed';
 import { PostCard } from './PostCard';
 
-export function FeedList() {
-  const { data, isPending, isError, toggleLike } = useFeed();
-
-  if (isPending) return <div className="feed-message"><Loader2 className="animate-spin" style={{ color: '#075db0' }} /></div>;
-
-  if (isError) return <div className="feed-message"><span style={{ color: '#d92727', fontSize: 14 }}>No se ha podido cargar el feed.</span></div>;
-
-  const posts = data ?? [];
-  if (!posts.length) return <div className="feed-message"><span style={{ color: '#7b8797', fontSize: 14 }}>Todavía no hay publicaciones.</span></div>;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {posts.map((post) => <PostCard key={post.id} post={post} onLike={toggleLike} />)}
-    </div>
-  );
-}
+export function FeedList(){const{data,status,toggleLike}=useFeed();if(status==='pending')return <div className="feed-message"><Loader2 className="animate-spin text-[#4b86d7]"/></div>;if(status==='error')return <div className="feed-message text-center"><div><p className="font-semibold text-red-600">No se ha podido cargar el feed.</p><p className="mt-1 text-xs text-[#8a94a2]">La conexión con el servidor no está disponible.</p></div></div>;if(!data?.length)return <div className="feed-message text-sm text-[#7b8795]">Todavía no hay publicaciones.</div>;return <div className="flex flex-col gap-4">{data.map(post=><PostCard key={post.id} post={post} onLike={toggleLike}/>)}</div>}
