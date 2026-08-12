@@ -25,14 +25,12 @@ export function useFeed() {
     retry: 1,
   });
 
-  const mutation = (fn: typeof feedService.createPost) => useMutation({ mutationFn: fn, onSuccess: refresh });
   const createPost = useMutation({ mutationFn: feedService.createPost, onSuccess: refresh });
   const likePost = useMutation({ mutationFn: feedService.likePost, onSuccess: refresh });
   const unlikePost = useMutation({ mutationFn: feedService.unlikePost, onSuccess: refresh });
   const addComment = useMutation({ mutationFn: feedService.addComment, onSuccess: refresh });
   const deletePost = useMutation({ mutationFn: feedService.deletePost, onSuccess: refresh });
   const editPost = useMutation({ mutationFn: feedService.editPost, onSuccess: refresh });
-  void mutation;
 
   return { ...feed, createPost, likePost, unlikePost, addComment, deletePost, editPost };
 }
