@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRealtime } from '../../../lib/realtime/useRealtime';
 import { feedService } from '../services/feed.service';
 
 const FEED_KEY=['feed'] as const;
 export function useFeed(){
- const client=useQueryClient(); const [mounted,setMounted]=useState(false); const mountedRef=useRef(false);
- useEffect(()=>{mountedRef.current=true;setMounted(true)},[]);
+ const client=useQueryClient(); const [mounted,setMounted]=useState(false);
+ useEffect(()=>setMounted(true),[]);
  const refresh=()=>client.invalidateQueries({queryKey:FEED_KEY});
  useRealtime({table:'posts',onEvent:refresh}); useRealtime({table:'comments',onEvent:refresh}); useRealtime({table:'likes',onEvent:refresh});
  const feed=useInfiniteQuery({queryKey:FEED_KEY,queryFn:({pageParam})=>feedService.getPosts({pageParam}),initialPageParam:0,enabled:mounted,staleTime:15000,retry:1,getNextPageParam:last=>last.nextPage});
