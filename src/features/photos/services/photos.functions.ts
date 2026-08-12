@@ -17,12 +17,32 @@ export const getPhotosFn = createServerFn({ method: 'GET' })
 
     const { data: photos, error } = await supabase
       .from('photos')
-      .select('id, url, caption, created_at, user_id, post_id, profiles(*)')
+      .select('id, url, caption, created_at, user_id, post_id')
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
-    return photos ?? [];
+    if (!photos?.length) return [];
+
+    const userIds = [...new Set(photos.map((photo) => photo.user_id).filter(Boolean))];
+    const profilesById = new Map<string, { full_name: string | null; username: string | null; avatar_url: string | null }>();
+
+    if (userIds.length) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+      for (const profile of profiles ?? []) {
+        profilesById.set(profile.id, profile);
+      }
+    }
+
+    return photos.map((photo) => ({
+      ...photo,
+      profiles: profilesById.get(photo.user_id) ?? null,
+    }));
   });
 
 export const uploadPhotoFn = createServerFn({ method: 'POST' })
