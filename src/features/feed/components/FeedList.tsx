@@ -3,21 +3,14 @@ import { useFeed } from '../hooks/useFeed';
 import { PostCard } from './PostCard';
 
 export function FeedList() {
-  const { data, status, error, toggleLike } = useFeed();
+  const { data, status, toggleLike } = useFeed();
 
-  if (status === 'pending') {
+  if (status === 'pending' && !data?.length) {
     return <div className="feed-message"><Loader2 className="animate-spin text-[#4b86d7]" /></div>;
   }
 
-  if (status === 'error') {
-    return (
-      <div className="feed-message text-center">
-        <div>
-          <p className="font-semibold text-red-600">No se ha podido cargar el feed.</p>
-          <p className="mt-2 text-xs text-[#8a94a2]">{error instanceof Error ? error.message : 'Error al consultar las publicaciones.'}</p>
-        </div>
-      </div>
-    );
+  if (status === 'error' && !data?.length) {
+    return <div className="feed-message text-center"><p className="font-semibold text-red-600">No se ha podido cargar el feed.</p><p className="mt-2 text-xs text-[#8a94a2]">No hay publicaciones disponibles en este momento.</p></div>;
   }
 
   if (!data?.length) {
