@@ -1,1 +1,107 @@
-aW1wb3J0IHsgY3JlYXRlRmlsZVJvdXRlLCByZWRpcmVjdCB9IGZyb20gIkB0YW5zdGFjay9yZWFjdC1yb3V0ZXIiOwppbXBvcnQgeyB1c2VTdGF0ZSB9IGZyb20gInJlYWN0IjsKCmltcG9ydCB7IHN1cGFiYXNlIH0gZnJvbSAiQC9pbnRlZ3JhdGlvbnMvc3VwYWJhc2UvY2xpZW50IjsKCnR5cGUgT0F1dGhBcGkgPSB7CiAgZ2V0QXV0aG9yaXphdGlvbkRldGFpbHM6IChpZDogc3RyaW5nKSA9PiBQcm9taXNlPHsgZGF0YTogQXV0aG9yaXphdGlvbkRldGFpbHMgfCBudWxsOyBlcnJvcjogRXJyb3IgfCBudWxsIH0+OwogIGFwcHJvdmVBdXRob3JpemF0aW9uOiAoaWQ6IHN0cmluZykgPT4gUHJvbWlzZTx7IGRhdGE6IFJlZGlyZWN0UmVzdWx0IHwgbnVsbDsgZXJyb3I6IEVycm9yIHwgbnVsbCB9PjsKICBkZW55QXV0aG9yaXphdGlvbjogKGlkOiBzdHJpbmcpID0+IFByb21pc2U8eyBkYXRhOiBSZWRpcmVjdFJlc3VsdCB8IG51bGw7IGVycm9yOiBFcnJvciB8IG51bGwgfT47Cn07CnR5cGUgUmVkaXJlY3RSZXN1bHQgPSB7IHJlZGlyZWN0X3VybD86IHN0cmluZzsgcmVkaXJlY3RfdG8/OiBzdHJpbmcgfTsKdHlwZSBBdXRob3JpemF0aW9uRGV0YWlscyA9IFJlZGlyZWN0UmVzdWx0ICYgeyBjbGllbnQ/OiB7IG5hbWU/OiBzdHJpbmcgfSB9OwoKZnVuY3Rpb24gb2F1dGhBcGkoKTogT0F1dGhBcGkgewogIHJldHVybiAoc3VwYWJhc2UuYXV0aCBhcyB1bmtub3duIGFzIHsgb2F1dGg6IE9BdXRoQXBpIH0pLm9hdXRoOwp9CgpleHBvcnQgY29uc3QgUm91dGUgPSBjcmVhdGVGaWxlUm91dGUoIi8ubG92YWJsZS9vYXV0aC9jb25zZW50IikoewogIHNzcjogZmFsc2UsCiAgdmFsaWRhdGVTZWFyY2g6IChzOiBSZWNvcmQ8c3RyaW5nLCB1bmtub3duPikgPT4gKHsKICAgIGF1dGhvcml6YXRpb25faWQ6IHR5cGVvZiBzWyJhdXRob3JpemF0aW9uX2lkIl0gPT09ICJzdHJpbmciID8gc1siYXV0aG9yaXphdGlvbl9pZCJdIDogIiIsCiAgfSksCiAgYmVmb3JlTG9hZDogYXN5bmMgKHsgc2VhcmNoLCBsb2NhdGlvbiB9KSA9PiB7CiAgICBpZiAoIXNlYXJjaC5hdXRob3JpemF0aW9uX2lkKSB0aHJvdyBuZXcgRXJyb3IoIkZhbHRhIGF1dGhvcml6YXRpb25faWQiKTsKICAgIGNvbnN0IHsgZGF0YSB9ID0gYXdhaXQgc3VwYWJhc2UuYXV0aC5nZXRTZXNzaW9uKCk7CiAgICBpZiAoIWRhdGEuc2Vzc2lvbikgewogICAgICBjb25zdCBuZXh0ID0gbG9jYXRpb24ucGF0aG5hbWUgKyBsb2NhdGlvbi5zZWFyY2hTdHI7CiAgICAgIHRocm93IHJlZGlyZWN0KHsgdG86ICIvYXV0aCIsIHNlYXJjaDogeyBuZXh0IH0gfSk7CiAgICB9CiAgfSwKICBsb2FkZXI6IGFzeW5jICh7IGxvY2F0aW9uIH0pID0+IHsKICAgIGNvbnN0IGF1dGhvcml6YXRpb25JZCA9IG5ldyBVUkxTZWFyY2hQYXJhbXMobG9jYXRpb24uc2VhcmNoKS5nZXQoImF1dGhvcml6YXRpb25faWQiKSA/PyAiIjsKICAgIGNvbnN0IHsgZGF0YSwgZXJyb3IgfSA9IGF3YWl0IG9hdXRoQXBpKCkuZ2V0QXV0aG9yaXphdGlvbkRldGFpbHMoYXV0aG9yaXphdGlvbklkKTsKICAgIGlmIChlcnJvcikgdGhyb3cgZXJyb3I7CiAgICBjb25zdCBpbW1lZGlhdGUgPSBkYXRhPy5yZWRpcmVjdF91cmwgPz8gZGF0YT8ucmVkaXJlY3RfdG87CiAgICBpZiAoaW1tZWRpYXRlICYmICFkYXRhPy5jbGllbnQpIHRocm93IHJlZGlyZWN0KHsgaHJlZjogaW1tZWRpYXRlIH0pOwogICAgcmV0dXJuIGRhdGE7CiAgfSwKICBjb21wb25lbnQ6IENvbnNlbnQsCiAgZXJyb3JDb21wb25lbnQ6ICh7IGVycm9yIH0pID0+ICgKICAgIDxtYWluIGNsYXNzTmFtZT0ibXgtYXV0byBtYXgtdy1tZCBwLTggdGV4dC1zbSI+CiAgICAgIE5vIGhlbW9zIHBvZGlkbyBjYXJnYXIgZXN0YSBhdXRvcml6YWNpw7NuOiB7U3RyaW5nKChlcnJvciBhcyBFcnJvcik/Lm1lc3NhZ2UgPz8gZXJyb3IpfQogICAgPC9tYWluPgogICksCn0pOwoKZnVuY3Rpb24gQ29uc2VudCgpIHsKICBjb25zdCBkZXRhaWxzID0gUm91dGUudXNlTG9hZGVyRGF0YSgpOwogIGNvbnN0IHsgYXV0aG9yaXphdGlvbl9pZCB9ID0gUm91dGUudXNlU2VhcmNoKCk7CiAgY29uc3QgW2J1c3ksIHNldEJ1c3ldID0gdXNlU3RhdGUoZmFsc2UpOwogIGNvbnN0IFtlcnJvciwgc2V0RXJyb3JdID0gdXNlU3RhdGU8c3RyaW5nIHwgbnVsbD4obnVsbCk7CiAgY29uc3QgY2xpZW50TmFtZSA9IGRldGFpbHM/LmNsaWVudD8ubmFtZSA/PyAidW5hIGFwbGljYWNpw7NuIjsKCiAgYXN5bmMgZnVuY3Rpb24gZGVjaWRlKGFwcHJvdmU6IGJvb2xlYW4pIHsKICAgIHNldEJ1c3kodHJ1ZSk7CiAgICBzZXRFcnJvcihudWxsKTsKICAgIGNvbnN0IGFwaSA9IG9hdXRoQXBpKCk7CiAgICBjb25zdCB7IGRhdGEsIGVycm9yOiBlcnIgfSA9IGFwcHJvdmUKICAgICAgPyBhd2FpdCBhcGkuYXBwcm92ZUF1dGhvcml6YXRpb24oYXV0aG9yaXphdGlvbl9pZCkKICAgICAgOiBhd2FpdCBhcGkuZGVueUF1dGhvcml6YXRpb24oYXV0aG9yaXphdGlvbl9pZCk7CiAgICBpZiAoZXJyKSB7CiAgICAgIHNldEJ1c3koZmFsc2UpOwogICAgICBzZXRFcnJvcihlcnIubWVzc2FnZSk7CiAgICAgIHJldHVybjsKICAgIH0KICAgIGNvbnN0IHRhcmdldCA9IGRhdGE/LnJlZGlyZWN0X3VybCA/PyBkYXRhPy5yZWRpcmVjdF90bzsKICAgIGlmICghdGFyZ2V0KSB7CiAgICAgIHNldEJ1c3koZmFsc2UpOwogICAgICBzZXRFcnJvcigiRWwgc2Vydmlkb3IgZGUgYXV0b3JpemFjacOzbiBubyBkZXZvbHZpw7MgbmluZ3VuYSByZWRpcmVjY2nDs24uIik7CiAgICAgIHJldHVybjsKICAgIH0KICAgIHdpbmRvdy5sb2NhdGlvbi5ocmVmID0gdGFyZ2V0OwogIH0KCiAgcmV0dXJuICgKICAgIDxtYWluIGNsYXNzTmFtZT0ibXgtYXV0byBmbGV4IG1pbi1oLXNjcmVlbiBtYXgtdy1tZCBmbGV4LWNvbCBqdXN0aWZ5LWNlbnRlciBnYXAtNCBwLTgiPgogICAgICA8aDEgY2xhc3NOYW1lPSJ0ZXh0LXhsIGZvbnQtYm9sZCI+Q29uZWN0YXIge2NsaWVudE5hbWV9IGNvbiB0dSBjdWVudGE8L2gxPgogICAgICA8cCBjbGFzc05hbWU9InRleHQtc20gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj4KICAgICAgICB7Y2xpZW50TmFtZX0gcG9kcsOhIHVzYXIgbm9jdHVybm8gZW4gdHUgbm9tYnJlOiB2ZXIgeSBlZGl0YXIgdHUgcGVyZmlsLCBwdWJsaWNhciBlc3RhZG9zIHkKICAgICAgICBsZWVyIHR1IGZlZWQsIGFtaWdvcywgZm90b2xvZyB5IG5vdGlmaWNhY2lvbmVzLgogICAgICA8L3A+CiAgICAgIHtlcnJvciA/ICgKICAgICAgICA8cCByb2xlPSJhbGVydCIgY2xhc3NOYW1lPSJ0ZXh0LXNtIHRleHQtZGVzdHJ1Y3RpdmUiPgogICAgICAgICAge2Vycm9yfQogICAgICAgIDwvcD4KICAgICAgKSA6IG51bGx9CiAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGdhcC0zIj4KICAgICAgICA8YnV0dG9uCiAgICAgICAgICB0eXBlPSJidXR0b24iCiAgICAgICAgICBkaXNhYmxlZD17YnVzeX0KICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHZvaWQgZGVjaWRlKHRydWUpfQogICAgICAgICAgY2xhc3NOYW1lPSJyb3VuZGVkLW1kIGJnLXByaW1hcnkgcHgtNCBweS0yIHRleHQtc20gZm9udC1zZW1pYm9sZCB0ZXh0LXByaW1hcnktZm9yZWdyb3VuZCBkaXNhYmxlZDpvcGFjaXR5LTUwIgogICAgICAgID4KICAgICAgICAgIEF1dG9yaXphcgogICAgICAgIDwvYnV0dG9uPgogICAgICAgIDxidXR0b24KICAgICAgICAgIHR5cGU9ImJ1dHRvbiIKICAgICAgICAgIGRpc2FibGVkPXtidXN5fQogICAgICAgICAgb25DbGljaz17KCkgPT4gdm9pZCBkZWNpZGUoZmFsc2UpfQogICAgICAgICAgY2xhc3NOYW1lPSJyb3VuZGVkLW1kIGJvcmRlciBib3JkZXItYm9yZGVyIHB4LTQgcHktMiB0ZXh0LXNtIGRpc2FibGVkOm9wYWNpdHktNTAiCiAgICAgICAgPgogICAgICAgICAgQ2FuY2VsYXIKICAgICAgICA8L2J1dHRvbj4KICAgICAgPC9kaXY+CiAgICA8L21haW4+CiAgKTsKfQ==
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useState } from "react";
+
+import { supabase } from "@/integrations/supabase/client";
+
+type OAuthApi = {
+  getAuthorizationDetails: (id: string) => Promise<{ data: AuthorizationDetails | null; error: Error | null }>;
+  approveAuthorization: (id: string) => Promise<{ data: RedirectResult | null; error: Error | null }>;
+  denyAuthorization: (id: string) => Promise<{ data: RedirectResult | null; error: Error | null }>;
+};
+type RedirectResult = { redirect_url?: string; redirect_to?: string };
+type AuthorizationDetails = RedirectResult & { client?: { name?: string } };
+
+function oauthApi(): OAuthApi {
+  return (supabase.auth as unknown as { oauth: OAuthApi }).oauth;
+}
+
+export const Route = createFileRoute("/.lovable/oauth/consent")({
+  ssr: false,
+  validateSearch: (s: Record<string, unknown>) => ({
+    authorization_id: typeof s["authorization_id"] === "string" ? s["authorization_id"] : "",
+  }),
+  beforeLoad: async ({ search, location }) => {
+    if (!search.authorization_id) throw new Error("Falta authorization_id");
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      const next = location.pathname + location.searchStr;
+      throw redirect({ to: "/auth", search: { next } });
+    }
+  },
+  loader: async ({ location }) => {
+    const authorizationId = new URLSearchParams(location.search).get("authorization_id") ?? "";
+    const { data, error } = await oauthApi().getAuthorizationDetails(authorizationId);
+    if (error) throw error;
+    const immediate = data?.redirect_url ?? data?.redirect_to;
+    if (immediate && !data?.client) throw redirect({ href: immediate });
+    return data;
+  },
+  component: Consent,
+  errorComponent: ({ error }) => (
+    <main className="mx-auto max-w-md p-8 text-sm">
+      No hemos podido cargar esta autorización: {String((error as Error)?.message ?? error)}
+    </main>
+  ),
+});
+
+function Consent() {
+  const details = Route.useLoaderData();
+  const { authorization_id } = Route.useSearch();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const clientName = details?.client?.name ?? "una aplicación";
+
+  async function decide(approve: boolean) {
+    setBusy(true);
+    setError(null);
+    const api = oauthApi();
+    const { data, error: err } = approve
+      ? await api.approveAuthorization(authorization_id)
+      : await api.denyAuthorization(authorization_id);
+    if (err) {
+      setBusy(false);
+      setError(err.message);
+      return;
+    }
+    const target = data?.redirect_url ?? data?.redirect_to;
+    if (!target) {
+      setBusy(false);
+      setError("El servidor de autorización no devolvió ninguna redirección.");
+      return;
+    }
+    window.location.href = target;
+  }
+
+  return (
+    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-8">
+      <h1 className="text-xl font-bold">Conectar {clientName} con tu cuenta</h1>
+      <p className="text-sm text-muted-foreground">
+        {clientName} podrá usar nocturno en tu nombre: ver y editar tu perfil, publicar estados y
+        leer tu feed, amigos, fotolog y notificaciones.
+      </p>
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+      <div className="flex gap-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void decide(true)}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+        >
+          Autorizar
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void decide(false)}
+          className="rounded-md border border-border px-4 py-2 text-sm disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+      </div>
+    </main>
+  );
+}

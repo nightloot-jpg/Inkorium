@@ -1,1 +1,703 @@
-ZXhwb3J0IHR5cGUgSnNvbiA9CiAgfCBzdHJpbmcKICB8IG51bWJlcgogIHwgYm9vbGVhbgogIHwgbnVsbAogIHwgeyBba2V5OiBzdHJpbmddOiBKc29uIHwgdW5kZWZpbmVkIH0KICB8IEpzb25bXQoKZXhwb3J0IHR5cGUgRGF0YWJhc2UgPSB7CiAgLy8gQWxsb3dzIHRvIGF1dG9tYXRpY2FsbHkgaW5zdGFudGlhdGUgY3JlYXRlQ2xpZW50IHdpdGggcmlnaHQgb3B0aW9ucwogIC8vIGluc3RlYWQgb2YgY3JlYXRlQ2xpZW50PERhdGFiYXNlLCB7IFBvc3RncmVzdFZlcnNpb246ICdYWCcgfT4oVVJMLCBLRVkpCiAgX19JbnRlcm5hbFN1cGFiYXNlOiB7CiAgICBQb3N0Z3Jlc3RWZXJzaW9uOiAiMTQuMTUiCiAgfQogIHB1YmxpYzogewogICAgVGFibGVzOiB7CiAgICAgIGFsYnVtczogewogICAgICAgIFJvdzogewogICAgICAgICAgY292ZXJfdXJsOiBzdHJpbmcgfCBudWxsCiAgICAgICAgICBjcmVhdGVkX2F0OiBzdHJpbmcKICAgICAgICAgIGRlc2NyaXB0aW9uOiBzdHJpbmcKICAgICAgICAgIGlkOiBzdHJpbmcKICAgICAgICAgIGlzX3ByaXZhdGU6IGJvb2xlYW4KICAgICAgICAgIHRpdGxlOiBzdHJpbmcKICAgICAgICAgIHVzZXJfaWQ6IHN0cmluZwogICAgICAgIH0KICAgICAgICBJbnNlcnQ6IHsKICAgICAgICAgIGNvdmVyX3VybD86IHN0cmluZyB8IG51bGwKICAgICAgICAgIGNyZWF0ZWRfYXQ/OiBzdHJpbmcKICAgICAgICAgIGRlc2NyaXB0aW9uPzogc3RyaW5nCiAgICAgICAgICBpZD86IHN0cmluZwogICAgICAgICAgaXNfcHJpdmF0ZT86IGJvb2xlYW4KICAgICAgICAgIHRpdGxlOiBzdHJpbmcKICAgICAgICAgIHVzZXJfaWQ6IHN0cmluZwogICAgICAgIH0KICAgICAgICBVcGRhdGU6IHsKICAgICAgICAgIGNvdmVyX3VybD86IHN0cmluZyB8IG51bGwKICAgICAgICAgIGNyZWF0ZWRfYXQ/OiBzdHJpbmcKICAgICAgICAgIGRlc2NyaXB0aW9uPzogc3RyaW5nCiAgICAgICAgICBpZD86IHN0cmluZwogICAgICAgICAgaXNfcHJpdmF0ZT86IGJvb2xlYW4KICAgICAgICAgIHRpdGxlPzogc3RyaW5nCiAgICAgICAgICB1c2VyX2lkPzogc3RyaW5nCiAgICAgICAgfQogICAgICAgIFJlbGF0aW9uc2hpcHM6IFtdCiAgICAgIH0KICAgICAgYmxvY2tzOiB7CiAgICAgICAgUm93OiB7CiAgICAgICAgICBibG9ja2VkX2lkOiBzdHJpbmcKICAgICAgICAgIGJsb2NrZXJfaWQ6IHN0cmluZwogICAgICAgICAgY3JlYXRlZF9hdDogc3RyaW5nCiAgICAgICAgfQogICAgICAgIEluc2VydDogewogICAgICAgICAgYmxvY2tlZF9pZDogc3RyaW5nCiAgICAgICAgICBibG9ja2VyX2lkOiBzdHJpbmcKICAgICAgICAgIGNyZWF0ZWRfYXQ/OiBzdHJpbmcKICAgICAgICB9CiAgICAgICAgVXBkYXRlOiB7CiAgICAgICAgICBibG9ja2VkX2lkPzogc3RyaW5nCiAgICAgICAgICBibG9ja2VyX2lkPzogc3RyaW5nCiAgICAgICAgICBjcmVhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgfQogICAgICAgIFJlbGF0aW9uc2hpcHM6IFsKICAgICAgICAgIHsKICAgICAgICAgICAgZm9yZWlnbktleU5hbWU6ICJibG9ja3NfYmxvY2tlZF9pZF9ma2V5IgogICAgICAgICAgICBjb2x1bW5zOiBbImJsb2NrZWRfaWQiXQogICAgICAgICAgICBpc09uZVRvT25lOiBmYWxzZQogICAgICAgICAgICByZWZlcmVuY2VkUmVsYXRpb246ICJwcm9maWxlcyIKICAgICAgICAgICAgcmVmZXJlbmNlZENvbHVtbnM6IFsiaWQiXQogICAgICAgICAgfSwKICAgICAgICAgIHsKICAgICAgICAgICAgZm9yZWlnbktleU5hbWU6ICJibG9ja3NfYmxvY2tlcl9pZF9ma2V5IgogICAgICAgICAgICBjb2x1bW5zOiBbImJsb2NrZXJfaWQiXQogICAgICAgICAgICBpc09uZVRvT25lOiBmYWxzZQogICAgICAgICAgICByZWZlcmVuY2VkUmVsYXRpb246ICJwcm9maWxlcyIKICAgICAgICAgICAgcmVmZXJlbmNlZENvbHVtbnM6IFsiaWQiXQogICAgICAgICAgfSwKICAgICAgICBdCiAgICAgIH0KICAgICAgZnJpZW5kc2hpcHM6IHsKICAgICAgICBSb3c6IHsKICAgICAgICAgIGFkZHJlc3NlZV9pZDogc3RyaW5nCiAgICAgICAgICBjcmVhdGVkX2F0OiBzdHJpbmcKICAgICAgICAgIGlkOiBzdHJpbmcKICAgICAgICAgIHJlcXVlc3Rlcl9pZDogc3RyaW5nCiAgICAgICAgICBzdGF0dXM6IHN0cmluZwogICAgICAgICAgdXBkYXRlZF9hdDogc3RyaW5nCiAgICAgICAgfQogICAgICAgIEluc2VydDogewogICAgICAgICAgYWRkcmVzc2VlX2lkOiBzdHJpbmcKICAgICAgICAgIGNyZWF0ZWRfYXQ/OiBzdHJpbmcKICAgICAgICAgIGlkPzogc3RyaW5nCiAgICAgICAgICByZXF1ZXN0ZXJfaWQ6IHN0cmluZwogICAgICAgICAgc3RhdHVzPzogc3RyaW5nCiAgICAgICAgICB1cGRhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgfQogICAgICAgIFVwZGF0ZTogewogICAgICAgICAgYWRkcmVzc2VlX2lkPzogc3RyaW5nCiAgICAgICAgICBjcmVhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgICBpZD86IHN0cmluZwogICAgICAgICAgcmVxdWVzdGVyX2lkPzogc3RyaW5nCiAgICAgICAgICBzdGF0dXM/OiBzdHJpbmcKICAgICAgICAgIHVwZGF0ZWRfYXQ/OiBzdHJpbmcKICAgICAgICB9CiAgICAgICAgUmVsYXRpb25zaGlwczogWwogICAgICAgICAgewogICAgICAgICAgICBmb3JlaWduS2V5TmFtZTogImZyaWVuZHNoaXBzX2FkZHJlc3NlZV9pZF9ma2V5IgogICAgICAgICAgICBjb2x1bW5zOiBbImFkZHJlc3NlZV9pZCJdCiAgICAgICAgICAgIGlzT25lVG9PbmU6IGZhbHNlCiAgICAgICAgICAgIHJlZmVyZW5jZWRSZWxhdGlvbjogInByb2ZpbGVzIgogICAgICAgICAgICByZWZlcmVuY2VkQ29sdW1uczogWyJpZCJdCiAgICAgICAgICB9LAogICAgICAgICAgewogICAgICAgICAgICBmb3JlaWduS2V5TmFtZTogImZyaWVuZHNoaXBzX3JlcXVlc3Rlcl9pZF9ma2V5IgogICAgICAgICAgICBjb2x1bW5zOiBbInJlcXVlc3Rlcl9pZCJdCiAgICAgICAgICAgIGlzT25lVG9PbmU6IGZhbHNlCiAgICAgICAgICAgIHJlZmVyZW5jZWRSZWxhdGlvbjogInByb2ZpbGVzIgogICAgICAgICAgICByZWZlcmVuY2VkQ29sdW1uczogWyJpZCJdCiAgICAgICAgICB9LAogICAgICAgIF0KICAgICAgfQogICAgICBtZXNzYWdlczogewogICAgICAgIFJvdzogewogICAgICAgICAgYm9keTogc3RyaW5nCiAgICAgICAgICBjcmVhdGVkX2F0OiBzdHJpbmcKICAgICAgICAgIGlkOiBzdHJpbmcKICAgICAgICAgIHJlYWRfYXQ6IHN0cmluZyB8IG51bGwKICAgICAgICAgIHJlY2lwaWVudF9pZDogc3RyaW5nCiAgICAgICAgICBzZW5kZXJfaWQ6IHN0cmluZwogICAgICAgIH0KICAgICAgICBJbnNlcnQ6IHsKICAgICAgICAgIGJvZHk6IHN0cmluZwogICAgICAgICAgY3JlYXRlZF9hdD86IHN0cmluZwogICAgICAgICAgaWQ/OiBzdHJpbmcKICAgICAgICAgIHJlYWRfYXQ/OiBzdHJpbmcgfCBudWxsCiAgICAgICAgICByZWNpcGllbnRfaWQ6IHN0cmluZwogICAgICAgICAgc2VuZGVyX2lkOiBzdHJpbmcKICAgICAgICB9CiAgICAgICAgVXBkYXRlOiB7CiAgICAgICAgICBib2R5Pzogc3RyaW5nCiAgICAgICAgICBjcmVhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgICBpZD86IHN0cmluZwogICAgICAgICAgcmVhZF9hdD86IHN0cmluZyB8IG51bGwKICAgICAgICAgIHJlY2lwaWVudF9pZD86IHN0cmluZwogICAgICAgICAgc2VuZGVyX2lkPzogc3RyaW5nCiAgICAgICAgfQogICAgICAgIFJlbGF0aW9uc2hpcHM6IFsKICAgICAgICAgIHsKICAgICAgICAgICAgZm9yZWlnbktleU5hbWU6ICJtZXNzYWdlc19yZWNpcGllbnRfaWRfZmtleSIKICAgICAgICAgICAgY29sdW1uczogWyJyZWNpcGllbnRfaWQiXQogICAgICAgICAgICBpc09uZVRvT25lOiBmYWxzZQogICAgICAgICAgICByZWZlcmVuY2VkUmVsYXRpb246ICJwcm9maWxlcyIKICAgICAgICAgICAgcmVmZXJlbmNlZENvbHVtbnM6IFsiaWQiXQogICAgICAgICAgfSwKICAgICAgICAgIHsKICAgICAgICAgICAgZm9yZWlnbktleU5hbWU6ICJtZXNzYWdlc19zZW5kZXJfaWRfZmtleSIKICAgICAgICAgICAgY29sdW1uczogWyJzZW5kZXJfaWQiXQogICAgICAgICAgICBpc09uZVRvT25lOiBmYWxzZQogICAgICAgICAgICByZWZlcmVuY2VkUmVsYXRpb246ICJwcm9maWxlcyIKICAgICAgICAgICAgcmVmZXJlbmNlZENvbHVtbnM6IFsiaWQiXQogICAgICAgICAgfSwKICAgICAgICBdCiAgICAgIH0KICAgICAgbm90aWZpY2F0aW9uczogewogICAgICAgIFJvdzogewogICAgICAgICAgYWN0b3JfaWQ6IHN0cmluZyB8IG51bGwKICAgICAgICAgIGNyZWF0ZWRfYXQ6IHN0cmluZwogICAgICAgICAgZW50aXR5X2lkOiBzdHJpbmcgfCBudWxsCiAgICAgICAgICBpZDogc3RyaW5nCiAgICAgICAgICByZWFkOiBib29sZWFuCiAgICAgICAgICB0eXBlOiBzdHJpbmcKICAgICAgICAgIHVzZXJfaWQ6IHN0cmluZwogICAgICAgIH0KICAgICAgICBJbnNlcnQ6IHsKICAgICAgICAgIGFjdG9yX2lkPzogc3RyaW5nIHwgbnVsbAogICAgICAgICAgY3JlYXRlZF9hdD86IHN0cmluZwogICAgICAgICAgZW50aXR5X2lkPzogc3RyaW5nIHwgbnVsbAogICAgICAgICAgaWQ/OiBzdHJpbmcKICAgICAgICAgIHJlYWQ/OiBib29sZWFuCiAgICAgICAgICB0eXBlOiBzdHJpbmcKICAgICAgICAgIHVzZXJfaWQ6IHN0cmluZwogICAgICAgIH0KICAgICAgICBVcGRhdGU6IHsKICAgICAgICAgIGFjdG9yX2lkPzogc3RyaW5nIHwgbnVsbAogICAgICAgICAgY3JlYXRlZF9hdD86IHN0cmluZwogICAgICAgICAgZW50aXR5X2lkPzogc3RyaW5nIHwgbnVsbAogICAgICAgICAgaWQ/OiBzdHJpbmcKICAgICAgICAgIHJlYWQ/OiBib29sZWFuCiAgICAgICAgICB0eXBlPzogc3RyaW5nCiAgICAgICAgICB1c2VyX2lkPzogc3RyaW5nCiAgICAgICAgfQogICAgICAgIFJlbGF0aW9uc2hpcHM6IFsKICAgICAgICAgIHsKICAgICAgICAgICAgZm9yZWlnbktleU5hbWU6ICJub3RpZmljYXRpb25zX2FjdG9yX2lkX2ZrZXkiCiAgICAgICAgICAgIGNvbHVtbnM6IFsiYWN0b3JfaWQiXQogICAgICAgICAgICBpc09uZVRvT25lOiBmYWxzZQogICAgICAgICAgICByZWZlcmVuY2VkUmVsYXRpb246ICJwcm9maWxlcyIKICAgICAgICAgICAgcmVmZXJlbmNlZENvbHVtbnM6IFsiaWQiXQogICAgICAgICAgfSwKICAgICAgICAgIHsKICAgICAgICAgICAgZm9yZWlnbktleU5hbWU6ICJub3RpZmljYXRpb25zX3VzZXJfaWRfZmtleSIKICAgICAgICAgICAgY29sdW1uczogWyJ1c2VyX2lkIl0KICAgICAgICAgICAgaXNPbmVUb09uZTogZmFsc2UKICAgICAgICAgICAgcmVmZXJlbmNlZFJlbGF0aW9uOiAicHJvZmlsZXMiCiAgICAgICAgICAgIHJlZmVyZW5jZWRDb2x1bW5zOiBbImlkIl0KICAgICAgICAgIH0sCiAgICAgICAgXQogICAgICB9CiAgICAgIHBob3RvX2NvbW1lbnRzOiB7CiAgICAgICAgUm93OiB7CiAgICAgICAgICBhdXRob3JfaWQ6IHN0cmluZwogICAgICAgICAgYm9keTogc3RyaW5nCiAgICAgICAgICBjcmVhdGVkX2F0OiBzdHJpbmcKICAgICAgICAgIGlkOiBzdHJpbmcKICAgICAgICAgIHBob3RvX2lkOiBzdHJpbmcKICAgICAgICB9CiAgICAgICAgSW5zZXJ0OiB7CiAgICAgICAgICBhdXRob3JfaWQ6IHN0cmluZwogICAgICAgICAgYm9keTogc3RyaW5nCiAgICAgICAgICBjcmVhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgICBpZD86IHN0cmluZwogICAgICAgICAgcGhvdG9faWQ6IHN0cmluZwogICAgICAgIH0KICAgICAgICBVcGRhdGU6IHsKICAgICAgICAgIGF1dGhvcl9pZD86IHN0cmluZwogICAgICAgICAgYm9keT86IHN0cmluZwogICAgICAgICAgY3JlYXRlZF9hdD86IHN0cmluZwogICAgICAgICAgaWQ/OiBzdHJpbmcKICAgICAgICAgIHBob3RvX2lkPzogc3RyaW5nCiAgICAgICAgfQogICAgICAgIFJlbGF0aW9uc2hpcHM6IFsKICAgICAgICAgIHsKICAgICAgICAgICAgZm9yZWlnbktleU5hbWU6ICJwaG90b19jb21tZW50c19hdXRob3JfaWRfZmtleSIKICAgICAgICAgICAgY29sdW1uczogWyJhdXRob3JfaWQiXQogICAgICAgICAgICBpc09uZVRvT25lOiBmYWxzZQogICAgICAgICAgICByZWZlcmVuY2VkUmVsYXRpb246ICJwcm9maWxlcyIKICAgICAgICAgICAgcmVmZXJlbmNlZENvbHVtbnM6IFsiaWQiXQogICAgICAgICAgfSwKICAgICAgICAgIHsKICAgICAgICAgICAgZm9yZWlnbktleU5hbWU6ICJwaG90b19jb21tZW50c19waG90b19pZF9ma2V5IgogICAgICAgICAgICBjb2x1bW5zOiBbInBob3RvX2lkIl0KICAgICAgICAgICAgaXNPbmVUb09uZTogZmFsc2UKICAgICAgICAgICAgcmVmZXJlbmNlZFJlbGF0aW9uOiAicGhvdG9zIgogICAgICAgICAgICByZWZlcmVuY2VkQ29sdW1uczogWyJpZCJdCiAgICAgICAgICB9LAogICAgICAgIF0KICAgICAgfQogICAgICBwaG90b19saWtlczogewogICAgICAgIFJvdzogewogICAgICAgICAgY3JlYXRlZF9hdDogc3RyaW5nCiAgICAgICAgICBwaG90b19pZDogc3RyaW5nCiAgICAgICAgICB1c2VyX2lkOiBzdHJpbmcKICAgICAgICB9CiAgICAgICAgSW5zZXJ0OiB7CiAgICAgICAgICBjcmVhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgICBwaG90b19pZDogc3RyaW5nCiAgICAgICAgICB1c2VyX2lkOiBzdHJpbmcKICAgICAgICB9CiAgICAgICAgVXBkYXRlOiB7CiAgICAgICAgICBjcmVhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgICBwaG90b19pZD86IHN0cmluZwogICAgICAgICAgdXNlcl9pZD86IHN0cmluZwogICAgICAgIH0KICAgICAgICBSZWxhdGlvbnNoaXBzOiBbCiAgICAgICAgICB7CiAgICAgICAgICAgIGZvcmVpZ25LZXlOYW1lOiAicGhvdG9fbGlrZXNfcGhvdG9faWRfZmtleSIKICAgICAgICAgICAgY29sdW1uczogWyJwaG90b19pZCJdCiAgICAgICAgICAgIGlzT25lVG9PbmU6IGZhbHNlCiAgICAgICAgICAgIHJlZmVyZW5jZWRSZWxhdGlvbjogInBob3RvcyIKICAgICAgICAgICAgcmVmZXJlbmNlZENvbHVtbnM6IFsiaWQiXQogICAgICAgICAgfSwKICAgICAgICAgIHsKICAgICAgICAgICAgZm9yZWlnbktleU5hbWU6ICJwaG90b19saWtlc191c2VyX2lkX2ZrZXkiCiAgICAgICAgICAgIGNvbHVtbnM6IFsidXNlcl9pZCJdCiAgICAgICAgICAgIGlzT25lVG9PbmU6IGZhbHNlCiAgICAgICAgICAgIHJlZmVyZW5jZWRSZWxhdGlvbjogInByb2ZpbGVzIgogICAgICAgICAgICByZWZlcmVuY2VkQ29sdW1uczogWyJpZCJdCiAgICAgICAgICB9LAogICAgICAgIF0KICAgICAgfQogICAgICBwaG90b190YWdzOiB7CiAgICAgICAgUm93OiB7CiAgICAgICAgICBjcmVhdGVkX2F0OiBzdHJpbmcKICAgICAgICAgIHBob3RvX2lkOiBzdHJpbmcKICAgICAgICAgIHRhZ2dlZF9pZDogc3RyaW5nCiAgICAgICAgICB0YWdnZXJfaWQ6IHN0cmluZwogICAgICAgIH0KICAgICAgICBJbnNlcnQ6IHsKICAgICAgICAgIGNyZWF0ZWRfYXQ/OiBzdHJpbmcKICAgICAgICAgIHBob3RvX2lkOiBzdHJpbmcKICAgICAgICAgIHRhZ2dlZF9pZDogc3RyaW5nCiAgICAgICAgICB0YWdnZXJfaWQ6IHN0cmluZwogICAgICAgIH0KICAgICAgICBVcGRhdGU6IHsKICAgICAgICAgIGNyZWF0ZWRfYXQ/OiBzdHJpbmcKICAgICAgICAgIHBob3RvX2lkPzogc3RyaW5nCiAgICAgICAgICB0YWdnZWRfaWQ/OiBzdHJpbmcKICAgICAgICAgIHRhZ2dlcl9pZD86IHN0cmluZwogICAgICAgIH0KICAgICAgICBSZWxhdGlvbnNoaXBzOiBbCiAgICAgICAgICB7CiAgICAgICAgICAgIGZvcmVpZ25LZXlOYW1lOiAicGhvdG9fdGFnc19waG90b19pZF9ma2V5IgogICAgICAgICAgICBjb2x1bW5zOiBbInBob3RvX2lkIl0KICAgICAgICAgICAgaXNPbmVUb09uZTogZmFsc2UKICAgICAgICAgICAgcmVmZXJlbmNlZFJlbGF0aW9uOiAicGhvdG9zIgogICAgICAgICAgICByZWZlcmVuY2VkQ29sdW1uczogWyJpZCJdCiAgICAgICAgICB9LAogICAgICAgICAgewogICAgICAgICAgICBmb3JlaWduS2V5TmFtZTogInBob3RvX3RhZ3NfdGFnZ2VkX2lkX2ZrZXkiCiAgICAgICAgICAgIGNvbHVtbnM6IFsidGFnZ2VkX2lkIl0KICAgICAgICAgICAgaXNPbmVUb09uZTogZmFsc2UKICAgICAgICAgICAgcmVmZXJlbmNlZFJlbGF0aW9uOiAicHJvZmlsZXMiCiAgICAgICAgICAgIHJlZmVyZW5jZWRDb2x1bW5zOiBbImlkIl0KICAgICAgICAgIH0sCiAgICAgICAgICB7CiAgICAgICAgICAgIGZvcmVpZ25LZXlOYW1lOiAicGhvdG9fdGFnc190YWdnZXJfaWRfZmtleSIKICAgICAgICAgICAgY29sdW1uczogWyJ0YWdnZXJfaWQiXQogICAgICAgICAgICBpc09uZVRvT25lOiBmYWxzZQogICAgICAgICAgICByZWZlcmVuY2VkUmVsYXRpb246ICJwcm9maWxlcyIKICAgICAgICAgICAgcmVmZXJlbmNlZENvbHVtbnM6IFsiaWQiXQogICAgICAgICAgfSwKICAgICAgICBdCiAgICAgIH0KICAgICAgcGhvdG9zOiB7CiAgICAgICAgUm93OiB7CiAgICAgICAgICBhbGJ1bV9pZDogc3RyaW5nIHwgbnVsbAogICAgICAgICAgY3JlYXRlZF9hdDogc3RyaW5nCiAgICAgICAgICBkZXNjcmlwdGlvbjogc3RyaW5nCiAgICAgICAgICBpZDogc3RyaW5nCiAgICAgICAgICBpbWFnZV91cmw6IHN0cmluZwogICAgICAgICAgaXNfcHJpdmF0ZTogYm9vbGVhbgogICAgICAgICAgdGl0bGU6IHN0cmluZwogICAgICAgICAgdXNlcl9pZDogc3RyaW5nCiAgICAgICAgfQogICAgICAgIEluc2VydDogewogICAgICAgICAgYWxidW1faWQ/OiBzdHJpbmcgfCBudWxsCiAgICAgICAgICBjcmVhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgICBkZXNjcmlwdGlvbj86IHN0cmluZwogICAgICAgICAgaWQ/OiBzdHJpbmcKICAgICAgICAgIGltYWdlX3VybDogc3RyaW5nCiAgICAgICAgICBpc19wcml2YXRlPzogYm9vbGVhbgogICAgICAgICAgdGl0bGU/OiBzdHJpbmcKICAgICAgICAgIHVzZXJfaWQ6IHN0cmluZwogICAgICAgIH0KICAgICAgICBVcGRhdGU6IHsKICAgICAgICAgIGFsYnVtX2lkPzogc3RyaW5nIHwgbnVsbAogICAgICAgICAgY3JlYXRlZF9hdD86IHN0cmluZwogICAgICAgICAgZGVzY3JpcHRpb24/OiBzdHJpbmcKICAgICAgICAgIGlkPzogc3RyaW5nCiAgICAgICAgICBpbWFnZV91cmw/OiBzdHJpbmcKICAgICAgICAgIGlzX3ByaXZhdGU/OiBib29sZWFuCiAgICAgICAgICB0aXRsZT86IHN0cmluZwogICAgICAgICAgdXNlcl9pZD86IHN0cmluZwogICAgICAgIH0KICAgICAgICBSZWxhdGlvbnNoaXBzOiBbCiAgICAgICAgICB7CiAgICAgICAgICAgIGZvcmVpZ25LZXlOYW1lOiAicGhvdG9zX2FsYnVtX2lkX2ZrZXkiCiAgICAgICAgICAgIGNvbHVtbnM6IFsiYWxidW1faWQiXQogICAgICAgICAgICBpc09uZVRvT25lOiBmYWxzZQogICAgICAgICAgICByZWZlcmVuY2VkUmVsYXRpb246ICJhbGJ1bXMiCiAgICAgICAgICAgIHJlZmVyZW5jZWRDb2x1bW5zOiBbImlkIl0KICAgICAgICAgIH0sCiAgICAgICAgICB7CiAgICAgICAgICAgIGZvcmVpZ25LZXlOYW1lOiAicGhvdG9zX3VzZXJfaWRfZmtleSIKICAgICAgICAgICAgY29sdW1uczogWyJ1c2VyX2lkIl0KICAgICAgICAgICAgaXNPbmVUb09uZTogZmFsc2UKICAgICAgICAgICAgcmVmZXJlbmNlZFJlbGF0aW9uOiAicHJvZmlsZXMiCiAgICAgICAgICAgIHJlZmVyZW5jZWRDb2x1bW5zOiBbImlkIl0KICAgICAgICAgIH0sCiAgICAgICAgXQogICAgICB9CiAgICAgIHByb2ZpbGVzOiB7CiAgICAgICAgUm93OiB7CiAgICAgICAgICBhY2NlbnRfY29sb3I6IHN0cmluZwogICAgICAgICAgYXZhdGFyX3VybDogc3RyaW5nIHwgbnVsbAogICAgICAgICAgYmdfY29sb3I6IHN0cmluZwogICAgICAgICAgYmlvOiBzdHJpbmcKICAgICAgICAgIGNvdmVyX3VybDogc3RyaW5nIHwgbnVsbAogICAgICAgICAgY3JlYXRlZF9hdDogc3RyaW5nCiAgICAgICAgICBkaXNwbGF5X25hbWU6IHN0cmluZwogICAgICAgICAgZmF2b3JpdGVfcXVvdGU6IHN0cmluZwogICAgICAgICAgaWQ6IHN0cmluZwogICAgICAgICAgaXNfcHJpdmF0ZTogYm9vbGVhbgogICAgICAgICAgbW9vZDogc3RyaW5nCiAgICAgICAgICB1cGRhdGVkX2F0OiBzdHJpbmcKICAgICAgICAgIHVzZXJuYW1lOiBzdHJpbmcKICAgICAgICAgIHZpZXdfY291bnQ6IG51bWJlcgogICAgICAgIH0KICAgICAgICBJbnNlcnQ6IHsKICAgICAgICAgIGFjY2VudF9jb2xvcj86IHN0cmluZwogICAgICAgICAgYXZhdGFyX3VybD86IHN0cmluZyB8IG51bGwKICAgICAgICAgIGJnX2NvbG9yPzogc3RyaW5nCiAgICAgICAgICBiaW8/OiBzdHJpbmcKICAgICAgICAgIGNvdmVyX3VybD86IHN0cmluZyB8IG51bGwKICAgICAgICAgIGNyZWF0ZWRfYXQ/OiBzdHJpbmcKICAgICAgICAgIGRpc3BsYXlfbmFtZT86IHN0cmluZwogICAgICAgICAgZmF2b3JpdGVfcXVvdGU/OiBzdHJpbmcKICAgICAgICAgIGlkOiBzdHJpbmcKICAgICAgICAgIGlzX3ByaXZhdGU/OiBib29sZWFuCiAgICAgICAgICBtb29kPzogc3RyaW5nCiAgICAgICAgICB1cGRhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgICB1c2VybmFtZTogc3RyaW5nCiAgICAgICAgICB2aWV3X2NvdW50PzogbnVtYmVyCiAgICAgICAgfQogICAgICAgIFVwZGF0ZTogewogICAgICAgICAgYWNjZW50X2NvbG9yPzogc3RyaW5nCiAgICAgICAgICBhdmF0YXJfdXJsPzogc3RyaW5nIHwgbnVsbAogICAgICAgICAgYmdfY29sb3I/OiBzdHJpbmcKICAgICAgICAgIGJpbz86IHN0cmluZwogICAgICAgICAgY292ZXJfdXJsPzogc3RyaW5nIHwgbnVsbAogICAgICAgICAgY3JlYXRlZF9hdD86IHN0cmluZwogICAgICAgICAgZGlzcGxheV9uYW1lPzogc3RyaW5nCiAgICAgICAgICBmYXZvcml0ZV9xdW90ZT86IHN0cmluZwogICAgICAgICAgaWQ/OiBzdHJpbmcKICAgICAgICAgIGlzX3ByaXZhdGU/OiBib29sZWFuCiAgICAgICAgICBtb29kPzogc3RyaW5nCiAgICAgICAgICB1cGRhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgICB1c2VybmFtZT86IHN0cmluZwogICAgICAgICAgdmlld19jb3VudD86IG51bWJlcgogICAgICAgIH0KICAgICAgICBSZWxhdGlvbnNoaXBzOiBbXQogICAgICB9CiAgICAgIHJlcG9ydHM6IHsKICAgICAgICBSb3c6IHsKICAgICAgICAgIGNyZWF0ZWRfYXQ6IHN0cmluZwogICAgICAgICAgaWQ6IHN0cmluZwogICAgICAgICAgcmVhc29uOiBzdHJpbmcKICAgICAgICAgIHJlcG9ydGVyX2lkOiBzdHJpbmcKICAgICAgICAgIHRhcmdldF9pZDogc3RyaW5nCiAgICAgICAgICB0YXJnZXRfdHlwZTogc3RyaW5nCiAgICAgICAgfQogICAgICAgIEluc2VydDogewogICAgICAgICAgY3JlYXRlZF9hdD86IHN0cmluZwogICAgICAgICAgaWQ/OiBzdHJpbmcKICAgICAgICAgIHJlYXNvbj86IHN0cmluZwogICAgICAgICAgcmVwb3J0ZXJfaWQ6IHN0cmluZwogICAgICAgICAgdGFyZ2V0X2lkOiBzdHJpbmcKICAgICAgICAgIHRhcmdldF90eXBlOiBzdHJpbmcKICAgICAgICB9CiAgICAgICAgVXBkYXRlOiB7CiAgICAgICAgICBjcmVhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgICBpZD86IHN0cmluZwogICAgICAgICAgcmVhc29uPzogc3RyaW5nCiAgICAgICAgICByZXBvcnRlcl9pZD86IHN0cmluZwogICAgICAgICAgdGFyZ2V0X2lkPzogc3RyaW5nCiAgICAgICAgICB0YXJnZXRfdHlwZT86IHN0cmluZwogICAgICAgIH0KICAgICAgICBSZWxhdGlvbnNoaXBzOiBbCiAgICAgICAgICB7CiAgICAgICAgICAgIGZvcmVpZ25LZXlOYW1lOiAicmVwb3J0c19yZXBvcnRlcl9pZF9ma2V5IgogICAgICAgICAgICBjb2x1bW5zOiBbInJlcG9ydGVyX2lkIl0KICAgICAgICAgICAgaXNPbmVUb09uZTogZmFsc2UKICAgICAgICAgICAgcmVmZXJlbmNlZFJlbGF0aW9uOiAicHJvZmlsZXMiCiAgICAgICAgICAgIHJlZmVyZW5jZWRDb2x1bW5zOiBbImlkIl0KICAgICAgICAgIH0sCiAgICAgICAgXQogICAgICB9CiAgICAgIHN0YXR1c191cGRhdGVzOiB7CiAgICAgICAgUm93OiB7CiAgICAgICAgICBib2R5OiBzdHJpbmcKICAgICAgICAgIGNyZWF0ZWRfYXQ6IHN0cmluZwogICAgICAgICAgaWQ6IHN0cmluZwogICAgICAgICAgdXNlcl9pZDogc3RyaW5nCiAgICAgICAgfQogICAgICAgIEluc2VydDogewogICAgICAgICAgYm9keTogc3RyaW5nCiAgICAgICAgICBjcmVhdGVkX2F0Pzogc3RyaW5nCiAgICAgICAgICBpZD86IHN0cmluZwogICAgICAgICAgdXNlcl9pZDogc3RyaW5nCiAgICAgICAgfQogICAgICAgIFVwZGF0ZTogewogICAgICAgICAgYm9keT86IHN0cmluZwogICAgICAgICAgY3JlYXRlZF9hdD86IHN0cmluZwogICAgICAgICAgaWQ/OiBzdHJpbmcKICAgICAgICAgIHVzZXJfaWQ/OiBzdHJpbmcKICAgICAgICB9CiAgICAgICAgUmVsYXRpb25zaGlwczogWwogICAgICAgICAgewogICAgICAgICAgICBmb3JlaWduS2V5TmFtZTogInN0YXR1c191cGRhdGVzX3VzZXJfaWRfZmtleSIKICAgICAgICAgICAgY29sdW1uczogWyJ1c2VyX2lkIl0KICAgICAgICAgICAgaXNPbmVUb09uZTogZmFsc2UKICAgICAgICAgICAgcmVmZXJlbmNlZFJlbGF0aW9uOiAicHJvZmlsZXMiCiAgICAgICAgICAgIHJlZmVyZW5jZWRDb2x1bW5zOiBbImlkIl0KICAgICAgICAgIH0sCiAgICAgICAgXQogICAgICB9CiAgICAgIHRvcF9mcmllbmRzOiB7CiAgICAgICAgUm93OiB7CiAgICAgICAgICBmcmllbmRfaWQ6IHN0cmluZwogICAgICAgICAgcG9zaXRpb246IG51bWJlcgogICAgICAgICAgcHJvZmlsZV9pZDogc3RyaW5nCiAgICAgICAgfQogICAgICAgIEluc2VydDogewogICAgICAgICAgZnJpZW5kX2lkOiBzdHJpbmcKICAgICAgICAgIHBvc2l0aW9uOiBudW1iZXIKICAgICAgICAgIHByb2ZpbGVfaWQ6IHN0cmluZwogICAgICAgIH0KICAgICAgICBVcGRhdGU6IHsKICAgICAgICAgIGZyaWVuZF9pZD86IHN0cmluZwogICAgICAgICAgcG9zaXRpb24/OiBudW1iZXIKICAgICAgICAgIHByb2ZpbGVfaWQ/OiBzdHJpbmcKICAgICAgICB9CiAgICAgICAgUmVsYXRpb25zaGlwczogWwogICAgICAgICAgewogICAgICAgICAgICBmb3JlaWduS2V5TmFtZTogInRvcF9mcmllbmRzX2ZyaWVuZF9pZF9ma2V5IgogICAgICAgICAgICBjb2x1bW5zOiBbImZyaWVuZF9pZCJdCiAgICAgICAgICAgIGlzT25lVG9PbmU6IGZhbHNlCiAgICAgICAgICAgIHJlZmVyZW5jZWRSZWxhdGlvbjogInByb2ZpbGVzIgogICAgICAgICAgICByZWZlcmVuY2VkQ29sdW1uczogWyJpZCJdCiAgICAgICAgICB9LAogICAgICAgICAgewogICAgICAgICAgICBmb3JlaWduS2V5TmFtZTogInRvcF9mcmllbmRzX3Byb2ZpbGVfaWRfZmtleSIKICAgICAgICAgICAgY29sdW1uczogWyJwcm9maWxlX2lkIl0KICAgICAgICAgICAgaXNPbmVUb09uZTogZmFsc2UKICAgICAgICAgICAgcmVmZXJlbmNlZFJlbGF0aW9uOiAicHJvZmlsZXMiCiAgICAgICAgICAgIHJlZmVyZW5jZWRDb2x1bW5zOiBbImlkIl0KICAgICAgICAgIH0sCiAgICAgICAgXQogICAgICB9CiAgICAgIHdhbGxfcG9zdHM6IHsKICAgICAgICBSb3c6IHsKICAgICAgICAgIGF1dGhvcl9pZDogc3RyaW5nCiAgICAgICAgICBib2R5OiBzdHJpbmcKICAgICAgICAgIGNyZWF0ZWRfYXQ6IHN0cmluZwogICAgICAgICAgaWQ6IHN0cmluZwogICAgICAgICAgcHJvZmlsZV9pZDogc3RyaW5nCiAgICAgICAgfQogICAgICAgIEluc2VydDogewogICAgICAgICAgYXV0aG9yX2lkOiBzdHJpbmcKICAgICAgICAgIGJvZHk6IHN0cmluZwogICAgICAgICAgY3JlYXRlZF9hdD86IHN0cmluZwogICAgICAgICAgaWQ/OiBzdHJpbmcKICAgICAgICAgIHByb2ZpbGVfaWQ6IHN0cmluZwogICAgICAgIH0KICAgICAgICBVcGRhdGU6IHsKICAgICAgICAgIGF1dGhvcl9pZD86IHN0cmluZwogICAgICAgICAgYm9keT86IHN0cmluZwogICAgICAgICAgY3JlYXRlZF9hdD86IHN0cmluZwogICAgICAgICAgaWQ/OiBzdHJpbmcKICAgICAgICAgIHByb2ZpbGVfaWQ/OiBzdHJpbmcKICAgICAgICB9CiAgICAgICAgUmVsYXRpb25zaGlwczogWwogICAgICAgICAgewogICAgICAgICAgICBmb3JlaWduS2V5TmFtZTogIndhbGxfcG9zdHNfYXV0aG9yX2lkX2ZrZXkiCiAgICAgICAgICAgIGNvbHVtbnM6IFsiYXV0aG9yX2lkIl0KICAgICAgICAgICAgaXNPbmVUb09uZTogZmFsc2UKICAgICAgICAgICAgcmVmZXJlbmNlZFJlbGF0aW9uOiAicHJvZmlsZXMiCiAgICAgICAgICAgIHJlZmVyZW5jZWRDb2x1bW5zOiBbImlkIl0KICAgICAgICAgIH0sCiAgICAgICAgICB7CiAgICAgICAgICAgIGZvcmVpZ25LZXlOYW1lOiAid2FsbF9wb3N0c19wcm9maWxlX2lkX2ZrZXkiCiAgICAgICAgICAgIGNvbHVtbnM6IFsicHJvZmlsZV9pZCJdCiAgICAgICAgICAgIGlzT25lVG9PbmU6IGZhbHNlCiAgICAgICAgICAgIHJlZmVyZW5jZWRSZWxhdGlvbjogInByb2ZpbGVzIgogICAgICAgICAgICByZWZlcmVuY2VkQ29sdW1uczogWyJpZCJdCiAgICAgICAgICB9LAogICAgICAgIF0KICAgICAgfQogICAgfQogICAgVmlld3M6IHsKICAgICAgW18gaW4gbmV2ZXJdOiBuZXZlcgogICAgfQogICAgRnVuY3Rpb25zOiB7CiAgICAgIGFyZV9mcmllbmRzOiB7IEFyZ3M6IHsgX2E6IHN0cmluZzsgX2I6IHN0cmluZyB9OyBSZXR1cm5zOiBib29sZWFuIH0KICAgICAgY2FuX3ZpZXdfcGhvdG86IHsgQXJnczogeyBfcGhvdG9faWQ6IHN0cmluZyB9OyBSZXR1cm5zOiBib29sZWFuIH0KICAgICAgY2FuX3ZpZXdfcHJvZmlsZTogeyBBcmdzOiB7IF9vd25lcjogc3RyaW5nIH07IFJldHVybnM6IGJvb2xlYW4gfQogICAgICBpbmNyZW1lbnRfcHJvZmlsZV92aWV3OiB7CiAgICAgICAgQXJnczogeyBfcHJvZmlsZV9pZDogc3RyaW5nIH0KICAgICAgICBSZXR1cm5zOiB1bmRlZmluZWQKICAgICAgfQogICAgICBwaG90b19vd25lcjogeyBBcmdzOiB7IF9waG90b19pZDogc3RyaW5nIH07IFJldHVybnM6IHN0cmluZyB9CiAgICB9CiAgICBFbnVtczogewogICAgICBbXyBpbiBuZXZlcl06IG5ldmVyCiAgICB9CiAgICBDb21wb3NpdGVUeXBlczogewogICAgICBbXyBpbiBuZXZlcl06IG5ldmVyCiAgICB9CiAgfQp9Cgp0eXBlIERhdGFiYXNlV2l0aG91dEludGVybmFscyA9IE9taXQ8RGF0YWJhc2UsICJfX0ludGVybmFsU3VwYWJhc2UiPgoKdHlwZSBEZWZhdWx0U2NoZW1hID0gRGF0YWJhc2VXaXRob3V0SW50ZXJuYWxzW0V4dHJhY3Q8a2V5b2YgRGF0YWJhc2UsICJwdWJsaWMiPl0KCmV4cG9ydCB0eXBlIFRhYmxlczwKICBEZWZhdWx0U2NoZW1hVGFibGVOYW1lT3JPcHRpb25zIGV4dGVuZHMKICAgIHwga2V5b2YgKERlZmF1bHRTY2hlbWFbIlRhYmxlcyJdICYgRGVmYXVsdFNjaGVtYVsiVmlld3MiXSkKICAgIHwgeyBzY2hlbWE6IGtleW9mIERhdGFiYXNlV2l0aG91dEludGVybmFscyB9LAogIFRhYmxlTmFtZSBleHRlbmRzIERlZmF1bHRTY2hlbWFUYWJsZU5hbWVPck9wdGlvbnMgZXh0ZW5kcyB7CiAgICBzY2hlbWE6IGtleW9mIERhdGFiYXNlV2l0aG91dEludGVybmFscwogIH0KICAgID8ga2V5b2YgKERhdGFiYXNlV2l0aG91dEludGVybmFsc1tEZWZhdWx0U2NoZW1hVGFibGVOYW1lT3JPcHRpb25zWyJzY2hlbWEiXV1bIlRhYmxlcyJdICYKICAgICAgICBEYXRhYmFzZVdpdGhvdXRJbnRlcm5hbHNbRGVmYXVsdFNjaGVtYVRhYmxlTmFtZU9yT3B0aW9uc1sic2NoZW1hIl1dWyJWaWV3cyJdKQogICAgOiBuZXZlciA9IG5ldmVyLAo+ID0gRGVmYXVsdFNjaGVtYVRhYmxlTmFtZU9yT3B0aW9ucyBleHRlbmRzIHsKICBzY2hlbWE6IGtleW9mIERhdGFiYXNlV2l0aG91dEludGVybmFscwp9CiAgPyAoRGF0YWJhc2VXaXRob3V0SW50ZXJuYWxzW0RlZmF1bHRTY2hlbWFUYWJsZU5hbWVPck9wdGlvbnNbInNjaGVtYSJdXVsiVGFibGVzIl0gJgogICAgICBEYXRhYmFzZVdpdGhvdXRJbnRlcm5hbHNbRGVmYXVsdFNjaGVtYVRhYmxlTmFtZU9yT3B0aW9uc1sic2NoZW1hIl1dWyJWaWV3cyJdKVtUYWJsZU5hbWVdIGV4dGVuZHMgewogICAgICBSb3c6IGluZmVyIFIKICAgIH0KICAgID8gUgogICAgOiBuZXZlcgogIDogRGVmYXVsdFNjaGVtYVRhYmxlTmFtZU9yT3B0aW9ucyBleHRlbmRzIGtleW9mIChEZWZhdWx0U2NoZW1hWyJUYWJsZXMiXSAmCiAgICAgICAgRGVmYXVsdFNjaGVtYVsiVmlld3MiXSkKICAgID8gKERlZmF1bHRTY2hlbWFbIlRhYmxlcyJdICYKICAgICAgICBEZWZhdWx0U2NoZW1hWyJWaWV3cyJdKVtEZWZhdWx0U2NoZW1hVGFibGVOYW1lT3JPcHRpb25zXSBleHRlbmRzIHsKICAgICAgICBSb3c6IGluZmVyIFIKICAgICAgfQogICAgICA/IFIKICAgICAgOiBuZXZlcgogICAgOiBuZXZlcgoKZXhwb3J0IHR5cGUgVGFibGVzSW5zZXJ0PAogIERlZmF1bHRTY2hlbWFUYWJsZU5hbWVPck9wdGlvbnMgZXh0ZW5kcwogICAgfCBrZXlvZiBEZWZhdWx0U2NoZW1hWyJUYWJsZXMiXQogICAgfCB7IHNjaGVtYToga2V5b2YgRGF0YWJhc2VXaXRob3V0SW50ZXJuYWxzIH0sCiAgVGFibGVOYW1lIGV4dGVuZHMgRGVmYXVsdFNjaGVtYVRhYmxlTmFtZU9yT3B0aW9ucyBleHRlbmRzIHsKICAgIHNjaGVtYToga2V5b2YgRGF0YWJhc2VXaXRob3V0SW50ZXJuYWxzCiAgfQogICAgPyBrZXlvZiBEYXRhYmFzZVdpdGhvdXRJbnRlcm5hbHNbRGVmYXVsdFNjaGVtYVRhYmxlTmFtZU9yT3B0aW9uc1sic2NoZW1hIl1dWyJUYWJsZXMiXQogICAgOiBuZXZlciA9IG5ldmVyLAo+ID0gRGVmYXVsdFNjaGVtYVRhYmxlTmFtZU9yT3B0aW9ucyBleHRlbmRzIHsKICBzY2hlbWE6IGtleW9mIERhdGFiYXNlV2l0aG91dEludGVybmFscwp9CiAgPyBEYXRhYmFzZVdpdGhvdXRJbnRlcm5hbHNbRGVmYXVsdFNjaGVtYVRhYmxlTmFtZU9yT3B0aW9uc1sic2NoZW1hIl1dWyJUYWJsZXMiXVtUYWJsZU5hbWVdIGV4dGVuZHMgewogICAgICBJbnNlcnQ6IGluZmVyIEkKICAgIH0KICAgID8gSQogICAgOiBuZXZlcgogIDogRGVmYXVsdFNjaGVtYVRhYmxlTmFtZU9yT3B0aW9ucyBleHRlbmRzIGtleW9mIERlZmF1bHRTY2hlbWFbIlRhYmxlcyJdCiAgICA/IERlZmF1bHRTY2hlbWFbIlRhYmxlcyJdW0RlZmF1bHRTY2hlbWFUYWJsZU5hbWVPck9wdGlvbnNdIGV4dGVuZHMgewogICAgICAgIEluc2VydDogaW5mZXIgSQogICAgICB9CiAgICAgID8gSQogICAgICA6IG5ldmVyCiAgICA6IG5ldmVyCgpleHBvcnQgdHlwZSBUYWJsZXNVcGRhdGU8CiAgRGVmYXVsdFNjaGVtYVRhYmxlTmFtZU9yT3B0aW9ucyBleHRlbmRzCiAgICB8IGtleW9mIERlZmF1bHRTY2hlbWFbIlRhYmxlcyJdCiAgICB8IHsgc2NoZW1hOiBrZXlvZiBEYXRhYmFzZVdpdGhvdXRJbnRlcm5hbHMgfSwKICBUYWJsZU5hbWUgZXh0ZW5kcyBEZWZhdWx0U2NoZW1hVGFibGVOYW1lT3JPcHRpb25zIGV4dGVuZHMgewogICAgc2NoZW1hOiBrZXlvZiBEYXRhYmFzZVdpdGhvdXRJbnRlcm5hbHMKICB9CiAgICA/IGtleW9mIERhdGFiYXNlV2l0aG91dEludGVybmFsc1tEZWZhdWx0U2NoZW1hVGFibGVOYW1lT3JPcHRpb25zWyJzY2hlbWEiXV1bIlRhYmxlcyJdCiAgICA6IG5ldmVyID0gbmV2ZXIsCj4gPSBEZWZhdWx0U2NoZW1hVGFibGVOYW1lT3JPcHRpb25zIGV4dGVuZHMgewogIHNjaGVtYToga2V5b2YgRGF0YWJhc2VXaXRob3V0SW50ZXJuYWxzCn0KICA/IERhdGFiYXNlV2l0aG91dEludGVybmFsc1tEZWZhdWx0U2NoZW1hVGFibGVOYW1lT3JPcHRpb25zWyJzY2hlbWEiXV1bIlRhYmxlcyJdW1RhYmxlTmFtZV0gZXh0ZW5kcyB7CiAgICAgIFVwZGF0ZTogaW5mZXIgVQogICAgfQogICAgPyBVCiAgICA6IG5ldmVyCiAgOiBEZWZhdWx0U2NoZW1hVGFibGVOYW1lT3JPcHRpb25zIGV4dGVuZHMga2V5b2YgRGVmYXVsdFNjaGVtYVsiVGFibGVzIl0KICAgID8gRGVmYXVsdFNjaGVtYVsiVGFibGVzIl1bRGVmYXVsdFNjaGVtYVRhYmxlTmFtZU9yT3B0aW9uc10gZXh0ZW5kcyB7CiAgICAgICAgVXBkYXRlOiBpbmZlciBVCiAgICAgIH0KICAgICAgPyBVCiAgICAgIDogbmV2ZXIKICAgIDogbmV2ZXIKCmV4cG9ydCB0eXBlIEVudW1zPAogIERlZmF1bHRTY2hlbWFFbnVtTmFtZU9yT3B0aW9ucyBleHRlbmRzCiAgICB8IGtleW9mIERlZmF1bHRTY2hlbWFbIkVudW1zIl0KICAgIHwgeyBzY2hlbWE6IGtleW9mIERhdGFiYXNlV2l0aG91dEludGVybmFscyB9LAogIEVudW1OYW1lIGV4dGVuZHMgRGVmYXVsdFNjaGVtYUVudW1OYW1lT3JPcHRpb25zIGV4dGVuZHMgewogICAgc2NoZW1hOiBrZXlvZiBEYXRhYmFzZVdpdGhvdXRJbnRlcm5hbHMKICB9CiAgICA/IGtleW9mIERhdGFiYXNlV2l0aG91dEludGVybmFsc1tEZWZhdWx0U2NoZW1hRW51bU5hbWVPck9wdGlvbnNbInNjaGVtYSJdXVsiRW51bXMiXQogICAgOiBuZXZlciA9IG5ldmVyLAo+ID0gRGVmYXVsdFNjaGVtYUVudW1OYW1lT3JPcHRpb25zIGV4dGVuZHMgewogIHNjaGVtYToga2V5b2YgRGF0YWJhc2VXaXRob3V0SW50ZXJuYWxzCn0KICA/IERhdGFiYXNlV2l0aG91dEludGVybmFsc1tEZWZhdWx0U2NoZW1hRW51bU5hbWVPck9wdGlvbnNbInNjaGVtYSJdXVsiRW51bXMiXVtFbnVtTmFtZV0KICA6IERlZmF1bHRTY2hlbWFFbnVtTmFtZU9yT3B0aW9ucyBleHRlbmRzIGtleW9mIERlZmF1bHRTY2hlbWFbIkVudW1zIl0KICAgID8gRGVmYXVsdFNjaGVtYVsiRW51bXMiXVtEZWZhdWx0U2NoZW1hRW51bU5hbWVPck9wdGlvbnNdCiAgICA6IG5ldmVyCgpleHBvcnQgdHlwZSBDb21wb3NpdGVUeXBlczwKICBQdWJsaWNDb21wb3NpdGVUeXBlTmFtZU9yT3B0aW9ucyBleHRlbmRzCiAgICB8IGtleW9mIERlZmF1bHRTY2hlbWFbIkNvbXBvc2l0ZVR5cGVzIl0KICAgIHwgeyBzY2hlbWE6IGtleW9mIERhdGFiYXNlV2l0aG91dEludGVybmFscyB9LAogIENvbXBvc2l0ZVR5cGVOYW1lIGV4dGVuZHMgUHVibGljQ29tcG9zaXRlVHlwZU5hbWVPck9wdGlvbnMgZXh0ZW5kcyB7CiAgICBzY2hlbWE6IGtleW9mIERhdGFiYXNlV2l0aG91dEludGVybmFscwogIH0KICAgID8ga2V5b2YgRGF0YWJhc2VXaXRob3V0SW50ZXJuYWxzW1B1YmxpY0NvbXBvc2l0ZVR5cGVOYW1lT3JPcHRpb25zWyJzY2hlbWEiXV1bIkNvbXBvc2l0ZVR5cGVzIl0KICAgIDogbmV2ZXIgPSBuZXZlciwKPiA9IFB1YmxpY0NvbXBvc2l0ZVR5cGVOYW1lT3JPcHRpb25zIGV4dGVuZHMgewogIHNjaGVtYToga2V5b2YgRGF0YWJhc2VXaXRob3V0SW50ZXJuYWxzCn0KICA/IERhdGFiYXNlV2l0aG91dEludGVybmFsc1tQdWJsaWNDb21wb3NpdGVUeXBlTmFtZU9yT3B0aW9uc1sic2NoZW1hIl1dWyJDb21wb3NpdGVUeXBlcyJdW0NvbXBvc2l0ZVR5cGVOYW1lXQogIDogUHVibGljQ29tcG9zaXRlVHlwZU5hbWVPck9wdGlvbnMgZXh0ZW5kcyBrZXlvZiBEZWZhdWx0U2NoZW1hWyJDb21wb3NpdGVUeXBlcyJdCiAgICA/IERlZmF1bHRTY2hlbWFbIkNvbXBvc2l0ZVR5cGVzIl1bUHVibGljQ29tcG9zaXRlVHlwZU5hbWVPck9wdGlvbnNdCiAgICA6IG5ldmVyCgpleHBvcnQgY29uc3QgQ29uc3RhbnRzID0gewogIHB1YmxpYzogewogICAgRW51bXM6IHt9LAogIH0sCn0gYXMgY29uc3QK
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.15"
+  }
+  public: {
+    Tables: {
+      albums: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          description: string
+          id: string
+          is_private: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          is_private?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          is_private?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocks_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocks_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friendships_addressee_id_fkey"
+            columns: ["addressee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friendships_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          read_at: string | null
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          entity_id: string | null
+          id: string
+          read: boolean
+          type: string
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          read?: boolean
+          type: string
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          id?: string
+          read?: boolean
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          photo_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          photo_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          photo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_comments_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "photos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_likes: {
+        Row: {
+          created_at: string
+          photo_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          photo_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          photo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_likes_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "photos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_tags: {
+        Row: {
+          created_at: string
+          photo_id: string
+          tagged_id: string
+          tagger_id: string
+        }
+        Insert: {
+          created_at?: string
+          photo_id: string
+          tagged_id: string
+          tagger_id: string
+        }
+        Update: {
+          created_at?: string
+          photo_id?: string
+          tagged_id?: string
+          tagger_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_tags_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "photos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_tags_tagged_id_fkey"
+            columns: ["tagged_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_tags_tagger_id_fkey"
+            columns: ["tagger_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photos: {
+        Row: {
+          album_id: string | null
+          created_at: string
+          description: string
+          id: string
+          image_url: string
+          is_private: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          album_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          image_url: string
+          is_private?: boolean
+          title?: string
+          user_id: string
+        }
+        Update: {
+          album_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string
+          is_private?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photos_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          accent_color: string
+          avatar_url: string | null
+          bg_color: string
+          bio: string
+          cover_url: string | null
+          created_at: string
+          display_name: string
+          favorite_quote: string
+          id: string
+          is_private: boolean
+          mood: string
+          updated_at: string
+          username: string
+          view_count: number
+        }
+        Insert: {
+          accent_color?: string
+          avatar_url?: string | null
+          bg_color?: string
+          bio?: string
+          cover_url?: string | null
+          created_at?: string
+          display_name?: string
+          favorite_quote?: string
+          id: string
+          is_private?: boolean
+          mood?: string
+          updated_at?: string
+          username: string
+          view_count?: number
+        }
+        Update: {
+          accent_color?: string
+          avatar_url?: string | null
+          bg_color?: string
+          bio?: string
+          cover_url?: string | null
+          created_at?: string
+          display_name?: string
+          favorite_quote?: string
+          id?: string
+          is_private?: boolean
+          mood?: string
+          updated_at?: string
+          username?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          reporter_id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      status_updates: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "status_updates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      top_friends: {
+        Row: {
+          friend_id: string
+          position: number
+          profile_id: string
+        }
+        Insert: {
+          friend_id: string
+          position: number
+          profile_id: string
+        }
+        Update: {
+          friend_id?: string
+          position?: number
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "top_friends_friend_id_fkey"
+            columns: ["friend_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "top_friends_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wall_posts: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          profile_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          profile_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wall_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wall_posts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      are_friends: { Args: { _a: string; _b: string }; Returns: boolean }
+      can_view_photo: { Args: { _photo_id: string }; Returns: boolean }
+      can_view_profile: { Args: { _owner: string }; Returns: boolean }
+      increment_profile_view: {
+        Args: { _profile_id: string }
+        Returns: undefined
+      }
+      photo_owner: { Args: { _photo_id: string }; Returns: string }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

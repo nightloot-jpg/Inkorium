@@ -1,1 +1,234 @@
-aW1wb3J0IHsgY3JlYXRlRmlsZVJvdXRlLCB1c2VOYXZpZ2F0ZSB9IGZyb20gIkB0YW5zdGFjay9yZWFjdC1yb3V0ZXIiOwppbXBvcnQgeyB1c2VNdXRhdGlvbiwgdXNlUXVlcnksIHVzZVF1ZXJ5Q2xpZW50IH0gZnJvbSAiQHRhbnN0YWNrL3JlYWN0LXF1ZXJ5IjsKaW1wb3J0IHsgdXNlRWZmZWN0LCB1c2VTdGF0ZSB9IGZyb20gInJlYWN0IjsKaW1wb3J0IHsgdG9hc3QgfSBmcm9tICJzb25uZXIiOwoKaW1wb3J0IHsgdXNlU2Vzc2lvbiB9IGZyb20gIkAvbGliL3Nlc3Npb24iOwppbXBvcnQgeyBnZXRNeVByb2ZpbGUsIHVwZGF0ZVByb2ZpbGUsIHR5cGUgUHJvZmlsZSB9IGZyb20gIkAvbGliL2FwaSI7CmltcG9ydCB7IHByb2ZpbGVTY2hlbWEgfSBmcm9tICJAL2xpYi92YWxpZGF0aW9uIjsKaW1wb3J0IHsgdXBsb2FkTWVkaWEgfSBmcm9tICJAL2xpYi9tZWRpYSI7CmltcG9ydCB7IE1lZGlhSW1hZ2UgfSBmcm9tICJAL2NvbXBvbmVudHMvTWVkaWFJbWFnZSI7CmltcG9ydCB7IEJ1dHRvbiB9IGZyb20gIkAvY29tcG9uZW50cy91aS9idXR0b24iOwppbXBvcnQgeyBJbnB1dCB9IGZyb20gIkAvY29tcG9uZW50cy91aS9pbnB1dCI7CmltcG9ydCB7IExhYmVsIH0gZnJvbSAiQC9jb21wb25lbnRzL3VpL2xhYmVsIjsKaW1wb3J0IHsgVGV4dGFyZWEgfSBmcm9tICJAL2NvbXBvbmVudHMvdWkvdGV4dGFyZWEiOwppbXBvcnQgeyBTd2l0Y2ggfSBmcm9tICJAL2NvbXBvbmVudHMvdWkvc3dpdGNoIjsKCmV4cG9ydCBjb25zdCBSb3V0ZSA9IGNyZWF0ZUZpbGVSb3V0ZSgiL19hdXRoZW50aWNhdGVkL2FqdXN0ZXMiKSh7CiAgaGVhZDogKCkgPT4gKHsKICAgIG1ldGE6IFsKICAgICAgeyB0aXRsZTogIkVkaXRhciBtaSBwZXJmaWwg4oCUIG5vY3R1cm5vIiB9LAogICAgICB7IG5hbWU6ICJkZXNjcmlwdGlvbiIsIGNvbnRlbnQ6ICJQZXJzb25hbGl6YSB0dSBub21icmUsIHR1IGJpbywgdHVzIGNvbG9yZXMgeSB0dSBmb3RvLiIgfSwKICAgICAgeyBwcm9wZXJ0eTogIm9nOnRpdGxlIiwgY29udGVudDogIkVkaXRhciBtaSBwZXJmaWwg4oCUIG5vY3R1cm5vIiB9LAogICAgICB7IHByb3BlcnR5OiAib2c6ZGVzY3JpcHRpb24iLCBjb250ZW50OiAiUGVyc29uYWxpemEgdHUgbm9tYnJlLCB0dSBiaW8sIHR1cyBjb2xvcmVzIHkgdHUgZm90by4iIH0sCiAgICBdLAogIH0pLAogIGNvbXBvbmVudDogU2V0dGluZ3NQYWdlLAp9KTsKCmZ1bmN0aW9uIFNldHRpbmdzUGFnZSgpIHsKICBjb25zdCB7IHVzZXIgfSA9IHVzZVNlc3Npb24oKTsKICBjb25zdCBxdWVyeUNsaWVudCA9IHVzZVF1ZXJ5Q2xpZW50KCk7CiAgY29uc3QgbmF2aWdhdGUgPSB1c2VOYXZpZ2F0ZSgpOwogIGNvbnN0IFtmb3JtLCBzZXRGb3JtXSA9IHVzZVN0YXRlPFBhcnRpYWw8UHJvZmlsZT4+KHt9KTsKICBjb25zdCBbdXBsb2FkaW5nLCBzZXRVcGxvYWRpbmddID0gdXNlU3RhdGUoZmFsc2UpOwoKICBjb25zdCBwcm9maWxlID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsibXktcHJvZmlsZSIsIHVzZXI/LmlkXSwKICAgIHF1ZXJ5Rm46ICgpID0+IGdldE15UHJvZmlsZSh1c2VyIS5pZCksCiAgICBlbmFibGVkOiBCb29sZWFuKHVzZXIpLAogIH0pOwoKICB1c2VFZmZlY3QoKCkgPT4gewogICAgaWYgKHByb2ZpbGUuZGF0YSkgc2V0Rm9ybShwcm9maWxlLmRhdGEpOwogIH0sIFtwcm9maWxlLmRhdGFdKTsKCiAgY29uc3Qgc2F2ZSA9IHVzZU11dGF0aW9uKHsKICAgIG11dGF0aW9uRm46IGFzeW5jICgpID0+IHsKICAgICAgY29uc3QgcGFyc2VkID0gcHJvZmlsZVNjaGVtYS5zYWZlUGFyc2UoewogICAgICAgIHVzZXJuYW1lOiBmb3JtLnVzZXJuYW1lID8/ICIiLAogICAgICAgIGRpc3BsYXlfbmFtZTogZm9ybS5kaXNwbGF5X25hbWUgPz8gIiIsCiAgICAgICAgYmlvOiBmb3JtLmJpbyA/PyAiIiwKICAgICAgICBtb29kOiBmb3JtLm1vb2QgPz8gIiIsCiAgICAgICAgZmF2b3JpdGVfcXVvdGU6IGZvcm0uZmF2b3JpdGVfcXVvdGUgPz8gIiIsCiAgICAgICAgYWNjZW50X2NvbG9yOiBmb3JtLmFjY2VudF9jb2xvciA/PyAiIzRmNDZlNSIsCiAgICAgICAgYmdfY29sb3I6IGZvcm0uYmdfY29sb3IgPz8gIiMwYTBhMWEiLAogICAgICAgIGlzX3ByaXZhdGU6IGZvcm0uaXNfcHJpdmF0ZSA/PyBmYWxzZSwKICAgICAgfSk7CiAgICAgIGlmICghcGFyc2VkLnN1Y2Nlc3MpIHRocm93IG5ldyBFcnJvcihwYXJzZWQuZXJyb3IuaXNzdWVzWzBdPy5tZXNzYWdlID8/ICJEYXRvcyBubyB2w6FsaWRvcyIpOwogICAgICBhd2FpdCB1cGRhdGVQcm9maWxlKHVzZXIhLmlkLCBwYXJzZWQuZGF0YSk7CiAgICAgIHJldHVybiBwYXJzZWQuZGF0YS51c2VybmFtZTsKICAgIH0sCiAgICBvblN1Y2Nlc3M6ICh1c2VybmFtZSkgPT4gewogICAgICB2b2lkIHF1ZXJ5Q2xpZW50LmludmFsaWRhdGVRdWVyaWVzKHsgcXVlcnlLZXk6IFsibXktcHJvZmlsZSJdIH0pOwogICAgICB2b2lkIHF1ZXJ5Q2xpZW50LmludmFsaWRhdGVRdWVyaWVzKHsgcXVlcnlLZXk6IFsicHJvZmlsZSJdIH0pOwogICAgICB0b2FzdC5zdWNjZXNzKCJQZXJmaWwgYWN0dWFsaXphZG8iKTsKICAgICAgdm9pZCBuYXZpZ2F0ZSh7IHRvOiAiL3BlcmZpbC8kdXNlcm5hbWUiLCBwYXJhbXM6IHsgdXNlcm5hbWUgfSB9KTsKICAgIH0sCiAgICBvbkVycm9yOiAoZTogRXJyb3IpID0+CiAgICAgIHRvYXN0LmVycm9yKAogICAgICAgIGUubWVzc2FnZS5pbmNsdWRlcygiZHVwbGljYXRlIikgPyAiRXNlIG5vbWJyZSBkZSB1c3VhcmlvIHlhIGV4aXN0ZS4iIDogZS5tZXNzYWdlLAogICAgICApLAogIH0pOwoKICBhc3luYyBmdW5jdGlvbiBoYW5kbGVVcGxvYWQoZmllbGQ6ICJhdmF0YXJfdXJsIiB8ICJjb3Zlcl91cmwiLCBmaWxlOiBGaWxlIHwgdW5kZWZpbmVkKSB7CiAgICBpZiAoIWZpbGUgfHwgIXVzZXIpIHJldHVybjsKICAgIGlmIChmaWxlLnNpemUgPiA4ICogMTAyNCAqIDEwMjQpIHsKICAgICAgdG9hc3QuZXJyb3IoIkxhIGltYWdlbiBubyBwdWVkZSBwZXNhciBtw6FzIGRlIDggTUIiKTsKICAgICAgcmV0dXJuOwogICAgfQogICAgc2V0VXBsb2FkaW5nKHRydWUpOwogICAgdHJ5IHsKICAgICAgY29uc3QgcGF0aCA9IGF3YWl0IHVwbG9hZE1lZGlhKHVzZXIuaWQsIGZpbGUsIGZpZWxkID09PSAiYXZhdGFyX3VybCIgPyAiYXZhdGFycyIgOiAiY292ZXJzIik7CiAgICAgIGF3YWl0IHVwZGF0ZVByb2ZpbGUodXNlci5pZCwgeyBbZmllbGRdOiBwYXRoIH0gYXMgUGFydGlhbDxQcm9maWxlPik7CiAgICAgIHZvaWQgcXVlcnlDbGllbnQuaW52YWxpZGF0ZVF1ZXJpZXMoeyBxdWVyeUtleTogWyJteS1wcm9maWxlIl0gfSk7CiAgICAgIHRvYXN0LnN1Y2Nlc3MoIkltYWdlbiBhY3R1YWxpemFkYSIpOwogICAgfSBjYXRjaCB7CiAgICAgIHRvYXN0LmVycm9yKCJObyBoZW1vcyBwb2RpZG8gc3ViaXIgbGEgaW1hZ2VuIik7CiAgICB9IGZpbmFsbHkgewogICAgICBzZXRVcGxvYWRpbmcoZmFsc2UpOwogICAgfQogIH0KCiAgaWYgKCFwcm9maWxlLmRhdGEpIHJldHVybiA8ZGl2IGNsYXNzTmFtZT0icC0xMCB0ZXh0LWNlbnRlciB0ZXh0LW11dGVkLWZvcmVncm91bmQiPkNhcmdhbmRv4oCmPC9kaXY+OwoKICByZXR1cm4gKAogICAgPG1haW4gY2xhc3NOYW1lPSJteC1hdXRvIG1heC13LTJ4bCBweC00IHB5LTgiPgogICAgICA8aDEgY2xhc3NOYW1lPSJmb250LWRpc3BsYXkgdGV4dC0yeGwgZm9udC1ib2xkIj5FZGl0YXIgbWkgcGVyZmlsPC9oMT4KCiAgICAgIDxkaXYgY2xhc3NOYW1lPSJwYW5lbCBtdC02IHNwYWNlLXktNSBwLTUiPgogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtNCI+CiAgICAgICAgICA8TWVkaWFJbWFnZQogICAgICAgICAgICBwYXRoPXtmb3JtLmF2YXRhcl91cmx9CiAgICAgICAgICAgIGFsdD0iVHUgZm90byBkZSBwZXJmaWwiCiAgICAgICAgICAgIGNsYXNzTmFtZT0iaC0yMCB3LTIwIHJvdW5kZWQtbWQgYm9yZGVyIGJvcmRlci1ib3JkZXIgb2JqZWN0LWNvdmVyIgogICAgICAgICAgICBmYWxsYmFjaz17PGRpdiBjbGFzc05hbWU9ImgtMjAgdy0yMCByb3VuZGVkLW1kIGJnLXNlY29uZGFyeSIgLz59CiAgICAgICAgICAvPgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9InNwYWNlLXktMiI+CiAgICAgICAgICAgIDxMYWJlbCBodG1sRm9yPSJhdmF0YXIiPkZvdG8gZGUgcGVyZmlsPC9MYWJlbD4KICAgICAgICAgICAgPElucHV0CiAgICAgICAgICAgICAgaWQ9ImF2YXRhciIKICAgICAgICAgICAgICB0eXBlPSJmaWxlIgogICAgICAgICAgICAgIGFjY2VwdD0iaW1hZ2UvKiIKICAgICAgICAgICAgICBkaXNhYmxlZD17dXBsb2FkaW5nfQogICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gdm9pZCBoYW5kbGVVcGxvYWQoImF2YXRhcl91cmwiLCBlLnRhcmdldC5maWxlcz8uWzBdKX0KICAgICAgICAgICAgLz4KICAgICAgICAgIDwvZGl2PgogICAgICAgIDwvZGl2PgoKICAgICAgICA8ZGl2IGNsYXNzTmFtZT0ic3BhY2UteS0yIj4KICAgICAgICAgIDxMYWJlbCBodG1sRm9yPSJjb3ZlciI+UG9ydGFkYTwvTGFiZWw+CiAgICAgICAgICA8SW5wdXQKICAgICAgICAgICAgaWQ9ImNvdmVyIgogICAgICAgICAgICB0eXBlPSJmaWxlIgogICAgICAgICAgICBhY2NlcHQ9ImltYWdlLyoiCiAgICAgICAgICAgIGRpc2FibGVkPXt1cGxvYWRpbmd9CiAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gdm9pZCBoYW5kbGVVcGxvYWQoImNvdmVyX3VybCIsIGUudGFyZ2V0LmZpbGVzPy5bMF0pfQogICAgICAgICAgLz4KICAgICAgICA8L2Rpdj4KCiAgICAgICAgPEZpZWxkIGxhYmVsPSJVc3VhcmlvIiBpZD0idXNlcm5hbWUiPgogICAgICAgICAgPElucHV0CiAgICAgICAgICAgIGlkPSJ1c2VybmFtZSIKICAgICAgICAgICAgdmFsdWU9e2Zvcm0udXNlcm5hbWUgPz8gIiJ9CiAgICAgICAgICAgIG1heExlbmd0aD17MjB9CiAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0Rm9ybSh7IC4uLmZvcm0sIHVzZXJuYW1lOiBlLnRhcmdldC52YWx1ZS50b0xvd2VyQ2FzZSgpIH0pfQogICAgICAgICAgLz4KICAgICAgICA8L0ZpZWxkPgoKICAgICAgICA8RmllbGQgbGFiZWw9Ik5vbWJyZSIgaWQ9ImRpc3BsYXlfbmFtZSI+CiAgICAgICAgICA8SW5wdXQKICAgICAgICAgICAgaWQ9ImRpc3BsYXlfbmFtZSIKICAgICAgICAgICAgdmFsdWU9e2Zvcm0uZGlzcGxheV9uYW1lID8/ICIifQogICAgICAgICAgICBtYXhMZW5ndGg9ezYwfQogICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldEZvcm0oeyAuLi5mb3JtLCBkaXNwbGF5X25hbWU6IGUudGFyZ2V0LnZhbHVlIH0pfQogICAgICAgICAgLz4KICAgICAgICA8L0ZpZWxkPgoKICAgICAgICA8RmllbGQgbGFiZWw9IkVzdGFkbyBkZSDDoW5pbW8iIGlkPSJtb29kIj4KICAgICAgICAgIDxJbnB1dAogICAgICAgICAgICBpZD0ibW9vZCIKICAgICAgICAgICAgdmFsdWU9e2Zvcm0ubW9vZCA/PyAiIn0KICAgICAgICAgICAgbWF4TGVuZ3RoPXs0MH0KICAgICAgICAgICAgcGxhY2Vob2xkZXI9ImVzY3VjaGFuZG8gbcO6c2ljYSDimIUiCiAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0Rm9ybSh7IC4uLmZvcm0sIG1vb2Q6IGUudGFyZ2V0LnZhbHVlIH0pfQogICAgICAgICAgLz4KICAgICAgICA8L0ZpZWxkPgoKICAgICAgICA8RmllbGQgbGFiZWw9IlNvYnJlIG3DrSIgaWQ9ImJpbyI+CiAgICAgICAgICA8VGV4dGFyZWEKICAgICAgICAgICAgaWQ9ImJpbyIKICAgICAgICAgICAgcm93cz17NH0KICAgICAgICAgICAgdmFsdWU9e2Zvcm0uYmlvID8/ICIifQogICAgICAgICAgICBtYXhMZW5ndGg9ezYwMH0KICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRGb3JtKHsgLi4uZm9ybSwgYmlvOiBlLnRhcmdldC52YWx1ZSB9KX0KICAgICAgICAgIC8+CiAgICAgICAgPC9GaWVsZD4KCiAgICAgICAgPEZpZWxkIGxhYmVsPSJGcmFzZSBmYXZvcml0YSIgaWQ9InF1b3RlIj4KICAgICAgICAgIDxJbnB1dAogICAgICAgICAgICBpZD0icXVvdGUiCiAgICAgICAgICAgIHZhbHVlPXtmb3JtLmZhdm9yaXRlX3F1b3RlID8/ICIifQogICAgICAgICAgICBtYXhMZW5ndGg9ezEyMH0KICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRGb3JtKHsgLi4uZm9ybSwgZmF2b3JpdGVfcXVvdGU6IGUudGFyZ2V0LnZhbHVlIH0pfQogICAgICAgICAgLz4KICAgICAgICA8L0ZpZWxkPgoKICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZ3JpZCBncmlkLWNvbHMtMiBnYXAtNCI+CiAgICAgICAgICA8RmllbGQgbGFiZWw9IkNvbG9yIHByaW5jaXBhbCIgaWQ9ImFjY2VudCI+CiAgICAgICAgICAgIDxJbnB1dAogICAgICAgICAgICAgIGlkPSJhY2NlbnQiCiAgICAgICAgICAgICAgdHlwZT0iY29sb3IiCiAgICAgICAgICAgICAgdmFsdWU9e2Zvcm0uYWNjZW50X2NvbG9yID8/ICIjNGY0NmU1In0KICAgICAgICAgICAgICBjbGFzc05hbWU9ImgtMTAgcC0xIgogICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0Rm9ybSh7IC4uLmZvcm0sIGFjY2VudF9jb2xvcjogZS50YXJnZXQudmFsdWUgfSl9CiAgICAgICAgICAgIC8+CiAgICAgICAgICA8L0ZpZWxkPgogICAgICAgICAgPEZpZWxkIGxhYmVsPSJDb2xvciBkZSBmb25kbyIgaWQ9ImJnIj4KICAgICAgICAgICAgPElucHV0CiAgICAgICAgICAgICAgaWQ9ImJnIgogICAgICAgICAgICAgIHR5cGU9ImNvbG9yIgogICAgICAgICAgICAgIHZhbHVlPXtmb3JtLmJnX2NvbG9yID8/ICIjMGEwYTFhIn0KICAgICAgICAgICAgICBjbGFzc05hbWU9ImgtMTAgcC0xIgogICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0Rm9ybSh7IC4uLmZvcm0sIGJnX2NvbG9yOiBlLnRhcmdldC52YWx1ZSB9KX0KICAgICAgICAgICAgLz4KICAgICAgICAgIDwvRmllbGQ+CiAgICAgICAgPC9kaXY+CgogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gcm91bmRlZC1tZCBiZy1zZWNvbmRhcnkgcC0zIj4KICAgICAgICAgIDxkaXY+CiAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0idGV4dC1zbSBmb250LW1lZGl1bSI+UGVyZmlsIHByaXZhZG88L3A+CiAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0idGV4dC14cyB0ZXh0LW11dGVkLWZvcmVncm91bmQiPgogICAgICAgICAgICAgIFNvbG8gdHVzIGFtaWdvcyBwb2Ryw6FuIHZlciB0dSBtdXJvIHkgdHVzIGZvdG9zLgogICAgICAgICAgICA8L3A+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDxTd2l0Y2gKICAgICAgICAgICAgY2hlY2tlZD17Zm9ybS5pc19wcml2YXRlID8/IGZhbHNlfQogICAgICAgICAgICBvbkNoZWNrZWRDaGFuZ2U9eyh2KSA9PiBzZXRGb3JtKHsgLi4uZm9ybSwgaXNfcHJpdmF0ZTogdiB9KX0KICAgICAgICAgIC8+CiAgICAgICAgPC9kaXY+CgogICAgICAgIDxCdXR0b24gY2xhc3NOYW1lPSJ3LWZ1bGwiIGRpc2FibGVkPXtzYXZlLmlzUGVuZGluZ30gb25DbGljaz17KCkgPT4gc2F2ZS5tdXRhdGUoKX0+CiAgICAgICAgICBHdWFyZGFyIGNhbWJpb3MKICAgICAgICA8L0J1dHRvbj4KICAgICAgPC9kaXY+CiAgICA8L21haW4+CiAgKTsKfQoKZnVuY3Rpb24gRmllbGQoewogIGxhYmVsLAogIGlkLAogIGNoaWxkcmVuLAp9OiB7CiAgbGFiZWw6IHN0cmluZzsKICBpZDogc3RyaW5nOwogIGNoaWxkcmVuOiBSZWFjdC5SZWFjdE5vZGU7Cn0pIHsKICByZXR1cm4gKAogICAgPGRpdiBjbGFzc05hbWU9InNwYWNlLXktMS41Ij4KICAgICAgPExhYmVsIGh0bWxGb3I9e2lkfT57bGFiZWx9PC9MYWJlbD4KICAgICAge2NoaWxkcmVufQogICAgPC9kaXY+CiAgKTsKfQ==
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { useSession } from "@/lib/session";
+import { getMyProfile, updateProfile, type Profile } from "@/lib/api";
+import { profileSchema } from "@/lib/validation";
+import { uploadMedia } from "@/lib/media";
+import { MediaImage } from "@/components/MediaImage";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+
+export const Route = createFileRoute("/_authenticated/ajustes")({
+  head: () => ({
+    meta: [
+      { title: "Editar mi perfil — nocturno" },
+      { name: "description", content: "Personaliza tu nombre, tu bio, tus colores y tu foto." },
+      { property: "og:title", content: "Editar mi perfil — nocturno" },
+      { property: "og:description", content: "Personaliza tu nombre, tu bio, tus colores y tu foto." },
+    ],
+  }),
+  component: SettingsPage,
+});
+
+function SettingsPage() {
+  const { user } = useSession();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [form, setForm] = useState<Partial<Profile>>({});
+  const [uploading, setUploading] = useState(false);
+
+  const profile = useQuery({
+    queryKey: ["my-profile", user?.id],
+    queryFn: () => getMyProfile(user!.id),
+    enabled: Boolean(user),
+  });
+
+  useEffect(() => {
+    if (profile.data) setForm(profile.data);
+  }, [profile.data]);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const parsed = profileSchema.safeParse({
+        username: form.username ?? "",
+        display_name: form.display_name ?? "",
+        bio: form.bio ?? "",
+        mood: form.mood ?? "",
+        favorite_quote: form.favorite_quote ?? "",
+        accent_color: form.accent_color ?? "#4f46e5",
+        bg_color: form.bg_color ?? "#0a0a1a",
+        is_private: form.is_private ?? false,
+      });
+      if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Datos no válidos");
+      await updateProfile(user!.id, parsed.data);
+      return parsed.data.username;
+    },
+    onSuccess: (username) => {
+      void queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Perfil actualizado");
+      void navigate({ to: "/perfil/$username", params: { username } });
+    },
+    onError: (e: Error) =>
+      toast.error(
+        e.message.includes("duplicate") ? "Ese nombre de usuario ya existe." : e.message,
+      ),
+  });
+
+  async function handleUpload(field: "avatar_url" | "cover_url", file: File | undefined) {
+    if (!file || !user) return;
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("La imagen no puede pesar más de 8 MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const path = await uploadMedia(user.id, file, field === "avatar_url" ? "avatars" : "covers");
+      await updateProfile(user.id, { [field]: path } as Partial<Profile>);
+      void queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      toast.success("Imagen actualizada");
+    } catch {
+      toast.error("No hemos podido subir la imagen");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  if (!profile.data) return <div className="p-10 text-center text-muted-foreground">Cargando…</div>;
+
+  return (
+    <main className="mx-auto max-w-2xl px-4 py-8">
+      <h1 className="font-display text-2xl font-bold">Editar mi perfil</h1>
+
+      <div className="panel mt-6 space-y-5 p-5">
+        <div className="flex items-center gap-4">
+          <MediaImage
+            path={form.avatar_url}
+            alt="Tu foto de perfil"
+            className="h-20 w-20 rounded-md border border-border object-cover"
+            fallback={<div className="h-20 w-20 rounded-md bg-secondary" />}
+          />
+          <div className="space-y-2">
+            <Label htmlFor="avatar">Foto de perfil</Label>
+            <Input
+              id="avatar"
+              type="file"
+              accept="image/*"
+              disabled={uploading}
+              onChange={(e) => void handleUpload("avatar_url", e.target.files?.[0])}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="cover">Portada</Label>
+          <Input
+            id="cover"
+            type="file"
+            accept="image/*"
+            disabled={uploading}
+            onChange={(e) => void handleUpload("cover_url", e.target.files?.[0])}
+          />
+        </div>
+
+        <Field label="Usuario" id="username">
+          <Input
+            id="username"
+            value={form.username ?? ""}
+            maxLength={20}
+            onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase() })}
+          />
+        </Field>
+
+        <Field label="Nombre" id="display_name">
+          <Input
+            id="display_name"
+            value={form.display_name ?? ""}
+            maxLength={60}
+            onChange={(e) => setForm({ ...form, display_name: e.target.value })}
+          />
+        </Field>
+
+        <Field label="Estado de ánimo" id="mood">
+          <Input
+            id="mood"
+            value={form.mood ?? ""}
+            maxLength={40}
+            placeholder="escuchando música ★"
+            onChange={(e) => setForm({ ...form, mood: e.target.value })}
+          />
+        </Field>
+
+        <Field label="Sobre mí" id="bio">
+          <Textarea
+            id="bio"
+            rows={4}
+            value={form.bio ?? ""}
+            maxLength={600}
+            onChange={(e) => setForm({ ...form, bio: e.target.value })}
+          />
+        </Field>
+
+        <Field label="Frase favorita" id="quote">
+          <Input
+            id="quote"
+            value={form.favorite_quote ?? ""}
+            maxLength={120}
+            onChange={(e) => setForm({ ...form, favorite_quote: e.target.value })}
+          />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Color principal" id="accent">
+            <Input
+              id="accent"
+              type="color"
+              value={form.accent_color ?? "#4f46e5"}
+              className="h-10 p-1"
+              onChange={(e) => setForm({ ...form, accent_color: e.target.value })}
+            />
+          </Field>
+          <Field label="Color de fondo" id="bg">
+            <Input
+              id="bg"
+              type="color"
+              value={form.bg_color ?? "#0a0a1a"}
+              className="h-10 p-1"
+              onChange={(e) => setForm({ ...form, bg_color: e.target.value })}
+            />
+          </Field>
+        </div>
+
+        <div className="flex items-center justify-between rounded-md bg-secondary p-3">
+          <div>
+            <p className="text-sm font-medium">Perfil privado</p>
+            <p className="text-xs text-muted-foreground">
+              Solo tus amigos podrán ver tu muro y tus fotos.
+            </p>
+          </div>
+          <Switch
+            checked={form.is_private ?? false}
+            onCheckedChange={(v) => setForm({ ...form, is_private: v })}
+          />
+        </div>
+
+        <Button className="w-full" disabled={save.isPending} onClick={() => save.mutate()}>
+          Guardar cambios
+        </Button>
+      </div>
+    </main>
+  );
+}
+
+function Field({
+  label,
+  id,
+  children,
+}: {
+  label: string;
+  id: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      {children}
+    </div>
+  );
+}

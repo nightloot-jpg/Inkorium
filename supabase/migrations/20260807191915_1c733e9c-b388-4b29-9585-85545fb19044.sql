@@ -1,1 +1,8 @@
-Q1JFQVRFIFBPTElDWSAibWVkaWFfcmVhZF9hbGwiIE9OIHN0b3JhZ2Uub2JqZWN0cyBGT1IgU0VMRUNUCiAgVVNJTkcgKGJ1Y2tldF9pZCA9ICdtZWRpYScpOwpDUkVBVEUgUE9MSUNZICJtZWRpYV9pbnNlcnRfb3duIiBPTiBzdG9yYWdlLm9iamVjdHMgRk9SIElOU0VSVCBUTyBhdXRoZW50aWNhdGVkCiAgV0lUSCBDSEVDSyAoYnVja2V0X2lkID0gJ21lZGlhJyBBTkQgKHN0b3JhZ2UuZm9sZGVybmFtZShuYW1lKSlbMV0gPSBhdXRoLnVpZCgpOjp0ZXh0KTsKQ1JFQVRFIFBPTElDWSAibWVkaWFfdXBkYXRlX293biIgT04gc3RvcmFnZS5vYmplY3RzIEZPUiBVUERBVEUgVE8gYXV0aGVudGljYXRlZAogIFVTSU5HIChidWNrZXRfaWQgPSAnbWVkaWEnIEFORCAoc3RvcmFnZS5mb2xkZXJuYW1lKG5hbWUpKVsxXSA9IGF1dGgudWlkKCk6OnRleHQpOwpDUkVBVEUgUE9MSUNZICJtZWRpYV9kZWxldGVfb3duIiBPTiBzdG9yYWdlLm9iamVjdHMgRk9SIERFTEVURSBUTyBhdXRoZW50aWNhdGVkCiAgVVNJTkcgKGJ1Y2tldF9pZCA9ICdtZWRpYScgQU5EIChzdG9yYWdlLmZvbGRlcm5hbWUobmFtZSkpWzFdID0gYXV0aC51aWQoKTo6dGV4dCk7
+CREATE POLICY "media_read_all" ON storage.objects FOR SELECT
+  USING (bucket_id = 'media');
+CREATE POLICY "media_insert_own" ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'media' AND (storage.foldername(name))[1] = auth.uid()::text);
+CREATE POLICY "media_update_own" ON storage.objects FOR UPDATE TO authenticated
+  USING (bucket_id = 'media' AND (storage.foldername(name))[1] = auth.uid()::text);
+CREATE POLICY "media_delete_own" ON storage.objects FOR DELETE TO authenticated
+  USING (bucket_id = 'media' AND (storage.foldername(name))[1] = auth.uid()::text);

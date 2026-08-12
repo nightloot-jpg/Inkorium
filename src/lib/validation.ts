@@ -1,1 +1,41 @@
-aW1wb3J0IHsgeiB9IGZyb20gInpvZCI7CgpleHBvcnQgY29uc3QgdXNlcm5hbWVTY2hlbWEgPSB6CiAgLnN0cmluZygpCiAgLnRyaW0oKQogIC5taW4oMywgIk3DrW5pbW8gMyBjYXJhY3RlcmVzIikKICAubWF4KDIwLCAiTcOheGltbyAyMCBjYXJhY3RlcmVzIikKICAucmVnZXgoL15bYS16MC05X10rJC8sICJTb2xvIG1pbsO6c2N1bGFzLCBuw7ptZXJvcyB5IGd1aW9uIGJham8iKTsKCmV4cG9ydCBjb25zdCBhdXRoU2NoZW1hID0gei5vYmplY3QoewogIGVtYWlsOiB6LnN0cmluZygpLnRyaW0oKS5lbWFpbCgiQ29ycmVvIG5vIHbDoWxpZG8iKS5tYXgoMjU1KSwKICBwYXNzd29yZDogei5zdHJpbmcoKS5taW4oNiwgIk3DrW5pbW8gNiBjYXJhY3RlcmVzIikubWF4KDcyKSwKfSk7CgpleHBvcnQgY29uc3Qgc2lnblVwU2NoZW1hID0gYXV0aFNjaGVtYS5leHRlbmQoewogIHVzZXJuYW1lOiB1c2VybmFtZVNjaGVtYSwKICBkaXNwbGF5TmFtZTogei5zdHJpbmcoKS50cmltKCkubWluKDEsICJFc2NyaWJlIHR1IG5vbWJyZSIpLm1heCg2MCksCn0pOwoKZXhwb3J0IGNvbnN0IHByb2ZpbGVTY2hlbWEgPSB6Lm9iamVjdCh7CiAgdXNlcm5hbWU6IHVzZXJuYW1lU2NoZW1hLAogIGRpc3BsYXlfbmFtZTogei5zdHJpbmcoKS50cmltKCkubWluKDEsICJFc2NyaWJlIHR1IG5vbWJyZSIpLm1heCg2MCksCiAgYmlvOiB6LnN0cmluZygpLnRyaW0oKS5tYXgoNjAwLCAiTcOheGltbyA2MDAgY2FyYWN0ZXJlcyIpLAogIG1vb2Q6IHouc3RyaW5nKCkudHJpbSgpLm1heCg0MCksCiAgZmF2b3JpdGVfcXVvdGU6IHouc3RyaW5nKCkudHJpbSgpLm1heCgxMjApLAogIGFjY2VudF9jb2xvcjogei5zdHJpbmcoKS5yZWdleCgvXiNbMC05YS1mQS1GXXs2fSQvLCAiQ29sb3Igbm8gdsOhbGlkbyIpLAogIGJnX2NvbG9yOiB6LnN0cmluZygpLnJlZ2V4KC9eI1swLTlhLWZBLUZdezZ9JC8sICJDb2xvciBubyB2w6FsaWRvIiksCiAgaXNfcHJpdmF0ZTogei5ib29sZWFuKCksCn0pOwoKZXhwb3J0IGNvbnN0IHRleHRQb3N0U2NoZW1hID0gegogIC5zdHJpbmcoKQogIC50cmltKCkKICAubWluKDEsICJObyBwdWVkZSBlc3RhciB2YWPDrW8iKQogIC5tYXgoNTAwLCAiTcOheGltbyA1MDAgY2FyYWN0ZXJlcyIpOwoKZXhwb3J0IGNvbnN0IHBob3RvU2NoZW1hID0gei5vYmplY3QoewogIHRpdGxlOiB6LnN0cmluZygpLnRyaW0oKS5tYXgoODApLAogIGRlc2NyaXB0aW9uOiB6LnN0cmluZygpLnRyaW0oKS5tYXgoNTAwKSwKICBpc19wcml2YXRlOiB6LmJvb2xlYW4oKSwKfSk7
+import { z } from "zod";
+
+export const usernameSchema = z
+  .string()
+  .trim()
+  .min(3, "Mínimo 3 caracteres")
+  .max(20, "Máximo 20 caracteres")
+  .regex(/^[a-z0-9_]+$/, "Solo minúsculas, números y guion bajo");
+
+export const authSchema = z.object({
+  email: z.string().trim().email("Correo no válido").max(255),
+  password: z.string().min(6, "Mínimo 6 caracteres").max(72),
+});
+
+export const signUpSchema = authSchema.extend({
+  username: usernameSchema,
+  displayName: z.string().trim().min(1, "Escribe tu nombre").max(60),
+});
+
+export const profileSchema = z.object({
+  username: usernameSchema,
+  display_name: z.string().trim().min(1, "Escribe tu nombre").max(60),
+  bio: z.string().trim().max(600, "Máximo 600 caracteres"),
+  mood: z.string().trim().max(40),
+  favorite_quote: z.string().trim().max(120),
+  accent_color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color no válido"),
+  bg_color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color no válido"),
+  is_private: z.boolean(),
+});
+
+export const textPostSchema = z
+  .string()
+  .trim()
+  .min(1, "No puede estar vacío")
+  .max(500, "Máximo 500 caracteres");
+
+export const photoSchema = z.object({
+  title: z.string().trim().max(80),
+  description: z.string().trim().max(500),
+  is_private: z.boolean(),
+});

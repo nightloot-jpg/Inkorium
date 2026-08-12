@@ -1,1 +1,35 @@
-aW1wb3J0IHsgYXV0aCwgZGVmaW5lTWNwIH0gZnJvbSAiQGxvdmFibGUuZGV2L21jcC1qcyI7CmltcG9ydCBnZXRNeVByb2ZpbGUgZnJvbSAiLi90b29scy9nZXQtbXktcHJvZmlsZSI7CmltcG9ydCB1cGRhdGVNeVByb2ZpbGUgZnJvbSAiLi90b29scy91cGRhdGUtbXktcHJvZmlsZSI7CmltcG9ydCBwb3N0U3RhdHVzIGZyb20gIi4vdG9vbHMvcG9zdC1zdGF0dXMiOwppbXBvcnQgbGlzdEZlZWQgZnJvbSAiLi90b29scy9saXN0LWZlZWQiOwppbXBvcnQgbGlzdE5vdGlmaWNhdGlvbnMgZnJvbSAiLi90b29scy9saXN0LW5vdGlmaWNhdGlvbnMiOwppbXBvcnQgbGlzdEZyaWVuZHMgZnJvbSAiLi90b29scy9saXN0LWZyaWVuZHMiOwppbXBvcnQgbGlzdE15UGhvdG9zIGZyb20gIi4vdG9vbHMvbGlzdC1teS1waG90b3MiOwoKY29uc3QgcHJvamVjdFJlZiA9IGltcG9ydC5tZXRhLmVudlsnVklURV9TVVBBQkFTRV9QUk9KRUNUX0lEJ10gPz8gInByb2plY3QtcmVmLXVuc2V0IjsKCnR5cGUgTWNwQ29uZmlnID0gUGFyYW1ldGVyczx0eXBlb2YgZGVmaW5lTWNwPlswXTsKCmNvbnN0IHRvb2xzID0gWwogIGdldE15UHJvZmlsZSwKICB1cGRhdGVNeVByb2ZpbGUsCiAgcG9zdFN0YXR1cywKICBsaXN0RmVlZCwKICBsaXN0Tm90aWZpY2F0aW9ucywKICBsaXN0RnJpZW5kcywKICBsaXN0TXlQaG90b3MsCl0gYXMgdW5rbm93biBhcyBNY3BDb25maWdbInRvb2xzIl07CgpleHBvcnQgZGVmYXVsdCBkZWZpbmVNY3AoewogIG5hbWU6ICJtaS1lc3BhY2lvLXZpcnR1YWwiLAogIHRpdGxlOiAiTWkgRXNwYWNpbyBWaXJ0dWFsIiwKICB2ZXJzaW9uOiAiMC4xLjAiLAogIGluc3RydWN0aW9uczoKICAgICJIZXJyYW1pZW50YXMgZGUgbGEgcmVkIHNvY2lhbCBub2N0dXJuby4gQWN0w7phbiBzaWVtcHJlIGNvbW8gbGEgcGVyc29uYSBjb25lY3RhZGE6IGNvbnN1bHRhciB5IGVkaXRhciBzdSBwZXJmaWwsIHB1YmxpY2FyIGVzdGFkb3MsIGxlZXIgZWwgZmVlZCwgc3VzIG5vdGlmaWNhY2lvbmVzLCBzdXMgYW1pZ29zIHkgc3UgZm90b2xvZy4iLAogIGF1dGg6IGF1dGgub2F1dGguaXNzdWVyKHsKICAgIGlzc3VlcjogYGh0dHBzOi8vJHtwcm9qZWN0UmVmfS5zdXBhYmFzZS5jby9hdXRoL3YxYCwKICAgIGFjY2VwdGVkQXVkaWVuY2VzOiAiYXV0aGVudGljYXRlZCIsCiAgfSksCiAgdG9vbHMsCn0pOw==
+import { auth, defineMcp } from "@lovable.dev/mcp-js";
+import getMyProfile from "./tools/get-my-profile";
+import updateMyProfile from "./tools/update-my-profile";
+import postStatus from "./tools/post-status";
+import listFeed from "./tools/list-feed";
+import listNotifications from "./tools/list-notifications";
+import listFriends from "./tools/list-friends";
+import listMyPhotos from "./tools/list-my-photos";
+
+const projectRef = import.meta.env['VITE_SUPABASE_PROJECT_ID'] ?? "project-ref-unset";
+
+type McpConfig = Parameters<typeof defineMcp>[0];
+
+const tools = [
+  getMyProfile,
+  updateMyProfile,
+  postStatus,
+  listFeed,
+  listNotifications,
+  listFriends,
+  listMyPhotos,
+] as unknown as McpConfig["tools"];
+
+export default defineMcp({
+  name: "mi-espacio-virtual",
+  title: "Mi Espacio Virtual",
+  version: "0.1.0",
+  instructions:
+    "Herramientas de la red social nocturno. Actúan siempre como la persona conectada: consultar y editar su perfil, publicar estados, leer el feed, sus notificaciones, sus amigos y su fotolog.",
+  auth: auth.oauth.issuer({
+    issuer: `https://${projectRef}.supabase.co/auth/v1`,
+    acceptedAudiences: "authenticated",
+  }),
+  tools,
+});

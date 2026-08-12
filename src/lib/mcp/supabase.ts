@@ -1,1 +1,66 @@
-aW1wb3J0IHsgY3JlYXRlQ2xpZW50IH0gZnJvbSAiQHN1cGFiYXNlL3N1cGFiYXNlLWpzIjsKaW1wb3J0IHR5cGUgeyBUb29sQ29udGV4dCB9IGZyb20gIkBsb3ZhYmxlLmRldi9tY3AtanMiOwoKdHlwZSBSdW50aW1lR2xvYmFscyA9IHR5cGVvZiBnbG9iYWxUaGlzICYgewogIERlbm8/OiB7IGVudj86IHsgZ2V0PzogKG5hbWU6IHN0cmluZykgPT4gc3RyaW5nIHwgdW5kZWZpbmVkIH0gfTsKICBwcm9jZXNzPzogeyBlbnY/OiBSZWNvcmQ8c3RyaW5nLCBzdHJpbmcgfCB1bmRlZmluZWQ+IH07Cn07CgpmdW5jdGlvbiBydW50aW1lRW52KG5hbWU6IHN0cmluZyk6IHN0cmluZyB8IHVuZGVmaW5lZCB7CiAgY29uc3QgcnVudGltZSA9IGdsb2JhbFRoaXMgYXMgUnVudGltZUdsb2JhbHM7CiAgcmV0dXJuIHJ1bnRpbWUuRGVubz8uZW52Py5nZXQ/LihuYW1lKSA/PyBydW50aW1lLnByb2Nlc3M/LmVudj8uW25hbWVdOwp9CgpmdW5jdGlvbiBjb25maWd1cmVkRW52KG5hbWVzOiByZWFkb25seSBzdHJpbmdbXSk6IHN0cmluZyB8IHVuZGVmaW5lZCB7CiAgZm9yIChjb25zdCBuYW1lIG9mIG5hbWVzKSB7CiAgICBjb25zdCB2YWx1ZSA9IHJ1bnRpbWVFbnYobmFtZSk/LnRyaW0oKTsKICAgIGlmICh2YWx1ZSkgcmV0dXJuIHZhbHVlOwogIH0KICByZXR1cm4gdW5kZWZpbmVkOwp9CgpmdW5jdGlvbiBzdXBhYmFzZVByb2plY3RVcmwoKTogc3RyaW5nIHsKICBjb25zdCB1cmwgPSBjb25maWd1cmVkRW52KFsiU1VQQUJBU0VfVVJMIiwgIlZJVEVfU1VQQUJBU0VfVVJMIl0pOwogIGlmICghdXJsKSB0aHJvdyBuZXcgRXJyb3IoIlNVUEFCQVNFX1VSTCAob3IgVklURV9TVVBBQkFTRV9VUkwpIGlzIHJlcXVpcmVkIik7CiAgcmV0dXJuIHVybDsKfQoKZnVuY3Rpb24gc3VwYWJhc2VQdWJsaXNoYWJsZUtleSgpOiBzdHJpbmcgewogIGNvbnN0IGRpcmVjdCA9IGNvbmZpZ3VyZWRFbnYoWyJTVVBBQkFTRV9QVUJMSVNIQUJMRV9LRVkiLCAiVklURV9TVVBBQkFTRV9QVUJMSVNIQUJMRV9LRVkiXSk7CiAgaWYgKGRpcmVjdCkgcmV0dXJuIGRpcmVjdDsKICBjb25zdCBrZXlzZXQgPSBydW50aW1lRW52KCJTVVBBQkFTRV9QVUJMSVNIQUJMRV9LRVlTIik7CiAgaWYgKGtleXNldCkgewogICAgdHJ5IHsKICAgICAgY29uc3QgcGFyc2VkOiB1bmtub3duID0gSlNPTi5wYXJzZShrZXlzZXQpOwogICAgICBpZiAocGFyc2VkICYmIHR5cGVvZiBwYXJzZWQgPT09ICJvYmplY3QiICYmICFBcnJheS5pc0FycmF5KHBhcnNlZCkpIHsKICAgICAgICBjb25zdCBrZXlzID0gcGFyc2VkIGFzIFJlY29yZDxzdHJpbmcsIHVua25vd24+OwogICAgICAgIGNvbnN0IGtleSA9IFtrZXlzWyJkZWZhdWx0Il0sIC4uLk9iamVjdC52YWx1ZXMoa2V5cyldCiAgICAgICAgICAuZmluZCgodik6IHYgaXMgc3RyaW5nID0+IHR5cGVvZiB2ID09PSAic3RyaW5nIiAmJiB2LnRyaW0oKS5zdGFydHNXaXRoKCJzYl9wdWJsaXNoYWJsZV8iKSkKICAgICAgICAgID8udHJpbSgpOwogICAgICAgIGlmIChrZXkpIHJldHVybiBrZXk7CiAgICAgIH0KICAgIH0gY2F0Y2ggewogICAgICAvLyBmYWxsIHRocm91Z2ggdG8gbGVnYWN5IG5hbWVzCiAgICB9CiAgfQogIGNvbnN0IGxlZ2FjeSA9IGNvbmZpZ3VyZWRFbnYoWyJTVVBBQkFTRV9BTk9OX0tFWSIsICJWSVRFX1NVUEFCQVNFX0FOT05fS0VZIl0pOwogIGlmIChsZWdhY3kpIHJldHVybiBsZWdhY3k7CiAgdGhyb3cgbmV3IEVycm9yKCJTVVBBQkFTRV9QVUJMSVNIQUJMRV9LRVksIFNVUEFCQVNFX1BVQkxJU0hBQkxFX0tFWVMsIG9yIFNVUEFCQVNFX0FOT05fS0VZIGlzIHJlcXVpcmVkIik7Cn0KCi8qKiBGb3J3YXJkcyB0aGUgdmVyaWZpZWQgYmVhcmVyIHRva2VuIHNvIFJMUyBydW5zIGFzIHRoZSBzaWduZWQtaW4gdXNlci4gKi8KZXhwb3J0IGZ1bmN0aW9uIHN1cGFiYXNlRm9yVXNlcihjdHg6IFRvb2xDb250ZXh0KSB7CiAgY29uc3QgdG9rZW4gPSBjdHguZ2V0VG9rZW4oKTsKICBpZiAoIXRva2VuKSB0aHJvdyBuZXcgRXJyb3IoInN1cGFiYXNlRm9yVXNlciByZXF1aXJlcyBhIHZlcmlmaWVkIE9BdXRoIHRva2VuIik7CiAgcmV0dXJuIGNyZWF0ZUNsaWVudChzdXBhYmFzZVByb2plY3RVcmwoKSwgc3VwYWJhc2VQdWJsaXNoYWJsZUtleSgpLCB7CiAgICBnbG9iYWw6IHsgaGVhZGVyczogeyBBdXRob3JpemF0aW9uOiBgQmVhcmVyICR7dG9rZW59YCB9IH0sCiAgICBhdXRoOiB7IHBlcnNpc3RTZXNzaW9uOiBmYWxzZSwgYXV0b1JlZnJlc2hUb2tlbjogZmFsc2UgfSwKICB9KTsKfQoKZXhwb3J0IGZ1bmN0aW9uIG5vdEF1dGhlbnRpY2F0ZWQoKSB7CiAgcmV0dXJuIHsKICAgIGNvbnRlbnQ6IFt7IHR5cGU6ICJ0ZXh0IiBhcyBjb25zdCwgdGV4dDogIk5vIGF1dGVudGljYWRvLiBDb25lY3RhIHR1IGN1ZW50YSBkZSBub2N0dXJuby4iIH1dLAogICAgaXNFcnJvcjogdHJ1ZSwKICB9Owp9
+import { createClient } from "@supabase/supabase-js";
+import type { ToolContext } from "@lovable.dev/mcp-js";
+
+type RuntimeGlobals = typeof globalThis & {
+  Deno?: { env?: { get?: (name: string) => string | undefined } };
+  process?: { env?: Record<string, string | undefined> };
+};
+
+function runtimeEnv(name: string): string | undefined {
+  const runtime = globalThis as RuntimeGlobals;
+  return runtime.Deno?.env?.get?.(name) ?? runtime.process?.env?.[name];
+}
+
+function configuredEnv(names: readonly string[]): string | undefined {
+  for (const name of names) {
+    const value = runtimeEnv(name)?.trim();
+    if (value) return value;
+  }
+  return undefined;
+}
+
+function supabaseProjectUrl(): string {
+  const url = configuredEnv(["SUPABASE_URL", "VITE_SUPABASE_URL"]);
+  if (!url) throw new Error("SUPABASE_URL (or VITE_SUPABASE_URL) is required");
+  return url;
+}
+
+function supabasePublishableKey(): string {
+  const direct = configuredEnv(["SUPABASE_PUBLISHABLE_KEY", "VITE_SUPABASE_PUBLISHABLE_KEY"]);
+  if (direct) return direct;
+  const keyset = runtimeEnv("SUPABASE_PUBLISHABLE_KEYS");
+  if (keyset) {
+    try {
+      const parsed: unknown = JSON.parse(keyset);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const keys = parsed as Record<string, unknown>;
+        const key = [keys["default"], ...Object.values(keys)]
+          .find((v): v is string => typeof v === "string" && v.trim().startsWith("sb_publishable_"))
+          ?.trim();
+        if (key) return key;
+      }
+    } catch {
+      // fall through to legacy names
+    }
+  }
+  const legacy = configuredEnv(["SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
+  if (legacy) return legacy;
+  throw new Error("SUPABASE_PUBLISHABLE_KEY, SUPABASE_PUBLISHABLE_KEYS, or SUPABASE_ANON_KEY is required");
+}
+
+/** Forwards the verified bearer token so RLS runs as the signed-in user. */
+export function supabaseForUser(ctx: ToolContext) {
+  const token = ctx.getToken();
+  if (!token) throw new Error("supabaseForUser requires a verified OAuth token");
+  return createClient(supabaseProjectUrl(), supabasePublishableKey(), {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+export function notAuthenticated() {
+  return {
+    content: [{ type: "text" as const, text: "No autenticado. Conecta tu cuenta de nocturno." }],
+    isError: true,
+  };
+}

@@ -1,1 +1,78 @@
-aW1wb3J0IHsgY3JlYXRlRmlsZVJvdXRlLCBMaW5rIH0gZnJvbSAiQHRhbnN0YWNrL3JlYWN0LXJvdXRlciI7CmltcG9ydCB7IHVzZVF1ZXJ5IH0gZnJvbSAiQHRhbnN0YWNrL3JlYWN0LXF1ZXJ5IjsKaW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tICJyZWFjdCI7CgppbXBvcnQgeyBzZWFyY2hQcm9maWxlcyB9IGZyb20gIkAvbGliL2FwaSI7CmltcG9ydCB7IFVzZXJBdmF0YXIgfSBmcm9tICJAL2NvbXBvbmVudHMvVXNlckF2YXRhciI7CmltcG9ydCB7IElucHV0IH0gZnJvbSAiQC9jb21wb25lbnRzL3VpL2lucHV0IjsKCmV4cG9ydCBjb25zdCBSb3V0ZSA9IGNyZWF0ZUZpbGVSb3V0ZSgiL2dlbnRlIikoewogIHZhbGlkYXRlU2VhcmNoOiAoc2VhcmNoOiBSZWNvcmQ8c3RyaW5nLCB1bmtub3duPikgPT4gKHsKICAgIHE6IHR5cGVvZiBzZWFyY2hbInEiXSA9PT0gInN0cmluZyIgPyBzZWFyY2hbInEiXS5zbGljZSgwLCA0MCkgOiAiIiwKICB9KSwKICBoZWFkOiAoKSA9PiAoewogICAgbWV0YTogWwogICAgICB7IHRpdGxlOiAiQnVzY2FyIGdlbnRlIOKAlCBub2N0dXJubyIgfSwKICAgICAgewogICAgICAgIG5hbWU6ICJkZXNjcmlwdGlvbiIsCiAgICAgICAgY29udGVudDogIkVuY3VlbnRyYSBhIHR1cyBhbWlnb3MgcG9yIG5vbWJyZSBvIHVzdWFyaW8geSBhw7HDoWRlbG9zIGEgdHUgcmVkIGVuIG5vY3R1cm5vLiIsCiAgICAgIH0sCiAgICAgIHsgcHJvcGVydHk6ICJvZzp0aXRsZSIsIGNvbnRlbnQ6ICJCdXNjYXIgZ2VudGUg4oCUIG5vY3R1cm5vIiB9LAogICAgICB7IHByb3BlcnR5OiAib2c6ZGVzY3JpcHRpb24iLCBjb250ZW50OiAiRW5jdWVudHJhIGEgdHVzIGFtaWdvcyBwb3Igbm9tYnJlIG8gdXN1YXJpby4iIH0sCiAgICBdLAogIH0pLAogIGNvbXBvbmVudDogUGVvcGxlUGFnZSwKfSk7CgpmdW5jdGlvbiBQZW9wbGVQYWdlKCkgewogIGNvbnN0IHsgcSB9ID0gUm91dGUudXNlU2VhcmNoKCk7CiAgY29uc3QgW3Rlcm0sIHNldFRlcm1dID0gdXNlU3RhdGUocSk7CgogIGNvbnN0IHJlc3VsdHMgPSB1c2VRdWVyeSh7CiAgICBxdWVyeUtleTogWyJzZWFyY2gtcHJvZmlsZXMiLCB0ZXJtXSwKICAgIHF1ZXJ5Rm46ICgpID0+IHNlYXJjaFByb2ZpbGVzKHRlcm0pLAogIH0pOwoKICByZXR1cm4gKAogICAgPG1haW4gY2xhc3NOYW1lPSJteC1hdXRvIG1heC13LTN4bCBweC00IHB5LTgiPgogICAgICA8aDEgY2xhc3NOYW1lPSJmb250LWRpc3BsYXkgdGV4dC0yeGwgZm9udC1ib2xkIj5CdXNjYXIgZ2VudGU8L2gxPgogICAgICA8SW5wdXQKICAgICAgICB2YWx1ZT17dGVybX0KICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldFRlcm0oZS50YXJnZXQudmFsdWUpfQogICAgICAgIHBsYWNlaG9sZGVyPSJOb21icmUgbyB1c3Vhcmlv4oCmIgogICAgICAgIG1heExlbmd0aD17NDB9CiAgICAgICAgY2xhc3NOYW1lPSJtdC00IgogICAgICAgIGFyaWEtbGFiZWw9IkJ1c2NhciBwb3Igbm9tYnJlIG8gdXN1YXJpbyIKICAgICAgLz4KCiAgICAgIDx1bCBjbGFzc05hbWU9Im10LTYgc3BhY2UteS0yIj4KICAgICAgICB7cmVzdWx0cy5pc0xvYWRpbmcgPyAoCiAgICAgICAgICA8bGkgY2xhc3NOYW1lPSJ0ZXh0LXNtIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCI+QnVzY2FuZG/igKY8L2xpPgogICAgICAgICkgOiAocmVzdWx0cy5kYXRhID8/IFtdKS5sZW5ndGggPT09IDAgPyAoCiAgICAgICAgICA8bGkgY2xhc3NOYW1lPSJ0ZXh0LXNtIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCI+Tm8gaGVtb3MgZW5jb250cmFkbyBhIG5hZGllLjwvbGk+CiAgICAgICAgKSA6ICgKICAgICAgICAgIChyZXN1bHRzLmRhdGEgPz8gW10pLm1hcCgocCkgPT4gKAogICAgICAgICAgICA8bGkga2V5PXtwLmlkfSBjbGFzc05hbWU9InBhbmVsIGZsZXggaXRlbXMtY2VudGVyIGdhcC0zIHAtMyI+CiAgICAgICAgICAgICAgPFVzZXJBdmF0YXIKICAgICAgICAgICAgICAgIHVzZXJuYW1lPXtwLnVzZXJuYW1lfQogICAgICAgICAgICAgICAgZGlzcGxheU5hbWU9e3AuZGlzcGxheV9uYW1lfQogICAgICAgICAgICAgICAgYXZhdGFyUGF0aD17cC5hdmF0YXJfdXJsfQogICAgICAgICAgICAgICAgYWNjZW50PXtwLmFjY2VudF9jb2xvcn0KICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJtaW4tdy0wIj4KICAgICAgICAgICAgICAgIDxMaW5rCiAgICAgICAgICAgICAgICAgIHRvPSIvcGVyZmlsLyR1c2VybmFtZSIKICAgICAgICAgICAgICAgICAgcGFyYW1zPXt7IHVzZXJuYW1lOiBwLnVzZXJuYW1lIH19CiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0iYmxvY2sgdHJ1bmNhdGUgZm9udC1zZW1pYm9sZCBob3Zlcjp0ZXh0LWFjY2VudCIKICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAge3AuZGlzcGxheV9uYW1lfQogICAgICAgICAgICAgICAgPC9MaW5rPgogICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJ0cnVuY2F0ZSB0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCI+QHtwLnVzZXJuYW1lfTwvcD4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPC9saT4KICAgICAgICAgICkpCiAgICAgICAgKX0KICAgICAgPC91bD4KICAgIDwvbWFpbj4KICApOwp9
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+
+import { searchProfiles } from "@/lib/api";
+import { UserAvatar } from "@/components/UserAvatar";
+import { Input } from "@/components/ui/input";
+
+export const Route = createFileRoute("/gente")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search["q"] === "string" ? search["q"].slice(0, 40) : "",
+  }),
+  head: () => ({
+    meta: [
+      { title: "Buscar gente — nocturno" },
+      {
+        name: "description",
+        content: "Encuentra a tus amigos por nombre o usuario y añádelos a tu red en nocturno.",
+      },
+      { property: "og:title", content: "Buscar gente — nocturno" },
+      { property: "og:description", content: "Encuentra a tus amigos por nombre o usuario." },
+    ],
+  }),
+  component: PeoplePage,
+});
+
+function PeoplePage() {
+  const { q } = Route.useSearch();
+  const [term, setTerm] = useState(q);
+
+  const results = useQuery({
+    queryKey: ["search-profiles", term],
+    queryFn: () => searchProfiles(term),
+  });
+
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-8">
+      <h1 className="font-display text-2xl font-bold">Buscar gente</h1>
+      <Input
+        value={term}
+        onChange={(e) => setTerm(e.target.value)}
+        placeholder="Nombre o usuario…"
+        maxLength={40}
+        className="mt-4"
+        aria-label="Buscar por nombre o usuario"
+      />
+
+      <ul className="mt-6 space-y-2">
+        {results.isLoading ? (
+          <li className="text-sm text-muted-foreground">Buscando…</li>
+        ) : (results.data ?? []).length === 0 ? (
+          <li className="text-sm text-muted-foreground">No hemos encontrado a nadie.</li>
+        ) : (
+          (results.data ?? []).map((p) => (
+            <li key={p.id} className="panel flex items-center gap-3 p-3">
+              <UserAvatar
+                username={p.username}
+                displayName={p.display_name}
+                avatarPath={p.avatar_url}
+                accent={p.accent_color}
+              />
+              <div className="min-w-0">
+                <Link
+                  to="/perfil/$username"
+                  params={{ username: p.username }}
+                  className="block truncate font-semibold hover:text-accent"
+                >
+                  {p.display_name}
+                </Link>
+                <p className="truncate text-xs text-muted-foreground">@{p.username}</p>
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
+    </main>
+  );
+}

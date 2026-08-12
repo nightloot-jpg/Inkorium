@@ -1,1 +1,41 @@
-aW1wb3J0IHsgY3JlYXRlQ29udGV4dCwgdXNlQ29udGV4dCwgdXNlRWZmZWN0LCB1c2VTdGF0ZSwgdHlwZSBSZWFjdE5vZGUgfSBmcm9tICJyZWFjdCI7CmltcG9ydCB0eXBlIHsgVXNlciB9IGZyb20gIkBzdXBhYmFzZS9zdXBhYmFzZS1qcyI7CmltcG9ydCB7IHVzZVF1ZXJ5Q2xpZW50IH0gZnJvbSAiQHRhbnN0YWNrL3JlYWN0LXF1ZXJ5IjsKaW1wb3J0IHsgdXNlUm91dGVyIH0gZnJvbSAiQHRhbnN0YWNrL3JlYWN0LXJvdXRlciI7CmltcG9ydCB7IHN1cGFiYXNlIH0gZnJvbSAiQC9pbnRlZ3JhdGlvbnMvc3VwYWJhc2UvY2xpZW50IjsKCnR5cGUgU2Vzc2lvblN0YXRlID0geyB1c2VyOiBVc2VyIHwgbnVsbDsgbG9hZGluZzogYm9vbGVhbiB9OwoKY29uc3QgU2Vzc2lvbkNvbnRleHQgPSBjcmVhdGVDb250ZXh0PFNlc3Npb25TdGF0ZT4oeyB1c2VyOiBudWxsLCBsb2FkaW5nOiB0cnVlIH0pOwoKZXhwb3J0IGZ1bmN0aW9uIFNlc3Npb25Qcm92aWRlcih7IGNoaWxkcmVuIH06IHsgY2hpbGRyZW46IFJlYWN0Tm9kZSB9KSB7CiAgY29uc3QgW3VzZXIsIHNldFVzZXJdID0gdXNlU3RhdGU8VXNlciB8IG51bGw+KG51bGwpOwogIGNvbnN0IFtsb2FkaW5nLCBzZXRMb2FkaW5nXSA9IHVzZVN0YXRlKHRydWUpOwogIGNvbnN0IHF1ZXJ5Q2xpZW50ID0gdXNlUXVlcnlDbGllbnQoKTsKICBjb25zdCByb3V0ZXIgPSB1c2VSb3V0ZXIoKTsKCiAgdXNlRWZmZWN0KCgpID0+IHsKICAgIGNvbnN0IHsKICAgICAgZGF0YTogeyBzdWJzY3JpcHRpb24gfSwKICAgIH0gPSBzdXBhYmFzZS5hdXRoLm9uQXV0aFN0YXRlQ2hhbmdlKChldmVudCwgc2Vzc2lvbikgPT4gewogICAgICBzZXRVc2VyKHNlc3Npb24/LnVzZXIgPz8gbnVsbCk7CiAgICAgIHNldExvYWRpbmcoZmFsc2UpOwogICAgICBpZiAoZXZlbnQgIT09ICJTSUdORURfSU4iICYmIGV2ZW50ICE9PSAiU0lHTkVEX09VVCIgJiYgZXZlbnQgIT09ICJVU0VSX1VQREFURUQiKSByZXR1cm47CiAgICAgIHJvdXRlci5pbnZhbGlkYXRlKCk7CiAgICAgIGlmIChldmVudCAhPT0gIlNJR05FRF9PVVQiKSBxdWVyeUNsaWVudC5pbnZhbGlkYXRlUXVlcmllcygpOwogICAgfSk7CgogICAgdm9pZCBzdXBhYmFzZS5hdXRoLmdldFNlc3Npb24oKS50aGVuKCh7IGRhdGEgfSkgPT4gewogICAgICBzZXRVc2VyKGRhdGEuc2Vzc2lvbj8udXNlciA/PyBudWxsKTsKICAgICAgc2V0TG9hZGluZyhmYWxzZSk7CiAgICB9KTsKCiAgICByZXR1cm4gKCkgPT4gc3Vic2NyaXB0aW9uLnVuc3Vic2NyaWJlKCk7CiAgfSwgW3F1ZXJ5Q2xpZW50LCByb3V0ZXJdKTsKCiAgcmV0dXJuIDxTZXNzaW9uQ29udGV4dC5Qcm92aWRlciB2YWx1ZT17eyB1c2VyLCBsb2FkaW5nIH19PntjaGlsZHJlbn08L1Nlc3Npb25Db250ZXh0LlByb3ZpZGVyPjsKfQoKZXhwb3J0IGZ1bmN0aW9uIHVzZVNlc3Npb24oKSB7CiAgcmV0dXJuIHVzZUNvbnRleHQoU2Vzc2lvbkNvbnRleHQpOwp9
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import type { User } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+
+type SessionState = { user: User | null; loading: boolean };
+
+const SessionContext = createContext<SessionState>({ user: null, loading: true });
+
+export function SessionProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      router.invalidate();
+      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+    });
+
+    void supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [queryClient, router]);
+
+  return <SessionContext.Provider value={{ user, loading }}>{children}</SessionContext.Provider>;
+}
+
+export function useSession() {
+  return useContext(SessionContext);
+}

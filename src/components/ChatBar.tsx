@@ -1,1 +1,206 @@
-aW1wb3J0IHsgdXNlRWZmZWN0LCB1c2VTdGF0ZSB9IGZyb20gInJlYWN0IjsKaW1wb3J0IHsgdXNlTXV0YXRpb24sIHVzZVF1ZXJ5LCB1c2VRdWVyeUNsaWVudCB9IGZyb20gIkB0YW5zdGFjay9yZWFjdC1xdWVyeSI7CmltcG9ydCB7IHVzZVJvdXRlclN0YXRlIH0gZnJvbSAiQHRhbnN0YWNrL3JlYWN0LXJvdXRlciI7CmltcG9ydCB7IE1lc3NhZ2VTcXVhcmUsIFgsIE1pbnVzIH0gZnJvbSAibHVjaWRlLXJlYWN0IjsKCmltcG9ydCB7IHN1cGFiYXNlIH0gZnJvbSAiQC9pbnRlZ3JhdGlvbnMvc3VwYWJhc2UvY2xpZW50IjsKaW1wb3J0IHsgdXNlU2Vzc2lvbiB9IGZyb20gIkAvbGliL3Nlc3Npb24iOwppbXBvcnQgewogIGdldEFsbE1lc3NhZ2VzLAogIGdldENvbnZlcnNhdGlvbiwKICBnZXRGcmllbmRzaGlwc0ZvciwKICBnZXRQcm9maWxlc0J5SWRzLAogIG1hcmtDb252ZXJzYXRpb25SZWFkLAogIHNlbmRNZXNzYWdlLAp9IGZyb20gIkAvbGliL2FwaSI7CmltcG9ydCB7IFVzZXJBdmF0YXIgfSBmcm9tICJAL2NvbXBvbmVudHMvVXNlckF2YXRhciI7CgpleHBvcnQgZnVuY3Rpb24gQ2hhdEJhcigpIHsKICBjb25zdCB7IHVzZXIgfSA9IHVzZVNlc3Npb24oKTsKICBjb25zdCBwYXRobmFtZSA9IHVzZVJvdXRlclN0YXRlKHsgc2VsZWN0OiAocykgPT4gcy5sb2NhdGlvbi5wYXRobmFtZSB9KTsKICBjb25zdCBxdWVyeUNsaWVudCA9IHVzZVF1ZXJ5Q2xpZW50KCk7CiAgY29uc3QgW2xpc3RPcGVuLCBzZXRMaXN0T3Blbl0gPSB1c2VTdGF0ZShmYWxzZSk7CiAgY29uc3QgW29wZW5XaXRoLCBzZXRPcGVuV2l0aF0gPSB1c2VTdGF0ZTxzdHJpbmcgfCBudWxsPihudWxsKTsKICBjb25zdCBbZHJhZnQsIHNldERyYWZ0XSA9IHVzZVN0YXRlKCIiKTsKCiAgY29uc3QgZnJpZW5kc2hpcHMgPSB1c2VRdWVyeSh7CiAgICBxdWVyeUtleTogWyJmcmllbmRzaGlwcyIsIHVzZXI/LmlkXSwKICAgIHF1ZXJ5Rm46ICgpID0+IGdldEZyaWVuZHNoaXBzRm9yKHVzZXIhLmlkKSwKICAgIGVuYWJsZWQ6IEJvb2xlYW4odXNlciksCiAgfSk7CgogIGNvbnN0IGZyaWVuZElkcyA9IChmcmllbmRzaGlwcy5kYXRhID8/IFtdKQogICAgLmZpbHRlcigoZikgPT4gZi5zdGF0dXMgPT09ICJhY2NlcHRlZCIpCiAgICAubWFwKChmKSA9PiAoZi5yZXF1ZXN0ZXJfaWQgPT09IHVzZXI/LmlkID8gZi5hZGRyZXNzZWVfaWQgOiBmLnJlcXVlc3Rlcl9pZCkpOwoKICBjb25zdCBmcmllbmRzID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsicHJvZmlsZXMtYnktaWRzIiwgZnJpZW5kSWRzXSwKICAgIHF1ZXJ5Rm46ICgpID0+IGdldFByb2ZpbGVzQnlJZHMoZnJpZW5kSWRzKSwKICAgIGVuYWJsZWQ6IGZyaWVuZElkcy5sZW5ndGggPiAwLAogIH0pOwoKICBjb25zdCBtZXNzYWdlcyA9IHVzZVF1ZXJ5KHsKICAgIHF1ZXJ5S2V5OiBbIm1lc3NhZ2VzIiwgdXNlcj8uaWRdLAogICAgcXVlcnlGbjogKCkgPT4gZ2V0QWxsTWVzc2FnZXModXNlciEuaWQpLAogICAgZW5hYmxlZDogQm9vbGVhbih1c2VyKSwKICB9KTsKCiAgY29uc3QgY29udmVyc2F0aW9uID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsiY29udmVyc2F0aW9uIiwgdXNlcj8uaWQsIG9wZW5XaXRoXSwKICAgIHF1ZXJ5Rm46ICgpID0+IGdldENvbnZlcnNhdGlvbih1c2VyIS5pZCwgb3BlbldpdGghKSwKICAgIGVuYWJsZWQ6IEJvb2xlYW4odXNlciAmJiBvcGVuV2l0aCksCiAgfSk7CgogIHVzZUVmZmVjdCgoKSA9PiB7CiAgICBpZiAoIXVzZXIpIHJldHVybjsKICAgIGNvbnN0IGNoYW5uZWwgPSBzdXBhYmFzZQogICAgICAuY2hhbm5lbCgiY2hhdGJhci1saXZlIikKICAgICAgLm9uKCJwb3N0Z3Jlc19jaGFuZ2VzIiwgeyBldmVudDogIioiLCBzY2hlbWE6ICJwdWJsaWMiLCB0YWJsZTogIm1lc3NhZ2VzIiB9LCAoKSA9PiB7CiAgICAgICAgdm9pZCBxdWVyeUNsaWVudC5pbnZhbGlkYXRlUXVlcmllcyh7IHF1ZXJ5S2V5OiBbIm1lc3NhZ2VzIl0gfSk7CiAgICAgICAgdm9pZCBxdWVyeUNsaWVudC5pbnZhbGlkYXRlUXVlcmllcyh7IHF1ZXJ5S2V5OiBbImNvbnZlcnNhdGlvbiJdIH0pOwogICAgICB9KQogICAgICAuc3Vic2NyaWJlKCk7CiAgICByZXR1cm4gKCkgPT4gewogICAgICB2b2lkIHN1cGFiYXNlLnJlbW92ZUNoYW5uZWwoY2hhbm5lbCk7CiAgICB9OwogIH0sIFt1c2VyLCBxdWVyeUNsaWVudF0pOwoKICB1c2VFZmZlY3QoKCkgPT4gewogICAgaWYgKCF1c2VyIHx8ICFvcGVuV2l0aCkgcmV0dXJuOwogICAgdm9pZCBtYXJrQ29udmVyc2F0aW9uUmVhZCh1c2VyLmlkLCBvcGVuV2l0aCkudGhlbigoKSA9PgogICAgICBxdWVyeUNsaWVudC5pbnZhbGlkYXRlUXVlcmllcyh7IHF1ZXJ5S2V5OiBbIm1lc3NhZ2VzIl0gfSksCiAgICApOwogIH0sIFt1c2VyLCBvcGVuV2l0aCwgY29udmVyc2F0aW9uLmRhdGEsIHF1ZXJ5Q2xpZW50XSk7CgogIGNvbnN0IHNlbmQgPSB1c2VNdXRhdGlvbih7CiAgICBtdXRhdGlvbkZuOiBhc3luYyAoKSA9PiB7CiAgICAgIGNvbnN0IGJvZHkgPSBkcmFmdC50cmltKCk7CiAgICAgIGlmICghYm9keSB8fCAhdXNlciB8fCAhb3BlbldpdGgpIHJldHVybjsKICAgICAgYXdhaXQgc2VuZE1lc3NhZ2UodXNlci5pZCwgb3BlbldpdGgsIGJvZHkuc2xpY2UoMCwgNTAwKSk7CiAgICB9LAogICAgb25TdWNjZXNzOiAoKSA9PiB7CiAgICAgIHNldERyYWZ0KCIiKTsKICAgICAgdm9pZCBxdWVyeUNsaWVudC5pbnZhbGlkYXRlUXVlcmllcyh7IHF1ZXJ5S2V5OiBbImNvbnZlcnNhdGlvbiJdIH0pOwogICAgICB2b2lkIHF1ZXJ5Q2xpZW50LmludmFsaWRhdGVRdWVyaWVzKHsgcXVlcnlLZXk6IFsibWVzc2FnZXMiXSB9KTsKICAgIH0sCiAgfSk7CgogIGlmICghdXNlciB8fCBwYXRobmFtZSA9PT0gIi9hdXRoIiB8fCBwYXRobmFtZSA9PT0gIi9yZXNldC1wYXNzd29yZCIpIHJldHVybiBudWxsOwoKICBjb25zdCBhbGwgPSBtZXNzYWdlcy5kYXRhID8/IFtdOwogIGNvbnN0IHVucmVhZEZyb20gPSAoaWQ6IHN0cmluZykgPT4KICAgIGFsbC5maWx0ZXIoKG0pID0+IG0uc2VuZGVyX2lkID09PSBpZCAmJiBtLnJlY2lwaWVudF9pZCA9PT0gdXNlci5pZCAmJiAhbS5yZWFkX2F0KS5sZW5ndGg7CiAgY29uc3QgdG90YWxVbnJlYWQgPSBhbGwuZmlsdGVyKChtKSA9PiBtLnJlY2lwaWVudF9pZCA9PT0gdXNlci5pZCAmJiAhbS5yZWFkX2F0KS5sZW5ndGg7CiAgY29uc3QgbGlzdCA9IGZyaWVuZHMuZGF0YSA/PyBbXTsKICBjb25zdCBhY3RpdmUgPSBsaXN0LmZpbmQoKHApID0+IHAuaWQgPT09IG9wZW5XaXRoKTsKCiAgcmV0dXJuICgKICAgIDxkaXYgY2xhc3NOYW1lPSJ0LWNoYXQtZG9jayI+CiAgICAgIHtvcGVuV2l0aCAmJiBhY3RpdmUgPyAoCiAgICAgICAgPGRpdiBjbGFzc05hbWU9InQtY2hhdC13aW4iPgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9InQtY2hhdC13aW4taGVhZCI+CiAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0idHJ1bmNhdGUiPnthY3RpdmUuZGlzcGxheV9uYW1lfTwvc3Bhbj4KICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9Im1sLWF1dG8gZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEiPgogICAgICAgICAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBhcmlhLWxhYmVsPSJNaW5pbWl6YXIiIG9uQ2xpY2s9eygpID0+IHNldE9wZW5XaXRoKG51bGwpfT4KICAgICAgICAgICAgICAgIDxNaW51cyBzaXplPXsxMn0gLz4KICAgICAgICAgICAgICA8L2J1dHRvbj4KICAgICAgICAgICAgICA8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgYXJpYS1sYWJlbD0iQ2VycmFyIiBvbkNsaWNrPXsoKSA9PiBzZXRPcGVuV2l0aChudWxsKX0+CiAgICAgICAgICAgICAgICA8WCBzaXplPXsxMn0gLz4KICAgICAgICAgICAgICA8L2J1dHRvbj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJ0LWNoYXQtbG9nIj4KICAgICAgICAgICAgeyhjb252ZXJzYXRpb24uZGF0YSA/PyBbXSkuc2xpY2UoLTQwKS5tYXAoKG0pID0+ICgKICAgICAgICAgICAgICA8cCBrZXk9e20uaWR9IGNsYXNzTmFtZT0ibWItMSBsZWFkaW5nLXNudWciPgogICAgICAgICAgICAgICAgPHNwYW4KICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPXsKICAgICAgICAgICAgICAgICAgICBtLnNlbmRlcl9pZCA9PT0gdXNlci5pZAogICAgICAgICAgICAgICAgICAgICAgPyAiZm9udC1ib2xkIHRleHQtW3ZhcigtLXQtYmx1ZSldIgogICAgICAgICAgICAgICAgICAgICAgOiAiZm9udC1ib2xkIHRleHQtW3ZhcigtLXQtZ3JlZW4pXSIKICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICB7bS5zZW5kZXJfaWQgPT09IHVzZXIuaWQgPyAiVMO6IiA6IGFjdGl2ZS5kaXNwbGF5X25hbWV9OnsiICJ9CiAgICAgICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICAgICAgICB7bS5ib2R5fQogICAgICAgICAgICAgIDwvcD4KICAgICAgICAgICAgKSl9CiAgICAgICAgICAgIHsoY29udmVyc2F0aW9uLmRhdGEgPz8gW10pLmxlbmd0aCA9PT0gMCA/ICgKICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9InRleHQtWzExcHhdIHRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSI+QcO6biBubyBoYXkgbWVuc2FqZXMuPC9wPgogICAgICAgICAgICApIDogbnVsbH0KICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPGZvcm0KICAgICAgICAgICAgY2xhc3NOYW1lPSJmbGV4IGdhcC0xIGJvcmRlci10IGJvcmRlci1bdmFyKC0tdC1saW5lKV0gcC0xLjUiCiAgICAgICAgICAgIG9uU3VibWl0PXsoZSkgPT4gewogICAgICAgICAgICAgIGUucHJldmVudERlZmF1bHQoKTsKICAgICAgICAgICAgICBzZW5kLm11dGF0ZSgpOwogICAgICAgICAgICB9fQogICAgICAgICAgPgogICAgICAgICAgICA8aW5wdXQKICAgICAgICAgICAgICB2YWx1ZT17ZHJhZnR9CiAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXREcmFmdChlLnRhcmdldC52YWx1ZSl9CiAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9IkVzY3JpYmUgdW4gbWVuc2FqZeKApiIKICAgICAgICAgICAgICBtYXhMZW5ndGg9ezUwMH0KICAgICAgICAgICAgICBhcmlhLWxhYmVsPSJNZW5zYWplIgogICAgICAgICAgICAgIGNsYXNzTmFtZT0idC1pbnB1dCBoLTYgZmxleC0xIgogICAgICAgICAgICAvPgogICAgICAgICAgICA8YnV0dG9uIHR5cGU9InN1Ym1pdCIgY2xhc3NOYW1lPSJ0LWJ0biBweC0yIHB5LTAgdGV4dC1bMTFweF0iIGRpc2FibGVkPXtzZW5kLmlzUGVuZGluZ30+CiAgICAgICAgICAgICAgRW52aWFyCiAgICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAgPC9mb3JtPgogICAgICAgIDwvZGl2PgogICAgICApIDogbnVsbH0KCiAgICAgIHtsaXN0T3BlbiA/ICgKICAgICAgICA8ZGl2IGNsYXNzTmFtZT0idC1jaGF0LXdpbiI+CiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0idC1jaGF0LXdpbi1oZWFkIj4KICAgICAgICAgICAgQW1pZ29zIGNvbmVjdGFkb3MKICAgICAgICAgICAgPGJ1dHRvbgogICAgICAgICAgICAgIHR5cGU9ImJ1dHRvbiIKICAgICAgICAgICAgICBhcmlhLWxhYmVsPSJDZXJyYXIgbGlzdGEiCiAgICAgICAgICAgICAgY2xhc3NOYW1lPSJtbC1hdXRvIgogICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldExpc3RPcGVuKGZhbHNlKX0KICAgICAgICAgICAgPgogICAgICAgICAgICAgIDxYIHNpemU9ezEyfSAvPgogICAgICAgICAgICA8L2J1dHRvbj4KICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9Im1heC1oLTY0IG92ZXJmbG93LXktYXV0byI+CiAgICAgICAgICAgIHtsaXN0Lmxlbmd0aCA9PT0gMCA/ICgKICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9InAtMyB0ZXh0LVsxMXB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPgogICAgICAgICAgICAgICAgVG9kYXbDrWEgbm8gdGllbmVzIGFtaWdvcyBhw7FhZGlkb3MuCiAgICAgICAgICAgICAgPC9wPgogICAgICAgICAgICApIDogKAogICAgICAgICAgICAgIGxpc3QubWFwKChwKSA9PiAoCiAgICAgICAgICAgICAgICA8YnV0dG9uCiAgICAgICAgICAgICAgICAgIGtleT17cC5pZH0KICAgICAgICAgICAgICAgICAgdHlwZT0iYnV0dG9uIgogICAgICAgICAgICAgICAgICBjbGFzc05hbWU9InQtY2hhdC1mcmllbmQiCiAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHsKICAgICAgICAgICAgICAgICAgICBzZXRPcGVuV2l0aChwLmlkKTsKICAgICAgICAgICAgICAgICAgICBzZXRMaXN0T3BlbihmYWxzZSk7CiAgICAgICAgICAgICAgICAgIH19CiAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgIDxVc2VyQXZhdGFyCiAgICAgICAgICAgICAgICAgICAgdXNlcm5hbWU9e3AudXNlcm5hbWV9CiAgICAgICAgICAgICAgICAgICAgZGlzcGxheU5hbWU9e3AuZGlzcGxheV9uYW1lfQogICAgICAgICAgICAgICAgICAgIGF2YXRhclBhdGg9e3AuYXZhdGFyX3VybCA/PyB1bmRlZmluZWR9CiAgICAgICAgICAgICAgICAgICAgYWNjZW50PXtwLmFjY2VudF9jb2xvciA/PyB1bmRlZmluZWR9CiAgICAgICAgICAgICAgICAgICAgc2l6ZT17MjB9CiAgICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0idHJ1bmNhdGUiPntwLmRpc3BsYXlfbmFtZX08L3NwYW4+CiAgICAgICAgICAgICAgICAgIHt1bnJlYWRGcm9tKHAuaWQpID8gPHNwYW4gY2xhc3NOYW1lPSJ0LWJhZGdlIG1sLWF1dG8iPnt1bnJlYWRGcm9tKHAuaWQpfTwvc3Bhbj4gOiBudWxsfQogICAgICAgICAgICAgICAgPC9idXR0b24+CiAgICAgICAgICAgICAgKSkKICAgICAgICAgICAgKX0KICAgICAgICAgIDwvZGl2PgogICAgICAgIDwvZGl2PgogICAgICApIDogbnVsbH0KCiAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzc05hbWU9InQtY2hhdC10YWIiIG9uQ2xpY2s9eygpID0+IHNldExpc3RPcGVuKCh2KSA9PiAhdil9PgogICAgICAgIDxNZXNzYWdlU3F1YXJlIHNpemU9ezEzfSAvPgogICAgICAgIENoYXQKICAgICAgICA8c3BhbiBjbGFzc05hbWU9InRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSI+KHtsaXN0Lmxlbmd0aH0pPC9zcGFuPgogICAgICAgIHt0b3RhbFVucmVhZCA/IDxzcGFuIGNsYXNzTmFtZT0idC1iYWRnZSI+e3RvdGFsVW5yZWFkID4gOSA/ICI5KyIgOiB0b3RhbFVucmVhZH08L3NwYW4+IDogbnVsbH0KICAgICAgPC9idXR0b24+CiAgICA8L2Rpdj4KICApOwp9Cg==
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouterState } from "@tanstack/react-router";
+import { MessageSquare, X, Minus } from "lucide-react";
+
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/lib/session";
+import {
+  getAllMessages,
+  getConversation,
+  getFriendshipsFor,
+  getProfilesByIds,
+  markConversationRead,
+  sendMessage,
+} from "@/lib/api";
+import { UserAvatar } from "@/components/UserAvatar";
+
+export function ChatBar() {
+  const { user } = useSession();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const queryClient = useQueryClient();
+  const [listOpen, setListOpen] = useState(false);
+  const [openWith, setOpenWith] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+
+  const friendships = useQuery({
+    queryKey: ["friendships", user?.id],
+    queryFn: () => getFriendshipsFor(user!.id),
+    enabled: Boolean(user),
+  });
+
+  const friendIds = (friendships.data ?? [])
+    .filter((f) => f.status === "accepted")
+    .map((f) => (f.requester_id === user?.id ? f.addressee_id : f.requester_id));
+
+  const friends = useQuery({
+    queryKey: ["profiles-by-ids", friendIds],
+    queryFn: () => getProfilesByIds(friendIds),
+    enabled: friendIds.length > 0,
+  });
+
+  const messages = useQuery({
+    queryKey: ["messages", user?.id],
+    queryFn: () => getAllMessages(user!.id),
+    enabled: Boolean(user),
+  });
+
+  const conversation = useQuery({
+    queryKey: ["conversation", user?.id, openWith],
+    queryFn: () => getConversation(user!.id, openWith!),
+    enabled: Boolean(user && openWith),
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("chatbar-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["messages"] });
+        void queryClient.invalidateQueries({ queryKey: ["conversation"] });
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
+
+  useEffect(() => {
+    if (!user || !openWith) return;
+    void markConversationRead(user.id, openWith).then(() =>
+      queryClient.invalidateQueries({ queryKey: ["messages"] }),
+    );
+  }, [user, openWith, conversation.data, queryClient]);
+
+  const send = useMutation({
+    mutationFn: async () => {
+      const body = draft.trim();
+      if (!body || !user || !openWith) return;
+      await sendMessage(user.id, openWith, body.slice(0, 500));
+    },
+    onSuccess: () => {
+      setDraft("");
+      void queryClient.invalidateQueries({ queryKey: ["conversation"] });
+      void queryClient.invalidateQueries({ queryKey: ["messages"] });
+    },
+  });
+
+  if (!user || pathname === "/auth" || pathname === "/reset-password") return null;
+
+  const all = messages.data ?? [];
+  const unreadFrom = (id: string) =>
+    all.filter((m) => m.sender_id === id && m.recipient_id === user.id && !m.read_at).length;
+  const totalUnread = all.filter((m) => m.recipient_id === user.id && !m.read_at).length;
+  const list = friends.data ?? [];
+  const active = list.find((p) => p.id === openWith);
+
+  return (
+    <div className="t-chat-dock">
+      {openWith && active ? (
+        <div className="t-chat-win">
+          <div className="t-chat-win-head">
+            <span className="truncate">{active.display_name}</span>
+            <div className="ml-auto flex items-center gap-1">
+              <button type="button" aria-label="Minimizar" onClick={() => setOpenWith(null)}>
+                <Minus size={12} />
+              </button>
+              <button type="button" aria-label="Cerrar" onClick={() => setOpenWith(null)}>
+                <X size={12} />
+              </button>
+            </div>
+          </div>
+          <div className="t-chat-log">
+            {(conversation.data ?? []).slice(-40).map((m) => (
+              <p key={m.id} className="mb-1 leading-snug">
+                <span
+                  className={
+                    m.sender_id === user.id
+                      ? "font-bold text-[var(--t-blue)]"
+                      : "font-bold text-[var(--t-green)]"
+                  }
+                >
+                  {m.sender_id === user.id ? "Tú" : active.display_name}:{" "}
+                </span>
+                {m.body}
+              </p>
+            ))}
+            {(conversation.data ?? []).length === 0 ? (
+              <p className="text-[11px] text-[var(--t-ink-soft)]">Aún no hay mensajes.</p>
+            ) : null}
+          </div>
+          <form
+            className="flex gap-1 border-t border-[var(--t-line)] p-1.5"
+            onSubmit={(e) => {
+              e.preventDefault();
+              send.mutate();
+            }}
+          >
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Escribe un mensaje…"
+              maxLength={500}
+              aria-label="Mensaje"
+              className="t-input h-6 flex-1"
+            />
+            <button type="submit" className="t-btn px-2 py-0 text-[11px]" disabled={send.isPending}>
+              Enviar
+            </button>
+          </form>
+        </div>
+      ) : null}
+
+      {listOpen ? (
+        <div className="t-chat-win">
+          <div className="t-chat-win-head">
+            Amigos conectados
+            <button
+              type="button"
+              aria-label="Cerrar lista"
+              className="ml-auto"
+              onClick={() => setListOpen(false)}
+            >
+              <X size={12} />
+            </button>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {list.length === 0 ? (
+              <p className="p-3 text-[11px] text-[var(--t-ink-soft)]">
+                Todavía no tienes amigos añadidos.
+              </p>
+            ) : (
+              list.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className="t-chat-friend"
+                  onClick={() => {
+                    setOpenWith(p.id);
+                    setListOpen(false);
+                  }}
+                >
+                  <UserAvatar
+                    username={p.username}
+                    displayName={p.display_name}
+                    avatarPath={p.avatar_url ?? undefined}
+                    accent={p.accent_color ?? undefined}
+                    size={20}
+                  />
+                  <span className="truncate">{p.display_name}</span>
+                  {unreadFrom(p.id) ? <span className="t-badge ml-auto">{unreadFrom(p.id)}</span> : null}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      <button type="button" className="t-chat-tab" onClick={() => setListOpen((v) => !v)}>
+        <MessageSquare size={13} />
+        Chat
+        <span className="text-[var(--t-ink-soft)]">({list.length})</span>
+        {totalUnread ? <span className="t-badge">{totalUnread > 9 ? "9+" : totalUnread}</span> : null}
+      </button>
+    </div>
+  );
+}

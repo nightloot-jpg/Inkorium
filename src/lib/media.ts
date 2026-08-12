@@ -1,1 +1,30 @@
-aW1wb3J0IHsgdXNlUXVlcnkgfSBmcm9tICJAdGFuc3RhY2svcmVhY3QtcXVlcnkiOwppbXBvcnQgeyBzdXBhYmFzZSB9IGZyb20gIkAvaW50ZWdyYXRpb25zL3N1cGFiYXNlL2NsaWVudCI7Cgpjb25zdCBCVUNLRVQgPSAibWVkaWEiOwoKZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIHVwbG9hZE1lZGlhKHVzZXJJZDogc3RyaW5nLCBmaWxlOiBGaWxlLCBmb2xkZXI6IHN0cmluZykgewogIGNvbnN0IGV4dCA9IChmaWxlLm5hbWUuc3BsaXQoIi4iKS5wb3AoKSA/PyAianBnIikudG9Mb3dlckNhc2UoKS5yZXBsYWNlKC9bXmEtejAtOV0vZywgIiIpOwogIGNvbnN0IHBhdGggPSBgJHt1c2VySWR9LyR7Zm9sZGVyfS8ke2NyeXB0by5yYW5kb21VVUlEKCl9LiR7ZXh0IHx8ICJqcGcifWA7CiAgY29uc3QgeyBlcnJvciB9ID0gYXdhaXQgc3VwYWJhc2Uuc3RvcmFnZS5mcm9tKEJVQ0tFVCkudXBsb2FkKHBhdGgsIGZpbGUsIHsKICAgIGNhY2hlQ29udHJvbDogIjM2MDAiLAogICAgdXBzZXJ0OiBmYWxzZSwKICB9KTsKICBpZiAoZXJyb3IpIHRocm93IGVycm9yOwogIHJldHVybiBwYXRoOwp9CgpleHBvcnQgYXN5bmMgZnVuY3Rpb24gc2lnbk1lZGlhKHBhdGg6IHN0cmluZykgewogIGNvbnN0IHsgZGF0YSwgZXJyb3IgfSA9IGF3YWl0IHN1cGFiYXNlLnN0b3JhZ2UuZnJvbShCVUNLRVQpLmNyZWF0ZVNpZ25lZFVybChwYXRoLCA2MCAqIDYwICogNik7CiAgaWYgKGVycm9yKSB0aHJvdyBlcnJvcjsKICByZXR1cm4gZGF0YS5zaWduZWRVcmw7Cn0KCmV4cG9ydCBmdW5jdGlvbiB1c2VTaWduZWRVcmwocGF0aD86IHN0cmluZyB8IG51bGwpIHsKICByZXR1cm4gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsic2lnbmVkLXVybCIsIHBhdGhdLAogICAgcXVlcnlGbjogKCkgPT4gc2lnbk1lZGlhKHBhdGggYXMgc3RyaW5nKSwKICAgIGVuYWJsZWQ6IEJvb2xlYW4ocGF0aCksCiAgICBzdGFsZVRpbWU6IDEwMDAgKiA2MCAqIDYwICogNCwKICB9KTsKfQ==
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+const BUCKET = "media";
+
+export async function uploadMedia(userId: string, file: File, folder: string) {
+  const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const path = `${userId}/${folder}/${crypto.randomUUID()}.${ext || "jpg"}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+  if (error) throw error;
+  return path;
+}
+
+export async function signMedia(path: string) {
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 6);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+export function useSignedUrl(path?: string | null) {
+  return useQuery({
+    queryKey: ["signed-url", path],
+    queryFn: () => signMedia(path as string),
+    enabled: Boolean(path),
+    staleTime: 1000 * 60 * 60 * 4,
+  });
+}
