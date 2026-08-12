@@ -5,7 +5,7 @@ export interface FeedPost {
   authorAvatar: string;
   createdAt: string;
   content: string;
-  kind: 'music' | 'text' | 'photo';
+  kind: 'music' | 'photo' | 'text';
   title?: string;
   subtitle?: string;
   duration?: string;
@@ -19,4 +19,5 @@ export interface FeedPost {
 export interface CreateFeedPostInput {
   content: string;
   kind: 'text' | 'photo';
+  photos?: File[];
 }
