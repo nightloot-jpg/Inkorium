@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { PhotosPage } from '../features/photos/components';
 
 export const Route = createFileRoute('/_protected/photos')({
-  component: () => <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">photos page</div>,
+  ssr: 'data-only',
+  component: PhotosPage,
 });
