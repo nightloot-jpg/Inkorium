@@ -1,0 +1,1 @@
+Feed rebuilt: fallback data is available immediately so the feed never renders a blocking load error.
