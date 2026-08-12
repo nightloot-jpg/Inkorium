@@ -1,32 +1,35 @@
+import { useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useFeed } from '../hooks/useFeed';
 import { PostCard } from './PostCard';
 
 export function FeedList() {
-  const { data, status, error, toggleLike } = useFeed();
+  const sentinel = useRef<HTMLDivElement | null>(null);
+  const { data, status, error, hasNextPage, fetchNextPage, isFetchingNextPage, likePost, unlikePost, addComment, deletePost, editPost } = useFeed();
 
-  if (status === 'pending') {
-    return <div className="feed-message"><Loader2 className="animate-spin text-[#4b86d7]" /></div>;
-  }
+  useEffect(() => {
+    const element = sentinel.current;
+    if (!element || !hasNextPage) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !isFetchingNextPage) void fetchNextPage();
+    }, { rootMargin: '600px 0px' });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  if (status === 'error') {
-    return (
-      <div className="feed-message text-center">
-        <div>
-          <p className="font-semibold text-red-600">No se ha podido cargar el feed.</p>
-          <p className="mt-2 text-xs text-[#8a94a2]">{error instanceof Error ? error.message : 'Error al consultar las publicaciones.'}</p>
-        </div>
-      </div>
-    );
-  }
+  if (status === 'pending') return <div className="feed-state"><Loader2 className="feed-spin" /></div>;
+  if (status === 'error') return <div className="feed-state feed-error"><strong>No se ha podido cargar el feed.</strong><span>{error instanceof Error ? error.message : 'Error al consultar las publicaciones.'}</span></div>;
 
-  if (!data?.length) {
-    return <div className="feed-message text-sm text-[#7b8795]">Todavía no hay publicaciones.</div>;
-  }
+  const posts = data?.pages.flatMap((page) => page.data) ?? [];
+  if (!posts.length) return <div className="feed-state">Todavía no hay publicaciones.</div>;
 
-  return (
-    <div className="flex flex-col gap-4">
-      {data.map((post) => <PostCard key={post.id} post={post} onLike={toggleLike} />)}
-    </div>
-  );
+  return <div className="feed-list">
+    {data?.pages.map((page, pageIndex) => page.data.map((post, postIndex) => (
+      <PostCard key={post.id} post={post} musicVariant={pageIndex === 0 && postIndex < 2}
+        onLike={(id) => likePost.mutate(id)} onUnlike={(id) => unlikePost.mutate(id)}
+        onComment={(id, content) => addComment.mutate({ postId: id, content })}
+        onDelete={(id) => deletePost.mutate(id)} onEdit={(id, content) => editPost.mutate({ postId: id, content })} />
+    )))}
+    <div ref={sentinel} className="feed-loading-more">{isFetchingNextPage ? <Loader2 className="feed-spin" /> : hasNextPage ? 'Cargando más publicaciones…' : 'No hay más publicaciones'}</div>
+  </div>;
 }
