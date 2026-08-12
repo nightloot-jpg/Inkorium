@@ -4,13 +4,15 @@ import { feedService } from '../services/feed.service';
 import { useRealtime } from '../../../lib/realtime/useRealtime';
 import type { Post } from '../types';
 
+// Fallback data must be deterministic. Generating timestamps with Date.now()
+// during module evaluation creates different server/client HTML in SSR builds.
 const FALLBACK_POSTS = [
   {
     id: 'feed-fallback-1',
     user_id: 'feed-fallback-user',
     content: 'MHR, EFY & SNEZ! - Hola',
     type: 'music',
-    created_at: new Date().toISOString(),
+    created_at: '2026-08-11T20:00:00.000Z',
     profiles: { full_name: 'Inkorium', avatar_url: null },
     photos: [],
     comments: [],
@@ -22,7 +24,7 @@ const FALLBACK_POSTS = [
     user_id: 'feed-fallback-user',
     content: 'Inalcanzable',
     type: 'music',
-    created_at: new Date(Date.now() - 60_000).toISOString(),
+    created_at: '2026-08-11T19:59:00.000Z',
     profiles: { full_name: 'Inkorium', avatar_url: null },
     photos: [],
     comments: [],
