@@ -11,7 +11,7 @@ export const inklogService = {
       .from('inklogs')
       .select(`
         *,
-        profiles!inner(*),
+        profiles(*),
         comments(*, profiles(*)),
         likes(*)
       `)
