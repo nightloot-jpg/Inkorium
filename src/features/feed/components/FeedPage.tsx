@@ -1,8 +1,8 @@
-import { useFeedV2 } from '../hooks/useFeedV2';
-import { FeedComposer } from './FeedComposer';
-import { FeedListV2 } from './FeedListV2';
+import { useFeed } from '../hooks/useFeed';
+import { FeedList } from './FeedList';
+import { PostComposer } from './PostComposer';
 
-export function FeedPage() {
-  const { createPost } = useFeedV2();
-  return <div className="feed-page"><FeedComposer loading={createPost.isPending} onSubmit={(content, type, photos) => createPost.mutate({ content, type, photos })} /><FeedListV2 /></div>;
+export function FeedPage(){
+ const {createPost}=useFeed();
+ return <div className="ink-feed"><PostComposer isLoading={createPost.isPending} onSubmit={(content,type,photos)=>createPost.mutate({content,type,photos})}/><FeedList/></div>;
 }
