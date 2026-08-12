@@ -14,6 +14,7 @@
 
   --font-sans: 'Inter', sans-serif;
   --font-inter: 'Inter', sans-serif;
+
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
@@ -22,17 +23,28 @@
 
 @layer base {
   :root {
+    /* Brand Colors - Inkorium Login Update */
     --primary: #233B5D;
     --primary-hover: #1b2e49;
+
+    /* Backgrounds & Surfaces */
     --background: #f4f7f9;
     --surface: #ffffff;
     --surface-hover: #f8fafb;
+
+    /* Borders */
     --border: #e1e8ed;
+
+    /* Text */
     --text-main: #181c1e;
     --text-muted: #434654;
+
+    /* Accents and States */
     --accent: #233B5D;
     --accent-magenta: #ff005a;
     --error: #ba1a1a;
+
+    /* Radii */
     --radius-sm: 2px;
     --radius-md: 4px;
     --radius-lg: 6px;
@@ -40,8 +52,16 @@
   }
 }
 
-* { box-sizing: border-box; }
-html, body, #app { min-height: 100%; }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   background-color: var(--background);
@@ -49,61 +69,8 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Stable desktop shell. The previous version relied on responsive Tailwind
-   variants for the 12-column grid, which was collapsing in production. */
-@media (min-width: 1280px) {
-  .max-w-screen-2xl.grid.w-full {
-    display: grid !important;
-    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
-    gap: 24px !important;
-    align-items: start !important;
-  }
-
-  .max-w-screen-2xl.grid.w-full > aside:first-child {
-    display: block !important;
-    grid-column: span 3 / span 3 !important;
-  }
-
-  .max-w-screen-2xl.grid.w-full > main {
-    display: block !important;
-    grid-column: span 6 / span 6 !important;
-    min-width: 0 !important;
-  }
-
-  .max-w-screen-2xl.grid.w-full > aside:last-child {
-    display: block !important;
-    grid-column: span 3 / span 3 !important;
-  }
-}
-
-@media (max-width: 1279px) {
-  .max-w-screen-2xl.grid.w-full {
-    display: grid !important;
-    grid-template-columns: minmax(0, 820px) !important;
-    justify-content: center !important;
-  }
-
-  .max-w-screen-2xl.grid.w-full > aside {
-    display: none !important;
-  }
-
-  .max-w-screen-2xl.grid.w-full > main {
-    display: block !important;
-    grid-column: 1 !important;
-    min-width: 0 !important;
-    width: 100% !important;
-  }
-}
-
-@media (max-width: 860px) {
-  .max-w-screen-2xl.grid.w-full {
-    grid-template-columns: minmax(0, 1fr) !important;
-    width: 100% !important;
-    padding-left: 10px !important;
-    padding-right: 10px !important;
-  }
-}
-
 @layer utilities {
-  .shadow-soft { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+  .shadow-soft {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
 }

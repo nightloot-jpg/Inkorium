@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Check, ChevronDown, Edit, Heart, MessageCircle, Play, Share2, Trash, X } from 'lucide-react';
@@ -17,24 +17,15 @@ interface Props {
 
 export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdit, musicVariant = false }: Props) {
   const { user } = useAuth();
-  const [hydrated, setHydrated] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || '');
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comment, setComment] = useState('');
   const [optionsOpen, setOptionsOpen] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
-
-  const liked = hydrated && !!post.likes?.some((like) => like.user_id === user?.id);
-  const owner = hydrated && post.user_id === user?.id;
+  const liked = !!post.likes?.some((like) => like.user_id === user?.id);
+  const owner = post.user_id === user?.id;
   const avatar = post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.profiles?.full_name || 'User')}`;
   const title = post.content?.split('\n')[0] || (musicVariant ? 'MHR, EFY & SNEZ! - Hola' : 'Publicación');
-  const relativeTime = hydrated
-    ? formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })
-    : 'Hace un momento';
 
   const submitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +40,7 @@ export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdi
         <img src={avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
         <div className="min-w-0 flex-1">
           <p className="text-base font-bold text-slate-800">{post.profiles?.full_name || 'Usuario'}</p>
-          <p className="text-xs text-slate-500">{relativeTime} · ◉</p>
+          <p className="text-xs text-slate-500"><span suppressHydrationWarning>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}</span> · ◉</p>
         </div>
         {owner && (
           <div className="relative">
@@ -74,7 +65,7 @@ export function PostCard({ post, onLike, onUnlike, onAddComment, onDelete, onEdi
               <div className="flex min-h-28 items-stretch">
                 <div className="relative flex w-32 shrink-0 items-center justify-center overflow-hidden bg-slate-600">
                   {post.photos?.[0]?.url ? <img src={post.photos[0].url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-80" /> : <div className="absolute inset-0 bg-gradient-to-br from-slate-600 to-slate-900" />}
-                  <span className="relative grid h-12 w-12 items-center justify-center rounded-full border border-white/70 bg-black/25"><Play size={23} fill="white" /></span>
+                  <span className="relative grid h-12 w-12 place-items-center rounded-full border border-white/70 bg-black/25"><Play size={23} fill="white" /></span>
                 </div>
                 <div className="min-w-0 flex-1 px-7 py-5">
                   <p className="truncate text-lg font-bold">{title}</p>

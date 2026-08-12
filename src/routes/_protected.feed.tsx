@@ -1,20 +1,21 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PostComposer, FeedList } from '../features/feed/components';
+import { FeedList } from '../features/feed/components/FeedList';
+import { PostComposer } from '../features/feed/components/PostComposer';
 import { useFeed } from '../features/feed/hooks/useFeed';
 
 export const Route = createFileRoute('/_protected/feed')({
   ssr: 'data-only',
-  component: Feed,
+  component: FeedRoute,
 });
 
-function Feed() {
+function FeedRoute() {
   const { createPost } = useFeed();
 
   return (
-    <div className="mx-auto w-full max-w-[820px] space-y-4">
+    <div className="mx-auto flex w-full max-w-[820px] flex-col gap-4">
       <PostComposer
-        onSubmit={(content, type, photos) => createPost.mutate({ content, type, photos })}
         isLoading={createPost.isPending}
+        onSubmit={(content, type, photos) => createPost.mutate({ content, type, photos })}
       />
       <FeedList />
     </div>

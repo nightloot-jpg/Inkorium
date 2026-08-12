@@ -1,23 +1,34 @@
 import { useEffect } from 'react';
-import { useInView } from 'react-intersection-observer';
 import { Loader2 } from 'lucide-react';
-import { PostCard } from './PostCard';
+import { useInView } from 'react-intersection-observer';
 import { useFeed } from '../hooks/useFeed';
+import { PostCard } from './PostCard';
 
 export function FeedList() {
-  const { ref, inView } = useInView({ rootMargin: '300px' });
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, likePost, unlikePost, addComment, deletePost, editPost } = useFeed();
+  const { ref, inView } = useInView({ rootMargin: '400px' });
+  const { data, status, error, fetchNextPage, hasNextPage, isFetchingNextPage, likePost, unlikePost, addComment, deletePost, editPost } = useFeed();
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  if (status === 'pending') return <div className="flex min-h-[180px] items-center justify-center rounded-[2px] border border-[#dfe4ea] bg-white"><Loader2 className="animate-spin text-[#3c72b6]" /></div>;
-  if (status === 'error') return <div className="rounded-[2px] border border-[#dfe4ea] bg-white px-5 py-12 text-center text-red-500">Error al cargar el feed.</div>;
+  if (status === 'pending') {
+    return <div className="flex min-h-[180px] items-center justify-center rounded-md border border-slate-200 bg-white"><Loader2 className="animate-spin text-blue-600" /></div>;
+  }
+
+  if (status === 'error') {
+    return <div className="rounded-md border border-red-100 bg-white px-5 py-12 text-center"><p className="text-sm font-semibold text-red-600">No se ha podido cargar el feed.</p><p className="mt-1 text-xs text-slate-400">{error instanceof Error ? error.message : 'Error al consultar las publicaciones.'}</p></div>;
+  }
+
+  const posts = data?.pages.flatMap((page) => page.data) ?? [];
+
+  if (posts.length === 0) {
+    return <div className="rounded-md border border-slate-200 bg-white px-5 py-14 text-center text-sm text-slate-500">Todavía no hay publicaciones.</div>;
+  }
 
   return (
-    <div className="space-y-4">
-      {data.pages.map((page, pageIndex) => page.data.map((post, postIndex) => (
+    <div className="flex flex-col gap-4">
+      {data?.pages.flatMap((page, pageIndex) => page.data.map((post, postIndex) => (
         <PostCard
           key={post.id}
           post={post}
@@ -29,9 +40,8 @@ export function FeedList() {
           onEdit={(id, content) => editPost.mutate({ postId: id, content })}
         />
       )))}
-
-      <div ref={ref} className="flex min-h-14 items-center justify-center py-4">
-        {isFetchingNextPage ? <Loader2 className="animate-spin text-[#3c72b6]" /> : hasNextPage ? <span className="text-xs text-[#8491a3]">Cargando más publicaciones...</span> : <span className="text-xs text-[#9aa5b3]">No hay más publicaciones</span>}
+      <div ref={ref} className="flex min-h-12 items-center justify-center py-3">
+        {isFetchingNextPage ? <Loader2 className="animate-spin text-blue-600" /> : hasNextPage ? <span className="text-xs text-slate-400">Cargando más publicaciones...</span> : <span className="text-xs text-slate-400">No hay más publicaciones</span>}
       </div>
     </div>
   );
