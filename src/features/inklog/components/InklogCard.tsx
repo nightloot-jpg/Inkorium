@@ -1,10 +1,18 @@
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Heart, MessageCircle } from 'lucide-react';
+import { useHydrated } from '../../../hooks/useHydrated';
 import type { Inklog } from '../types';
 
 export function InklogCard({
  inklog }: { inklog: Inklog }) {
+  // Avoid React #418: see PostCard.tsx for rationale.
+  const hydrated = useHydrated();
+  const createdAtDate = new Date(inklog.created_at);
+  const timeLabel = hydrated
+    ? formatDistanceToNow(createdAtDate, { addSuffix: true, locale: es })
+    : createdAtDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+
   return (
     <article className="overflow-hidden rounded border border-slate-200 bg-white shadow-none">
       <div className="relative aspect-[4/5] bg-slate-100">
@@ -16,7 +24,7 @@ export function InklogCard({
           <img className="h-8 w-8 rounded-full object-cover" src={inklog.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${inklog.profiles?.full_name || 'User'}`} alt="" />
           <div className="flex-1 min-w-0">
             <p className="truncate text-sm font-bold">{inklog.profiles?.full_name}</p>
-            <p className="text-xs text-slate-500"><span suppressHydrationWarning>{formatDistanceToNow(new Date(inklog.created_at), { addSuffix: true, locale: es })}</span></p>
+            <p className="text-xs text-slate-500"><span suppressHydrationWarning>{timeLabel}</span></p>
           </div>
         </div>
 
