@@ -11,6 +11,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      HOST: 0.0.0.0
+      NITRO_HOST: 0.0.0.0
       # Variables de servidor (Coolify las inyecta desde su panel)
       SUPABASE_URL: ${VITE_SUPABASE_URL}
       SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}

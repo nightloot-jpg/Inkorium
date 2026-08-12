@@ -8,6 +8,9 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 
 export default defineConfig({
+  // The Docker runtime starts Nitro's Node server. Without this explicit
+  // preset, the shared Lovable config defaults to a Cloudflare module build.
+  nitro: { preset: "node-server" },
   plugins: [mcpPlugin()],
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
