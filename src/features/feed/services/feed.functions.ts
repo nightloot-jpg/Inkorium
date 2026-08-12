@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import type { CreateFeedPostInput, FeedPost } from '../types';
+import type { FeedPost } from '../types';
 
 async function getServerSupabase() {
   const { getSupabaseServerClient } = await import('../../../lib/supabase.server');
