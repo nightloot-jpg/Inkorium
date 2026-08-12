@@ -1,53 +1,10 @@
 import { useState } from 'react';
-import { Globe2, Heart, MessageCircle, MoreVertical, Play, Share2 } from 'lucide-react';
-import type { FeedPost } from '../types';
+import type { FormEvent } from 'react';
+import { Check, Edit3, Heart, MessageCircle, MoreHorizontal, Play, Share2, Trash2, X } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAuth } from '../../../hooks/useAuth';
+import type { Post } from '../types';
 
-export function PostCard({ post, onLike }: { post: FeedPost; onLike: (id: string) => void }) {
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const isMusic = post.kind === 'music';
-
-  return (
-    <article className="feed-post">
-      <header className="feed-post-header">
-        <img src={post.authorAvatar} alt="" className="feed-avatar" style={{ width: 46, height: 46, flexBasis: 46 }} />
-        <div className="feed-post-meta">
-          <p className="feed-post-name">{post.authorName}</p>
-          <p className="feed-post-time">hace 31 m · <Globe2 size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /></p>
-        </div>
-        <button type="button" className="feed-post-button" style={{ borderRadius: 999, padding: 8 }} aria-label="Opciones"><MoreVertical size={18} /></button>
-      </header>
-
-      {isMusic ? (
-        <div className="feed-music">
-          <div className="feed-music-row">
-            <div className="feed-music-thumb">
-              {post.image && <img src={post.image} alt="" />}
-              <span className="feed-play"><Play size={22} fill="white" /></span>
-            </div>
-            <div className="feed-music-copy">
-              <p className="feed-music-title">{post.title || post.content}</p>
-              <p className="feed-music-subtitle">{post.subtitle}</p>
-            </div>
-            <span className="feed-music-duration">{post.duration}</span>
-          </div>
-        </div>
-      ) : (
-        <>
-          {post.content && <div className="feed-post-content">{post.content}</div>}
-          {post.image && <div className="feed-post-media"><img src={post.image} alt="" /></div>}
-        </>
-      )}
-
-      <div className="feed-post-stats">
-        <span>{post.likes} Me gusta</span>
-        <span>{post.comments} comentarios · {post.shares} compartidos</span>
-      </div>
-      <div className="feed-post-buttons">
-        <button type="button" onClick={() => onLike(post.id)} className="feed-post-button" style={{ color: post.liked ? '#075db0' : undefined }}><Heart size={18} fill={post.liked ? 'currentColor' : 'none'} />Me gusta</button>
-        <button type="button" onClick={() => setCommentsOpen((open) => !open)} className="feed-post-button"><MessageCircle size={18} />Comentar</button>
-        <button type="button" className="feed-post-button"><Share2 size={18} />Compartir</button>
-      </div>
-      {commentsOpen && <div style={{ borderTop: '1px solid #edf0f4', background: '#f7f9fb', padding: '12px 18px', color: '#6d7888', fontSize: 13 }}>Los comentarios aparecerán aquí.</div>}
-    </article>
-  );
-}
+interface Props { post: Post; musicVariant?: boolean; onLike:(id:string)=>void; onUnlike:(id:string)=>void; onComment:(id:string,text:string)=>void; onDelete:(id:string)=>void; onEdit:(id:string,text:string)=>void; }
+export function PostCard({post,musicVariant=false,onLike,onUnlike,onComment,onDelete,onEdit}:Props){const{user}=useAuth();const[editing,setEditing]=useState(false);const[editText,setEditText]=useState(post.content||'');const[comment,setComment]=useState('');const[commentsOpen,setCommentsOpen]=useState(false);const[menuOpen,setMenuOpen]=useState(false);const liked=!!post.likes?.some(l=>l.user_id===user?.id);const owner=post.user_id===user?.id;const name=post.profiles?.full_name||'Usuario';const avatar=post.profiles?.avatar_url||`https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;const title=post.content?.split('\n')[0]||'MHR, EFY & SNEZ! - Hola';const submit=(e:FormEvent)=>{e.preventDefault();const t=comment.trim();if(t){onComment(post.id,t);setComment('')}};return <article className="feed-post"><header className="feed-post-header"><img src={avatar} alt="" className="feed-avatar"/><div className="feed-post-meta"><p className="feed-post-name">{name}</p><p className="feed-post-time"><span suppressHydrationWarning>{formatDistanceToNow(new Date(post.created_at),{addSuffix:true,locale:es})}</span> · Público</p></div>{owner&&<div className="relative"><button type="button" onClick={()=>setMenuOpen(!menuOpen)} className="rounded-full p-2 text-[#7b8795] hover:bg-[#f3f6f8]"><MoreHorizontal size={19}/></button>{menuOpen&&<div className="absolute right-0 top-10 z-20 w-36 border bg-white py-1 shadow-lg"><button type="button" onClick={()=>{setEditing(true);setMenuOpen(false)}} className="flex w-full gap-2 px-3 py-2 text-left text-sm"><Edit3 size={15}/>Editar</button><button type="button" onClick={()=>{onDelete(post.id);setMenuOpen(false)}} className="flex w-full gap-2 px-3 py-2 text-left text-sm text-red-600"><Trash2 size={15}/>Eliminar</button></div>}</div>}</header>{editing?<div className="px-[18px] pb-4"><textarea value={editText} onChange={e=>setEditText(e.target.value)} rows={4} className="w-full border p-3 text-sm"/><div className="mt-2 flex justify-end gap-2"><button type="button" onClick={()=>setEditing(false)} className="flex gap-1 border px-3 py-2 text-xs"><X size={14}/>Cancelar</button><button type="button" onClick={()=>{onEdit(post.id,editText.trim());setEditing(false)}} className="flex gap-1 bg-[#4b82d2] px-3 py-2 text-xs font-bold text-white"><Check size={14}/>Guardar</button></div></div>:musicVariant?<div className="feed-music"><div className="feed-music-row"><div className="feed-music-thumb">{post.photos?.[0]?.url&&<img src={post.photos[0].url} alt=""/>}<span className="feed-play"><Play size={22} fill="white"/></span></div><div className="feed-music-copy"><p className="feed-music-title">{title}</p><p className="feed-music-subtitle">MHR MUSIC</p></div><span className="feed-music-duration">5:05</span></div></div>:<>{post.content&&<div className="feed-post-content">{post.content}</div>}{post.photos?.length>0&&<div className={`feed-post-media ${post.photos.length>1?'two':''}`}>{post.photos.slice(0,4).map(p=><img key={p.id} src={p.url} alt={p.caption||''}/>)}</div>}</>}<div className="feed-post-stats"><span>{post.likes?.length||0} Me gusta</span><span>{post.comments?.length||0} comentarios · {post.post_shares?.length||0} compartidos</span></div><div className="feed-post-buttons"><button type="button" onClick={()=>liked?onUnlike(post.id):onLike(post.id)} className="feed-post-button"><Heart size={18} fill={liked?'currentColor':'none'}/>Me gusta</button><button type="button" onClick={()=>setCommentsOpen(!commentsOpen)} className="feed-post-button"><MessageCircle size={18}/>Comentar</button><button type="button" className="feed-post-button"><Share2 size={18}/>Compartir</button></div>{commentsOpen&&<div className="border-t bg-[#f7f9fb] px-[18px] py-3"><div className="mb-3 max-h-52 space-y-2 overflow-y-auto">{post.comments?.map(c=><div key={c.id} className="text-sm"><b>{c.profiles?.full_name||'Usuario'}</b> {c.content}</div>)}</div><form onSubmit={submit}><input value={comment} onChange={e=>setComment(e.target.value)} placeholder="Escribe un comentario..." className="w-full border bg-white px-3 py-2 text-sm"/></form></div>}</article>}
