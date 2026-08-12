@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouter } from '@tanstack/react-router';
+import { Link, useLocation, useNavigate, useRouter } from '@tanstack/react-router';
 import { Bell, CalendarDays, ChevronDown, Home, Image as ImageIcon, LogOut, Music2, Settings, Users, Video } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useLogout } from '../features/auth/hooks/useAuth';
@@ -18,8 +18,13 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   const logoutMutation = useLogout();
   const navigate = useNavigate();
   const router = useRouter();
+  const location = useLocation();
   const avatar = avatarUrl(user);
   const displayName = user?.user_metadata?.full_name || user?.user_metadata?.username || 'Usuario';
+  const currentPath = location.pathname;
+  const isFeed = currentPath === '/feed' || currentPath.startsWith('/feed/');
+  const isEvents = currentPath === '/events' || currentPath.startsWith('/events/');
+  const isFriends = currentPath === '/friends' || currentPath.startsWith('/friends/');
 
   const handleSignOut = () => logoutMutation.mutate(undefined, { onSuccess: async () => { await router.invalidate(); navigate({ to: '/login' }); } });
 
@@ -27,7 +32,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     <header className="h-14 bg-[#0750a0] text-white shadow-sm">
       <div className="mx-auto flex h-full w-full max-w-[1600px] items-center px-4">
         <Link to="/feed" className="flex h-full w-[205px] shrink-0 items-center gap-2"><img src="/tuenti_inkorium_logo.svg" alt="Inkorium" className="h-8 w-8 object-contain"/><span className="text-xl font-extrabold tracking-tight">inkorium</span></Link>
-        <nav className="hidden h-full md:flex"><HeaderLink to="/feed" label="Inicio" active/><HeaderLink to="/messages" label="Mensajes" badge="3"/><HeaderLink to="/friends" label="Personas"/><HeaderLink to="/events" label="Música" icon={<Music2 size={16}/>}/></nav>
+        <nav className="hidden h-full md:flex"><HeaderLink to="/feed" label="Inicio" active={isFeed}/><HeaderLink to="/messages" label="Mensajes" badge="3"/><HeaderLink to="/friends" label="Personas" active={isFriends}/><HeaderLink to="/events" label="Música" icon={<Music2 size={16}/>} active={isEvents}/></nav>
         <div className="mx-5 hidden min-w-0 flex-1 md:block"><input type="search" placeholder="Buscar personas, música, vídeos..." className="block h-9 w-full rounded-full border border-[#003e7c] bg-[#06458f] px-4 text-sm text-white outline-none placeholder:text-[#bdd3ee]"/></div>
         <div className="ml-auto flex shrink-0 items-center gap-2"><Link to="/notifications" className="relative rounded-full p-2 hover:bg-[#0b5bad]"><Bell size={19}/><span className="absolute right-0 top-0 min-w-4 rounded-full bg-red-500 px-1 text-center text-[9px] font-bold leading-4">5</span></Link><button type="button" className="rounded-full p-2 hover:bg-[#0b5bad]"><Music2 size={19}/></button><span className="mx-1 hidden h-7 w-px bg-[#2b70b8] sm:block"/><Link to="/profile/$username" params={{username:user?.user_metadata?.username || 'me'}} className="flex items-center gap-2 rounded-full px-1 py-1 hover:bg-[#0b5bad]"><img src={avatar} alt="Perfil" className="h-8 w-8 rounded-full border border-white/40 object-cover"/><span className="hidden max-w-28 truncate text-sm font-bold sm:block">{displayName}</span><ChevronDown size={14} className="hidden sm:block"/></Link><button type="button" onClick={handleSignOut} className="rounded-full p-2 hover:bg-[#0b5bad]"><LogOut size={18}/></button></div>
       </div>
@@ -36,7 +41,18 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     <div className="inkorium-content-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 355px) minmax(0, 820px) minmax(250px, 355px)', alignItems: 'start', justifyContent: 'center', gap: '24px', width: '100%', maxWidth: '1560px', margin: '0 auto', padding: '16px 18px 32px' }}>
       <aside className="inkorium-left-column"><div className="space-y-4">
         <section className="border border-[#dfe5ec] bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><img src={avatar} alt="Perfil" className="h-24 w-24 rounded-xl border border-[#dfe5ec] object-cover"/><div className="min-w-0"><p className="truncate text-base font-bold">{displayName}</p><p className="mt-1 text-sm text-[#6b778c]">Más rápido</p><p className="mt-1 flex items-center gap-2 text-sm text-green-600"><span className="h-2.5 w-2.5 rounded-full bg-green-500"/>En línea</p><Link to="/profile/$username" params={{username:user?.user_metadata?.username || 'me'}} className="mt-1 inline-block text-sm font-semibold text-[#0057a8]">Ver mi perfil »</Link></div></div></section>
-        <section className="border border-[#dfe5ec] bg-white p-3"><SideNavItem to="/feed" icon={<Home size={19}/>} label="Novedades" active/><SideNavItem to="/feed" icon={<ImageIcon size={19}/>} label="Fotos"/><SideNavItem to="/feed" icon={<Video size={19}/>} label="Vídeos"/><SideNavItem to="/events" icon={<Music2 size={19}/>} label="Música"/><SideNavItem to="/events" icon={<CalendarDays size={19}/>} label="Eventos"/><SideNavItem to="/friends" icon={<Users size={19}/>} label="Grupos"/><SideNavItem to="/friends" icon={<Users size={19}/>} label="Páginas"/><SideNavItem to="/feed" icon={<BarIcon/>} label="Encuestas"/><SideNavItem to="/feed" icon={<span className="text-xl">♡</span>} label="Guardados"/><SideNavItem to="/feed" icon={<Settings size={19}/>} label="Configuración"/></section>
+        <section className="border border-[#dfe5ec] bg-white p-3">
+          <SideNavItem to="/feed" icon={<Home size={19}/>} label="Novedades" active={isFeed}/>
+          <SideNavItem to="/feed" icon={<ImageIcon size={19}/>} label="Fotos" active={isFeed}/>
+          <SideNavItem to="/feed" icon={<Video size={19}/>} label="Vídeos" active={isFeed}/>
+          <SideNavItem to="/events" icon={<Music2 size={19}/>} label="Música" active={isEvents}/>
+          <SideNavItem to="/events" icon={<CalendarDays size={19}/>} label="Eventos" active={isEvents}/>
+          <SideNavItem to="/friends" icon={<Users size={19}/>} label="Grupos" active={isFriends}/>
+          <SideNavItem to="/friends" icon={<Users size={19}/>} label="Páginas"/>
+          <SideNavItem to="/feed" icon={<BarIcon/>} label="Encuestas"/>
+          <SideNavItem to="/feed" icon={<span className="text-xl">♡</span>} label="Guardados"/>
+          <SideNavItem to="/feed" icon={<Settings size={19}/>} label="Configuración"/>
+        </section>
         <section className="border border-[#dfe5ec] bg-white p-4"><div className="mb-2 flex items-center justify-between"><h3 className="text-xs font-bold uppercase tracking-wide text-[#6b778c]">Amigos conectados (3)</h3><Link to="/friends" className="text-xs font-semibold text-[#0057a8]">Ver todos »</Link></div>{friends.map((friend)=><div key={friend.name} className="flex items-center gap-3 py-2"><div className="relative shrink-0"><img src={`https://i.pravatar.cc/150?img=${friend.image}`} alt="" className="h-10 w-10 rounded-full object-cover"/><span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500"/></div><div className="min-w-0"><p className="text-sm font-semibold">{friend.name}</p><p className="truncate text-xs text-[#6b778c]">{friend.music}</p></div></div>)}</section>
       </div></aside>
 
