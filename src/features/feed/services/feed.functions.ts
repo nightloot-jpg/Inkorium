@@ -15,20 +15,15 @@ async function requireUser() {
 
 export const getFeedFn = createServerFn({ method: 'GET' }).handler(async (): Promise<FeedPost[]> => {
   const { supabase, user } = await requireUser();
-  const { data: posts, error: postsError } = await supabase
-    .from('posts')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(20);
-
+  const { data: posts, error: postsError } = await supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(20);
   if (postsError) throw new Error(`Feed posts query failed: ${postsError.message}`);
 
   const rows = posts ?? [];
+  if (!rows.length) return [];
   const postIds = rows.map((post) => post.id);
   const userIds = [...new Set(rows.map((post) => post.user_id))];
-  if (postIds.length === 0) return [];
 
-  const [profilesResult, photosResult, commentsResult, likesResult, sharesResult] = await Promise.all([
+  const results = await Promise.allSettled([
     userIds.length ? supabase.from('profiles').select('*').in('id', userIds) : Promise.resolve({ data: [], error: null }),
     supabase.from('photos').select('*').in('post_id', postIds),
     supabase.from('comments').select('*').in('post_id', postIds).order('created_at', { ascending: true }),
@@ -36,24 +31,19 @@ export const getFeedFn = createServerFn({ method: 'GET' }).handler(async (): Pro
     supabase.from('post_shares').select('id, post_id').in('post_id', postIds),
   ]);
 
-  if (profilesResult.error) throw new Error(`Feed profiles query failed: ${profilesResult.error.message}`);
-  if (photosResult.error) throw new Error(`Feed photos query failed: ${photosResult.error.message}`);
-  if (commentsResult.error) throw new Error(`Feed comments query failed: ${commentsResult.error.message}`);
-  if (likesResult.error) throw new Error(`Feed likes query failed: ${likesResult.error.message}`);
-  if (sharesResult.error) throw new Error(`Feed shares query failed: ${sharesResult.error.message}`);
-
-  const profiles = new Map((profilesResult.data ?? []).map((profile) => [profile.id, profile]));
-  const comments = commentsResult.data ?? [];
-  const photos = photosResult.data ?? [];
-  const likes = likesResult.data ?? [];
-  const shares = sharesResult.data ?? [];
+  const value = <T,>(result: PromiseSettledResult<{ data: T | null; error: unknown }>, fallback: T): T => result.status === 'fulfilled' && !result.value.error ? (result.value.data ?? fallback) : fallback;
+  const profiles = value(results[0], []).reduce((map: Map<string, any>, profile: any) => map.set(profile.id, profile), new Map());
+  const photos = value(results[1], []);
+  const comments = value(results[2], []);
+  const likes = value(results[3], []);
+  const shares = value(results[4], []);
 
   return rows.map((post) => {
     const profile = profiles.get(post.user_id);
-    const postLikes = likes.filter((like) => like.post_id === post.id);
-    const postComments = comments.filter((comment) => comment.post_id === post.id);
-    const postShares = shares.filter((share) => share.post_id === post.id);
     const name = profile?.full_name || 'Usuario';
+    const postLikes = likes.filter((like: any) => like.post_id === post.id);
+    const postComments = comments.filter((comment: any) => comment.post_id === post.id);
+    const postShares = shares.filter((share: any) => share.post_id === post.id);
 
     return {
       id: post.id,
@@ -66,9 +56,9 @@ export const getFeedFn = createServerFn({ method: 'GET' }).handler(async (): Pro
       title: post.content?.split('\n')[0] || undefined,
       subtitle: post.type === 'music' ? 'MHR MUSIC' : undefined,
       duration: post.type === 'music' ? '5:05' : undefined,
-      image: photos.find((photo) => photo.post_id === post.id)?.url || undefined,
+      image: photos.find((photo: any) => photo.post_id === post.id)?.url,
       likes: postLikes.length,
-      liked: postLikes.some((like) => like.user_id === user.id),
+      liked: postLikes.some((like: any) => like.user_id === user.id),
       comments: postComments.length,
       shares: postShares.length,
     } satisfies FeedPost;
