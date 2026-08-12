@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFeedPostFn, getFeedFn, toggleLikeFn } from '../services/feed.functions';
 import type { FeedPost } from '../types';
@@ -7,14 +6,11 @@ const FEED_KEY = ['feed'] as const;
 
 export function useFeed() {
   const queryClient = useQueryClient();
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
 
   const feed = useQuery<FeedPost[]>({
     queryKey: FEED_KEY,
     queryFn: () => getFeedFn(),
-    enabled: mounted,
     staleTime: 15_000,
     retry: 1,
   });

@@ -17,7 +17,7 @@ export const getFeedFn = createServerFn({ method: 'GET' }).handler(async (): Pro
   const { supabase, user } = await requireUser();
   const { data, error } = await supabase
     .from('posts')
-    .select('id,user_id,content,type,created_at,profiles(full_name,avatar_url),photos(url),likes(user_id),comments(id),post_shares(id)')
+    .select('id,user_id,content,type,created_at,profiles!posts_user_id_fkey(full_name,avatar_url),photos(url),likes(user_id),comments(id),post_shares(id)')
     .order('created_at', { ascending: false })
     .limit(20);
 
