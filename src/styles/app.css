@@ -39,12 +39,13 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Feed shell: three fixed visual zones on desktop, single column only on small screens. */
 .inkorium-content-grid {
   width: 100%;
-  max-width: 1560px;
+  max-width: 1540px;
   margin: 0 auto;
   display: grid !important;
-  grid-template-columns: minmax(220px, 355px) minmax(420px, 820px) minmax(220px, 355px);
+  grid-template-columns: 300px minmax(0, 820px) 300px !important;
   justify-content: center;
   align-items: start;
   gap: 24px;
@@ -61,13 +62,20 @@ body {
 .inkorium-left-column,
 .inkorium-right-column { display: block; }
 
-@media (max-width: 800px) {
+@media (max-width: 1100px) {
   .inkorium-content-grid {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 10px;
+    grid-template-columns: minmax(0, 820px) !important;
+    max-width: 860px;
   }
   .inkorium-left-column,
   .inkorium-right-column { display: none; }
+}
+
+@media (max-width: 560px) {
+  .inkorium-content-grid {
+    width: 100%;
+    padding: 10px;
+  }
 }
 
 .feed-page {
