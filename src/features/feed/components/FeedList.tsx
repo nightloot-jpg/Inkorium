@@ -4,29 +4,9 @@ import { PostCard } from './PostCard';
 
 export function FeedList() {
   const { data, status, error, toggleLike } = useFeed();
-
-  if (status === 'pending') {
-    return <div className="feed-message"><Loader2 className="animate-spin text-[#4b86d7]" /></div>;
-  }
-
-  if (status === 'error') {
-    return (
-      <div className="feed-message text-center">
-        <div>
-          <p className="font-semibold text-red-600">No se ha podido cargar el feed.</p>
-          <p className="mt-2 text-xs text-[#8a94a2] break-words px-6">{error instanceof Error ? error.message : 'Error al consultar las publicaciones.'}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!data?.length) {
-    return <div className="feed-message text-sm text-[#7b8795]">Todavía no hay publicaciones.</div>;
-  }
-
-  return (
-    <div className="feed-list" style={{ width: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {data.map((post) => <PostCard key={post.id} post={post} onLike={toggleLike} />)}
-    </div>
-  );
+  if (status === 'pending') return <div style={messageStyle}><Loader2 size={26} style={{animation:'spin 1s linear infinite',color:'#0755b8'}}/></div>;
+  if (status === 'error') return <div style={messageStyle}><div style={{textAlign:'center'}}><b style={{color:'#dc2626'}}>No se ha podido cargar el feed.</b><div style={{marginTop:8,color:'#7b8795',fontSize:12,maxWidth:560}}>{error instanceof Error ? error.message : 'Error al consultar las publicaciones.'}</div></div></div>;
+  if (!data?.length) return <div style={{...messageStyle,color:'#7b8795',fontSize:14}}>Todavía no hay publicaciones.</div>;
+  return <div style={{display:'grid',gap:16,width:'100%',minWidth:0}}>{data.map(post=><PostCard key={post.id} post={post} onLike={toggleLike}/>)}</div>;
 }
+const messageStyle: React.CSSProperties = { minHeight:180, display:'flex', alignItems:'center', justifyContent:'center', background:'#fff', border:'1px solid #d9e1e8' };
