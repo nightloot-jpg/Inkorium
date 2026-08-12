@@ -1,20 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useFeed } from '../hooks/useFeed';
 import { PostCard } from './PostCard';
 
-export function FeedList() {
-  const { data, isPending, isError, toggleLike } = useFeed();
-
-  if (isPending) return <div className="feed-message"><Loader2 className="animate-spin" style={{ color: '#075db0' }} /></div>;
-
-  if (isError) return <div className="feed-message"><span style={{ color: '#d92727', fontSize: 14 }}>No se ha podido cargar el feed.</span></div>;
-
-  const posts = data ?? [];
-  if (!posts.length) return <div className="feed-message"><span style={{ color: '#7b8797', fontSize: 14 }}>Todavía no hay publicaciones.</span></div>;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {posts.map((post) => <PostCard key={post.id} post={post} onLike={toggleLike} />)}
-    </div>
-  );
-}
+export function FeedList(){const sentinel=useRef<HTMLDivElement>(null);const{data,status,hasNextPage,fetchNextPage,isFetchingNextPage,likePost,unlikePost,addComment,deletePost,editPost}=useFeed();useEffect(()=>{const node=sentinel.current;if(!node||!hasNextPage)return;const o=new IntersectionObserver(([e])=>{if(e.isIntersecting&&!isFetchingNextPage)fetchNextPage()},{rootMargin:'500px'});o.observe(node);return()=>o.disconnect()},[fetchNextPage,hasNextPage,isFetchingNextPage]);if(status==='pending')return <div className="feed-message"><Loader2 className="animate-spin text-[#4b86d7]"/></div>;if(status==='error')return <div className="feed-message text-center"><div><p className="font-semibold text-red-600">No se ha podido cargar el feed.</p><p className="mt-1 text-xs text-[#8a94a2]">La conexión con el servidor no está disponible.</p></div></div>;const posts=(data?.pages??[]).flatMap(p=>p.data);if(!posts.length)return <div className="feed-message text-sm text-[#7b8795]">Todavía no hay publicaciones.</div>;return <div className="flex flex-col gap-4">{posts.map((post,index)=><PostCard key={post.id} post={post} musicVariant={index<2} onLike={id=>likePost.mutate(id)} onUnlike={id=>unlikePost.mutate(id)} onComment={(id,text)=>addComment.mutate({postId:id,content:text})} onDelete={id=>deletePost.mutate(id)} onEdit={(id,text)=>editPost.mutate({postId:id,content:text})}/>)}<div ref={sentinel} className="flex min-h-12 items-center justify-center text-xs text-[#8a94a2]">{isFetchingNextPage?<Loader2 size={18} className="animate-spin"/>:hasNextPage?'Cargando más publicaciones…':'No hay más publicaciones'}</div></div>}
