@@ -9,7 +9,7 @@ async function getServerSupabase() {
 async function requireUser() {
   const supabase = await getServerSupabase();
   const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) throw new Error('Not authenticated');
+  if (error || !data.user) throw new Error('No autenticado');
   return { supabase, user: data.user };
 }
 
@@ -17,7 +17,7 @@ export const getFeedFn = createServerFn({ method: 'GET' }).handler(async (): Pro
   const { supabase, user } = await requireUser();
   const { data, error } = await supabase
     .from('posts')
-    .select('id,user_id,content,type,created_at,profiles!posts_user_id_fkey(full_name,avatar_url),photos(url),likes(user_id),comments(id),post_shares(id)')
+    .select('id,user_id,content,type,created_at,profiles!inner(full_name,avatar_url),photos(url),likes(user_id),comments(id),post_shares(id)')
     .order('created_at', { ascending: false })
     .limit(20);
 
@@ -53,17 +53,9 @@ export const createFeedPostFn = createServerFn({ method: 'POST' })
     const content = data.get('content')?.toString().trim() || '';
     const type = data.get('type')?.toString() === 'photo' ? 'photo' : 'text';
     const photos = data.getAll('photos').filter((value): value is File => value instanceof File).slice(0, 4);
-
     if (!content && photos.length === 0) throw new Error('La publicación está vacía');
-
-    const { data: post, error } = await supabase
-      .from('posts')
-      .insert({ user_id: user.id, content, type } as any)
-      .select('id,user_id,content,type,created_at')
-      .single();
-
+    const { data: post, error } = await supabase.from('posts').insert({ user_id: user.id, content, type } as any).select('id,user_id,content,type,created_at').single();
     if (error) throw new Error(`Create post failed: ${error.message}`);
-
     for (const photo of photos) {
       const extension = photo.name.split('.').pop()?.toLowerCase() || 'jpg';
       const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
@@ -73,7 +65,6 @@ export const createFeedPostFn = createServerFn({ method: 'POST' })
       const { error: photoError } = await supabase.from('photos').insert({ user_id: user.id, post_id: post.id, url: publicUrl.publicUrl } as any);
       if (photoError) throw new Error(`Photo record failed: ${photoError.message}`);
     }
-
     return post;
   });
 
