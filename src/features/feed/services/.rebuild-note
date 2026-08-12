@@ -1,0 +1,1 @@
+Feed database access is isolated in feed.server.ts; feed.functions.ts is the client-safe RPC boundary.
