@@ -17,7 +17,7 @@ export const getPhotosFn = createServerFn({ method: 'GET' })
 
     const { data: photos, error } = await supabase
       .from('photos')
-      .select('id, url, caption, created_at, user_id, post_id, profiles:profiles!photos_user_id_fkey(id, full_name, username, avatar_url)')
+      .select('id, url, caption, created_at, user_id, post_id, profiles(*)')
       .order('created_at', { ascending: false })
       .limit(limit);
 
