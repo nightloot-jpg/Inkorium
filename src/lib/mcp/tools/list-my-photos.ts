@@ -1,1 +1,27 @@
-aW1wb3J0IHsgZGVmaW5lVG9vbCB9IGZyb20gIkBsb3ZhYmxlLmRldi9tY3AtanMiOwppbXBvcnQgeyB6IH0gZnJvbSAiem9kIjsKaW1wb3J0IHsgbm90QXV0aGVudGljYXRlZCwgc3VwYWJhc2VGb3JVc2VyIH0gZnJvbSAiLi4vc3VwYWJhc2UiOwoKZXhwb3J0IGRlZmF1bHQgZGVmaW5lVG9vbCh7CiAgbmFtZTogImxpc3RfbXlfcGhvdG9zIiwKICB0aXRsZTogIlZlciBtaSBmb3RvbG9nIiwKICBkZXNjcmlwdGlvbjogIkxpc3RhIGxhcyBmb3RvcyBzdWJpZGFzIHBvciBsYSBwZXJzb25hIGNvbmVjdGFkYSwgY29uIHTDrXR1bG8geSBkZXNjcmlwY2nDs24uIiwKICBpbnB1dFNjaGVtYTogeyBsaW1pdDogei5udW1iZXIoKS5pbnQoKS5vcHRpb25hbCgpLmRlc2NyaWJlKCJDdcOhbnRhcyBmb3RvcyBkZXZvbHZlciAocG9yIGRlZmVjdG8gMjAsIG3DoXhpbW8gNTApIikgfSwKICBhbm5vdGF0aW9uczogeyByZWFkT25seUhpbnQ6IHRydWUsIGlkZW1wb3RlbnRIaW50OiB0cnVlLCBvcGVuV29ybGRIaW50OiBmYWxzZSB9LAogIGhhbmRsZXI6IGFzeW5jICh7IGxpbWl0IH0sIGN0eCkgPT4gewogICAgaWYgKCFjdHguaXNBdXRoZW50aWNhdGVkKCkpIHJldHVybiBub3RBdXRoZW50aWNhdGVkKCk7CiAgICBjb25zdCB0YWtlID0gTWF0aC5taW4oTWF0aC5tYXgobGltaXQgPz8gMjAsIDEpLCA1MCk7CiAgICBjb25zdCBzdXBhYmFzZSA9IHN1cGFiYXNlRm9yVXNlcihjdHgpOwogICAgY29uc3QgeyBkYXRhLCBlcnJvciB9ID0gYXdhaXQgc3VwYWJhc2UKICAgICAgLmZyb20oInBob3RvcyIpCiAgICAgIC5zZWxlY3QoImlkLCB0aXRsZSwgZGVzY3JpcHRpb24sIGlzX3ByaXZhdGUsIGNyZWF0ZWRfYXQiKQogICAgICAuZXEoInVzZXJfaWQiLCBjdHguZ2V0VXNlcklkKCkpCiAgICAgIC5vcmRlcigiY3JlYXRlZF9hdCIsIHsgYXNjZW5kaW5nOiBmYWxzZSB9KQogICAgICAubGltaXQodGFrZSk7CiAgICBpZiAoZXJyb3IpIHJldHVybiB7IGNvbnRlbnQ6IFt7IHR5cGU6ICJ0ZXh0IiwgdGV4dDogZXJyb3IubWVzc2FnZSB9XSwgaXNFcnJvcjogdHJ1ZSB9OwogICAgcmV0dXJuIHsKICAgICAgY29udGVudDogW3sgdHlwZTogInRleHQiLCB0ZXh0OiBKU09OLnN0cmluZ2lmeShkYXRhID8/IFtdKSB9XSwKICAgICAgc3RydWN0dXJlZENvbnRlbnQ6IHsgaXRlbXM6IGRhdGEgPz8gW10gfSwKICAgIH07CiAgfSwKfSk7
+import { defineTool } from "@lovable.dev/mcp-js";
+import { z } from "zod";
+import { notAuthenticated, supabaseForUser } from "../supabase";
+
+export default defineTool({
+  name: "list_my_photos",
+  title: "Ver mi fotolog",
+  description: "Lista las fotos subidas por la persona conectada, con título y descripción.",
+  inputSchema: { limit: z.number().int().optional().describe("Cuántas fotos devolver (por defecto 20, máximo 50)") },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    const take = Math.min(Math.max(limit ?? 20, 1), 50);
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase
+      .from("photos")
+      .select("id, title, description, is_private, created_at")
+      .eq("user_id", ctx.getUserId())
+      .order("created_at", { ascending: false })
+      .limit(take);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { items: data ?? [] },
+    };
+  },
+});

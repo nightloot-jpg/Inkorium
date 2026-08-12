@@ -1,1 +1,32 @@
-aW1wb3J0IHsgZGVmaW5lVG9vbCB9IGZyb20gIkBsb3ZhYmxlLmRldi9tY3AtanMiOwppbXBvcnQgeyB6IH0gZnJvbSAiem9kIjsKaW1wb3J0IHsgbm90QXV0aGVudGljYXRlZCwgc3VwYWJhc2VGb3JVc2VyIH0gZnJvbSAiLi4vc3VwYWJhc2UiOwoKZXhwb3J0IGRlZmF1bHQgZGVmaW5lVG9vbCh7CiAgbmFtZTogImxpc3Rfbm90aWZpY2F0aW9ucyIsCiAgdGl0bGU6ICJWZXIgbm90aWZpY2FjaW9uZXMiLAogIGRlc2NyaXB0aW9uOiAiTGlzdGEgbGFzIG5vdGlmaWNhY2lvbmVzIGRlIGxhIHBlcnNvbmEgY29uZWN0YWRhIChzb2xpY2l0dWRlcywgbGlrZXMsIGNvbWVudGFyaW9zLCBtdXJvKS4iLAogIGlucHV0U2NoZW1hOiB7CiAgICBvbmx5X3VucmVhZDogei5ib29sZWFuKCkub3B0aW9uYWwoKS5kZXNjcmliZSgiRGV2b2x2ZXIgc29sbyBsYXMgbm8gbGXDrWRhcyIpLAogICAgbGltaXQ6IHoubnVtYmVyKCkuaW50KCkub3B0aW9uYWwoKS5kZXNjcmliZSgiQ3XDoW50YXMgZGV2b2x2ZXIgKHBvciBkZWZlY3RvIDIwLCBtw6F4aW1vIDUwKSIpLAogIH0sCiAgYW5ub3RhdGlvbnM6IHsgcmVhZE9ubHlIaW50OiB0cnVlLCBpZGVtcG90ZW50SGludDogdHJ1ZSwgb3BlbldvcmxkSGludDogZmFsc2UgfSwKICBoYW5kbGVyOiBhc3luYyAoeyBvbmx5X3VucmVhZCwgbGltaXQgfSwgY3R4KSA9PiB7CiAgICBpZiAoIWN0eC5pc0F1dGhlbnRpY2F0ZWQoKSkgcmV0dXJuIG5vdEF1dGhlbnRpY2F0ZWQoKTsKICAgIGNvbnN0IHRha2UgPSBNYXRoLm1pbihNYXRoLm1heChsaW1pdCA/PyAyMCwgMSksIDUwKTsKICAgIGNvbnN0IHN1cGFiYXNlID0gc3VwYWJhc2VGb3JVc2VyKGN0eCk7CiAgICBsZXQgcXVlcnkgPSBzdXBhYmFzZQogICAgICAuZnJvbSgibm90aWZpY2F0aW9ucyIpCiAgICAgIC5zZWxlY3QoImlkLCB0eXBlLCBlbnRpdHlfaWQsIHJlYWQsIGNyZWF0ZWRfYXQsIGFjdG9yOmFjdG9yX2lkICh1c2VybmFtZSwgZGlzcGxheV9uYW1lKSIpCiAgICAgIC5lcSgidXNlcl9pZCIsIGN0eC5nZXRVc2VySWQoKSkKICAgICAgLm9yZGVyKCJjcmVhdGVkX2F0IiwgeyBhc2NlbmRpbmc6IGZhbHNlIH0pCiAgICAgIC5saW1pdCh0YWtlKTsKICAgIGlmIChvbmx5X3VucmVhZCkgcXVlcnkgPSBxdWVyeS5lcSgicmVhZCIsIGZhbHNlKTsKICAgIGNvbnN0IHsgZGF0YSwgZXJyb3IgfSA9IGF3YWl0IHF1ZXJ5OwogICAgaWYgKGVycm9yKSByZXR1cm4geyBjb250ZW50OiBbeyB0eXBlOiAidGV4dCIsIHRleHQ6IGVycm9yLm1lc3NhZ2UgfV0sIGlzRXJyb3I6IHRydWUgfTsKICAgIHJldHVybiB7CiAgICAgIGNvbnRlbnQ6IFt7IHR5cGU6ICJ0ZXh0IiwgdGV4dDogSlNPTi5zdHJpbmdpZnkoZGF0YSA/PyBbXSkgfV0sCiAgICAgIHN0cnVjdHVyZWRDb250ZW50OiB7IGl0ZW1zOiBkYXRhID8/IFtdIH0sCiAgICB9OwogIH0sCn0pOw==
+import { defineTool } from "@lovable.dev/mcp-js";
+import { z } from "zod";
+import { notAuthenticated, supabaseForUser } from "../supabase";
+
+export default defineTool({
+  name: "list_notifications",
+  title: "Ver notificaciones",
+  description: "Lista las notificaciones de la persona conectada (solicitudes, likes, comentarios, muro).",
+  inputSchema: {
+    only_unread: z.boolean().optional().describe("Devolver solo las no leídas"),
+    limit: z.number().int().optional().describe("Cuántas devolver (por defecto 20, máximo 50)"),
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ only_unread, limit }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    const take = Math.min(Math.max(limit ?? 20, 1), 50);
+    const supabase = supabaseForUser(ctx);
+    let query = supabase
+      .from("notifications")
+      .select("id, type, entity_id, read, created_at, actor:actor_id (username, display_name)")
+      .eq("user_id", ctx.getUserId())
+      .order("created_at", { ascending: false })
+      .limit(take);
+    if (only_unread) query = query.eq("read", false);
+    const { data, error } = await query;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { items: data ?? [] },
+    };
+  },
+});

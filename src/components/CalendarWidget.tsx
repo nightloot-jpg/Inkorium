@@ -1,1 +1,85 @@
-aW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tICJyZWFjdCI7CmltcG9ydCB7IENhbGVuZGFyRGF5cywgQ2hldnJvbkxlZnQsIENoZXZyb25SaWdodCB9IGZyb20gImx1Y2lkZS1yZWFjdCI7Cgpjb25zdCBNT05USFMgPSBbCiAgIkVuZXJvIiwgIkZlYnJlcm8iLCAiTWFyem8iLCAiQWJyaWwiLCAiTWF5byIsICJKdW5pbyIsCiAgIkp1bGlvIiwgIkFnb3N0byIsICJTZXB0aWVtYnJlIiwgIk9jdHVicmUiLCAiTm92aWVtYnJlIiwgIkRpY2llbWJyZSIsCl07CmNvbnN0IERBWVMgPSBbIkx1IiwgIk1hIiwgIk1pIiwgIkp1IiwgIlZpIiwgIlPDoSIsICJEbyJdOwoKZXhwb3J0IGZ1bmN0aW9uIENhbGVuZGFyV2lkZ2V0KHsgbWFya3MgPSBbXSBhcyBudW1iZXJbXSB9OiB7IG1hcmtzPzogbnVtYmVyW10gfSkgewogIGNvbnN0IHRvZGF5ID0gbmV3IERhdGUoKTsKICBjb25zdCBbY3Vyc29yLCBzZXRDdXJzb3JdID0gdXNlU3RhdGUobmV3IERhdGUodG9kYXkuZ2V0RnVsbFllYXIoKSwgdG9kYXkuZ2V0TW9udGgoKSwgMSkpOwoKICBjb25zdCB5ZWFyID0gY3Vyc29yLmdldEZ1bGxZZWFyKCk7CiAgY29uc3QgbW9udGggPSBjdXJzb3IuZ2V0TW9udGgoKTsKICBjb25zdCBmaXJzdCA9IG5ldyBEYXRlKHllYXIsIG1vbnRoLCAxKTsKICBjb25zdCBvZmZzZXQgPSAoZmlyc3QuZ2V0RGF5KCkgKyA2KSAlIDc7CiAgY29uc3QgZGF5c0luTW9udGggPSBuZXcgRGF0ZSh5ZWFyLCBtb250aCArIDEsIDApLmdldERhdGUoKTsKICBjb25zdCBwcmV2TW9udGhEYXlzID0gbmV3IERhdGUoeWVhciwgbW9udGgsIDApLmdldERhdGUoKTsKCiAgY29uc3QgY2VsbHM6IHsgZGF5OiBudW1iZXI7IGN1cnJlbnQ6IGJvb2xlYW4gfVtdID0gW107CiAgZm9yIChsZXQgaSA9IG9mZnNldCAtIDE7IGkgPj0gMDsgaSAtPSAxKSBjZWxscy5wdXNoKHsgZGF5OiBwcmV2TW9udGhEYXlzIC0gaSwgY3VycmVudDogZmFsc2UgfSk7CiAgZm9yIChsZXQgZCA9IDE7IGQgPD0gZGF5c0luTW9udGg7IGQgKz0gMSkgY2VsbHMucHVzaCh7IGRheTogZCwgY3VycmVudDogdHJ1ZSB9KTsKICB3aGlsZSAoY2VsbHMubGVuZ3RoICUgNyAhPT0gMCkgY2VsbHMucHVzaCh7IGRheTogY2VsbHMubGVuZ3RoIC0gb2Zmc2V0IC0gZGF5c0luTW9udGggKyAxLCBjdXJyZW50OiBmYWxzZSB9KTsKCiAgY29uc3QgaXNUb2RheSA9IChkOiBudW1iZXIpID0+CiAgICBkID09PSB0b2RheS5nZXREYXRlKCkgJiYgbW9udGggPT09IHRvZGF5LmdldE1vbnRoKCkgJiYgeWVhciA9PT0gdG9kYXkuZ2V0RnVsbFllYXIoKTsKCiAgcmV0dXJuICgKICAgIDxkaXYgY2xhc3NOYW1lPSJ0LXBhbmVsIHAtMyI+CiAgICAgIDxoMiBjbGFzc05hbWU9Im1iLTIgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIGJvcmRlci1iIGJvcmRlci1bdmFyKC0tdC1saW5lKV0gcGItMS41IHRleHQtWzEycHhdIGZvbnQtYm9sZCB1cHBlcmNhc2UgdGV4dC1bdmFyKC0tdC1pbmspXSI+CiAgICAgICAgQ2FsZW5kYXJpbwogICAgICAgIDxDYWxlbmRhckRheXMgc2l6ZT17MTN9IGNsYXNzTmFtZT0idGV4dC1bdmFyKC0tdC1ibHVlKV0iIC8+CiAgICAgIDwvaDI+CiAgICAgIDxkaXYgY2xhc3NOYW1lPSJtYi0xLjUgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIj4KICAgICAgICA8YnV0dG9uCiAgICAgICAgICB0eXBlPSJidXR0b24iCiAgICAgICAgICBhcmlhLWxhYmVsPSJNZXMgYW50ZXJpb3IiCiAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRDdXJzb3IobmV3IERhdGUoeWVhciwgbW9udGggLSAxLCAxKSl9CiAgICAgICAgICBjbGFzc05hbWU9InRleHQtW3ZhcigtLXQtYmx1ZSldIgogICAgICAgID4KICAgICAgICAgIDxDaGV2cm9uTGVmdCBzaXplPXsxNH0gLz4KICAgICAgICA8L2J1dHRvbj4KICAgICAgICA8c3BhbiBjbGFzc05hbWU9InRleHQtWzEycHhdIGZvbnQtYm9sZCB0ZXh0LVt2YXIoLS10LWluayldIj4KICAgICAgICAgIHtNT05USFNbbW9udGhdfSB7eWVhcn0KICAgICAgICA8L3NwYW4+CiAgICAgICAgPGJ1dHRvbgogICAgICAgICAgdHlwZT0iYnV0dG9uIgogICAgICAgICAgYXJpYS1sYWJlbD0iTWVzIHNpZ3VpZW50ZSIKICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldEN1cnNvcihuZXcgRGF0ZSh5ZWFyLCBtb250aCArIDEsIDEpKX0KICAgICAgICAgIGNsYXNzTmFtZT0idGV4dC1bdmFyKC0tdC1ibHVlKV0iCiAgICAgICAgPgogICAgICAgICAgPENoZXZyb25SaWdodCBzaXplPXsxNH0gLz4KICAgICAgICA8L2J1dHRvbj4KICAgICAgPC9kaXY+CiAgICAgIDxkaXYgY2xhc3NOYW1lPSJncmlkIGdyaWQtY29scy03IGdhcC15LTEgdGV4dC1jZW50ZXIgdGV4dC1bMTBweF0iPgogICAgICAgIHtEQVlTLm1hcCgoZCkgPT4gKAogICAgICAgICAgPHNwYW4ga2V5PXtkfSBjbGFzc05hbWU9ImZvbnQtYm9sZCB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPgogICAgICAgICAgICB7ZH0KICAgICAgICAgIDwvc3Bhbj4KICAgICAgICApKX0KICAgICAgICB7Y2VsbHMubWFwKChjLCBpKSA9PiAoCiAgICAgICAgICA8c3BhbgogICAgICAgICAgICBrZXk9e2Ake2MuZGF5fS0ke2l9YH0KICAgICAgICAgICAgY2xhc3NOYW1lPXsKICAgICAgICAgICAgICAhYy5jdXJyZW50CiAgICAgICAgICAgICAgICA/ICJ0ZXh0LVtva2xjaCgwLjg1XzAuMDFfMjQ1KV0iCiAgICAgICAgICAgICAgICA6IGlzVG9kYXkoYy5kYXkpCiAgICAgICAgICAgICAgICAgID8gIm14LWF1dG8gZmxleCBoLVsxOHB4XSB3LVsxOHB4XSBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcm91bmRlZC1mdWxsIGJvcmRlciBib3JkZXItW3ZhcigtLXQtYmx1ZSldIGZvbnQtYm9sZCB0ZXh0LVt2YXIoLS10LWJsdWUpXSIKICAgICAgICAgICAgICAgICAgOiAidGV4dC1bdmFyKC0tdC1pbmspXSIKICAgICAgICAgICAgfQogICAgICAgICAgPgogICAgICAgICAgICB7Yy5kYXl9CiAgICAgICAgICAgIHtjLmN1cnJlbnQgJiYgbWFya3MuaW5jbHVkZXMoYy5kYXkpID8gKAogICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0ibXgtYXV0byBibG9jayBoLVszcHhdIHctWzNweF0gcm91bmRlZC1mdWxsIGJnLVt2YXIoLS10LWJsdWUpXSIgYXJpYS1oaWRkZW4gLz4KICAgICAgICAgICAgKSA6IG51bGx9CiAgICAgICAgICA8L3NwYW4+CiAgICAgICAgKSl9CiAgICAgIDwvZGl2PgogICAgICA8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3NOYW1lPSJ0LWJ0biBtdC0yIHctZnVsbCI+CiAgICAgICAgVmVyIGNhbGVuZGFyaW8gY29tcGxldG8KICAgICAgPC9idXR0b24+CiAgICA8L2Rpdj4KICApOwp9Cg==
+import { useState } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+
+const MONTHS = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+const DAYS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
+
+export function CalendarWidget({ marks = [] as number[] }: { marks?: number[] }) {
+  const today = new Date();
+  const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+
+  const year = cursor.getFullYear();
+  const month = cursor.getMonth();
+  const first = new Date(year, month, 1);
+  const offset = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevMonthDays = new Date(year, month, 0).getDate();
+
+  const cells: { day: number; current: boolean }[] = [];
+  for (let i = offset - 1; i >= 0; i -= 1) cells.push({ day: prevMonthDays - i, current: false });
+  for (let d = 1; d <= daysInMonth; d += 1) cells.push({ day: d, current: true });
+  while (cells.length % 7 !== 0) cells.push({ day: cells.length - offset - daysInMonth + 1, current: false });
+
+  const isToday = (d: number) =>
+    d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+
+  return (
+    <div className="t-panel p-3">
+      <h2 className="mb-2 flex items-center justify-between border-b border-[var(--t-line)] pb-1.5 text-[12px] font-bold uppercase text-[var(--t-ink)]">
+        Calendario
+        <CalendarDays size={13} className="text-[var(--t-blue)]" />
+      </h2>
+      <div className="mb-1.5 flex items-center justify-between">
+        <button
+          type="button"
+          aria-label="Mes anterior"
+          onClick={() => setCursor(new Date(year, month - 1, 1))}
+          className="text-[var(--t-blue)]"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <span className="text-[12px] font-bold text-[var(--t-ink)]">
+          {MONTHS[month]} {year}
+        </span>
+        <button
+          type="button"
+          aria-label="Mes siguiente"
+          onClick={() => setCursor(new Date(year, month + 1, 1))}
+          className="text-[var(--t-blue)]"
+        >
+          <ChevronRight size={14} />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-y-1 text-center text-[10px]">
+        {DAYS.map((d) => (
+          <span key={d} className="font-bold text-[var(--t-ink-soft)]">
+            {d}
+          </span>
+        ))}
+        {cells.map((c, i) => (
+          <span
+            key={`${c.day}-${i}`}
+            className={
+              !c.current
+                ? "text-[oklch(0.85_0.01_245)]"
+                : isToday(c.day)
+                  ? "mx-auto flex h-[18px] w-[18px] items-center justify-center rounded-full border border-[var(--t-blue)] font-bold text-[var(--t-blue)]"
+                  : "text-[var(--t-ink)]"
+            }
+          >
+            {c.day}
+            {c.current && marks.includes(c.day) ? (
+              <span className="mx-auto block h-[3px] w-[3px] rounded-full bg-[var(--t-blue)]" aria-hidden />
+            ) : null}
+          </span>
+        ))}
+      </div>
+      <button type="button" className="t-btn mt-2 w-full">
+        Ver calendario completo
+      </button>
+    </div>
+  );
+}

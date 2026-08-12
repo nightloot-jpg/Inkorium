@@ -1,1 +1,131 @@
-aW1wb3J0IHsgTGluayB9IGZyb20gIkB0YW5zdGFjay9yZWFjdC1yb3V0ZXIiOwppbXBvcnQgeyB1c2VRdWVyeSB9IGZyb20gIkB0YW5zdGFjay9yZWFjdC1xdWVyeSI7CmltcG9ydCB7CiAgQmFyQ2hhcnQzLAogIEJvb2ttYXJrLAogIENhbGVuZGFyIGFzIENhbGVuZGFySWNvbiwKICBGaWxlVGV4dCwKICBIb21lLAogIEltYWdlIGFzIEltYWdlSWNvbiwKICBNdXNpYywKICBTZXR0aW5ncywKICBVc2VycywKICBWaWRlbywKfSBmcm9tICJsdWNpZGUtcmVhY3QiOwoKaW1wb3J0IHsgdXNlU2Vzc2lvbiB9IGZyb20gIkAvbGliL3Nlc3Npb24iOwppbXBvcnQgeyBnZXRNeVByb2ZpbGUgfSBmcm9tICJAL2xpYi9hcGkiOwppbXBvcnQgeyBVc2VyQXZhdGFyIH0gZnJvbSAiQC9jb21wb25lbnRzL1VzZXJBdmF0YXIiOwoKdHlwZSBBY3RpdmUgPSAibm92ZWRhZGVzIiB8ICJldmVudG9zIiB8ICJmb3RvcyIgfCAiYWxidW1lcyIgfCAiYWp1c3RlcyIgfCBudWxsOwoKZXhwb3J0IGZ1bmN0aW9uIFNpZGVNZW51KHsgYWN0aXZlID0gbnVsbCB9OiB7IGFjdGl2ZT86IEFjdGl2ZSB9KSB7CiAgY29uc3QgeyB1c2VyIH0gPSB1c2VTZXNzaW9uKCk7CiAgY29uc3QgcHJvZmlsZSA9IHVzZVF1ZXJ5KHsKICAgIHF1ZXJ5S2V5OiBbIm15LXByb2ZpbGUiLCB1c2VyPy5pZF0sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRNeVByb2ZpbGUodXNlciEuaWQpLAogICAgZW5hYmxlZDogQm9vbGVhbih1c2VyKSwKICB9KTsKICBjb25zdCBkYXRhID0gcHJvZmlsZS5kYXRhOwogIGNvbnN0IGNscyA9IChrZXk6IEFjdGl2ZSkgPT4gYHQtbWVudS1pdGVtJHthY3RpdmUgPT09IGtleSA/ICIgdC1tZW51LWl0ZW0tYWN0aXZlIiA6ICIifWA7CiAgY29uc3QgZm90b3NBY3RpdmUgPSBhY3RpdmUgPT09ICJmb3RvcyIgfHwgYWN0aXZlID09PSAiYWxidW1lcyI7CgogIHJldHVybiAoCiAgICA8PgogICAgICA8ZGl2IGNsYXNzTmFtZT0idC1wYW5lbCBwLTMiPgogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGdhcC0zIj4KICAgICAgICAgIDxVc2VyQXZhdGFyCiAgICAgICAgICAgIHVzZXJuYW1lPXtkYXRhPy51c2VybmFtZSA/PyAiIn0KICAgICAgICAgICAgZGlzcGxheU5hbWU9e2RhdGE/LmRpc3BsYXlfbmFtZSA/PyAiIn0KICAgICAgICAgICAgYXZhdGFyUGF0aD17ZGF0YT8uYXZhdGFyX3VybCA/PyB1bmRlZmluZWR9CiAgICAgICAgICAgIGFjY2VudD17ZGF0YT8uYWNjZW50X2NvbG9yID8/IHVuZGVmaW5lZH0KICAgICAgICAgICAgc2l6ZT17NTZ9CiAgICAgICAgICAvPgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9Im1pbi13LTAgZmxleC0xIj4KICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJ0cnVuY2F0ZSB0ZXh0LVsxM3B4XSBmb250LWJvbGQgdGV4dC1bdmFyKC0tdC1pbmspXSI+CiAgICAgICAgICAgICAge2RhdGE/LmRpc3BsYXlfbmFtZSA/PyAi4oCmIn0KICAgICAgICAgICAgPC9wPgogICAgICAgICAgICA8cCBjbGFzc05hbWU9InRydW5jYXRlIHRleHQtWzExcHhdIHRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSI+CiAgICAgICAgICAgICAge2RhdGE/Lm1vb2QgfHwgIlNpbiBlc3RhZG8gZGUgw6FuaW1vIn0KICAgICAgICAgICAgPC9wPgogICAgICAgICAgICA8cCBjbGFzc05hbWU9Im10LTEgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSB0ZXh0LVsxMXB4XSB0ZXh0LVt2YXIoLS10LWdyZWVuKV0iPgogICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0iaW5saW5lLWJsb2NrIGgtMiB3LTIgcm91bmRlZC1mdWxsIGJnLVt2YXIoLS10LWdyZWVuKV0iIGFyaWEtaGlkZGVuIC8+CiAgICAgICAgICAgICAgQ29uZWN0YWRvCiAgICAgICAgICAgIDwvcD4KICAgICAgICAgIDwvZGl2PgogICAgICAgIDwvZGl2PgogICAgICAgIHtkYXRhID8gKAogICAgICAgICAgPExpbmsKICAgICAgICAgICAgdG89Ii9wZXJmaWwvJHVzZXJuYW1lIgogICAgICAgICAgICBwYXJhbXM9e3sgdXNlcm5hbWU6IGRhdGEudXNlcm5hbWUgfX0KICAgICAgICAgICAgY2xhc3NOYW1lPSJ0LWxpbmsgbXQtMiBpbmxpbmUtYmxvY2sgdGV4dC1bMTFweF0gZm9udC1ib2xkIgogICAgICAgICAgPgogICAgICAgICAgICBWZXIgbWkgcGVyZmlsIMK7CiAgICAgICAgICA8L0xpbms+CiAgICAgICAgKSA6IG51bGx9CiAgICAgIDwvZGl2PgoKICAgICAgPG5hdiBjbGFzc05hbWU9InQtcGFuZWwgcC0xLjUiPgogICAgICAgIDxMaW5rIHRvPSIvIiBjbGFzc05hbWU9e2Nscygibm92ZWRhZGVzIil9PgogICAgICAgICAgPEhvbWUgc2l6ZT17MTV9IGNsYXNzTmFtZT0idC1tZW51LWljbyIgLz4gTm92ZWRhZGVzCiAgICAgICAgPC9MaW5rPgogICAgICAgIDxMaW5rIHRvPSIvZXZlbnRvcyIgY2xhc3NOYW1lPXtjbHMoImV2ZW50b3MiKX0+CiAgICAgICAgICA8Q2FsZW5kYXJJY29uIHNpemU9ezE1fSBjbGFzc05hbWU9InQtbWVudS1pY28iIC8+IEV2ZW50b3MKICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0idC1tZW51LWNvdW50Ij4yPC9zcGFuPgogICAgICAgIDwvTGluaz4KICAgICAgICA8TGluawogICAgICAgICAgdG89Ii9mb3RvcyIKICAgICAgICAgIHNlYXJjaD17eyB0YWI6ICJtaWFzIiBhcyBjb25zdCB9fQogICAgICAgICAgY2xhc3NOYW1lPXtgdC1tZW51LWl0ZW0ke2ZvdG9zQWN0aXZlID8gIiB0LW1lbnUtaXRlbS1hY3RpdmUiIDogIiJ9YH0KICAgICAgICA+CiAgICAgICAgICA8SW1hZ2VJY29uIHNpemU9ezE1fSBjbGFzc05hbWU9InQtbWVudS1pY28iIC8+IEZvdG9zCiAgICAgICAgPC9MaW5rPgogICAgICAgIHtmb3Rvc0FjdGl2ZSA/ICgKICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJtYi0xIG1sLTkgZmxleCBmbGV4LWNvbCBnYXAtMC41Ij4KICAgICAgICAgICAgPExpbmsKICAgICAgICAgICAgICB0bz0iL2FsYnVtZXMiCiAgICAgICAgICAgICAgY2xhc3NOYW1lPSJ0ZXh0LVsxMXB4XSBmb250LWJvbGQgdGV4dC1bdmFyKC0tdC1ibHVlKV0gaG92ZXI6dW5kZXJsaW5lIgogICAgICAgICAgICA+CiAgICAgICAgICAgICAgTWlzIMOhbGJ1bWVzCiAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgPExpbmsKICAgICAgICAgICAgICB0bz0iL2ZvdG9zIgogICAgICAgICAgICAgIHNlYXJjaD17eyB0YWI6ICJzYWxnbyIgYXMgY29uc3QgfX0KICAgICAgICAgICAgICBjbGFzc05hbWU9InRleHQtWzExcHhdIHRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSBob3Zlcjp1bmRlcmxpbmUiCiAgICAgICAgICAgID4KICAgICAgICAgICAgICBGb3RvcyBlbiBsYXMgcXVlIHNhbGdvCiAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgPExpbmsKICAgICAgICAgICAgICB0bz0iL2ZvdG9zIgogICAgICAgICAgICAgIHNlYXJjaD17eyB0YWI6ICJldGlxdWV0YXMiIGFzIGNvbnN0IH19CiAgICAgICAgICAgICAgY2xhc3NOYW1lPSJ0ZXh0LVsxMXB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0gaG92ZXI6dW5kZXJsaW5lIgogICAgICAgICAgICA+CiAgICAgICAgICAgICAgTWlzIGV0aXF1ZXRhcwogICAgICAgICAgICA8L0xpbms+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICApIDogbnVsbH0KICAgICAgICA8c3BhbiBjbGFzc05hbWU9InQtbWVudS1pdGVtIj4KICAgICAgICAgIDxWaWRlbyBzaXplPXsxNX0gY2xhc3NOYW1lPSJ0LW1lbnUtaWNvIiAvPiBWw61kZW9zCiAgICAgICAgPC9zcGFuPgogICAgICAgIDxzcGFuIGNsYXNzTmFtZT0idC1tZW51LWl0ZW0iPgogICAgICAgICAgPE11c2ljIHNpemU9ezE1fSBjbGFzc05hbWU9InQtbWVudS1pY28iIC8+IE3DunNpY2EKICAgICAgICA8L3NwYW4+CiAgICAgICAgPExpbmsgdG89Ii9nZW50ZSIgc2VhcmNoPXt7IHE6ICIiIH19IGNsYXNzTmFtZT0idC1tZW51LWl0ZW0iPgogICAgICAgICAgPFVzZXJzIHNpemU9ezE1fSBjbGFzc05hbWU9InQtbWVudS1pY28iIC8+IEdydXBvcwogICAgICAgIDwvTGluaz4KICAgICAgICA8c3BhbiBjbGFzc05hbWU9InQtbWVudS1pdGVtIj4KICAgICAgICAgIDxGaWxlVGV4dCBzaXplPXsxNX0gY2xhc3NOYW1lPSJ0LW1lbnUtaWNvIiAvPiBQw6FnaW5hcwogICAgICAgIDwvc3Bhbj4KICAgICAgICA8c3BhbiBjbGFzc05hbWU9InQtbWVudS1pdGVtIj4KICAgICAgICAgIDxCYXJDaGFydDMgc2l6ZT17MTV9IGNsYXNzTmFtZT0idC1tZW51LWljbyIgLz4gRW5jdWVzdGFzCiAgICAgICAgPC9zcGFuPgogICAgICAgIDxzcGFuIGNsYXNzTmFtZT0idC1tZW51LWl0ZW0iPgogICAgICAgICAgPEJvb2ttYXJrIHNpemU9ezE1fSBjbGFzc05hbWU9InQtbWVudS1pY28iIC8+IEd1YXJkYWRvcwogICAgICAgIDwvc3Bhbj4KICAgICAgICA8TGluayB0bz0iL2FqdXN0ZXMiIGNsYXNzTmFtZT17Y2xzKCJhanVzdGVzIil9PgogICAgICAgICAgPFNldHRpbmdzIHNpemU9ezE1fSBjbGFzc05hbWU9InQtbWVudS1pY28iIC8+IENvbmZpZ3VyYWNpw7NuCiAgICAgICAgPC9MaW5rPgogICAgICA8L25hdj4KICAgIDwvPgogICk7Cn0K
+import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import {
+  BarChart3,
+  Bookmark,
+  Calendar as CalendarIcon,
+  FileText,
+  Home,
+  Image as ImageIcon,
+  Music,
+  Settings,
+  Users,
+  Video,
+} from "lucide-react";
+
+import { useSession } from "@/lib/session";
+import { getMyProfile } from "@/lib/api";
+import { UserAvatar } from "@/components/UserAvatar";
+
+type Active = "novedades" | "eventos" | "fotos" | "albumes" | "ajustes" | null;
+
+export function SideMenu({ active = null }: { active?: Active }) {
+  const { user } = useSession();
+  const profile = useQuery({
+    queryKey: ["my-profile", user?.id],
+    queryFn: () => getMyProfile(user!.id),
+    enabled: Boolean(user),
+  });
+  const data = profile.data;
+  const cls = (key: Active) => `t-menu-item${active === key ? " t-menu-item-active" : ""}`;
+  const fotosActive = active === "fotos" || active === "albumes";
+
+  return (
+    <>
+      <div className="t-panel p-3">
+        <div className="flex gap-3">
+          <UserAvatar
+            username={data?.username ?? ""}
+            displayName={data?.display_name ?? ""}
+            avatarPath={data?.avatar_url ?? undefined}
+            accent={data?.accent_color ?? undefined}
+            size={56}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-bold text-[var(--t-ink)]">
+              {data?.display_name ?? "…"}
+            </p>
+            <p className="truncate text-[11px] text-[var(--t-ink-soft)]">
+              {data?.mood || "Sin estado de ánimo"}
+            </p>
+            <p className="mt-1 flex items-center gap-1.5 text-[11px] text-[var(--t-green)]">
+              <span className="inline-block h-2 w-2 rounded-full bg-[var(--t-green)]" aria-hidden />
+              Conectado
+            </p>
+          </div>
+        </div>
+        {data ? (
+          <Link
+            to="/perfil/$username"
+            params={{ username: data.username }}
+            className="t-link mt-2 inline-block text-[11px] font-bold"
+          >
+            Ver mi perfil »
+          </Link>
+        ) : null}
+      </div>
+
+      <nav className="t-panel p-1.5">
+        <Link to="/" className={cls("novedades")}>
+          <Home size={15} className="t-menu-ico" /> Novedades
+        </Link>
+        <Link to="/eventos" className={cls("eventos")}>
+          <CalendarIcon size={15} className="t-menu-ico" /> Eventos
+          <span className="t-menu-count">2</span>
+        </Link>
+        <Link
+          to="/fotos"
+          search={{ tab: "mias" as const }}
+          className={`t-menu-item${fotosActive ? " t-menu-item-active" : ""}`}
+        >
+          <ImageIcon size={15} className="t-menu-ico" /> Fotos
+        </Link>
+        {fotosActive ? (
+          <div className="mb-1 ml-9 flex flex-col gap-0.5">
+            <Link
+              to="/albumes"
+              className="text-[11px] font-bold text-[var(--t-blue)] hover:underline"
+            >
+              Mis álbumes
+            </Link>
+            <Link
+              to="/fotos"
+              search={{ tab: "salgo" as const }}
+              className="text-[11px] text-[var(--t-ink-soft)] hover:underline"
+            >
+              Fotos en las que salgo
+            </Link>
+            <Link
+              to="/fotos"
+              search={{ tab: "etiquetas" as const }}
+              className="text-[11px] text-[var(--t-ink-soft)] hover:underline"
+            >
+              Mis etiquetas
+            </Link>
+          </div>
+        ) : null}
+        <span className="t-menu-item">
+          <Video size={15} className="t-menu-ico" /> Vídeos
+        </span>
+        <span className="t-menu-item">
+          <Music size={15} className="t-menu-ico" /> Música
+        </span>
+        <Link to="/gente" search={{ q: "" }} className="t-menu-item">
+          <Users size={15} className="t-menu-ico" /> Grupos
+        </Link>
+        <span className="t-menu-item">
+          <FileText size={15} className="t-menu-ico" /> Páginas
+        </span>
+        <span className="t-menu-item">
+          <BarChart3 size={15} className="t-menu-ico" /> Encuestas
+        </span>
+        <span className="t-menu-item">
+          <Bookmark size={15} className="t-menu-ico" /> Guardados
+        </span>
+        <Link to="/ajustes" className={cls("ajustes")}>
+          <Settings size={15} className="t-menu-ico" /> Configuración
+        </Link>
+      </nav>
+    </>
+  );
+}

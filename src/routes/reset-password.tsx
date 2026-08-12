@@ -1,1 +1,74 @@
-aW1wb3J0IHsgY3JlYXRlRmlsZVJvdXRlLCB1c2VOYXZpZ2F0ZSB9IGZyb20gIkB0YW5zdGFjay9yZWFjdC1yb3V0ZXIiOwppbXBvcnQgeyB1c2VTdGF0ZSB9IGZyb20gInJlYWN0IjsKaW1wb3J0IHsgdG9hc3QgfSBmcm9tICJzb25uZXIiOwoKaW1wb3J0IHsgc3VwYWJhc2UgfSBmcm9tICJAL2ludGVncmF0aW9ucy9zdXBhYmFzZS9jbGllbnQiOwoKZXhwb3J0IGNvbnN0IFJvdXRlID0gY3JlYXRlRmlsZVJvdXRlKCIvcmVzZXQtcGFzc3dvcmQiKSh7CiAgaGVhZDogKCkgPT4gKHsKICAgIG1ldGE6IFsKICAgICAgeyB0aXRsZTogIkNhbWJpYXIgY29udHJhc2XDsWEg4oCUIG5vY3R1cm5vIiB9LAogICAgICB7IG5hbWU6ICJkZXNjcmlwdGlvbiIsIGNvbnRlbnQ6ICJFbGlnZSB1bmEgY29udHJhc2XDsWEgbnVldmEgcGFyYSB0dSBjdWVudGEgZGUgbm9jdHVybm8uIiB9LAogICAgICB7IHByb3BlcnR5OiAib2c6dGl0bGUiLCBjb250ZW50OiAiQ2FtYmlhciBjb250cmFzZcOxYSDigJQgbm9jdHVybm8iIH0sCiAgICAgIHsKICAgICAgICBwcm9wZXJ0eTogIm9nOmRlc2NyaXB0aW9uIiwKICAgICAgICBjb250ZW50OiAiRWxpZ2UgdW5hIGNvbnRyYXNlw7FhIG51ZXZhIHBhcmEgdHUgY3VlbnRhIGRlIG5vY3R1cm5vLiIsCiAgICAgIH0sCiAgICAgIHsgbmFtZTogInJvYm90cyIsIGNvbnRlbnQ6ICJub2luZGV4IiB9LAogICAgXSwKICB9KSwKICBjb21wb25lbnQ6IFJlc2V0UGFzc3dvcmRQYWdlLAp9KTsKCmZ1bmN0aW9uIFJlc2V0UGFzc3dvcmRQYWdlKCkgewogIGNvbnN0IG5hdmlnYXRlID0gdXNlTmF2aWdhdGUoKTsKICBjb25zdCBbcGFzc3dvcmQsIHNldFBhc3N3b3JkXSA9IHVzZVN0YXRlKCIiKTsKICBjb25zdCBbYnVzeSwgc2V0QnVzeV0gPSB1c2VTdGF0ZShmYWxzZSk7CgogIGFzeW5jIGZ1bmN0aW9uIGhhbmRsZVN1Ym1pdChldmVudDogUmVhY3QuRm9ybUV2ZW50KSB7CiAgICBldmVudC5wcmV2ZW50RGVmYXVsdCgpOwogICAgaWYgKHBhc3N3b3JkLmxlbmd0aCA8IDgpIHsKICAgICAgdG9hc3QuZXJyb3IoIkxhIGNvbnRyYXNlw7FhIGRlYmUgdGVuZXIgYWwgbWVub3MgOCBjYXJhY3RlcmVzLiIpOwogICAgICByZXR1cm47CiAgICB9CiAgICBzZXRCdXN5KHRydWUpOwogICAgY29uc3QgeyBlcnJvciB9ID0gYXdhaXQgc3VwYWJhc2UuYXV0aC51cGRhdGVVc2VyKHsgcGFzc3dvcmQgfSk7CiAgICBzZXRCdXN5KGZhbHNlKTsKICAgIGlmIChlcnJvcikgewogICAgICB0b2FzdC5lcnJvcigiTm8gaGVtb3MgcG9kaWRvIGNhbWJpYXIgbGEgY29udHJhc2XDsWEuIFBpZGUgb3RybyBlbmxhY2UuIik7CiAgICAgIHJldHVybjsKICAgIH0KICAgIHRvYXN0LnN1Y2Nlc3MoIkNvbnRyYXNlw7FhIGNhbWJpYWRhLiIpOwogICAgdm9pZCBuYXZpZ2F0ZSh7IHRvOiAiLyIsIHJlcGxhY2U6IHRydWUgfSk7CiAgfQoKICByZXR1cm4gKAogICAgPG1haW4gY2xhc3NOYW1lPSJ0dWVudGktc2NyZWVuIGZsZXggbWluLWgtc2NyZWVuIGZsZXgtY29sIGl0ZW1zLWNlbnRlciBweC00IHB5LTEwIj4KICAgICAgPGgxIGNsYXNzTmFtZT0idGV4dC1bMzJweF0gZm9udC1ib2xkIGxlYWRpbmctbm9uZSB0ZXh0LXdoaXRlIj5ub2N0dXJubzwvaDE+CiAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT0idHVlbnRpLWNhcmQgbXQtNiB3LWZ1bGwgbWF4LXctWzM4MHB4XSBweC02IHB5LTYiPgogICAgICAgIDxoMiBjbGFzc05hbWU9Im1iLTQgdGV4dC1jZW50ZXIgdGV4dC1bMTNweF0gZm9udC1ib2xkIj5FbGlnZSB1bmEgY29udHJhc2XDsWEgbnVldmE8L2gyPgogICAgICAgIDxmb3JtIGNsYXNzTmFtZT0ic3BhY2UteS0zIiBvblN1Ym1pdD17KGUpID0+IHZvaWQgaGFuZGxlU3VibWl0KGUpfT4KICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJncmlkIGdyaWQtY29scy1bMTAwcHhfbWlubWF4KDAsMWZyKV0gaXRlbXMtY2VudGVyIGdhcC0zIj4KICAgICAgICAgICAgPGxhYmVsIGh0bWxGb3I9Im5ldy1wYXNzd29yZCIgY2xhc3NOYW1lPSJ0dWVudGktbGFiZWwgdGV4dC1yaWdodCI+CiAgICAgICAgICAgICAgQ29udHJhc2XDsWE6CiAgICAgICAgICAgIDwvbGFiZWw+CiAgICAgICAgICAgIDxpbnB1dAogICAgICAgICAgICAgIGlkPSJuZXctcGFzc3dvcmQiCiAgICAgICAgICAgICAgdHlwZT0icGFzc3dvcmQiCiAgICAgICAgICAgICAgY2xhc3NOYW1lPSJ0dWVudGktaW5wdXQiCiAgICAgICAgICAgICAgdmFsdWU9e3Bhc3N3b3JkfQogICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0UGFzc3dvcmQoZS50YXJnZXQudmFsdWUpfQogICAgICAgICAgICAgIG1heExlbmd0aD17NzJ9CiAgICAgICAgICAgICAgcmVxdWlyZWQKICAgICAgICAgICAgLz4KICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9InB0LTEgdGV4dC1jZW50ZXIiPgogICAgICAgICAgICA8YnV0dG9uIHR5cGU9InN1Ym1pdCIgY2xhc3NOYW1lPSJ0dWVudGktYnRuIiBkaXNhYmxlZD17YnVzeX0+CiAgICAgICAgICAgICAgR3VhcmRhcgogICAgICAgICAgICA8L2J1dHRvbj4KICAgICAgICAgIDwvZGl2PgogICAgICAgIDwvZm9ybT4KICAgICAgPC9zZWN0aW9uPgogICAgPC9tYWluPgogICk7Cn0K
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { supabase } from "@/integrations/supabase/client";
+
+export const Route = createFileRoute("/reset-password")({
+  head: () => ({
+    meta: [
+      { title: "Cambiar contraseña — nocturno" },
+      { name: "description", content: "Elige una contraseña nueva para tu cuenta de nocturno." },
+      { property: "og:title", content: "Cambiar contraseña — nocturno" },
+      {
+        property: "og:description",
+        content: "Elige una contraseña nueva para tu cuenta de nocturno.",
+      },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
+  component: ResetPasswordPage,
+});
+
+function ResetPasswordPage() {
+  const navigate = useNavigate();
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    if (password.length < 8) {
+      toast.error("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setBusy(false);
+    if (error) {
+      toast.error("No hemos podido cambiar la contraseña. Pide otro enlace.");
+      return;
+    }
+    toast.success("Contraseña cambiada.");
+    void navigate({ to: "/", replace: true });
+  }
+
+  return (
+    <main className="tuenti-screen flex min-h-screen flex-col items-center px-4 py-10">
+      <h1 className="text-[32px] font-bold leading-none text-white">nocturno</h1>
+      <section className="tuenti-card mt-6 w-full max-w-[380px] px-6 py-6">
+        <h2 className="mb-4 text-center text-[13px] font-bold">Elige una contraseña nueva</h2>
+        <form className="space-y-3" onSubmit={(e) => void handleSubmit(e)}>
+          <div className="grid grid-cols-[100px_minmax(0,1fr)] items-center gap-3">
+            <label htmlFor="new-password" className="tuenti-label text-right">
+              Contraseña:
+            </label>
+            <input
+              id="new-password"
+              type="password"
+              className="tuenti-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              maxLength={72}
+              required
+            />
+          </div>
+          <div className="pt-1 text-center">
+            <button type="submit" className="tuenti-btn" disabled={busy}>
+              Guardar
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+  );
+}

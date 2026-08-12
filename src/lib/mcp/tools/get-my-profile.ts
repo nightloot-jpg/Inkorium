@@ -1,1 +1,25 @@
-aW1wb3J0IHsgZGVmaW5lVG9vbCB9IGZyb20gIkBsb3ZhYmxlLmRldi9tY3AtanMiOwppbXBvcnQgeyBub3RBdXRoZW50aWNhdGVkLCBzdXBhYmFzZUZvclVzZXIgfSBmcm9tICIuLi9zdXBhYmFzZSI7CgpleHBvcnQgZGVmYXVsdCBkZWZpbmVUb29sKHsKICBuYW1lOiAiZ2V0X215X3Byb2ZpbGUiLAogIHRpdGxlOiAiVmVyIG1pIHBlcmZpbCIsCiAgZGVzY3JpcHRpb246ICJEZXZ1ZWx2ZSBlbCBwZXJmaWwgZGUgbGEgcGVyc29uYSBjb25lY3RhZGEgKHVzdWFyaW8sIG5vbWJyZSwgZXN0YWRvIGRlIMOhbmltbywgYmlvLCB2aXNpdGFzKS4iLAogIGlucHV0U2NoZW1hOiB7fSwKICBhbm5vdGF0aW9uczogeyByZWFkT25seUhpbnQ6IHRydWUsIGlkZW1wb3RlbnRIaW50OiB0cnVlLCBvcGVuV29ybGRIaW50OiBmYWxzZSB9LAogIGhhbmRsZXI6IGFzeW5jIChfaW5wdXQsIGN0eCkgPT4gewogICAgaWYgKCFjdHguaXNBdXRoZW50aWNhdGVkKCkpIHJldHVybiBub3RBdXRoZW50aWNhdGVkKCk7CiAgICBjb25zdCBzdXBhYmFzZSA9IHN1cGFiYXNlRm9yVXNlcihjdHgpOwogICAgY29uc3QgeyBkYXRhLCBlcnJvciB9ID0gYXdhaXQgc3VwYWJhc2UKICAgICAgLmZyb20oInByb2ZpbGVzIikKICAgICAgLnNlbGVjdCgidXNlcm5hbWUsIGRpc3BsYXlfbmFtZSwgbW9vZCwgYmlvLCBmYXZvcml0ZV9xdW90ZSwgaXNfcHJpdmF0ZSwgdmlld19jb3VudCwgY3JlYXRlZF9hdCIpCiAgICAgIC5lcSgiaWQiLCBjdHguZ2V0VXNlcklkKCkpCiAgICAgIC5tYXliZVNpbmdsZSgpOwogICAgaWYgKGVycm9yKSByZXR1cm4geyBjb250ZW50OiBbeyB0eXBlOiAidGV4dCIsIHRleHQ6IGVycm9yLm1lc3NhZ2UgfV0sIGlzRXJyb3I6IHRydWUgfTsKICAgIGlmICghZGF0YSkgcmV0dXJuIHsgY29udGVudDogW3sgdHlwZTogInRleHQiLCB0ZXh0OiAiUGVyZmlsIG5vIGVuY29udHJhZG8uIiB9XSwgaXNFcnJvcjogdHJ1ZSB9OwogICAgcmV0dXJuIHsKICAgICAgY29udGVudDogW3sgdHlwZTogInRleHQiLCB0ZXh0OiBKU09OLnN0cmluZ2lmeShkYXRhKSB9XSwKICAgICAgc3RydWN0dXJlZENvbnRlbnQ6IHsgcHJvZmlsZTogZGF0YSB9LAogICAgfTsKICB9LAp9KTs=
+import { defineTool } from "@lovable.dev/mcp-js";
+import { notAuthenticated, supabaseForUser } from "../supabase";
+
+export default defineTool({
+  name: "get_my_profile",
+  title: "Ver mi perfil",
+  description: "Devuelve el perfil de la persona conectada (usuario, nombre, estado de ánimo, bio, visitas).",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("username, display_name, mood, bio, favorite_quote, is_private, view_count, created_at")
+      .eq("id", ctx.getUserId())
+      .maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (!data) return { content: [{ type: "text", text: "Perfil no encontrado." }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { profile: data },
+    };
+  },
+});

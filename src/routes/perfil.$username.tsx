@@ -1,1 +1,519 @@
-aW1wb3J0IHsgY3JlYXRlRmlsZVJvdXRlLCBMaW5rLCBub3RGb3VuZCwgdXNlTmF2aWdhdGUgfSBmcm9tICJAdGFuc3RhY2svcmVhY3Qtcm91dGVyIjsKaW1wb3J0IHsgdXNlTXV0YXRpb24sIHVzZVF1ZXJ5LCB1c2VRdWVyeUNsaWVudCB9IGZyb20gIkB0YW5zdGFjay9yZWFjdC1xdWVyeSI7CmltcG9ydCB7IHVzZUVmZmVjdCwgdXNlU3RhdGUgfSBmcm9tICJyZWFjdCI7CmltcG9ydCB7IHRvYXN0IH0gZnJvbSAic29ubmVyIjsKCmltcG9ydCB7IHVzZVNlc3Npb24gfSBmcm9tICJAL2xpYi9zZXNzaW9uIjsKaW1wb3J0IHsKICBjcmVhdGVQaG90bywKICBkZWxldGVXYWxsUG9zdCwKICBnZXRGcmllbmRzaGlwc0ZvciwKICBnZXRQaG90b3NCeVVzZXIsCiAgZ2V0UHJvZmlsZUJ5VXNlcm5hbWUsCiAgZ2V0UHJvZmlsZXNCeUlkcywKICBnZXRUb3BGcmllbmRzLAogIGdldFdhbGxQb3N0cywKICBwb3N0V2FsbCwKICByZWdpc3RlclByb2ZpbGVWaWV3LAogIHJlbW92ZUZyaWVuZHNoaXAsCiAgcmVzcG9uZEZyaWVuZFJlcXVlc3QsCiAgc2VuZEZyaWVuZFJlcXVlc3QsCiAgc2V0VG9wRnJpZW5kcywKfSBmcm9tICJAL2xpYi9hcGkiOwppbXBvcnQgeyBwaG90b1NjaGVtYSwgdGV4dFBvc3RTY2hlbWEgfSBmcm9tICJAL2xpYi92YWxpZGF0aW9uIjsKaW1wb3J0IHsgdXBsb2FkTWVkaWEgfSBmcm9tICJAL2xpYi9tZWRpYSI7CmltcG9ydCB7IHRpbWVBZ28gfSBmcm9tICJAL2xpYi9mb3JtYXQiOwppbXBvcnQgeyBNZWRpYUltYWdlIH0gZnJvbSAiQC9jb21wb25lbnRzL01lZGlhSW1hZ2UiOwppbXBvcnQgeyBVc2VyQXZhdGFyIH0gZnJvbSAiQC9jb21wb25lbnRzL1VzZXJBdmF0YXIiOwppbXBvcnQgeyBCdXR0b24gfSBmcm9tICJAL2NvbXBvbmVudHMvdWkvYnV0dG9uIjsKaW1wb3J0IHsgSW5wdXQgfSBmcm9tICJAL2NvbXBvbmVudHMvdWkvaW5wdXQiOwppbXBvcnQgeyBUZXh0YXJlYSB9IGZyb20gIkAvY29tcG9uZW50cy91aS90ZXh0YXJlYSI7CgpleHBvcnQgY29uc3QgUm91dGUgPSBjcmVhdGVGaWxlUm91dGUoIi9wZXJmaWwvJHVzZXJuYW1lIikoewogIGhlYWQ6ICh7IHBhcmFtcyB9KSA9PiAoewogICAgbWV0YTogWwogICAgICB7IHRpdGxlOiBgQCR7cGFyYW1zLnVzZXJuYW1lfSDigJQgbm9jdHVybm9gIH0sCiAgICAgIHsKICAgICAgICBuYW1lOiAiZGVzY3JpcHRpb24iLAogICAgICAgIGNvbnRlbnQ6IGBQZXJmaWwgZGUgQCR7cGFyYW1zLnVzZXJuYW1lfSBlbiBub2N0dXJubzogZm90b2xvZywgbXVybyB5IGFtaWdvcy5gLAogICAgICB9LAogICAgICB7IHByb3BlcnR5OiAib2c6dGl0bGUiLCBjb250ZW50OiBgQCR7cGFyYW1zLnVzZXJuYW1lfSDigJQgbm9jdHVybm9gIH0sCiAgICAgIHsKICAgICAgICBwcm9wZXJ0eTogIm9nOmRlc2NyaXB0aW9uIiwKICAgICAgICBjb250ZW50OiBgUGVyZmlsIGRlIEAke3BhcmFtcy51c2VybmFtZX0gZW4gbm9jdHVybm86IGZvdG9sb2csIG11cm8geSBhbWlnb3MuYCwKICAgICAgfSwKICAgIF0sCiAgfSksCiAgY29tcG9uZW50OiBQcm9maWxlUGFnZSwKICBub3RGb3VuZENvbXBvbmVudDogKCkgPT4gKAogICAgPG1haW4gY2xhc3NOYW1lPSJteC1hdXRvIG1heC13LW1kIHB4LTQgcHktMjAgdGV4dC1jZW50ZXIiPgogICAgICA8aDEgY2xhc3NOYW1lPSJmb250LWRpc3BsYXkgdGV4dC0yeGwgZm9udC1ib2xkIj5Fc2UgcGVyZmlsIG5vIGV4aXN0ZTwvaDE+CiAgICAgIDxwIGNsYXNzTmFtZT0ibXQtMiB0ZXh0LXNtIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCI+CiAgICAgICAgUHVlZGUgcXVlIGhheWEgY2FtYmlhZG8gZGUgbm9tYnJlIGRlIHVzdWFyaW8uCiAgICAgIDwvcD4KICAgICAgPEJ1dHRvbiBhc0NoaWxkIGNsYXNzTmFtZT0ibXQtNiI+CiAgICAgICAgPExpbmsgdG89Ii9nZW50ZSIgc2VhcmNoPXt7IHE6ICIiIH19PgogICAgICAgICAgQnVzY2FyIGdlbnRlCiAgICAgICAgPC9MaW5rPgogICAgICA8L0J1dHRvbj4KICAgIDwvbWFpbj4KICApLAp9KTsKCmZ1bmN0aW9uIFByb2ZpbGVQYWdlKCkgewogIGNvbnN0IHsgdXNlcm5hbWUgfSA9IFJvdXRlLnVzZVBhcmFtcygpOwogIGNvbnN0IHsgdXNlciB9ID0gdXNlU2Vzc2lvbigpOwogIGNvbnN0IHF1ZXJ5Q2xpZW50ID0gdXNlUXVlcnlDbGllbnQoKTsKICBjb25zdCBuYXZpZ2F0ZSA9IHVzZU5hdmlnYXRlKCk7CiAgY29uc3QgW3dhbGxUZXh0LCBzZXRXYWxsVGV4dF0gPSB1c2VTdGF0ZSgiIik7CiAgY29uc3QgW3VwbG9hZGluZywgc2V0VXBsb2FkaW5nXSA9IHVzZVN0YXRlKGZhbHNlKTsKICBjb25zdCBbZWRpdGluZ1RvcCwgc2V0RWRpdGluZ1RvcF0gPSB1c2VTdGF0ZShmYWxzZSk7CgogIGNvbnN0IHByb2ZpbGVRdWVyeSA9IHVzZVF1ZXJ5KHsKICAgIHF1ZXJ5S2V5OiBbInByb2ZpbGUiLCB1c2VybmFtZV0sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRQcm9maWxlQnlVc2VybmFtZSh1c2VybmFtZSksCiAgfSk7CiAgY29uc3QgcHJvZmlsZSA9IHByb2ZpbGVRdWVyeS5kYXRhOwogIGNvbnN0IGlzTWUgPSBCb29sZWFuKHVzZXIgJiYgcHJvZmlsZSAmJiB1c2VyLmlkID09PSBwcm9maWxlLmlkKTsKCiAgdXNlRWZmZWN0KCgpID0+IHsKICAgIGlmIChwcm9maWxlICYmIHVzZXIgJiYgIWlzTWUpIHZvaWQgcmVnaXN0ZXJQcm9maWxlVmlldyhwcm9maWxlLmlkKTsKICB9LCBbcHJvZmlsZSwgdXNlciwgaXNNZV0pOwoKICBjb25zdCBteUZyaWVuZHNoaXBzID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsiZnJpZW5kc2hpcHMiLCB1c2VyPy5pZF0sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRGcmllbmRzaGlwc0Zvcih1c2VyIS5pZCksCiAgICBlbmFibGVkOiBCb29sZWFuKHVzZXIpLAogIH0pOwogIGNvbnN0IHJlbGF0aW9uID0gKG15RnJpZW5kc2hpcHMuZGF0YSA/PyBbXSkuZmluZCgKICAgIChmKSA9PiBmLnJlcXVlc3Rlcl9pZCA9PT0gcHJvZmlsZT8uaWQgfHwgZi5hZGRyZXNzZWVfaWQgPT09IHByb2ZpbGU/LmlkLAogICk7CiAgY29uc3QgbXlGcmllbmRJZHMgPSAobXlGcmllbmRzaGlwcy5kYXRhID8/IFtdKQogICAgLmZpbHRlcigoZikgPT4gZi5zdGF0dXMgPT09ICJhY2NlcHRlZCIpCiAgICAubWFwKChmKSA9PiAoZi5yZXF1ZXN0ZXJfaWQgPT09IHVzZXI/LmlkID8gZi5hZGRyZXNzZWVfaWQgOiBmLnJlcXVlc3Rlcl9pZCkpOwoKICBjb25zdCBwaG90b3MgPSB1c2VRdWVyeSh7CiAgICBxdWVyeUtleTogWyJwaG90b3MiLCBwcm9maWxlPy5pZF0sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRQaG90b3NCeVVzZXIocHJvZmlsZSEuaWQpLAogICAgZW5hYmxlZDogQm9vbGVhbihwcm9maWxlKSwKICB9KTsKCiAgY29uc3Qgd2FsbCA9IHVzZVF1ZXJ5KHsKICAgIHF1ZXJ5S2V5OiBbIndhbGwiLCBwcm9maWxlPy5pZF0sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRXYWxsUG9zdHMocHJvZmlsZSEuaWQpLAogICAgZW5hYmxlZDogQm9vbGVhbihwcm9maWxlKSwKICB9KTsKCiAgY29uc3Qgd2FsbEF1dGhvcklkcyA9IEFycmF5LmZyb20obmV3IFNldCgod2FsbC5kYXRhID8/IFtdKS5tYXAoKHApID0+IHAuYXV0aG9yX2lkKSkpOwogIGNvbnN0IHdhbGxBdXRob3JzID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsicHJvZmlsZXMtYnktaWRzIiwgd2FsbEF1dGhvcklkc10sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRQcm9maWxlc0J5SWRzKHdhbGxBdXRob3JJZHMpLAogICAgZW5hYmxlZDogd2FsbEF1dGhvcklkcy5sZW5ndGggPiAwLAogIH0pOwogIGNvbnN0IHdhbGxBdXRob3JNYXAgPSBuZXcgTWFwKCh3YWxsQXV0aG9ycy5kYXRhID8/IFtdKS5tYXAoKHApID0+IFtwLmlkLCBwXSkpOwoKICBjb25zdCB0b3BGcmllbmRzID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsidG9wLWZyaWVuZHMiLCBwcm9maWxlPy5pZF0sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRUb3BGcmllbmRzKHByb2ZpbGUhLmlkKSwKICAgIGVuYWJsZWQ6IEJvb2xlYW4ocHJvZmlsZSksCiAgfSk7CiAgY29uc3QgdG9wSWRzID0gKHRvcEZyaWVuZHMuZGF0YSA/PyBbXSkubWFwKCh0KSA9PiB0LmZyaWVuZF9pZCk7CiAgY29uc3QgdG9wUHJvZmlsZXMgPSB1c2VRdWVyeSh7CiAgICBxdWVyeUtleTogWyJwcm9maWxlcy1ieS1pZHMiLCB0b3BJZHNdLAogICAgcXVlcnlGbjogKCkgPT4gZ2V0UHJvZmlsZXNCeUlkcyh0b3BJZHMpLAogICAgZW5hYmxlZDogdG9wSWRzLmxlbmd0aCA+IDAsCiAgfSk7CiAgY29uc3QgbXlGcmllbmRQcm9maWxlcyA9IHVzZVF1ZXJ5KHsKICAgIHF1ZXJ5S2V5OiBbInByb2ZpbGVzLWJ5LWlkcyIsIG15RnJpZW5kSWRzXSwKICAgIHF1ZXJ5Rm46ICgpID0+IGdldFByb2ZpbGVzQnlJZHMobXlGcmllbmRJZHMpLAogICAgZW5hYmxlZDogaXNNZSAmJiBteUZyaWVuZElkcy5sZW5ndGggPiAwLAogIH0pOwoKICBjb25zdCBmcmllbmRBY3Rpb24gPSB1c2VNdXRhdGlvbih7CiAgICBtdXRhdGlvbkZuOiBhc3luYyAoYWN0aW9uOiAiYWRkIiB8ICJjYW5jZWwiIHwgImFjY2VwdCIpID0+IHsKICAgICAgaWYgKCF1c2VyIHx8ICFwcm9maWxlKSB0aHJvdyBuZXcgRXJyb3IoIkluaWNpYSBzZXNpw7NuIHBhcmEgaGFjZXIgYW1pZ29zIik7CiAgICAgIGlmIChhY3Rpb24gPT09ICJhZGQiKSBhd2FpdCBzZW5kRnJpZW5kUmVxdWVzdCh1c2VyLmlkLCBwcm9maWxlLmlkKTsKICAgICAgZWxzZSBpZiAoYWN0aW9uID09PSAiYWNjZXB0IiAmJiByZWxhdGlvbikgYXdhaXQgcmVzcG9uZEZyaWVuZFJlcXVlc3QocmVsYXRpb24uaWQsIHRydWUpOwogICAgICBlbHNlIGlmIChyZWxhdGlvbikgYXdhaXQgcmVtb3ZlRnJpZW5kc2hpcChyZWxhdGlvbi5pZCk7CiAgICB9LAogICAgb25TdWNjZXNzOiAoKSA9PiB7CiAgICAgIHZvaWQgcXVlcnlDbGllbnQuaW52YWxpZGF0ZVF1ZXJpZXMoeyBxdWVyeUtleTogWyJmcmllbmRzaGlwcyJdIH0pOwogICAgICB2b2lkIHF1ZXJ5Q2xpZW50LmludmFsaWRhdGVRdWVyaWVzKHsgcXVlcnlLZXk6IFsicHJvZmlsZSIsIHVzZXJuYW1lXSB9KTsKICAgIH0sCiAgICBvbkVycm9yOiAoZTogRXJyb3IpID0+IHRvYXN0LmVycm9yKGUubWVzc2FnZSksCiAgfSk7CgogIGNvbnN0IHB1Ymxpc2hXYWxsID0gdXNlTXV0YXRpb24oewogICAgbXV0YXRpb25GbjogYXN5bmMgKCkgPT4gewogICAgICBpZiAoIXVzZXIgfHwgIXByb2ZpbGUpIHRocm93IG5ldyBFcnJvcigiSW5pY2lhIHNlc2nDs24gcGFyYSBlc2NyaWJpciIpOwogICAgICBjb25zdCBwYXJzZWQgPSB0ZXh0UG9zdFNjaGVtYS5zYWZlUGFyc2Uod2FsbFRleHQpOwogICAgICBpZiAoIXBhcnNlZC5zdWNjZXNzKSB0aHJvdyBuZXcgRXJyb3IocGFyc2VkLmVycm9yLmlzc3Vlc1swXT8ubWVzc2FnZSA/PyAiVGV4dG8gbm8gdsOhbGlkbyIpOwogICAgICBhd2FpdCBwb3N0V2FsbChwcm9maWxlLmlkLCB1c2VyLmlkLCBwYXJzZWQuZGF0YSk7CiAgICB9LAogICAgb25TdWNjZXNzOiAoKSA9PiB7CiAgICAgIHNldFdhbGxUZXh0KCIiKTsKICAgICAgdm9pZCBxdWVyeUNsaWVudC5pbnZhbGlkYXRlUXVlcmllcyh7IHF1ZXJ5S2V5OiBbIndhbGwiLCBwcm9maWxlPy5pZF0gfSk7CiAgICB9LAogICAgb25FcnJvcjogKGU6IEVycm9yKSA9PiB0b2FzdC5lcnJvcihlLm1lc3NhZ2UpLAogIH0pOwoKICBjb25zdCByZW1vdmVXYWxsID0gdXNlTXV0YXRpb24oewogICAgbXV0YXRpb25GbjogKGlkOiBzdHJpbmcpID0+IGRlbGV0ZVdhbGxQb3N0KGlkKSwKICAgIG9uU3VjY2VzczogKCkgPT4gdm9pZCBxdWVyeUNsaWVudC5pbnZhbGlkYXRlUXVlcmllcyh7IHF1ZXJ5S2V5OiBbIndhbGwiLCBwcm9maWxlPy5pZF0gfSksCiAgICBvbkVycm9yOiAoZTogRXJyb3IpID0+IHRvYXN0LmVycm9yKGUubWVzc2FnZSksCiAgfSk7CgogIGNvbnN0IHNhdmVUb3AgPSB1c2VNdXRhdGlvbih7CiAgICBtdXRhdGlvbkZuOiAoaWRzOiBzdHJpbmdbXSkgPT4gc2V0VG9wRnJpZW5kcyh1c2VyIS5pZCwgaWRzKSwKICAgIG9uU3VjY2VzczogKCkgPT4gewogICAgICB2b2lkIHF1ZXJ5Q2xpZW50LmludmFsaWRhdGVRdWVyaWVzKHsgcXVlcnlLZXk6IFsidG9wLWZyaWVuZHMiLCBwcm9maWxlPy5pZF0gfSk7CiAgICAgIHRvYXN0LnN1Y2Nlc3MoIlRvcCA4IGFjdHVhbGl6YWRvIik7CiAgICB9LAogICAgb25FcnJvcjogKGU6IEVycm9yKSA9PiB0b2FzdC5lcnJvcihlLm1lc3NhZ2UpLAogIH0pOwoKICBhc3luYyBmdW5jdGlvbiBoYW5kbGVQaG90b1VwbG9hZChmaWxlOiBGaWxlIHwgdW5kZWZpbmVkLCB0aXRsZTogc3RyaW5nKSB7CiAgICBpZiAoIWZpbGUgfHwgIXVzZXIpIHJldHVybjsKICAgIGlmIChmaWxlLnNpemUgPiA4ICogMTAyNCAqIDEwMjQpIHsKICAgICAgdG9hc3QuZXJyb3IoIkxhIGltYWdlbiBubyBwdWVkZSBwZXNhciBtw6FzIGRlIDggTUIiKTsKICAgICAgcmV0dXJuOwogICAgfQogICAgY29uc3QgcGFyc2VkID0gcGhvdG9TY2hlbWEuc2FmZVBhcnNlKHsgdGl0bGUsIGRlc2NyaXB0aW9uOiAiIiwgaXNfcHJpdmF0ZTogZmFsc2UgfSk7CiAgICBpZiAoIXBhcnNlZC5zdWNjZXNzKSB7CiAgICAgIHRvYXN0LmVycm9yKHBhcnNlZC5lcnJvci5pc3N1ZXNbMF0/Lm1lc3NhZ2UgPz8gIkRhdG9zIG5vIHbDoWxpZG9zIik7CiAgICAgIHJldHVybjsKICAgIH0KICAgIHNldFVwbG9hZGluZyh0cnVlKTsKICAgIHRyeSB7CiAgICAgIGNvbnN0IHBhdGggPSBhd2FpdCB1cGxvYWRNZWRpYSh1c2VyLmlkLCBmaWxlLCAicGhvdG9zIik7CiAgICAgIGNvbnN0IGlkID0gYXdhaXQgY3JlYXRlUGhvdG8oeyB1c2VyX2lkOiB1c2VyLmlkLCBpbWFnZV91cmw6IHBhdGgsIC4uLnBhcnNlZC5kYXRhIH0pOwogICAgICB2b2lkIHF1ZXJ5Q2xpZW50LmludmFsaWRhdGVRdWVyaWVzKHsgcXVlcnlLZXk6IFsicGhvdG9zIiwgdXNlci5pZF0gfSk7CiAgICAgIHRvYXN0LnN1Y2Nlc3MoIkZvdG8gc3ViaWRhIik7CiAgICAgIHZvaWQgbmF2aWdhdGUoeyB0bzogIi9mb3RvLyRwaG90b0lkIiwgcGFyYW1zOiB7IHBob3RvSWQ6IGlkIH0gfSk7CiAgICB9IGNhdGNoIHsKICAgICAgdG9hc3QuZXJyb3IoIk5vIGhlbW9zIHBvZGlkbyBzdWJpciBsYSBmb3RvIik7CiAgICB9IGZpbmFsbHkgewogICAgICBzZXRVcGxvYWRpbmcoZmFsc2UpOwogICAgfQogIH0KCiAgaWYgKHByb2ZpbGVRdWVyeS5pc0xvYWRpbmcpIHsKICAgIHJldHVybiA8ZGl2IGNsYXNzTmFtZT0icC0xMCB0ZXh0LWNlbnRlciB0ZXh0LW11dGVkLWZvcmVncm91bmQiPkNhcmdhbmRvIHBlcmZpbOKApjwvZGl2PjsKICB9CiAgaWYgKCFwcm9maWxlKSB0aHJvdyBub3RGb3VuZCgpOwoKICBjb25zdCBhY2NlbnQgPSBwcm9maWxlLmFjY2VudF9jb2xvcjsKCiAgcmV0dXJuICgKICAgIDxtYWluIGNsYXNzTmFtZT0ibXgtYXV0byBtYXgtdy01eGwgcHgtMyBweS01Ij4KICAgICAgPGhlYWRlciBjbGFzc05hbWU9InBhbmVsIG92ZXJmbG93LWhpZGRlbiIgc3R5bGU9e3sgYmFja2dyb3VuZENvbG9yOiBwcm9maWxlLmJnX2NvbG9yIH19PgogICAgICAgIDxNZWRpYUltYWdlCiAgICAgICAgICBwYXRoPXtwcm9maWxlLmNvdmVyX3VybH0KICAgICAgICAgIGFsdD17YFBvcnRhZGEgZGUgJHtwcm9maWxlLmRpc3BsYXlfbmFtZX1gfQogICAgICAgICAgY2xhc3NOYW1lPSJoLTQwIHctZnVsbCBvYmplY3QtY292ZXIgbWQ6aC01NiIKICAgICAgICAgIGZhbGxiYWNrPXsKICAgICAgICAgICAgPGRpdgogICAgICAgICAgICAgIGNsYXNzTmFtZT0iaC00MCB3LWZ1bGwgbWQ6aC01NiIKICAgICAgICAgICAgICBzdHlsZT17eyBiYWNrZ3JvdW5kOiBgbGluZWFyLWdyYWRpZW50KDEyMGRlZywgJHthY2NlbnR9NTUsIHRyYW5zcGFyZW50KWAgfX0KICAgICAgICAgICAgLz4KICAgICAgICAgIH0KICAgICAgICAvPgogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGZsZXgtd3JhcCBpdGVtcy1lbmQgZ2FwLTQgcC00Ij4KICAgICAgICAgIDxVc2VyQXZhdGFyCiAgICAgICAgICAgIHVzZXJuYW1lPXtwcm9maWxlLnVzZXJuYW1lfQogICAgICAgICAgICBkaXNwbGF5TmFtZT17cHJvZmlsZS5kaXNwbGF5X25hbWV9CiAgICAgICAgICAgIGF2YXRhclBhdGg9e3Byb2ZpbGUuYXZhdGFyX3VybH0KICAgICAgICAgICAgYWNjZW50PXthY2NlbnR9CiAgICAgICAgICAgIHNpemU9ezg4fQogICAgICAgICAgICBsaW5rPXtmYWxzZX0KICAgICAgICAgICAgY2xhc3NOYW1lPSItbXQtMTQgYm9yZGVyLTIiCiAgICAgICAgICAvPgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9Im1pbi13LTAgZmxleC0xIj4KICAgICAgICAgICAgPGgxIGNsYXNzTmFtZT0iZm9udC1kaXNwbGF5IHRleHQtMnhsIGZvbnQtYm9sZCIgc3R5bGU9e3sgY29sb3I6IGFjY2VudCB9fT4KICAgICAgICAgICAgICB7cHJvZmlsZS5kaXNwbGF5X25hbWV9CiAgICAgICAgICAgIDwvaDE+CiAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0idGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmQiPkB7cHJvZmlsZS51c2VybmFtZX08L3A+CiAgICAgICAgICAgIHtwcm9maWxlLm1vb2QgPyA8cCBjbGFzc05hbWU9Im10LTEgdGV4dC1zbSI+4piFIHtwcm9maWxlLm1vb2R9PC9wPiA6IG51bGx9CiAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGdhcC0yIj4KICAgICAgICAgICAge2lzTWUgPyAoCiAgICAgICAgICAgICAgPEJ1dHRvbiBhc0NoaWxkIHZhcmlhbnQ9InNlY29uZGFyeSIgc2l6ZT0ic20iPgogICAgICAgICAgICAgICAgPExpbmsgdG89Ii9hanVzdGVzIj5FZGl0YXIgcGVyZmlsPC9MaW5rPgogICAgICAgICAgICAgIDwvQnV0dG9uPgogICAgICAgICAgICApIDogdXNlciA/ICgKICAgICAgICAgICAgICA8PgogICAgICAgICAgICAgICAgeyFyZWxhdGlvbiA/ICgKICAgICAgICAgICAgICAgICAgPEJ1dHRvbiBzaXplPSJzbSIgb25DbGljaz17KCkgPT4gZnJpZW5kQWN0aW9uLm11dGF0ZSgiYWRkIil9PgogICAgICAgICAgICAgICAgICAgIEHDsWFkaXIgYSBhbWlnb3MKICAgICAgICAgICAgICAgICAgPC9CdXR0b24+CiAgICAgICAgICAgICAgICApIDogcmVsYXRpb24uc3RhdHVzID09PSAiYWNjZXB0ZWQiID8gKAogICAgICAgICAgICAgICAgICA8PgogICAgICAgICAgICAgICAgICAgIDxCdXR0b24gYXNDaGlsZCBzaXplPSJzbSIgdmFyaWFudD0ic2Vjb25kYXJ5Ij4KICAgICAgICAgICAgICAgICAgICAgIDxMaW5rIHRvPSIvbWVuc2FqZXMiIHNlYXJjaD17eyBjb246IHByb2ZpbGUudXNlcm5hbWUgfX0+CiAgICAgICAgICAgICAgICAgICAgICAgIE1lbnNhamUKICAgICAgICAgICAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj4KICAgICAgICAgICAgICAgICAgICA8QnV0dG9uIHNpemU9InNtIiB2YXJpYW50PSJnaG9zdCIgb25DbGljaz17KCkgPT4gZnJpZW5kQWN0aW9uLm11dGF0ZSgiY2FuY2VsIil9PgogICAgICAgICAgICAgICAgICAgICAgUXVpdGFyIGFtaXN0YWQKICAgICAgICAgICAgICAgICAgICA8L0J1dHRvbj4KICAgICAgICAgICAgICAgICAgPC8+CiAgICAgICAgICAgICAgICApIDogcmVsYXRpb24uYWRkcmVzc2VlX2lkID09PSB1c2VyLmlkID8gKAogICAgICAgICAgICAgICAgICA8QnV0dG9uIHNpemU9InNtIiBvbkNsaWNrPXsoKSA9PiBmcmllbmRBY3Rpb24ubXV0YXRlKCJhY2NlcHQiKX0+CiAgICAgICAgICAgICAgICAgICAgQWNlcHRhciBzb2xpY2l0dWQKICAgICAgICAgICAgICAgICAgPC9CdXR0b24+CiAgICAgICAgICAgICAgICApIDogKAogICAgICAgICAgICAgICAgICA8QnV0dG9uIHNpemU9InNtIiB2YXJpYW50PSJzZWNvbmRhcnkiIG9uQ2xpY2s9eygpID0+IGZyaWVuZEFjdGlvbi5tdXRhdGUoImNhbmNlbCIpfT4KICAgICAgICAgICAgICAgICAgICBDYW5jZWxhciBzb2xpY2l0dWQKICAgICAgICAgICAgICAgICAgPC9CdXR0b24+CiAgICAgICAgICAgICAgICApfQogICAgICAgICAgICAgIDwvPgogICAgICAgICAgICApIDogKAogICAgICAgICAgICAgIDxCdXR0b24gYXNDaGlsZCBzaXplPSJzbSI+CiAgICAgICAgICAgICAgICA8TGluayB0bz0iL2F1dGgiIHNlYXJjaD17eyBuZXh0OiAiIiB9fT5FbnRyYSBwYXJhIGludGVyYWN0dWFyPC9MaW5rPgogICAgICAgICAgICAgIDwvQnV0dG9uPgogICAgICAgICAgICApfQogICAgICAgICAgPC9kaXY+CiAgICAgICAgPC9kaXY+CiAgICAgIDwvaGVhZGVyPgoKICAgICAgPGRpdiBjbGFzc05hbWU9Im10LTQgZ3JpZCBnYXAtNCBsZzpncmlkLWNvbHMtWzI4MHB4XzFmcl0iPgogICAgICAgIDxhc2lkZSBjbGFzc05hbWU9InNwYWNlLXktNCI+CiAgICAgICAgICA8c2VjdGlvbiBjbGFzc05hbWU9InBhbmVsIHAtNCI+CiAgICAgICAgICAgIDxoMiBjbGFzc05hbWU9ImZvbnQtZGlzcGxheSB0ZXh0LXNtIGZvbnQtYm9sZCB1cHBlcmNhc2UgdHJhY2tpbmctd2lkZSB0ZXh0LW11dGVkLWZvcmVncm91bmQiPgogICAgICAgICAgICAgIFNvYnJlIG3DrQogICAgICAgICAgICA8L2gyPgogICAgICAgICAgICA8cCBjbGFzc05hbWU9Im10LTIgd2hpdGVzcGFjZS1wcmUtd3JhcCBicmVhay13b3JkcyB0ZXh0LXNtIj4KICAgICAgICAgICAgICB7cHJvZmlsZS5iaW8gfHwgIlRvZGF2w61hIG5vIGhhIGVzY3JpdG8gbmFkYS4ifQogICAgICAgICAgICA8L3A+CiAgICAgICAgICAgIHtwcm9maWxlLmZhdm9yaXRlX3F1b3RlID8gKAogICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0ibXQtMyBib3JkZXItbC0yIHBsLTMgdGV4dC1zbSBpdGFsaWMiIHN0eWxlPXt7IGJvcmRlckNvbG9yOiBhY2NlbnQgfX0+CiAgICAgICAgICAgICAgICDigJx7cHJvZmlsZS5mYXZvcml0ZV9xdW90ZX3igJ0KICAgICAgICAgICAgICA8L3A+CiAgICAgICAgICAgICkgOiBudWxsfQogICAgICAgICAgICA8cCBjbGFzc05hbWU9Im10LTMgdGV4dC14cyB0ZXh0LW11dGVkLWZvcmVncm91bmQiPgogICAgICAgICAgICAgIHtwcm9maWxlLnZpZXdfY291bnR9IHZpc2l0YXMgwrcgZW4gbm9jdHVybm8gZGVzZGV7IiAifQogICAgICAgICAgICAgIHtuZXcgRGF0ZShwcm9maWxlLmNyZWF0ZWRfYXQpLmdldEZ1bGxZZWFyKCl9CiAgICAgICAgICAgIDwvcD4KICAgICAgICAgIDwvc2VjdGlvbj4KCiAgICAgICAgICA8c2VjdGlvbiBjbGFzc05hbWU9InBhbmVsIHAtNCI+CiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4iPgogICAgICAgICAgICAgIDxoMiBjbGFzc05hbWU9ImZvbnQtZGlzcGxheSB0ZXh0LXNtIGZvbnQtYm9sZCB1cHBlcmNhc2UgdHJhY2tpbmctd2lkZSB0ZXh0LW11dGVkLWZvcmVncm91bmQiPgogICAgICAgICAgICAgICAgVG9wIDgKICAgICAgICAgICAgICA8L2gyPgogICAgICAgICAgICAgIHtpc01lID8gKAogICAgICAgICAgICAgICAgPGJ1dHRvbgogICAgICAgICAgICAgICAgICBjbGFzc05hbWU9InRleHQteHMgdW5kZXJsaW5lIGhvdmVyOnRleHQtYWNjZW50IgogICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRFZGl0aW5nVG9wKCh2KSA9PiAhdil9CiAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgIHtlZGl0aW5nVG9wID8gIkNlcnJhciIgOiAiRWRpdGFyIn0KICAgICAgICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAgICAgICkgOiBudWxsfQogICAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICAgIHtlZGl0aW5nVG9wICYmIGlzTWUgPyAoCiAgICAgICAgICAgICAgPFRvcEVkaXRvcgogICAgICAgICAgICAgICAgZnJpZW5kcz17bXlGcmllbmRQcm9maWxlcy5kYXRhID8/IFtdfQogICAgICAgICAgICAgICAgc2VsZWN0ZWQ9e3RvcElkc30KICAgICAgICAgICAgICAgIG9uU2F2ZT17KGlkcykgPT4gewogICAgICAgICAgICAgICAgICBzYXZlVG9wLm11dGF0ZShpZHMpOwogICAgICAgICAgICAgICAgICBzZXRFZGl0aW5nVG9wKGZhbHNlKTsKICAgICAgICAgICAgICAgIH19CiAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgKSA6ICgKICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0ibXQtMyBncmlkIGdyaWQtY29scy00IGdhcC0yIj4KICAgICAgICAgICAgICAgIHsodG9wUHJvZmlsZXMuZGF0YSA/PyBbXSkubGVuZ3RoID09PSAwID8gKAogICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9ImNvbC1zcGFuLTQgdGV4dC14cyB0ZXh0LW11dGVkLWZvcmVncm91bmQiPgogICAgICAgICAgICAgICAgICAgIFNpbiBUb3AgOCB0b2RhdsOtYS4KICAgICAgICAgICAgICAgICAgPC9wPgogICAgICAgICAgICAgICAgKSA6ICgKICAgICAgICAgICAgICAgICAgKHRvcFByb2ZpbGVzLmRhdGEgPz8gW10pLm1hcCgoZikgPT4gKAogICAgICAgICAgICAgICAgICAgIDxkaXYga2V5PXtmLmlkfSBjbGFzc05hbWU9InRleHQtY2VudGVyIj4KICAgICAgICAgICAgICAgICAgICAgIDxVc2VyQXZhdGFyCiAgICAgICAgICAgICAgICAgICAgICAgIHVzZXJuYW1lPXtmLnVzZXJuYW1lfQogICAgICAgICAgICAgICAgICAgICAgICBkaXNwbGF5TmFtZT17Zi5kaXNwbGF5X25hbWV9CiAgICAgICAgICAgICAgICAgICAgICAgIGF2YXRhclBhdGg9e2YuYXZhdGFyX3VybH0KICAgICAgICAgICAgICAgICAgICAgICAgYWNjZW50PXtmLmFjY2VudF9jb2xvcn0KICAgICAgICAgICAgICAgICAgICAgICAgc2l6ZT17NTJ9CiAgICAgICAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJtdC0xIHRydW5jYXRlIHRleHQtWzExcHhdIj57Zi5kaXNwbGF5X25hbWV9PC9wPgogICAgICAgICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgICAgICApKQogICAgICAgICAgICAgICAgKX0KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgKX0KICAgICAgICAgIDwvc2VjdGlvbj4KICAgICAgICA8L2FzaWRlPgoKICAgICAgICA8ZGl2IGNsYXNzTmFtZT0ic3BhY2UteS00Ij4KICAgICAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT0icGFuZWwgcC00Ij4KICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiI+CiAgICAgICAgICAgICAgPGgyIGNsYXNzTmFtZT0iZm9udC1kaXNwbGF5IHRleHQtc20gZm9udC1ib2xkIHVwcGVyY2FzZSB0cmFja2luZy13aWRlIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCI+CiAgICAgICAgICAgICAgICBGb3RvbG9nCiAgICAgICAgICAgICAgPC9oMj4KICAgICAgICAgICAgICB7aXNNZSA/IDxQaG90b1VwbG9hZGVyIGRpc2FibGVkPXt1cGxvYWRpbmd9IG9uVXBsb2FkPXtoYW5kbGVQaG90b1VwbG9hZH0gLz4gOiBudWxsfQogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9Im10LTMgZ3JpZCBncmlkLWNvbHMtMyBnYXAtMiBzbTpncmlkLWNvbHMtNCI+CiAgICAgICAgICAgICAgeyhwaG90b3MuZGF0YSA/PyBbXSkubGVuZ3RoID09PSAwID8gKAogICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJjb2wtc3Bhbi00IHRleHQteHMgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj5TaW4gZm90b3MgdG9kYXbDrWEuPC9wPgogICAgICAgICAgICAgICkgOiAoCiAgICAgICAgICAgICAgICAocGhvdG9zLmRhdGEgPz8gW10pLm1hcCgocGhvdG8pID0+ICgKICAgICAgICAgICAgICAgICAgPExpbmsga2V5PXtwaG90by5pZH0gdG89Ii9mb3RvLyRwaG90b0lkIiBwYXJhbXM9e3sgcGhvdG9JZDogcGhvdG8uaWQgfX0+CiAgICAgICAgICAgICAgICAgICAgPE1lZGlhSW1hZ2UKICAgICAgICAgICAgICAgICAgICAgIHBhdGg9e3Bob3RvLmltYWdlX3VybH0KICAgICAgICAgICAgICAgICAgICAgIGFsdD17cGhvdG8udGl0bGUgfHwgIkZvdG8gZGVsIGZvdG9sb2cifQogICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJhc3BlY3Qtc3F1YXJlIHctZnVsbCByb3VuZGVkLW1kIG9iamVjdC1jb3ZlciB0cmFuc2l0aW9uLW9wYWNpdHkgaG92ZXI6b3BhY2l0eS04MCIKICAgICAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgICA8L0xpbms+CiAgICAgICAgICAgICAgICApKQogICAgICAgICAgICAgICl9CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPC9zZWN0aW9uPgoKICAgICAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT0icGFuZWwgcC00Ij4KICAgICAgICAgICAgPGgyIGNsYXNzTmFtZT0iZm9udC1kaXNwbGF5IHRleHQtc20gZm9udC1ib2xkIHVwcGVyY2FzZSB0cmFja2luZy13aWRlIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCI+CiAgICAgICAgICAgICAgTXVybwogICAgICAgICAgICA8L2gyPgogICAgICAgICAgICB7dXNlciA/ICgKICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0ibXQtMyI+CiAgICAgICAgICAgICAgICA8VGV4dGFyZWEKICAgICAgICAgICAgICAgICAgdmFsdWU9e3dhbGxUZXh0fQogICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldFdhbGxUZXh0KGUudGFyZ2V0LnZhbHVlKX0KICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9e2lzTWUgPyAiRXNjcmliZSBlbiB0dSBtdXJv4oCmIiA6IGBFc2NyaWJlIGEgJHtwcm9maWxlLmRpc3BsYXlfbmFtZX3igKZgfQogICAgICAgICAgICAgICAgICByb3dzPXsyfQogICAgICAgICAgICAgICAgICBtYXhMZW5ndGg9ezUwMH0KICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0ibXQtMiBmbGV4IGp1c3RpZnktZW5kIj4KICAgICAgICAgICAgICAgICAgPEJ1dHRvbiBzaXplPSJzbSIgZGlzYWJsZWQ9e3B1Ymxpc2hXYWxsLmlzUGVuZGluZ30gb25DbGljaz17KCkgPT4gcHVibGlzaFdhbGwubXV0YXRlKCl9PgogICAgICAgICAgICAgICAgICAgIFB1YmxpY2FyCiAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPgogICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICkgOiBudWxsfQoKICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT0ibXQtNCBzcGFjZS15LTMiPgogICAgICAgICAgICAgIHsod2FsbC5kYXRhID8/IFtdKS5sZW5ndGggPT09IDAgPyAoCiAgICAgICAgICAgICAgICA8bGkgY2xhc3NOYW1lPSJ0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCI+RWwgbXVybyBlc3TDoSB2YWPDrW8uPC9saT4KICAgICAgICAgICAgICApIDogKAogICAgICAgICAgICAgICAgKHdhbGwuZGF0YSA/PyBbXSkubWFwKChwb3N0KSA9PiB7CiAgICAgICAgICAgICAgICAgIGNvbnN0IGF1dGhvciA9IHdhbGxBdXRob3JNYXAuZ2V0KHBvc3QuYXV0aG9yX2lkKTsKICAgICAgICAgICAgICAgICAgcmV0dXJuICgKICAgICAgICAgICAgICAgICAgICA8bGkga2V5PXtwb3N0LmlkfSBjbGFzc05hbWU9ImZsZXggZ2FwLTMgYm9yZGVyLWIgYm9yZGVyLWJvcmRlciBwYi0zIGxhc3Q6Ym9yZGVyLTAiPgogICAgICAgICAgICAgICAgICAgICAge2F1dGhvciA/ICgKICAgICAgICAgICAgICAgICAgICAgICAgPFVzZXJBdmF0YXIKICAgICAgICAgICAgICAgICAgICAgICAgICB1c2VybmFtZT17YXV0aG9yLnVzZXJuYW1lfQogICAgICAgICAgICAgICAgICAgICAgICAgIGRpc3BsYXlOYW1lPXthdXRob3IuZGlzcGxheV9uYW1lfQogICAgICAgICAgICAgICAgICAgICAgICAgIGF2YXRhclBhdGg9e2F1dGhvci5hdmF0YXJfdXJsfQogICAgICAgICAgICAgICAgICAgICAgICAgIGFjY2VudD17YXV0aG9yLmFjY2VudF9jb2xvcn0KICAgICAgICAgICAgICAgICAgICAgICAgICBzaXplPXszNn0KICAgICAgICAgICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICAgICAgICAgICkgOiBudWxsfQogICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9Im1pbi13LTAgZmxleC0xIj4KICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJ0ZXh0LXNtIGZvbnQtc2VtaWJvbGQiPgogICAgICAgICAgICAgICAgICAgICAgICAgIHthdXRob3I/LmRpc3BsYXlfbmFtZSA/PyAiQWxndWllbiJ9CiAgICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJtbC0yIHRleHQteHMgZm9udC1ub3JtYWwgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj4KICAgICAgICAgICAgICAgICAgICAgICAgICAgIHt0aW1lQWdvKHBvc3QuY3JlYXRlZF9hdCl9CiAgICAgICAgICAgICAgICAgICAgICAgICAgPC9zcGFuPgogICAgICAgICAgICAgICAgICAgICAgICA8L3A+CiAgICAgICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0id2hpdGVzcGFjZS1wcmUtd3JhcCBicmVhay13b3JkcyB0ZXh0LXNtIHRleHQtZm9yZWdyb3VuZC85MCI+CiAgICAgICAgICAgICAgICAgICAgICAgICAge3Bvc3QuYm9keX0KICAgICAgICAgICAgICAgICAgICAgICAgPC9wPgogICAgICAgICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgICAgICAgICB7dXNlciAmJiAocG9zdC5hdXRob3JfaWQgPT09IHVzZXIuaWQgfHwgaXNNZSkgPyAoCiAgICAgICAgICAgICAgICAgICAgICAgIDxidXR0b24KICAgICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9InNlbGYtc3RhcnQgdGV4dC14cyB0ZXh0LW11dGVkLWZvcmVncm91bmQgaG92ZXI6dGV4dC1kZXN0cnVjdGl2ZSIKICAgICAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiByZW1vdmVXYWxsLm11dGF0ZShwb3N0LmlkKX0KICAgICAgICAgICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICAgICAgICAgIEJvcnJhcgogICAgICAgICAgICAgICAgICAgICAgICA8L2J1dHRvbj4KICAgICAgICAgICAgICAgICAgICAgICkgOiBudWxsfQogICAgICAgICAgICAgICAgICAgIDwvbGk+CiAgICAgICAgICAgICAgICAgICk7CiAgICAgICAgICAgICAgICB9KQogICAgICAgICAgICAgICl9CiAgICAgICAgICAgIDwvdWw+CiAgICAgICAgICA8L3NlY3Rpb24+CiAgICAgICAgPC9kaXY+CiAgICAgIDwvZGl2PgogICAgPC9tYWluPgogICk7Cn0KCmZ1bmN0aW9uIFBob3RvVXBsb2FkZXIoewogIGRpc2FibGVkLAogIG9uVXBsb2FkLAp9OiB7CiAgZGlzYWJsZWQ6IGJvb2xlYW47CiAgb25VcGxvYWQ6IChmaWxlOiBGaWxlIHwgdW5kZWZpbmVkLCB0aXRsZTogc3RyaW5nKSA9PiBQcm9taXNlPHZvaWQ+Owp9KSB7CiAgY29uc3QgW3RpdGxlLCBzZXRUaXRsZV0gPSB1c2VTdGF0ZSgiIik7CiAgcmV0dXJuICgKICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiI+CiAgICAgIDxJbnB1dAogICAgICAgIHZhbHVlPXt0aXRsZX0KICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldFRpdGxlKGUudGFyZ2V0LnZhbHVlKX0KICAgICAgICBwbGFjZWhvbGRlcj0iVMOtdHVsbyIKICAgICAgICBtYXhMZW5ndGg9ezgwfQogICAgICAgIGNsYXNzTmFtZT0iaC04IHctMjgiCiAgICAgICAgYXJpYS1sYWJlbD0iVMOtdHVsbyBkZSBsYSBmb3RvIgogICAgICAvPgogICAgICA8SW5wdXQKICAgICAgICB0eXBlPSJmaWxlIgogICAgICAgIGFjY2VwdD0iaW1hZ2UvKiIKICAgICAgICBkaXNhYmxlZD17ZGlzYWJsZWR9CiAgICAgICAgY2xhc3NOYW1lPSJoLTggdy00MCB0ZXh0LXhzIgogICAgICAgIGFyaWEtbGFiZWw9IlN1YmlyIGZvdG8iCiAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiB2b2lkIG9uVXBsb2FkKGUudGFyZ2V0LmZpbGVzPy5bMF0sIHRpdGxlKX0KICAgICAgLz4KICAgIDwvZGl2PgogICk7Cn0KCmZ1bmN0aW9uIFRvcEVkaXRvcih7CiAgZnJpZW5kcywKICBzZWxlY3RlZCwKICBvblNhdmUsCn06IHsKICBmcmllbmRzOiB7IGlkOiBzdHJpbmc7IGRpc3BsYXlfbmFtZTogc3RyaW5nIH1bXTsKICBzZWxlY3RlZDogc3RyaW5nW107CiAgb25TYXZlOiAoaWRzOiBzdHJpbmdbXSkgPT4gdm9pZDsKfSkgewogIGNvbnN0IFtpZHMsIHNldElkc10gPSB1c2VTdGF0ZTxzdHJpbmdbXT4oc2VsZWN0ZWQpOwoKICBmdW5jdGlvbiB0b2dnbGUoaWQ6IHN0cmluZykgewogICAgc2V0SWRzKChjdXJyZW50KSA9PgogICAgICBjdXJyZW50LmluY2x1ZGVzKGlkKQogICAgICAgID8gY3VycmVudC5maWx0ZXIoKHgpID0+IHggIT09IGlkKQogICAgICAgIDogY3VycmVudC5sZW5ndGggPj0gOAogICAgICAgICAgPyBjdXJyZW50CiAgICAgICAgICA6IFsuLi5jdXJyZW50LCBpZF0sCiAgICApOwogIH0KCiAgcmV0dXJuICgKICAgIDxkaXYgY2xhc3NOYW1lPSJtdC0zIHNwYWNlLXktMiI+CiAgICAgIHtmcmllbmRzLmxlbmd0aCA9PT0gMCA/ICgKICAgICAgICA8cCBjbGFzc05hbWU9InRleHQteHMgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj5Bw7FhZGUgYW1pZ29zIHBhcmEgY3JlYXIgdHUgVG9wIDguPC9wPgogICAgICApIDogKAogICAgICAgIDx1bCBjbGFzc05hbWU9Im1heC1oLTUyIHNwYWNlLXktMSBvdmVyZmxvdy15LWF1dG8iPgogICAgICAgICAge2ZyaWVuZHMubWFwKChmKSA9PiAoCiAgICAgICAgICAgIDxsaSBrZXk9e2YuaWR9PgogICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9ImZsZXggY3Vyc29yLXBvaW50ZXIgaXRlbXMtY2VudGVyIGdhcC0yIHJvdW5kZWQtbWQgcHgtMiBweS0xIHRleHQtc20gaG92ZXI6Ymctc2Vjb25kYXJ5Ij4KICAgICAgICAgICAgICAgIDxpbnB1dAogICAgICAgICAgICAgICAgICB0eXBlPSJjaGVja2JveCIKICAgICAgICAgICAgICAgICAgY2hlY2tlZD17aWRzLmluY2x1ZGVzKGYuaWQpfQogICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KCkgPT4gdG9nZ2xlKGYuaWQpfQogICAgICAgICAgICAgICAgICBjbGFzc05hbWU9ImFjY2VudC1bdmFyKC0tY29sb3ItcHJpbWFyeSldIgogICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0idHJ1bmNhdGUiPntmLmRpc3BsYXlfbmFtZX08L3NwYW4+CiAgICAgICAgICAgICAgPC9sYWJlbD4KICAgICAgICAgICAgPC9saT4KICAgICAgICAgICkpfQogICAgICAgIDwvdWw+CiAgICAgICl9CiAgICAgIDxCdXR0b24gc2l6ZT0ic20iIGNsYXNzTmFtZT0idy1mdWxsIiBvbkNsaWNrPXsoKSA9PiBvblNhdmUoaWRzKX0+CiAgICAgICAgR3VhcmRhciBUb3AgOAogICAgICA8L0J1dHRvbj4KICAgIDwvZGl2PgogICk7Cn0=
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { useSession } from "@/lib/session";
+import {
+  createPhoto,
+  deleteWallPost,
+  getFriendshipsFor,
+  getPhotosByUser,
+  getProfileByUsername,
+  getProfilesByIds,
+  getTopFriends,
+  getWallPosts,
+  postWall,
+  registerProfileView,
+  removeFriendship,
+  respondFriendRequest,
+  sendFriendRequest,
+  setTopFriends,
+} from "@/lib/api";
+import { photoSchema, textPostSchema } from "@/lib/validation";
+import { uploadMedia } from "@/lib/media";
+import { timeAgo } from "@/lib/format";
+import { MediaImage } from "@/components/MediaImage";
+import { UserAvatar } from "@/components/UserAvatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
+export const Route = createFileRoute("/perfil/$username")({
+  head: ({ params }) => ({
+    meta: [
+      { title: `@${params.username} — nocturno` },
+      {
+        name: "description",
+        content: `Perfil de @${params.username} en nocturno: fotolog, muro y amigos.`,
+      },
+      { property: "og:title", content: `@${params.username} — nocturno` },
+      {
+        property: "og:description",
+        content: `Perfil de @${params.username} en nocturno: fotolog, muro y amigos.`,
+      },
+    ],
+  }),
+  component: ProfilePage,
+  notFoundComponent: () => (
+    <main className="mx-auto max-w-md px-4 py-20 text-center">
+      <h1 className="font-display text-2xl font-bold">Ese perfil no existe</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Puede que haya cambiado de nombre de usuario.
+      </p>
+      <Button asChild className="mt-6">
+        <Link to="/gente" search={{ q: "" }}>
+          Buscar gente
+        </Link>
+      </Button>
+    </main>
+  ),
+});
+
+function ProfilePage() {
+  const { username } = Route.useParams();
+  const { user } = useSession();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [wallText, setWallText] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [editingTop, setEditingTop] = useState(false);
+
+  const profileQuery = useQuery({
+    queryKey: ["profile", username],
+    queryFn: () => getProfileByUsername(username),
+  });
+  const profile = profileQuery.data;
+  const isMe = Boolean(user && profile && user.id === profile.id);
+
+  useEffect(() => {
+    if (profile && user && !isMe) void registerProfileView(profile.id);
+  }, [profile, user, isMe]);
+
+  const myFriendships = useQuery({
+    queryKey: ["friendships", user?.id],
+    queryFn: () => getFriendshipsFor(user!.id),
+    enabled: Boolean(user),
+  });
+  const relation = (myFriendships.data ?? []).find(
+    (f) => f.requester_id === profile?.id || f.addressee_id === profile?.id,
+  );
+  const myFriendIds = (myFriendships.data ?? [])
+    .filter((f) => f.status === "accepted")
+    .map((f) => (f.requester_id === user?.id ? f.addressee_id : f.requester_id));
+
+  const photos = useQuery({
+    queryKey: ["photos", profile?.id],
+    queryFn: () => getPhotosByUser(profile!.id),
+    enabled: Boolean(profile),
+  });
+
+  const wall = useQuery({
+    queryKey: ["wall", profile?.id],
+    queryFn: () => getWallPosts(profile!.id),
+    enabled: Boolean(profile),
+  });
+
+  const wallAuthorIds = Array.from(new Set((wall.data ?? []).map((p) => p.author_id)));
+  const wallAuthors = useQuery({
+    queryKey: ["profiles-by-ids", wallAuthorIds],
+    queryFn: () => getProfilesByIds(wallAuthorIds),
+    enabled: wallAuthorIds.length > 0,
+  });
+  const wallAuthorMap = new Map((wallAuthors.data ?? []).map((p) => [p.id, p]));
+
+  const topFriends = useQuery({
+    queryKey: ["top-friends", profile?.id],
+    queryFn: () => getTopFriends(profile!.id),
+    enabled: Boolean(profile),
+  });
+  const topIds = (topFriends.data ?? []).map((t) => t.friend_id);
+  const topProfiles = useQuery({
+    queryKey: ["profiles-by-ids", topIds],
+    queryFn: () => getProfilesByIds(topIds),
+    enabled: topIds.length > 0,
+  });
+  const myFriendProfiles = useQuery({
+    queryKey: ["profiles-by-ids", myFriendIds],
+    queryFn: () => getProfilesByIds(myFriendIds),
+    enabled: isMe && myFriendIds.length > 0,
+  });
+
+  const friendAction = useMutation({
+    mutationFn: async (action: "add" | "cancel" | "accept") => {
+      if (!user || !profile) throw new Error("Inicia sesión para hacer amigos");
+      if (action === "add") await sendFriendRequest(user.id, profile.id);
+      else if (action === "accept" && relation) await respondFriendRequest(relation.id, true);
+      else if (relation) await removeFriendship(relation.id);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["friendships"] });
+      void queryClient.invalidateQueries({ queryKey: ["profile", username] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const publishWall = useMutation({
+    mutationFn: async () => {
+      if (!user || !profile) throw new Error("Inicia sesión para escribir");
+      const parsed = textPostSchema.safeParse(wallText);
+      if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Texto no válido");
+      await postWall(profile.id, user.id, parsed.data);
+    },
+    onSuccess: () => {
+      setWallText("");
+      void queryClient.invalidateQueries({ queryKey: ["wall", profile?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeWall = useMutation({
+    mutationFn: (id: string) => deleteWallPost(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["wall", profile?.id] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const saveTop = useMutation({
+    mutationFn: (ids: string[]) => setTopFriends(user!.id, ids),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["top-friends", profile?.id] });
+      toast.success("Top 8 actualizado");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  async function handlePhotoUpload(file: File | undefined, title: string) {
+    if (!file || !user) return;
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("La imagen no puede pesar más de 8 MB");
+      return;
+    }
+    const parsed = photoSchema.safeParse({ title, description: "", is_private: false });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Datos no válidos");
+      return;
+    }
+    setUploading(true);
+    try {
+      const path = await uploadMedia(user.id, file, "photos");
+      const id = await createPhoto({ user_id: user.id, image_url: path, ...parsed.data });
+      void queryClient.invalidateQueries({ queryKey: ["photos", user.id] });
+      toast.success("Foto subida");
+      void navigate({ to: "/foto/$photoId", params: { photoId: id } });
+    } catch {
+      toast.error("No hemos podido subir la foto");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  if (profileQuery.isLoading) {
+    return <div className="p-10 text-center text-muted-foreground">Cargando perfil…</div>;
+  }
+  if (!profile) throw notFound();
+
+  const accent = profile.accent_color;
+
+  return (
+    <main className="mx-auto max-w-5xl px-3 py-5">
+      <header className="panel overflow-hidden" style={{ backgroundColor: profile.bg_color }}>
+        <MediaImage
+          path={profile.cover_url}
+          alt={`Portada de ${profile.display_name}`}
+          className="h-40 w-full object-cover md:h-56"
+          fallback={
+            <div
+              className="h-40 w-full md:h-56"
+              style={{ background: `linear-gradient(120deg, ${accent}55, transparent)` }}
+            />
+          }
+        />
+        <div className="flex flex-wrap items-end gap-4 p-4">
+          <UserAvatar
+            username={profile.username}
+            displayName={profile.display_name}
+            avatarPath={profile.avatar_url}
+            accent={accent}
+            size={88}
+            link={false}
+            className="-mt-14 border-2"
+          />
+          <div className="min-w-0 flex-1">
+            <h1 className="font-display text-2xl font-bold" style={{ color: accent }}>
+              {profile.display_name}
+            </h1>
+            <p className="text-sm text-muted-foreground">@{profile.username}</p>
+            {profile.mood ? <p className="mt-1 text-sm">★ {profile.mood}</p> : null}
+          </div>
+          <div className="flex gap-2">
+            {isMe ? (
+              <Button asChild variant="secondary" size="sm">
+                <Link to="/ajustes">Editar perfil</Link>
+              </Button>
+            ) : user ? (
+              <>
+                {!relation ? (
+                  <Button size="sm" onClick={() => friendAction.mutate("add")}>
+                    Añadir a amigos
+                  </Button>
+                ) : relation.status === "accepted" ? (
+                  <>
+                    <Button asChild size="sm" variant="secondary">
+                      <Link to="/mensajes" search={{ con: profile.username }}>
+                        Mensaje
+                      </Link>
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => friendAction.mutate("cancel")}>
+                      Quitar amistad
+                    </Button>
+                  </>
+                ) : relation.addressee_id === user.id ? (
+                  <Button size="sm" onClick={() => friendAction.mutate("accept")}>
+                    Aceptar solicitud
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="secondary" onClick={() => friendAction.mutate("cancel")}>
+                    Cancelar solicitud
+                  </Button>
+                )}
+              </>
+            ) : (
+              <Button asChild size="sm">
+                <Link to="/auth" search={{ next: "" }}>Entra para interactuar</Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[280px_1fr]">
+        <aside className="space-y-4">
+          <section className="panel p-4">
+            <h2 className="font-display text-sm font-bold uppercase tracking-wide text-muted-foreground">
+              Sobre mí
+            </h2>
+            <p className="mt-2 whitespace-pre-wrap break-words text-sm">
+              {profile.bio || "Todavía no ha escrito nada."}
+            </p>
+            {profile.favorite_quote ? (
+              <p className="mt-3 border-l-2 pl-3 text-sm italic" style={{ borderColor: accent }}>
+                “{profile.favorite_quote}”
+              </p>
+            ) : null}
+            <p className="mt-3 text-xs text-muted-foreground">
+              {profile.view_count} visitas · en nocturno desde{" "}
+              {new Date(profile.created_at).getFullYear()}
+            </p>
+          </section>
+
+          <section className="panel p-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                Top 8
+              </h2>
+              {isMe ? (
+                <button
+                  className="text-xs underline hover:text-accent"
+                  onClick={() => setEditingTop((v) => !v)}
+                >
+                  {editingTop ? "Cerrar" : "Editar"}
+                </button>
+              ) : null}
+            </div>
+
+            {editingTop && isMe ? (
+              <TopEditor
+                friends={myFriendProfiles.data ?? []}
+                selected={topIds}
+                onSave={(ids) => {
+                  saveTop.mutate(ids);
+                  setEditingTop(false);
+                }}
+              />
+            ) : (
+              <div className="mt-3 grid grid-cols-4 gap-2">
+                {(topProfiles.data ?? []).length === 0 ? (
+                  <p className="col-span-4 text-xs text-muted-foreground">
+                    Sin Top 8 todavía.
+                  </p>
+                ) : (
+                  (topProfiles.data ?? []).map((f) => (
+                    <div key={f.id} className="text-center">
+                      <UserAvatar
+                        username={f.username}
+                        displayName={f.display_name}
+                        avatarPath={f.avatar_url}
+                        accent={f.accent_color}
+                        size={52}
+                      />
+                      <p className="mt-1 truncate text-[11px]">{f.display_name}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </section>
+        </aside>
+
+        <div className="space-y-4">
+          <section className="panel p-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                Fotolog
+              </h2>
+              {isMe ? <PhotoUploader disabled={uploading} onUpload={handlePhotoUpload} /> : null}
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {(photos.data ?? []).length === 0 ? (
+                <p className="col-span-4 text-xs text-muted-foreground">Sin fotos todavía.</p>
+              ) : (
+                (photos.data ?? []).map((photo) => (
+                  <Link key={photo.id} to="/foto/$photoId" params={{ photoId: photo.id }}>
+                    <MediaImage
+                      path={photo.image_url}
+                      alt={photo.title || "Foto del fotolog"}
+                      className="aspect-square w-full rounded-md object-cover transition-opacity hover:opacity-80"
+                    />
+                  </Link>
+                ))
+              )}
+            </div>
+          </section>
+
+          <section className="panel p-4">
+            <h2 className="font-display text-sm font-bold uppercase tracking-wide text-muted-foreground">
+              Muro
+            </h2>
+            {user ? (
+              <div className="mt-3">
+                <Textarea
+                  value={wallText}
+                  onChange={(e) => setWallText(e.target.value)}
+                  placeholder={isMe ? "Escribe en tu muro…" : `Escribe a ${profile.display_name}…`}
+                  rows={2}
+                  maxLength={500}
+                />
+                <div className="mt-2 flex justify-end">
+                  <Button size="sm" disabled={publishWall.isPending} onClick={() => publishWall.mutate()}>
+                    Publicar
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            <ul className="mt-4 space-y-3">
+              {(wall.data ?? []).length === 0 ? (
+                <li className="text-xs text-muted-foreground">El muro está vacío.</li>
+              ) : (
+                (wall.data ?? []).map((post) => {
+                  const author = wallAuthorMap.get(post.author_id);
+                  return (
+                    <li key={post.id} className="flex gap-3 border-b border-border pb-3 last:border-0">
+                      {author ? (
+                        <UserAvatar
+                          username={author.username}
+                          displayName={author.display_name}
+                          avatarPath={author.avatar_url}
+                          accent={author.accent_color}
+                          size={36}
+                        />
+                      ) : null}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold">
+                          {author?.display_name ?? "Alguien"}
+                          <span className="ml-2 text-xs font-normal text-muted-foreground">
+                            {timeAgo(post.created_at)}
+                          </span>
+                        </p>
+                        <p className="whitespace-pre-wrap break-words text-sm text-foreground/90">
+                          {post.body}
+                        </p>
+                      </div>
+                      {user && (post.author_id === user.id || isMe) ? (
+                        <button
+                          className="self-start text-xs text-muted-foreground hover:text-destructive"
+                          onClick={() => removeWall.mutate(post.id)}
+                        >
+                          Borrar
+                        </button>
+                      ) : null}
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function PhotoUploader({
+  disabled,
+  onUpload,
+}: {
+  disabled: boolean;
+  onUpload: (file: File | undefined, title: string) => Promise<void>;
+}) {
+  const [title, setTitle] = useState("");
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Título"
+        maxLength={80}
+        className="h-8 w-28"
+        aria-label="Título de la foto"
+      />
+      <Input
+        type="file"
+        accept="image/*"
+        disabled={disabled}
+        className="h-8 w-40 text-xs"
+        aria-label="Subir foto"
+        onChange={(e) => void onUpload(e.target.files?.[0], title)}
+      />
+    </div>
+  );
+}
+
+function TopEditor({
+  friends,
+  selected,
+  onSave,
+}: {
+  friends: { id: string; display_name: string }[];
+  selected: string[];
+  onSave: (ids: string[]) => void;
+}) {
+  const [ids, setIds] = useState<string[]>(selected);
+
+  function toggle(id: string) {
+    setIds((current) =>
+      current.includes(id)
+        ? current.filter((x) => x !== id)
+        : current.length >= 8
+          ? current
+          : [...current, id],
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-2">
+      {friends.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Añade amigos para crear tu Top 8.</p>
+      ) : (
+        <ul className="max-h-52 space-y-1 overflow-y-auto">
+          {friends.map((f) => (
+            <li key={f.id}>
+              <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-secondary">
+                <input
+                  type="checkbox"
+                  checked={ids.includes(f.id)}
+                  onChange={() => toggle(f.id)}
+                  className="accent-[var(--color-primary)]"
+                />
+                <span className="truncate">{f.display_name}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Button size="sm" className="w-full" onClick={() => onSave(ids)}>
+        Guardar Top 8
+      </Button>
+    </div>
+  );
+}

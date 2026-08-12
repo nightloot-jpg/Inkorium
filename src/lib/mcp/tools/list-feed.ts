@@ -1,1 +1,26 @@
-aW1wb3J0IHsgZGVmaW5lVG9vbCB9IGZyb20gIkBsb3ZhYmxlLmRldi9tY3AtanMiOwppbXBvcnQgeyB6IH0gZnJvbSAiem9kIjsKaW1wb3J0IHsgbm90QXV0aGVudGljYXRlZCwgc3VwYWJhc2VGb3JVc2VyIH0gZnJvbSAiLi4vc3VwYWJhc2UiOwoKZXhwb3J0IGRlZmF1bHQgZGVmaW5lVG9vbCh7CiAgbmFtZTogImxpc3RfZmVlZCIsCiAgdGl0bGU6ICJWZXIgZWwgZmVlZCIsCiAgZGVzY3JpcHRpb246ICJMaXN0YSBsb3MgZXN0YWRvcyBtw6FzIHJlY2llbnRlcyB2aXNpYmxlcyBwYXJhIGxhIHBlcnNvbmEgY29uZWN0YWRhLCBjb24gc3UgYXV0b3IuIiwKICBpbnB1dFNjaGVtYTogeyBsaW1pdDogei5udW1iZXIoKS5pbnQoKS5vcHRpb25hbCgpLmRlc2NyaWJlKCJDdcOhbnRvcyBlc3RhZG9zIGRldm9sdmVyIChwb3IgZGVmZWN0byAyMCwgbcOheGltbyA1MCkiKSB9LAogIGFubm90YXRpb25zOiB7IHJlYWRPbmx5SGludDogdHJ1ZSwgaWRlbXBvdGVudEhpbnQ6IHRydWUsIG9wZW5Xb3JsZEhpbnQ6IGZhbHNlIH0sCiAgaGFuZGxlcjogYXN5bmMgKHsgbGltaXQgfSwgY3R4KSA9PiB7CiAgICBpZiAoIWN0eC5pc0F1dGhlbnRpY2F0ZWQoKSkgcmV0dXJuIG5vdEF1dGhlbnRpY2F0ZWQoKTsKICAgIGNvbnN0IHRha2UgPSBNYXRoLm1pbihNYXRoLm1heChsaW1pdCA/PyAyMCwgMSksIDUwKTsKICAgIGNvbnN0IHN1cGFiYXNlID0gc3VwYWJhc2VGb3JVc2VyKGN0eCk7CiAgICBjb25zdCB7IGRhdGEsIGVycm9yIH0gPSBhd2FpdCBzdXBhYmFzZQogICAgICAuZnJvbSgic3RhdHVzX3VwZGF0ZXMiKQogICAgICAuc2VsZWN0KCJpZCwgYm9keSwgY3JlYXRlZF9hdCwgcHJvZmlsZXM6dXNlcl9pZCAodXNlcm5hbWUsIGRpc3BsYXlfbmFtZSkiKQogICAgICAub3JkZXIoImNyZWF0ZWRfYXQiLCB7IGFzY2VuZGluZzogZmFsc2UgfSkKICAgICAgLmxpbWl0KHRha2UpOwogICAgaWYgKGVycm9yKSByZXR1cm4geyBjb250ZW50OiBbeyB0eXBlOiAidGV4dCIsIHRleHQ6IGVycm9yLm1lc3NhZ2UgfV0sIGlzRXJyb3I6IHRydWUgfTsKICAgIHJldHVybiB7CiAgICAgIGNvbnRlbnQ6IFt7IHR5cGU6ICJ0ZXh0IiwgdGV4dDogSlNPTi5zdHJpbmdpZnkoZGF0YSA/PyBbXSkgfV0sCiAgICAgIHN0cnVjdHVyZWRDb250ZW50OiB7IGl0ZW1zOiBkYXRhID8/IFtdIH0sCiAgICB9OwogIH0sCn0pOw==
+import { defineTool } from "@lovable.dev/mcp-js";
+import { z } from "zod";
+import { notAuthenticated, supabaseForUser } from "../supabase";
+
+export default defineTool({
+  name: "list_feed",
+  title: "Ver el feed",
+  description: "Lista los estados más recientes visibles para la persona conectada, con su autor.",
+  inputSchema: { limit: z.number().int().optional().describe("Cuántos estados devolver (por defecto 20, máximo 50)") },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    const take = Math.min(Math.max(limit ?? 20, 1), 50);
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase
+      .from("status_updates")
+      .select("id, body, created_at, profiles:user_id (username, display_name)")
+      .order("created_at", { ascending: false })
+      .limit(take);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { items: data ?? [] },
+    };
+  },
+});

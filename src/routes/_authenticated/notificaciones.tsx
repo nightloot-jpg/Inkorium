@@ -1,1 +1,142 @@
-aW1wb3J0IHsgY3JlYXRlRmlsZVJvdXRlLCBMaW5rIH0gZnJvbSAiQHRhbnN0YWNrL3JlYWN0LXJvdXRlciI7CmltcG9ydCB7IHVzZVF1ZXJ5LCB1c2VRdWVyeUNsaWVudCB9IGZyb20gIkB0YW5zdGFjay9yZWFjdC1xdWVyeSI7CmltcG9ydCB7IHVzZUVmZmVjdCB9IGZyb20gInJlYWN0IjsKCmltcG9ydCB7IHVzZVNlc3Npb24gfSBmcm9tICJAL2xpYi9zZXNzaW9uIjsKaW1wb3J0IHsgZ2V0Tm90aWZpY2F0aW9ucywgZ2V0UHJvZmlsZXNCeUlkcywgbWFya05vdGlmaWNhdGlvbnNSZWFkIH0gZnJvbSAiQC9saWIvYXBpIjsKaW1wb3J0IHsgdGltZUFnbyB9IGZyb20gIkAvbGliL2Zvcm1hdCI7CmltcG9ydCB7IFVzZXJBdmF0YXIgfSBmcm9tICJAL2NvbXBvbmVudHMvVXNlckF2YXRhciI7CgpleHBvcnQgY29uc3QgUm91dGUgPSBjcmVhdGVGaWxlUm91dGUoIi9fYXV0aGVudGljYXRlZC9ub3RpZmljYWNpb25lcyIpKHsKICBoZWFkOiAoKSA9PiAoewogICAgbWV0YTogWwogICAgICB7IHRpdGxlOiAiTm90aWZpY2FjaW9uZXMg4oCUIG5vY3R1cm5vIiB9LAogICAgICB7IG5hbWU6ICJkZXNjcmlwdGlvbiIsIGNvbnRlbnQ6ICJUb2RvIGxvIHF1ZSBoYSBwYXNhZG8gZW4gdHUgcGVyZmlsLCB0dSBtdXJvIHkgdHUgZm90b2xvZy4iIH0sCiAgICAgIHsgcHJvcGVydHk6ICJvZzp0aXRsZSIsIGNvbnRlbnQ6ICJOb3RpZmljYWNpb25lcyDigJQgbm9jdHVybm8iIH0sCiAgICAgIHsgcHJvcGVydHk6ICJvZzpkZXNjcmlwdGlvbiIsIGNvbnRlbnQ6ICJUb2RvIGxvIHF1ZSBoYSBwYXNhZG8gZW4gdHUgcGVyZmlsIHkgdHUgZm90b2xvZy4iIH0sCiAgICBdLAogIH0pLAogIGNvbXBvbmVudDogTm90aWZpY2F0aW9uc1BhZ2UsCn0pOwoKY29uc3QgTEFCRUxTOiBSZWNvcmQ8c3RyaW5nLCBzdHJpbmc+ID0gewogIGZyaWVuZF9yZXF1ZXN0OiAidGUgaGEgZW52aWFkbyB1bmEgc29saWNpdHVkIGRlIGFtaXN0YWQiLAogIGZyaWVuZF9hY2NlcHQ6ICJoYSBhY2VwdGFkbyB0dSBzb2xpY2l0dWQgZGUgYW1pc3RhZCIsCiAgZnJpZW5kX2FjY2VwdGVkOiAiaGEgYWNlcHRhZG8gdHUgc29saWNpdHVkIGRlIGFtaXN0YWQiLAogIHBob3RvX2NvbW1lbnQ6ICJoYSBjb21lbnRhZG8gdHUgZm90byIsCiAgcGhvdG9fbGlrZTogImxlIGhhIGd1c3RhZG8gdHUgZm90byIsCiAgcGhvdG9fdGFnOiAidGUgaGEgZXRpcXVldGFkbyBlbiB1bmEgZm90byIsCiAgcGhvdG9fbmV3OiAiaGEgc3ViaWRvIHVuYSBmb3RvIG51ZXZhIiwKICB3YWxsX3Bvc3Q6ICJoYSBlc2NyaXRvIGVuIHR1IG11cm8iLAogIG1lc3NhZ2U6ICJ0ZSBoYSBlbnZpYWRvIHVuIG1lbnNhamUiLAp9OwoKY29uc3QgUEhPVE9fVFlQRVMgPSBuZXcgU2V0KFsicGhvdG9fY29tbWVudCIsICJwaG90b19saWtlIiwgInBob3RvX3RhZyIsICJwaG90b19uZXciXSk7CgpmdW5jdGlvbiBOb3RpZmljYXRpb25zUGFnZSgpIHsKICBjb25zdCB7IHVzZXIgfSA9IHVzZVNlc3Npb24oKTsKICBjb25zdCBxdWVyeUNsaWVudCA9IHVzZVF1ZXJ5Q2xpZW50KCk7CgogIGNvbnN0IG5vdGlmaWNhdGlvbnMgPSB1c2VRdWVyeSh7CiAgICBxdWVyeUtleTogWyJub3RpZmljYXRpb25zIiwgdXNlcj8uaWRdLAogICAgcXVlcnlGbjogKCkgPT4gZ2V0Tm90aWZpY2F0aW9ucyh1c2VyIS5pZCksCiAgICBlbmFibGVkOiBCb29sZWFuKHVzZXIpLAogIH0pOwoKICBjb25zdCBhY3RvcklkcyA9IEFycmF5LmZyb20oCiAgICBuZXcgU2V0KChub3RpZmljYXRpb25zLmRhdGEgPz8gW10pLm1hcCgobikgPT4gbi5hY3Rvcl9pZCkuZmlsdGVyKCh2KTogdiBpcyBzdHJpbmcgPT4gQm9vbGVhbih2KSkpLAogICk7CiAgY29uc3QgYWN0b3JzID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsicHJvZmlsZXMtYnktaWRzIiwgYWN0b3JJZHNdLAogICAgcXVlcnlGbjogKCkgPT4gZ2V0UHJvZmlsZXNCeUlkcyhhY3RvcklkcyksCiAgICBlbmFibGVkOiBhY3Rvcklkcy5sZW5ndGggPiAwLAogIH0pOwogIGNvbnN0IGFjdG9yTWFwID0gbmV3IE1hcCgoYWN0b3JzLmRhdGEgPz8gW10pLm1hcCgocCkgPT4gW3AuaWQsIHBdKSk7CgogIHVzZUVmZmVjdCgoKSA9PiB7CiAgICBpZiAoIXVzZXIgfHwgIW5vdGlmaWNhdGlvbnMuZGF0YT8uc29tZSgobikgPT4gIW4ucmVhZCkpIHJldHVybjsKICAgIHZvaWQgbWFya05vdGlmaWNhdGlvbnNSZWFkKHVzZXIuaWQpLnRoZW4oKCkgPT4KICAgICAgcXVlcnlDbGllbnQuaW52YWxpZGF0ZVF1ZXJpZXMoeyBxdWVyeUtleTogWyJub3RpZmljYXRpb25zIiwgdXNlci5pZF0gfSksCiAgICApOwogIH0sIFt1c2VyLCBub3RpZmljYXRpb25zLmRhdGEsIHF1ZXJ5Q2xpZW50XSk7CgogIHJldHVybiAoCiAgICA8bWFpbiBjbGFzc05hbWU9Im14LWF1dG8gbWF4LXctMnhsIHB4LTQgcHktOCI+CiAgICAgIDxoMSBjbGFzc05hbWU9ImZvbnQtZGlzcGxheSB0ZXh0LTJ4bCBmb250LWJvbGQiPk5vdGlmaWNhY2lvbmVzPC9oMT4KICAgICAgPHVsIGNsYXNzTmFtZT0ibXQtNSBzcGFjZS15LTIiPgogICAgICAgIHsobm90aWZpY2F0aW9ucy5kYXRhID8/IFtdKS5sZW5ndGggPT09IDAgPyAoCiAgICAgICAgICA8bGkgY2xhc3NOYW1lPSJwYW5lbCBwLTYgdGV4dC1jZW50ZXIgdGV4dC1zbSB0ZXh0LW11dGVkLWZvcmVncm91bmQiPgogICAgICAgICAgICBUb2RhdsOtYSBubyB0aWVuZXMgbm90aWZpY2FjaW9uZXMuCiAgICAgICAgICA8L2xpPgogICAgICAgICkgOiAoCiAgICAgICAgICAobm90aWZpY2F0aW9ucy5kYXRhID8/IFtdKS5tYXAoKG4pID0+IHsKICAgICAgICAgICAgY29uc3QgYWN0b3IgPSBuLmFjdG9yX2lkID8gYWN0b3JNYXAuZ2V0KG4uYWN0b3JfaWQpIDogdW5kZWZpbmVkOwogICAgICAgICAgICByZXR1cm4gKAogICAgICAgICAgICAgIDxsaQogICAgICAgICAgICAgICAga2V5PXtuLmlkfQogICAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgcGFuZWwgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTMgcC0zICR7bi5yZWFkID8gIiIgOiAiZ2xvdy1hY2NlbnQifWB9CiAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAge2FjdG9yID8gKAogICAgICAgICAgICAgICAgICA8VXNlckF2YXRhcgogICAgICAgICAgICAgICAgICAgIHVzZXJuYW1lPXthY3Rvci51c2VybmFtZX0KICAgICAgICAgICAgICAgICAgICBkaXNwbGF5TmFtZT17YWN0b3IuZGlzcGxheV9uYW1lfQogICAgICAgICAgICAgICAgICAgIGF2YXRhclBhdGg9e2FjdG9yLmF2YXRhcl91cmx9CiAgICAgICAgICAgICAgICAgICAgYWNjZW50PXthY3Rvci5hY2NlbnRfY29sb3J9CiAgICAgICAgICAgICAgICAgICAgc2l6ZT17MzZ9CiAgICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgICApIDogbnVsbH0KICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0ibWluLXctMCBmbGV4LTEgdGV4dC1zbSI+CiAgICAgICAgICAgICAgICAgIHthY3RvciA/ICgKICAgICAgICAgICAgICAgICAgICA8TGluawogICAgICAgICAgICAgICAgICAgICAgdG89Ii9wZXJmaWwvJHVzZXJuYW1lIgogICAgICAgICAgICAgICAgICAgICAgcGFyYW1zPXt7IHVzZXJuYW1lOiBhY3Rvci51c2VybmFtZSB9fQogICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJmb250LXNlbWlib2xkIGhvdmVyOnRleHQtYWNjZW50IgogICAgICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgICAgIHthY3Rvci5kaXNwbGF5X25hbWV9CiAgICAgICAgICAgICAgICAgICAgPC9MaW5rPgogICAgICAgICAgICAgICAgICApIDogKAogICAgICAgICAgICAgICAgICAgICJBbGd1aWVuIgogICAgICAgICAgICAgICAgICApfXsiICJ9CiAgICAgICAgICAgICAgICAgIHtMQUJFTFNbbi50eXBlXSA/PyAiaGEgaW50ZXJhY3R1YWRvIGNvbnRpZ28ifQogICAgICAgICAgICAgICAgICB7UEhPVE9fVFlQRVMuaGFzKG4udHlwZSkgJiYgbi5lbnRpdHlfaWQgPyAoCiAgICAgICAgICAgICAgICAgICAgPD4KICAgICAgICAgICAgICAgICAgICAgIHsiICJ9CiAgICAgICAgICAgICAgICAgICAgICA8TGluawogICAgICAgICAgICAgICAgICAgICAgICB0bz0iL2ZvdG8vJHBob3RvSWQiCiAgICAgICAgICAgICAgICAgICAgICAgIHBhcmFtcz17eyBwaG90b0lkOiBuLmVudGl0eV9pZCB9fQogICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9InVuZGVybGluZSBob3Zlcjp0ZXh0LWFjY2VudCIKICAgICAgICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgICAgICAgVmVyIGZvdG8KICAgICAgICAgICAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgICAgICAgICA8Lz4KICAgICAgICAgICAgICAgICAgKSA6IG51bGx9CiAgICAgICAgICAgICAgICAgIHtuLnR5cGUgPT09ICJtZXNzYWdlIiAmJiBhY3RvciA/ICgKICAgICAgICAgICAgICAgICAgICA8PgogICAgICAgICAgICAgICAgICAgICAgeyIgIn0KICAgICAgICAgICAgICAgICAgICAgIDxMaW5rCiAgICAgICAgICAgICAgICAgICAgICAgIHRvPSIvbWVuc2FqZXMiCiAgICAgICAgICAgICAgICAgICAgICAgIHNlYXJjaD17eyBjb246IGFjdG9yLnVzZXJuYW1lIH19CiAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0idW5kZXJsaW5lIGhvdmVyOnRleHQtYWNjZW50IgogICAgICAgICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICAgICAgICBSZXNwb25kZXIKICAgICAgICAgICAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgICAgICAgICA8Lz4KICAgICAgICAgICAgICAgICAgKSA6IG51bGx9CiAgICAgICAgICAgICAgICAgIHtuLnR5cGUgPT09ICJmcmllbmRfcmVxdWVzdCIgPyAoCiAgICAgICAgICAgICAgICAgICAgPD4KICAgICAgICAgICAgICAgICAgICAgIHsiICJ9CiAgICAgICAgICAgICAgICAgICAgICA8TGluayB0bz0iL2FtaWdvcyIgY2xhc3NOYW1lPSJ1bmRlcmxpbmUgaG92ZXI6dGV4dC1hY2NlbnQiPgogICAgICAgICAgICAgICAgICAgICAgICBWZXIgc29saWNpdHVkZXMKICAgICAgICAgICAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgICAgICAgICA8Lz4KICAgICAgICAgICAgICAgICAgKSA6IG51bGx9CiAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0ibWwtMiB0ZXh0LXhzIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCI+e3RpbWVBZ28obi5jcmVhdGVkX2F0KX08L3NwYW4+CiAgICAgICAgICAgICAgICA8L3A+CiAgICAgICAgICAgICAgPC9saT4KICAgICAgICAgICAgKTsKICAgICAgICAgIH0pCiAgICAgICAgKX0KICAgICAgPC91bD4KICAgIDwvbWFpbj4KICApOwp9
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+
+import { useSession } from "@/lib/session";
+import { getNotifications, getProfilesByIds, markNotificationsRead } from "@/lib/api";
+import { timeAgo } from "@/lib/format";
+import { UserAvatar } from "@/components/UserAvatar";
+
+export const Route = createFileRoute("/_authenticated/notificaciones")({
+  head: () => ({
+    meta: [
+      { title: "Notificaciones — nocturno" },
+      { name: "description", content: "Todo lo que ha pasado en tu perfil, tu muro y tu fotolog." },
+      { property: "og:title", content: "Notificaciones — nocturno" },
+      { property: "og:description", content: "Todo lo que ha pasado en tu perfil y tu fotolog." },
+    ],
+  }),
+  component: NotificationsPage,
+});
+
+const LABELS: Record<string, string> = {
+  friend_request: "te ha enviado una solicitud de amistad",
+  friend_accept: "ha aceptado tu solicitud de amistad",
+  friend_accepted: "ha aceptado tu solicitud de amistad",
+  photo_comment: "ha comentado tu foto",
+  photo_like: "le ha gustado tu foto",
+  photo_tag: "te ha etiquetado en una foto",
+  photo_new: "ha subido una foto nueva",
+  wall_post: "ha escrito en tu muro",
+  message: "te ha enviado un mensaje",
+};
+
+const PHOTO_TYPES = new Set(["photo_comment", "photo_like", "photo_tag", "photo_new"]);
+
+function NotificationsPage() {
+  const { user } = useSession();
+  const queryClient = useQueryClient();
+
+  const notifications = useQuery({
+    queryKey: ["notifications", user?.id],
+    queryFn: () => getNotifications(user!.id),
+    enabled: Boolean(user),
+  });
+
+  const actorIds = Array.from(
+    new Set((notifications.data ?? []).map((n) => n.actor_id).filter((v): v is string => Boolean(v))),
+  );
+  const actors = useQuery({
+    queryKey: ["profiles-by-ids", actorIds],
+    queryFn: () => getProfilesByIds(actorIds),
+    enabled: actorIds.length > 0,
+  });
+  const actorMap = new Map((actors.data ?? []).map((p) => [p.id, p]));
+
+  useEffect(() => {
+    if (!user || !notifications.data?.some((n) => !n.read)) return;
+    void markNotificationsRead(user.id).then(() =>
+      queryClient.invalidateQueries({ queryKey: ["notifications", user.id] }),
+    );
+  }, [user, notifications.data, queryClient]);
+
+  return (
+    <main className="mx-auto max-w-2xl px-4 py-8">
+      <h1 className="font-display text-2xl font-bold">Notificaciones</h1>
+      <ul className="mt-5 space-y-2">
+        {(notifications.data ?? []).length === 0 ? (
+          <li className="panel p-6 text-center text-sm text-muted-foreground">
+            Todavía no tienes notificaciones.
+          </li>
+        ) : (
+          (notifications.data ?? []).map((n) => {
+            const actor = n.actor_id ? actorMap.get(n.actor_id) : undefined;
+            return (
+              <li
+                key={n.id}
+                className={`panel flex items-center gap-3 p-3 ${n.read ? "" : "glow-accent"}`}
+              >
+                {actor ? (
+                  <UserAvatar
+                    username={actor.username}
+                    displayName={actor.display_name}
+                    avatarPath={actor.avatar_url}
+                    accent={actor.accent_color}
+                    size={36}
+                  />
+                ) : null}
+                <p className="min-w-0 flex-1 text-sm">
+                  {actor ? (
+                    <Link
+                      to="/perfil/$username"
+                      params={{ username: actor.username }}
+                      className="font-semibold hover:text-accent"
+                    >
+                      {actor.display_name}
+                    </Link>
+                  ) : (
+                    "Alguien"
+                  )}{" "}
+                  {LABELS[n.type] ?? "ha interactuado contigo"}
+                  {PHOTO_TYPES.has(n.type) && n.entity_id ? (
+                    <>
+                      {" "}
+                      <Link
+                        to="/foto/$photoId"
+                        params={{ photoId: n.entity_id }}
+                        className="underline hover:text-accent"
+                      >
+                        Ver foto
+                      </Link>
+                    </>
+                  ) : null}
+                  {n.type === "message" && actor ? (
+                    <>
+                      {" "}
+                      <Link
+                        to="/mensajes"
+                        search={{ con: actor.username }}
+                        className="underline hover:text-accent"
+                      >
+                        Responder
+                      </Link>
+                    </>
+                  ) : null}
+                  {n.type === "friend_request" ? (
+                    <>
+                      {" "}
+                      <Link to="/amigos" className="underline hover:text-accent">
+                        Ver solicitudes
+                      </Link>
+                    </>
+                  ) : null}
+                  <span className="ml-2 text-xs text-muted-foreground">{timeAgo(n.created_at)}</span>
+                </p>
+              </li>
+            );
+          })
+        )}
+      </ul>
+    </main>
+  );
+}

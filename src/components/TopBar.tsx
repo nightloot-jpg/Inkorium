@@ -1,1 +1,197 @@
-aW1wb3J0IHsgTGluaywgdXNlTmF2aWdhdGUsIHVzZVJvdXRlclN0YXRlIH0gZnJvbSAiQHRhbnN0YWNrL3JlYWN0LXJvdXRlciI7CmltcG9ydCB7IHVzZVF1ZXJ5LCB1c2VRdWVyeUNsaWVudCB9IGZyb20gIkB0YW5zdGFjay9yZWFjdC1xdWVyeSI7CmltcG9ydCB7IHVzZUVmZmVjdCwgdXNlU3RhdGUgfSBmcm9tICJyZWFjdCI7CmltcG9ydCB7IEJlbGwsIExvZ091dCwgU2VhcmNoIH0gZnJvbSAibHVjaWRlLXJlYWN0IjsKCmltcG9ydCB7IHN1cGFiYXNlIH0gZnJvbSAiQC9pbnRlZ3JhdGlvbnMvc3VwYWJhc2UvY2xpZW50IjsKaW1wb3J0IHsgdXNlU2Vzc2lvbiB9IGZyb20gIkAvbGliL3Nlc3Npb24iOwppbXBvcnQgeyBnZXRBbGxNZXNzYWdlcywgZ2V0TXlQcm9maWxlLCBnZXROb3RpZmljYXRpb25zIH0gZnJvbSAiQC9saWIvYXBpIjsKaW1wb3J0IHsgVXNlckF2YXRhciB9IGZyb20gIkAvY29tcG9uZW50cy9Vc2VyQXZhdGFyIjsKaW1wb3J0IHsgQnV0dG9uIH0gZnJvbSAiQC9jb21wb25lbnRzL3VpL2J1dHRvbiI7CgpleHBvcnQgZnVuY3Rpb24gVG9wQmFyKCkgewogIGNvbnN0IHsgdXNlciB9ID0gdXNlU2Vzc2lvbigpOwogIGNvbnN0IG5hdmlnYXRlID0gdXNlTmF2aWdhdGUoKTsKICBjb25zdCBxdWVyeUNsaWVudCA9IHVzZVF1ZXJ5Q2xpZW50KCk7CiAgY29uc3QgW3Rlcm0sIHNldFRlcm1dID0gdXNlU3RhdGUoIiIpOwogIGNvbnN0IHBhdGhuYW1lID0gdXNlUm91dGVyU3RhdGUoeyBzZWxlY3Q6IChzKSA9PiBzLmxvY2F0aW9uLnBhdGhuYW1lIH0pOwoKICBjb25zdCBwcm9maWxlID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsibXktcHJvZmlsZSIsIHVzZXI/LmlkXSwKICAgIHF1ZXJ5Rm46ICgpID0+IGdldE15UHJvZmlsZSh1c2VyIS5pZCksCiAgICBlbmFibGVkOiBCb29sZWFuKHVzZXIpLAogIH0pOwoKICBjb25zdCBub3RpZmljYXRpb25zID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsibm90aWZpY2F0aW9ucyIsIHVzZXI/LmlkXSwKICAgIHF1ZXJ5Rm46ICgpID0+IGdldE5vdGlmaWNhdGlvbnModXNlciEuaWQpLAogICAgZW5hYmxlZDogQm9vbGVhbih1c2VyKSwKICB9KTsKCiAgY29uc3QgbWVzc2FnZXMgPSB1c2VRdWVyeSh7CiAgICBxdWVyeUtleTogWyJtZXNzYWdlcyIsIHVzZXI/LmlkXSwKICAgIHF1ZXJ5Rm46ICgpID0+IGdldEFsbE1lc3NhZ2VzKHVzZXIhLmlkKSwKICAgIGVuYWJsZWQ6IEJvb2xlYW4odXNlciksCiAgfSk7CgogIHVzZUVmZmVjdCgoKSA9PiB7CiAgICBpZiAoIXVzZXIpIHJldHVybjsKICAgIGNvbnN0IGNoYW5uZWwgPSBzdXBhYmFzZQogICAgICAuY2hhbm5lbCgidG9wYmFyLWxpdmUiKQogICAgICAub24oCiAgICAgICAgInBvc3RncmVzX2NoYW5nZXMiLAogICAgICAgIHsgZXZlbnQ6ICIqIiwgc2NoZW1hOiAicHVibGljIiwgdGFibGU6ICJub3RpZmljYXRpb25zIiwgZmlsdGVyOiBgdXNlcl9pZD1lcS4ke3VzZXIuaWR9YCB9LAogICAgICAgICgpID0+IHF1ZXJ5Q2xpZW50LmludmFsaWRhdGVRdWVyaWVzKHsgcXVlcnlLZXk6IFsibm90aWZpY2F0aW9ucyIsIHVzZXIuaWRdIH0pLAogICAgICApCiAgICAgIC5vbigKICAgICAgICAicG9zdGdyZXNfY2hhbmdlcyIsCiAgICAgICAgeyBldmVudDogIioiLCBzY2hlbWE6ICJwdWJsaWMiLCB0YWJsZTogIm1lc3NhZ2VzIiB9LAogICAgICAgICgpID0+IHF1ZXJ5Q2xpZW50LmludmFsaWRhdGVRdWVyaWVzKHsgcXVlcnlLZXk6IFsibWVzc2FnZXMiXSB9KSwKICAgICAgKQogICAgICAuc3Vic2NyaWJlKCk7CiAgICByZXR1cm4gKCkgPT4gewogICAgICB2b2lkIHN1cGFiYXNlLnJlbW92ZUNoYW5uZWwoY2hhbm5lbCk7CiAgICB9OwogIH0sIFt1c2VyLCBxdWVyeUNsaWVudF0pOwoKICBjb25zdCB1bnJlYWROb3RpZnMgPSAobm90aWZpY2F0aW9ucy5kYXRhID8/IFtdKS5maWx0ZXIoKG4pID0+ICFuLnJlYWQpLmxlbmd0aDsKICBjb25zdCB1bnJlYWRNc2dzID0gKG1lc3NhZ2VzLmRhdGEgPz8gW10pLmZpbHRlcigKICAgIChtKSA9PiBtLnJlY2lwaWVudF9pZCA9PT0gdXNlcj8uaWQgJiYgIW0ucmVhZF9hdCwKICApLmxlbmd0aDsKCiAgYXN5bmMgZnVuY3Rpb24gc2lnbk91dCgpIHsKICAgIGF3YWl0IHF1ZXJ5Q2xpZW50LmNhbmNlbFF1ZXJpZXMoKTsKICAgIHF1ZXJ5Q2xpZW50LmNsZWFyKCk7CiAgICBhd2FpdCBzdXBhYmFzZS5hdXRoLnNpZ25PdXQoKTsKICAgIHZvaWQgbmF2aWdhdGUoeyB0bzogIi9hdXRoIiwgc2VhcmNoOiB7IG5leHQ6ICIiIH0sIHJlcGxhY2U6IHRydWUgfSk7CiAgfQoKICBpZiAocGF0aG5hbWUgPT09ICIvYXV0aCIpIHJldHVybiBudWxsOwoKICByZXR1cm4gKAogICAgPGhlYWRlciBjbGFzc05hbWU9InQtYmFyIHN0aWNreSB0b3AtMCB6LTQwIj4KICAgICAgPGRpdiBjbGFzc05hbWU9Im14LWF1dG8gZmxleCBoLTExIG1heC13LTZ4bCBpdGVtcy1zdHJldGNoIGdhcC0xIHB4LTMiPgogICAgICAgIDxMaW5rIHRvPSIvIiBjbGFzc05hbWU9ImZsZXggaXRlbXMtY2VudGVyIHByLTQgdGV4dC1sZyBmb250LWJvbGQgbG93ZXJjYXNlIHRyYWNraW5nLXRpZ2h0Ij4KICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0ibXItMSB0ZXh0LVtva2xjaCgwLjlfMC4xN18xNjUpXSI+Oyk8L3NwYW4+bm9jdHVybm8KICAgICAgICA8L0xpbms+CgogICAgICAgIHt1c2VyID8gKAogICAgICAgICAgPD4KICAgICAgICAgICAgPG5hdiBjbGFzc05hbWU9ImhpZGRlbiBpdGVtcy1zdHJldGNoIHNtOmZsZXgiPgogICAgICAgICAgICAgIDxUYWIgdG89Ii8iPkluaWNpbzwvVGFiPgogICAgICAgICAgICAgIHtwcm9maWxlLmRhdGEgPyAoCiAgICAgICAgICAgICAgICA8TGluawogICAgICAgICAgICAgICAgICB0bz0iL3BlcmZpbC8kdXNlcm5hbWUiCiAgICAgICAgICAgICAgICAgIHBhcmFtcz17eyB1c2VybmFtZTogcHJvZmlsZS5kYXRhLnVzZXJuYW1lIH19CiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0idC10YWIiCiAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgIFBlcmZpbAogICAgICAgICAgICAgICAgPC9MaW5rPgogICAgICAgICAgICAgICkgOiBudWxsfQogICAgICAgICAgICAgIDxUYWIgdG89Ii9tZW5zYWplcyIgYmFkZ2U9e3VucmVhZE1zZ3N9PgogICAgICAgICAgICAgICAgTWVuc2FqZXMKICAgICAgICAgICAgICA8L1RhYj4KICAgICAgICAgICAgICA8VGFiIHRvPSIvZm90b3MiPkZvdG9zPC9UYWI+CiAgICAgICAgICAgICAgPFRhYiB0bz0iL2V2ZW50b3MiPkV2ZW50b3M8L1RhYj4KICAgICAgICAgICAgICA8VGFiIHRvPSIvZ2VudGUiPkdlbnRlPC9UYWI+CiAgICAgICAgICAgICAgPFRhYiB0bz0iL2FtaWdvcyI+QW1pZ29zPC9UYWI+CiAgICAgICAgICAgIDwvbmF2PgoKICAgICAgICAgICAgPGZvcm0KICAgICAgICAgICAgICBjbGFzc05hbWU9InJlbGF0aXZlIG1sLWF1dG8gaGlkZGVuIGl0ZW1zLWNlbnRlciBzbTpmbGV4IgogICAgICAgICAgICAgIG9uU3VibWl0PXsoZSkgPT4gewogICAgICAgICAgICAgICAgZS5wcmV2ZW50RGVmYXVsdCgpOwogICAgICAgICAgICAgICAgdm9pZCBuYXZpZ2F0ZSh7IHRvOiAiL2dlbnRlIiwgc2VhcmNoOiB7IHE6IHRlcm0udHJpbSgpIH0gfSk7CiAgICAgICAgICAgICAgfX0KICAgICAgICAgICAgPgogICAgICAgICAgICAgIDxpbnB1dAogICAgICAgICAgICAgICAgdmFsdWU9e3Rlcm19CiAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldFRlcm0oZS50YXJnZXQudmFsdWUpfQogICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9IkJ1c2NhcuKApiIKICAgICAgICAgICAgICAgIG1heExlbmd0aD17NDB9CiAgICAgICAgICAgICAgICBhcmlhLWxhYmVsPSJCdXNjYXIgZ2VudGUiCiAgICAgICAgICAgICAgICBjbGFzc05hbWU9InQtaW5wdXQgaC02IHctNDQgcHItNyIKICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgIDxidXR0b24KICAgICAgICAgICAgICAgIHR5cGU9InN1Ym1pdCIKICAgICAgICAgICAgICAgIGFyaWEtbGFiZWw9IkJ1c2NhciIKICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0iYWJzb2x1dGUgcmlnaHQtMSB0ZXh0LVtva2xjaCgwLjU1XzAuMDNfMjUwKV0iCiAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgPFNlYXJjaCBjbGFzc05hbWU9ImgtMy41IHctMy41IiAvPgogICAgICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAgICA8L2Zvcm0+CgogICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0ibWwtYXV0byBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiBzbTptbC0yIj4KICAgICAgICAgICAgICA8TGluawogICAgICAgICAgICAgICAgdG89Ii9ub3RpZmljYWNpb25lcyIKICAgICAgICAgICAgICAgIGFyaWEtbGFiZWw9Ik5vdGlmaWNhY2lvbmVzIgogICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJyZWxhdGl2ZSBpbmxpbmUtZmxleCBpdGVtcy1jZW50ZXIgcm91bmRlZCBweC0yIHB5LTEgaG92ZXI6YmctW29rbGNoKDFfMF8wXy9fMTIlKV0iCiAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgPEJlbGwgY2xhc3NOYW1lPSJoLTQgdy00IiAvPgogICAgICAgICAgICAgICAge3VucmVhZE5vdGlmcyA/ICgKICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJ0LWJhZGdlIGFic29sdXRlIC1yaWdodC0xIHRvcC0wIj4KICAgICAgICAgICAgICAgICAgICB7dW5yZWFkTm90aWZzID4gOSA/ICI5KyIgOiB1bnJlYWROb3RpZnN9CiAgICAgICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgICAgICkgOiBudWxsfQogICAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgICB7cHJvZmlsZS5kYXRhID8gKAogICAgICAgICAgICAgICAgPFVzZXJBdmF0YXIKICAgICAgICAgICAgICAgICAgdXNlcm5hbWU9e3Byb2ZpbGUuZGF0YS51c2VybmFtZX0KICAgICAgICAgICAgICAgICAgZGlzcGxheU5hbWU9e3Byb2ZpbGUuZGF0YS5kaXNwbGF5X25hbWV9CiAgICAgICAgICAgICAgICAgIGF2YXRhclBhdGg9e3Byb2ZpbGUuZGF0YS5hdmF0YXJfdXJsfQogICAgICAgICAgICAgICAgICBhY2NlbnQ9e3Byb2ZpbGUuZGF0YS5hY2NlbnRfY29sb3J9CiAgICAgICAgICAgICAgICAgIHNpemU9ezI2fQogICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICApIDogbnVsbH0KICAgICAgICAgICAgICA8YnV0dG9uCiAgICAgICAgICAgICAgICB0eXBlPSJidXR0b24iCiAgICAgICAgICAgICAgICBhcmlhLWxhYmVsPSJDZXJyYXIgc2VzacOzbiIKICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHZvaWQgc2lnbk91dCgpfQogICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJpbmxpbmUtZmxleCBpdGVtcy1jZW50ZXIgcm91bmRlZCBweC0yIHB5LTEgaG92ZXI6YmctW29rbGNoKDFfMF8wXy9fMTIlKV0iCiAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgPExvZ091dCBjbGFzc05hbWU9ImgtNCB3LTQiIC8+CiAgICAgICAgICAgICAgPC9idXR0b24+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPC8+CiAgICAgICAgKSA6ICgKICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJtbC1hdXRvIGZsZXggaXRlbXMtY2VudGVyIj4KICAgICAgICAgICAgPEJ1dHRvbiBhc0NoaWxkIHNpemU9InNtIj4KICAgICAgICAgICAgICA8TGluayB0bz0iL2F1dGgiIHNlYXJjaD17eyBuZXh0OiAiIiB9fT5FbnRyYXI8L0xpbms+CiAgICAgICAgICAgIDwvQnV0dG9uPgogICAgICAgICAgPC9kaXY+CiAgICAgICAgKX0KICAgICAgPC9kaXY+CiAgICA8L2hlYWRlcj4KICApOwp9CgpmdW5jdGlvbiBUYWIoewogIHRvLAogIGJhZGdlLAogIGNoaWxkcmVuLAp9OiB7CiAgdG86ICIvIiB8ICIvYW1pZ29zIiB8ICIvbWVuc2FqZXMiIHwgIi9nZW50ZSIgfCAiL2ZvdG9zIiB8ICIvZXZlbnRvcyI7CiAgYmFkZ2U/OiBudW1iZXI7CiAgY2hpbGRyZW46IFJlYWN0LlJlYWN0Tm9kZTsKfSkgewogIGNvbnN0IHNlYXJjaCA9CiAgICB0byA9PT0gIi9tZW5zYWplcyIKICAgICAgPyB7IGNvbjogIiIgfQogICAgICA6IHRvID09PSAiL2dlbnRlIgogICAgICAgID8geyBxOiAiIiB9CiAgICAgICAgOiB0byA9PT0gIi9mb3RvcyIKICAgICAgICAgID8geyB0YWI6ICJtaWFzIiBhcyBjb25zdCB9CiAgICAgICAgICA6IHVuZGVmaW5lZDsKICByZXR1cm4gKAogICAgPExpbmsKICAgICAgdG89e3RvfQogICAgICB7Li4uKHNlYXJjaCA/IHsgc2VhcmNoIH0gOiB7fSl9CiAgICAgIGNsYXNzTmFtZT0idC10YWIiCiAgICAgIGFjdGl2ZU9wdGlvbnM9e3sgZXhhY3Q6IHRvID09PSAiLyIgfX0KICAgICAgYWN0aXZlUHJvcHM9e3sgY2xhc3NOYW1lOiAidC10YWIgdC10YWItYWN0aXZlIiB9fQogICAgPgogICAgICB7Y2hpbGRyZW59CiAgICAgIHtiYWRnZSA/IDxzcGFuIGNsYXNzTmFtZT0idC1iYWRnZSI+e2JhZGdlID4gOSA/ICI5KyIgOiBiYWRnZX08L3NwYW4+IDogbnVsbH0KICAgIDwvTGluaz4KICApOwp9
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { Bell, LogOut, Search } from "lucide-react";
+
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/lib/session";
+import { getAllMessages, getMyProfile, getNotifications } from "@/lib/api";
+import { UserAvatar } from "@/components/UserAvatar";
+import { Button } from "@/components/ui/button";
+
+export function TopBar() {
+  const { user } = useSession();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [term, setTerm] = useState("");
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const profile = useQuery({
+    queryKey: ["my-profile", user?.id],
+    queryFn: () => getMyProfile(user!.id),
+    enabled: Boolean(user),
+  });
+
+  const notifications = useQuery({
+    queryKey: ["notifications", user?.id],
+    queryFn: () => getNotifications(user!.id),
+    enabled: Boolean(user),
+  });
+
+  const messages = useQuery({
+    queryKey: ["messages", user?.id],
+    queryFn: () => getAllMessages(user!.id),
+    enabled: Boolean(user),
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("topbar-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => queryClient.invalidateQueries({ queryKey: ["notifications", user.id] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages" },
+        () => queryClient.invalidateQueries({ queryKey: ["messages"] }),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
+
+  const unreadNotifs = (notifications.data ?? []).filter((n) => !n.read).length;
+  const unreadMsgs = (messages.data ?? []).filter(
+    (m) => m.recipient_id === user?.id && !m.read_at,
+  ).length;
+
+  async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    void navigate({ to: "/auth", search: { next: "" }, replace: true });
+  }
+
+  if (pathname === "/auth") return null;
+
+  return (
+    <header className="t-bar sticky top-0 z-40">
+      <div className="mx-auto flex h-11 max-w-6xl items-stretch gap-1 px-3">
+        <Link to="/" className="flex items-center pr-4 text-lg font-bold lowercase tracking-tight">
+          <span className="mr-1 text-[oklch(0.9_0.17_165)]">;)</span>nocturno
+        </Link>
+
+        {user ? (
+          <>
+            <nav className="hidden items-stretch sm:flex">
+              <Tab to="/">Inicio</Tab>
+              {profile.data ? (
+                <Link
+                  to="/perfil/$username"
+                  params={{ username: profile.data.username }}
+                  className="t-tab"
+                >
+                  Perfil
+                </Link>
+              ) : null}
+              <Tab to="/mensajes" badge={unreadMsgs}>
+                Mensajes
+              </Tab>
+              <Tab to="/fotos">Fotos</Tab>
+              <Tab to="/eventos">Eventos</Tab>
+              <Tab to="/gente">Gente</Tab>
+              <Tab to="/amigos">Amigos</Tab>
+            </nav>
+
+            <form
+              className="relative ml-auto hidden items-center sm:flex"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void navigate({ to: "/gente", search: { q: term.trim() } });
+              }}
+            >
+              <input
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+                placeholder="Buscar…"
+                maxLength={40}
+                aria-label="Buscar gente"
+                className="t-input h-6 w-44 pr-7"
+              />
+              <button
+                type="submit"
+                aria-label="Buscar"
+                className="absolute right-1 text-[oklch(0.55_0.03_250)]"
+              >
+                <Search className="h-3.5 w-3.5" />
+              </button>
+            </form>
+
+            <div className="ml-auto flex items-center gap-2 sm:ml-2">
+              <Link
+                to="/notificaciones"
+                aria-label="Notificaciones"
+                className="relative inline-flex items-center rounded px-2 py-1 hover:bg-[oklch(1_0_0_/_12%)]"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadNotifs ? (
+                  <span className="t-badge absolute -right-1 top-0">
+                    {unreadNotifs > 9 ? "9+" : unreadNotifs}
+                  </span>
+                ) : null}
+              </Link>
+              {profile.data ? (
+                <UserAvatar
+                  username={profile.data.username}
+                  displayName={profile.data.display_name}
+                  avatarPath={profile.data.avatar_url}
+                  accent={profile.data.accent_color}
+                  size={26}
+                />
+              ) : null}
+              <button
+                type="button"
+                aria-label="Cerrar sesión"
+                onClick={() => void signOut()}
+                className="inline-flex items-center rounded px-2 py-1 hover:bg-[oklch(1_0_0_/_12%)]"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="ml-auto flex items-center">
+            <Button asChild size="sm">
+              <Link to="/auth" search={{ next: "" }}>Entrar</Link>
+            </Button>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+
+function Tab({
+  to,
+  badge,
+  children,
+}: {
+  to: "/" | "/amigos" | "/mensajes" | "/gente" | "/fotos" | "/eventos";
+  badge?: number;
+  children: React.ReactNode;
+}) {
+  const search =
+    to === "/mensajes"
+      ? { con: "" }
+      : to === "/gente"
+        ? { q: "" }
+        : to === "/fotos"
+          ? { tab: "mias" as const }
+          : undefined;
+  return (
+    <Link
+      to={to}
+      {...(search ? { search } : {})}
+      className="t-tab"
+      activeOptions={{ exact: to === "/" }}
+      activeProps={{ className: "t-tab t-tab-active" }}
+    >
+      {children}
+      {badge ? <span className="t-badge">{badge > 9 ? "9+" : badge}</span> : null}
+    </Link>
+  );
+}

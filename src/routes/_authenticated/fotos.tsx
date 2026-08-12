@@ -1,1 +1,526 @@
-aW1wb3J0IHsgY3JlYXRlRmlsZVJvdXRlLCBMaW5rLCB1c2VOYXZpZ2F0ZSB9IGZyb20gIkB0YW5zdGFjay9yZWFjdC1yb3V0ZXIiOwppbXBvcnQgeyB1c2VSZWYsIHVzZVN0YXRlIH0gZnJvbSAicmVhY3QiOwppbXBvcnQgeyB1c2VNdXRhdGlvbiwgdXNlUXVlcnksIHVzZVF1ZXJ5Q2xpZW50IH0gZnJvbSAiQHRhbnN0YWNrL3JlYWN0LXF1ZXJ5IjsKaW1wb3J0IHsgdG9hc3QgfSBmcm9tICJzb25uZXIiOwppbXBvcnQgeyBDYW1lcmEsIENoZXZyb25Eb3duLCBJbWFnZXMsIExvY2ssIFNlYXJjaCwgVGFnLCBVcGxvYWQgfSBmcm9tICJsdWNpZGUtcmVhY3QiOwoKaW1wb3J0IHsgU2lkZU1lbnUgfSBmcm9tICJAL2NvbXBvbmVudHMvU2lkZU1lbnUiOwppbXBvcnQgeyBNZWRpYUltYWdlIH0gZnJvbSAiQC9jb21wb25lbnRzL01lZGlhSW1hZ2UiOwppbXBvcnQgeyBDYWxlbmRhcldpZGdldCB9IGZyb20gIkAvY29tcG9uZW50cy9DYWxlbmRhcldpZGdldCI7CmltcG9ydCB7IHVzZVNlc3Npb24gfSBmcm9tICJAL2xpYi9zZXNzaW9uIjsKaW1wb3J0IHsgdXBsb2FkTWVkaWEgfSBmcm9tICJAL2xpYi9tZWRpYSI7CmltcG9ydCB7CiAgY3JlYXRlUGhvdG8sCiAgZ2V0QWxidW1zQnlVc2VyLAogIGdldFBob3Rvc0J5SWRzLAogIGdldFBob3Rvc0J5VXNlciwKICBnZXRQcm9maWxlc0J5SWRzLAogIGdldFRhZ3NCeVRhZ2dlciwKICBnZXRUYWdzV2hlcmVUYWdnZWQsCiAgcmVtb3ZlUGhvdG9UYWcsCiAgdHlwZSBQaG90bywKfSBmcm9tICJAL2xpYi9hcGkiOwppbXBvcnQgeyBwaG90b1NjaGVtYSB9IGZyb20gIkAvbGliL3ZhbGlkYXRpb24iOwoKdHlwZSBUYWIgPSAibWlhcyIgfCAic2FsZ28iIHwgImV0aXF1ZXRhcyI7CgpleHBvcnQgY29uc3QgUm91dGUgPSBjcmVhdGVGaWxlUm91dGUoIi9fYXV0aGVudGljYXRlZC9mb3RvcyIpKHsKICB2YWxpZGF0ZVNlYXJjaDogKHNlYXJjaDogUmVjb3JkPHN0cmluZywgdW5rbm93bj4pOiB7IHRhYjogVGFiIH0gPT4gewogICAgY29uc3QgdGFiID0gc2VhcmNoWyd0YWInXTsKICAgIHJldHVybiB7IHRhYjogdGFiID09PSAic2FsZ28iIHx8IHRhYiA9PT0gImV0aXF1ZXRhcyIgPyB0YWIgOiAibWlhcyIgfTsKICB9LAogIGhlYWQ6ICgpID0+ICh7CiAgICBtZXRhOiBbCiAgICAgIHsgdGl0bGU6ICJNaXMgZm90b3Mg4oCUIG5vY3R1cm5vIiB9LAogICAgICB7CiAgICAgICAgbmFtZTogImRlc2NyaXB0aW9uIiwKICAgICAgICBjb250ZW50OgogICAgICAgICAgIlN1YmUgZm90b3MsIG3DrXJhbGFzIHRvZGFzLCBkZXNjdWJyZSBlbiBjdcOhbGVzIHNhbGVzIGV0aXF1ZXRhZG8geSBnZXN0aW9uYSB0dXMgZXRpcXVldGFzLiIsCiAgICAgIH0sCiAgICAgIHsgcHJvcGVydHk6ICJvZzp0aXRsZSIsIGNvbnRlbnQ6ICJNaXMgZm90b3Mg4oCUIG5vY3R1cm5vIiB9LAogICAgICB7CiAgICAgICAgcHJvcGVydHk6ICJvZzpkZXNjcmlwdGlvbiIsCiAgICAgICAgY29udGVudDogIlR1IGZvdG9sb2c6IHN1YmlkYXMsIGZvdG9zIGVuIGxhcyBxdWUgc2FsZXMgeSBldGlxdWV0YXMuIiwKICAgICAgfSwKICAgICAgeyBwcm9wZXJ0eTogIm9nOnR5cGUiLCBjb250ZW50OiAid2Vic2l0ZSIgfSwKICAgICAgeyBuYW1lOiAidHdpdHRlcjpjYXJkIiwgY29udGVudDogInN1bW1hcnkiIH0sCiAgICBdLAogIH0pLAogIGNvbXBvbmVudDogRm90b3NQYWdlLAp9KTsKCmZ1bmN0aW9uIFBob3RvR3JpZCh7CiAgcGhvdG9zLAogIGVtcHR5LAogIHZpZXcsCn06IHsKICBwaG90b3M6IFBob3RvW107CiAgZW1wdHk6IHN0cmluZzsKICB2aWV3OiAiQ3VhZHLDrWN1bGEiIHwgIkxpc3RhIjsKfSkgewogIGlmIChwaG90b3MubGVuZ3RoID09PSAwKSB7CiAgICByZXR1cm4gKAogICAgICA8cCBjbGFzc05hbWU9ImNvbC1zcGFuLWZ1bGwgcHktOCB0ZXh0LWNlbnRlciB0ZXh0LVsxMnB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPntlbXB0eX08L3A+CiAgICApOwogIH0KICBpZiAodmlldyA9PT0gIkxpc3RhIikgewogICAgcmV0dXJuICgKICAgICAgPD4KICAgICAgICB7cGhvdG9zLm1hcCgocCkgPT4gKAogICAgICAgICAgPExpbmsKICAgICAgICAgICAga2V5PXtwLmlkfQogICAgICAgICAgICB0bz0iL2ZvdG8vJHBob3RvSWQiCiAgICAgICAgICAgIHBhcmFtcz17eyBwaG90b0lkOiBwLmlkIH19CiAgICAgICAgICAgIGNsYXNzTmFtZT0iY29sLXNwYW4tZnVsbCBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMyByb3VuZGVkLW1kIGJvcmRlciBib3JkZXItW3ZhcigtLXQtbGluZSldIGJnLXdoaXRlIHAtMiIKICAgICAgICAgID4KICAgICAgICAgICAgPE1lZGlhSW1hZ2UKICAgICAgICAgICAgICBwYXRoPXtwLmltYWdlX3VybH0KICAgICAgICAgICAgICBhbHQ9e3AudGl0bGUgfHwgIkZvdG8ifQogICAgICAgICAgICAgIGNsYXNzTmFtZT0iaC0xMiB3LTE2IG9iamVjdC1jb3ZlciIKICAgICAgICAgICAgICBmYWxsYmFjaz17PHNwYW4gY2xhc3NOYW1lPSJibG9jayBoLTEyIHctMTYgYmctW29rbGNoKDAuOTNfMC4wMl8yNDUpXSIgLz59CiAgICAgICAgICAgIC8+CiAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0ibWluLXctMCBmbGV4LTEiPgogICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0iYmxvY2sgdHJ1bmNhdGUgdGV4dC1bMTJweF0gZm9udC1ib2xkIHRleHQtW3ZhcigtLXQtaW5rKV0iPgogICAgICAgICAgICAgICAge3AudGl0bGUgfHwgIlNpbiB0w610dWxvIn0KICAgICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJibG9jayB0ZXh0LVsxMHB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPgogICAgICAgICAgICAgICAge25ldyBEYXRlKHAuY3JlYXRlZF9hdCkudG9Mb2NhbGVEYXRlU3RyaW5nKCJlcy1FUyIpfQogICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgPC9zcGFuPgogICAgICAgICAgICB7cC5pc19wcml2YXRlID8gPExvY2sgc2l6ZT17MTF9IGNsYXNzTmFtZT0idGV4dC1bdmFyKC0tdC1pbmstc29mdCldIiAvPiA6IG51bGx9CiAgICAgICAgICA8L0xpbms+CiAgICAgICAgKSl9CiAgICAgIDwvPgogICAgKTsKICB9CiAgcmV0dXJuICgKICAgIDw+CiAgICAgIHtwaG90b3MubWFwKChwKSA9PiAoCiAgICAgICAgPExpbmsKICAgICAgICAgIGtleT17cC5pZH0KICAgICAgICAgIHRvPSIvZm90by8kcGhvdG9JZCIKICAgICAgICAgIHBhcmFtcz17eyBwaG90b0lkOiBwLmlkIH19CiAgICAgICAgICBjbGFzc05hbWU9ImJsb2NrIG92ZXJmbG93LWhpZGRlbiByb3VuZGVkLW1kIGJvcmRlciBib3JkZXItW3ZhcigtLXQtbGluZSldIGJnLXdoaXRlIgogICAgICAgID4KICAgICAgICAgIDxNZWRpYUltYWdlCiAgICAgICAgICAgIHBhdGg9e3AuaW1hZ2VfdXJsfQogICAgICAgICAgICBhbHQ9e3AudGl0bGUgfHwgIkZvdG8ifQogICAgICAgICAgICBjbGFzc05hbWU9ImgtMjggdy1mdWxsIG9iamVjdC1jb3ZlciIKICAgICAgICAgICAgZmFsbGJhY2s9ewogICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGgtMjggdy1mdWxsIGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBiZy1bb2tsY2goMC45M18wLjAyXzI0NSldIj4KICAgICAgICAgICAgICAgIDxJbWFnZXMgc2l6ZT17MjB9IGNsYXNzTmFtZT0idGV4dC1bdmFyKC0tdC1pbmstc29mdCldIiAvPgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICB9CiAgICAgICAgICAvPgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9InAtMS41Ij4KICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJ0cnVuY2F0ZSB0ZXh0LVsxMXB4XSBmb250LWJvbGQgdGV4dC1bdmFyKC0tdC1pbmspXSI+CiAgICAgICAgICAgICAge3AudGl0bGUgfHwgIlNpbiB0w610dWxvIn0KICAgICAgICAgICAgPC9wPgogICAgICAgICAgICA8cCBjbGFzc05hbWU9ImZsZXggaXRlbXMtY2VudGVyIGdhcC0xIHRleHQtWzEwcHhdIHRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSI+CiAgICAgICAgICAgICAge25ldyBEYXRlKHAuY3JlYXRlZF9hdCkudG9Mb2NhbGVEYXRlU3RyaW5nKCJlcy1FUyIpfQogICAgICAgICAgICAgIHtwLmlzX3ByaXZhdGUgPyA8TG9jayBzaXplPXs5fSAvPiA6IG51bGx9CiAgICAgICAgICAgIDwvcD4KICAgICAgICAgIDwvZGl2PgogICAgICAgIDwvTGluaz4KICAgICAgKSl9CiAgICA8Lz4KICApOwp9CgpmdW5jdGlvbiBGb3Rvc1BhZ2UoKSB7CiAgY29uc3QgeyB1c2VyIH0gPSB1c2VTZXNzaW9uKCk7CiAgY29uc3QgeyB0YWIgfSA9IFJvdXRlLnVzZVNlYXJjaCgpOwogIGNvbnN0IG5hdmlnYXRlID0gdXNlTmF2aWdhdGUoKTsKICBjb25zdCBxYyA9IHVzZVF1ZXJ5Q2xpZW50KCk7CiAgY29uc3QgZmlsZVJlZiA9IHVzZVJlZjxIVE1MSW5wdXRFbGVtZW50PihudWxsKTsKICBjb25zdCBbdGl0bGUsIHNldFRpdGxlXSA9IHVzZVN0YXRlKCIiKTsKICBjb25zdCBbZGVzY3JpcHRpb24sIHNldERlc2NyaXB0aW9uXSA9IHVzZVN0YXRlKCIiKTsKICBjb25zdCBbcHJpdiwgc2V0UHJpdl0gPSB1c2VTdGF0ZShmYWxzZSk7CiAgY29uc3QgW2FsYnVtSWQsIHNldEFsYnVtSWRdID0gdXNlU3RhdGUoIiIpOwogIGNvbnN0IFtxdWVyeSwgc2V0UXVlcnldID0gdXNlU3RhdGUoIiIpOwogIGNvbnN0IFt2aWV3LCBzZXRWaWV3XSA9IHVzZVN0YXRlPCJDdWFkcsOtY3VsYSIgfCAiTGlzdGEiPigiQ3VhZHLDrWN1bGEiKTsKICBjb25zdCBbb3BlbkZvcm0sIHNldE9wZW5Gb3JtXSA9IHVzZVN0YXRlKGZhbHNlKTsKCiAgY29uc3QgbWluZSA9IHVzZVF1ZXJ5KHsKICAgIHF1ZXJ5S2V5OiBbInBob3Rvcy1ieS11c2VyIiwgdXNlcj8uaWRdLAogICAgcXVlcnlGbjogKCkgPT4gZ2V0UGhvdG9zQnlVc2VyKHVzZXIhLmlkKSwKICAgIGVuYWJsZWQ6IEJvb2xlYW4odXNlciksCiAgfSk7CiAgY29uc3QgYWxidW1zID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsiYWxidW1zIiwgdXNlcj8uaWRdLAogICAgcXVlcnlGbjogKCkgPT4gZ2V0QWxidW1zQnlVc2VyKHVzZXIhLmlkKSwKICAgIGVuYWJsZWQ6IEJvb2xlYW4odXNlciksCiAgfSk7CiAgY29uc3QgdGFnZ2VkID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsidGFncy13aGVyZS10YWdnZWQiLCB1c2VyPy5pZF0sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRUYWdzV2hlcmVUYWdnZWQodXNlciEuaWQpLAogICAgZW5hYmxlZDogQm9vbGVhbih1c2VyKSwKICB9KTsKICBjb25zdCBteVRhZ3MgPSB1c2VRdWVyeSh7CiAgICBxdWVyeUtleTogWyJ0YWdzLWJ5LXRhZ2dlciIsIHVzZXI/LmlkXSwKICAgIHF1ZXJ5Rm46ICgpID0+IGdldFRhZ3NCeVRhZ2dlcih1c2VyIS5pZCksCiAgICBlbmFibGVkOiBCb29sZWFuKHVzZXIpLAogIH0pOwoKICBjb25zdCB0YWdnZWRJZHMgPSAodGFnZ2VkLmRhdGEgPz8gW10pLm1hcCgodCkgPT4gdC5waG90b19pZCk7CiAgY29uc3QgdGFnZ2VkUGhvdG9zID0gdXNlUXVlcnkoewogICAgcXVlcnlLZXk6IFsicGhvdG9zLWJ5LWlkcyIsIHRhZ2dlZElkc10sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRQaG90b3NCeUlkcyh0YWdnZWRJZHMpLAogICAgZW5hYmxlZDogdGFnZ2VkSWRzLmxlbmd0aCA+IDAsCiAgfSk7CgogIGNvbnN0IG15VGFnUGhvdG9JZHMgPSAobXlUYWdzLmRhdGEgPz8gW10pLm1hcCgodCkgPT4gdC5waG90b19pZCk7CiAgY29uc3QgbXlUYWdQaG90b3MgPSB1c2VRdWVyeSh7CiAgICBxdWVyeUtleTogWyJwaG90b3MtYnktaWRzIiwgbXlUYWdQaG90b0lkc10sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRQaG90b3NCeUlkcyhteVRhZ1Bob3RvSWRzKSwKICAgIGVuYWJsZWQ6IG15VGFnUGhvdG9JZHMubGVuZ3RoID4gMCwKICB9KTsKICBjb25zdCB0YWdnZWRQZW9wbGVJZHMgPSBBcnJheS5mcm9tKG5ldyBTZXQoKG15VGFncy5kYXRhID8/IFtdKS5tYXAoKHQpID0+IHQudGFnZ2VkX2lkKSkpOwogIGNvbnN0IHRhZ2dlZFBlb3BsZSA9IHVzZVF1ZXJ5KHsKICAgIHF1ZXJ5S2V5OiBbInByb2ZpbGVzLWJ5LWlkcyIsIHRhZ2dlZFBlb3BsZUlkc10sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRQcm9maWxlc0J5SWRzKHRhZ2dlZFBlb3BsZUlkcyksCiAgICBlbmFibGVkOiB0YWdnZWRQZW9wbGVJZHMubGVuZ3RoID4gMCwKICB9KTsKICBjb25zdCBwZW9wbGVNYXAgPSBuZXcgTWFwKCh0YWdnZWRQZW9wbGUuZGF0YSA/PyBbXSkubWFwKChwKSA9PiBbcC5pZCwgcF0pKTsKCiAgY29uc3QgdXBsb2FkID0gdXNlTXV0YXRpb24oewogICAgbXV0YXRpb25GbjogYXN5bmMgKCkgPT4gewogICAgICBjb25zdCBmaWxlID0gZmlsZVJlZi5jdXJyZW50Py5maWxlcz8uWzBdOwogICAgICBpZiAoIWZpbGUpIHRocm93IG5ldyBFcnJvcigiRWxpZ2UgdW5hIGZvdG8iKTsKICAgICAgY29uc3QgcGFyc2VkID0gcGhvdG9TY2hlbWEuc2FmZVBhcnNlKHsgdGl0bGUsIGRlc2NyaXB0aW9uLCBpc19wcml2YXRlOiBwcml2IH0pOwogICAgICBpZiAoIXBhcnNlZC5zdWNjZXNzKSB0aHJvdyBuZXcgRXJyb3IocGFyc2VkLmVycm9yLmlzc3Vlc1swXT8ubWVzc2FnZSA/PyAiRGF0b3Mgbm8gdsOhbGlkb3MiKTsKICAgICAgY29uc3QgcGF0aCA9IGF3YWl0IHVwbG9hZE1lZGlhKHVzZXIhLmlkLCBmaWxlLCAicGhvdG9zIik7CiAgICAgIGF3YWl0IGNyZWF0ZVBob3RvKHsKICAgICAgICB1c2VyX2lkOiB1c2VyIS5pZCwKICAgICAgICBpbWFnZV91cmw6IHBhdGgsCiAgICAgICAgLi4ucGFyc2VkLmRhdGEsCiAgICAgICAgYWxidW1faWQ6IGFsYnVtSWQgfHwgbnVsbCwKICAgICAgfSk7CiAgICB9LAogICAgb25TdWNjZXNzOiAoKSA9PiB7CiAgICAgIHNldFRpdGxlKCIiKTsKICAgICAgc2V0RGVzY3JpcHRpb24oIiIpOwogICAgICBzZXRQcml2KGZhbHNlKTsKICAgICAgaWYgKGZpbGVSZWYuY3VycmVudCkgZmlsZVJlZi5jdXJyZW50LnZhbHVlID0gIiI7CiAgICAgIHRvYXN0LnN1Y2Nlc3MoIkZvdG8gc3ViaWRhIik7CiAgICAgIHZvaWQgcWMuaW52YWxpZGF0ZVF1ZXJpZXMoeyBxdWVyeUtleTogWyJwaG90b3MtYnktdXNlciIsIHVzZXI/LmlkXSB9KTsKICAgICAgdm9pZCBxYy5pbnZhbGlkYXRlUXVlcmllcyh7IHF1ZXJ5S2V5OiBbImFsYnVtLXBob3RvcyIsIHVzZXI/LmlkXSB9KTsKICAgIH0sCiAgICBvbkVycm9yOiAoZTogRXJyb3IpID0+IHRvYXN0LmVycm9yKGUubWVzc2FnZSksCiAgfSk7CgogIGNvbnN0IHVudGFnID0gdXNlTXV0YXRpb24oewogICAgbXV0YXRpb25GbjogKHBob3RvSWQ6IHN0cmluZykgPT4gcmVtb3ZlUGhvdG9UYWcocGhvdG9JZCwgdXNlciEuaWQpLAogICAgb25TdWNjZXNzOiAoKSA9PiB7CiAgICAgIHRvYXN0LnN1Y2Nlc3MoIkV0aXF1ZXRhIHF1aXRhZGEiKTsKICAgICAgdm9pZCBxYy5pbnZhbGlkYXRlUXVlcmllcyh7IHF1ZXJ5S2V5OiBbInRhZ3Mtd2hlcmUtdGFnZ2VkIiwgdXNlcj8uaWRdIH0pOwogICAgfSwKICAgIG9uRXJyb3I6IChlOiBFcnJvcikgPT4gdG9hc3QuZXJyb3IoZS5tZXNzYWdlKSwKICB9KTsKCiAgY29uc3QgcmVtb3ZlTXlUYWcgPSB1c2VNdXRhdGlvbih7CiAgICBtdXRhdGlvbkZuOiAodjogeyBwaG90b0lkOiBzdHJpbmc7IHRhZ2dlZElkOiBzdHJpbmcgfSkgPT4gcmVtb3ZlUGhvdG9UYWcodi5waG90b0lkLCB2LnRhZ2dlZElkKSwKICAgIG9uU3VjY2VzczogKCkgPT4gewogICAgICB0b2FzdC5zdWNjZXNzKCJFdGlxdWV0YSBlbGltaW5hZGEiKTsKICAgICAgdm9pZCBxYy5pbnZhbGlkYXRlUXVlcmllcyh7IHF1ZXJ5S2V5OiBbInRhZ3MtYnktdGFnZ2VyIiwgdXNlcj8uaWRdIH0pOwogICAgfSwKICAgIG9uRXJyb3I6IChlOiBFcnJvcikgPT4gdG9hc3QuZXJyb3IoZS5tZXNzYWdlKSwKICB9KTsKCiAgY29uc3QgdGFiczogeyBrZXk6IFRhYjsgbGFiZWw6IHN0cmluZzsgY291bnQ6IG51bWJlciB9W10gPSBbCiAgICB7IGtleTogIm1pYXMiLCBsYWJlbDogIk1pcyBmb3RvcyIsIGNvdW50OiAobWluZS5kYXRhID8/IFtdKS5sZW5ndGggfSwKICAgIHsga2V5OiAic2FsZ28iLCBsYWJlbDogIkZvdG9zIGVuIGxhcyBxdWUgc2FsZ28iLCBjb3VudDogdGFnZ2VkSWRzLmxlbmd0aCB9LAogICAgeyBrZXk6ICJldGlxdWV0YXMiLCBsYWJlbDogIk1pcyBldGlxdWV0YXMiLCBjb3VudDogKG15VGFncy5kYXRhID8/IFtdKS5sZW5ndGggfSwKICBdOwoKICBjb25zdCBmaWx0ZXIgPSAoYXJyOiBQaG90b1tdKSA9PgogICAgYXJyLmZpbHRlcigocCkgPT4gKHAudGl0bGUgPz8gIiIpLnRvTG93ZXJDYXNlKCkuaW5jbHVkZXMocXVlcnkudHJpbSgpLnRvTG93ZXJDYXNlKCkpKTsKCiAgcmV0dXJuICgKICAgIDxkaXYgY2xhc3NOYW1lPSJ0LXNoZWxsIG1pbi1oLXNjcmVlbiI+CiAgICAgIDxtYWluIGNsYXNzTmFtZT0ibXgtYXV0byBncmlkIG1heC13LTZ4bCBnYXAtMyBweC0zIHB5LTQgbGc6Z3JpZC1jb2xzLVsyMzBweF8xZnJfMjQwcHhdIj4KICAgICAgICA8YXNpZGUgY2xhc3NOYW1lPSJzcGFjZS15LTMiPgogICAgICAgICAgPFNpZGVNZW51IGFjdGl2ZT0iZm90b3MiIC8+CiAgICAgICAgPC9hc2lkZT4KCiAgICAgICAgPHNlY3Rpb24gY2xhc3NOYW1lPSJzcGFjZS15LTMiPgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9InQtcGFuZWwgcC0zIj4KICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXggaXRlbXMtc3RhcnQganVzdGlmeS1iZXR3ZWVuIGdhcC0zIj4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBnYXAtMiI+CiAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9ImZsZXggaC05IHctOSBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcm91bmRlZC1tZCBiZy1bb2tsY2goMC45M18wLjAzXzI0NSldIj4KICAgICAgICAgICAgICAgICAgPENhbWVyYSBzaXplPXsxOH0gY2xhc3NOYW1lPSJ0ZXh0LVt2YXIoLS10LWJsdWUpXSIgLz4KICAgICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgICAgIDxkaXY+CiAgICAgICAgICAgICAgICAgIDxoMSBjbGFzc05hbWU9InRleHQtWzE4cHhdIGZvbnQtYm9sZCB0ZXh0LVt2YXIoLS10LWluayldIj5NaXMgZm90b3M8L2gxPgogICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9InRleHQtWzExcHhdIHRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSI+CiAgICAgICAgICAgICAgICAgICAgU3ViZSBmb3RvcywgbWlyYSBlbiBjdcOhbGVzIHNhbGVzIHkgZ2VzdGlvbmEgdHVzIGV0aXF1ZXRhcy4KICAgICAgICAgICAgICAgICAgPC9wPgogICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgPGJ1dHRvbgogICAgICAgICAgICAgICAgdHlwZT0iYnV0dG9uIgogICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJ0LWJ0biByb3VuZGVkLWZ1bGwgcHgtMyIKICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldE9wZW5Gb3JtKCh2KSA9PiAhdil9CiAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgPFVwbG9hZCBzaXplPXsxMn0gY2xhc3NOYW1lPSJtci0xIGlubGluZSIgLz4gU3ViaXIgZm90bwogICAgICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICAgIHtvcGVuRm9ybSA/ICgKICAgICAgICAgICAgPGZvcm0KICAgICAgICAgICAgICBjbGFzc05hbWU9Im10LTMgc3BhY2UteS0yIGJvcmRlci10IGJvcmRlci1bdmFyKC0tdC1saW5lKV0gcHQtMyIKICAgICAgICAgICAgICBvblN1Ym1pdD17KGUpID0+IHsKICAgICAgICAgICAgICAgIGUucHJldmVudERlZmF1bHQoKTsKICAgICAgICAgICAgICAgIHVwbG9hZC5tdXRhdGUoKTsKICAgICAgICAgICAgICB9fQogICAgICAgICAgICA+CiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXggZmxleC13cmFwIGl0ZW1zLWNlbnRlciBnYXAtMiI+CiAgICAgICAgICAgICAgICA8aW5wdXQKICAgICAgICAgICAgICAgICAgcmVmPXtmaWxlUmVmfQogICAgICAgICAgICAgICAgICB0eXBlPSJmaWxlIgogICAgICAgICAgICAgICAgICBhY2NlcHQ9ImltYWdlLyoiCiAgICAgICAgICAgICAgICAgIGFyaWEtbGFiZWw9IkVsZWdpciBmb3RvIgogICAgICAgICAgICAgICAgICBjbGFzc05hbWU9InRleHQtWzExcHhdIgogICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICAgIDxpbnB1dAogICAgICAgICAgICAgICAgICB2YWx1ZT17dGl0bGV9CiAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0VGl0bGUoZS50YXJnZXQudmFsdWUpfQogICAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj0iVMOtdHVsbyIKICAgICAgICAgICAgICAgICAgbWF4TGVuZ3RoPXs4MH0KICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJtaW4tdy1bMTQwcHhdIGZsZXgtMSBib3JkZXIgYm9yZGVyLVt2YXIoLS10LWxpbmUpXSBiZy13aGl0ZSBweC0yIHB5LTEuNSB0ZXh0LVsxMnB4XSBvdXRsaW5lLW5vbmUiCiAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgPHNlbGVjdAogICAgICAgICAgICAgICAgICB2YWx1ZT17YWxidW1JZH0KICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRBbGJ1bUlkKGUudGFyZ2V0LnZhbHVlKX0KICAgICAgICAgICAgICAgICAgYXJpYS1sYWJlbD0iw4FsYnVtIgogICAgICAgICAgICAgICAgICBjbGFzc05hbWU9ImJvcmRlciBib3JkZXItW3ZhcigtLXQtbGluZSldIGJnLXdoaXRlIHB4LTIgcHktMS41IHRleHQtWzExcHhdIG91dGxpbmUtbm9uZSIKICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT0iIj5TaW4gw6FsYnVtPC9vcHRpb24+CiAgICAgICAgICAgICAgICAgIHsoYWxidW1zLmRhdGEgPz8gW10pLm1hcCgoYSkgPT4gKAogICAgICAgICAgICAgICAgICAgIDxvcHRpb24ga2V5PXthLmlkfSB2YWx1ZT17YS5pZH0+CiAgICAgICAgICAgICAgICAgICAgICB7YS50aXRsZX0KICAgICAgICAgICAgICAgICAgICA8L29wdGlvbj4KICAgICAgICAgICAgICAgICAgKSl9CiAgICAgICAgICAgICAgICA8L3NlbGVjdD4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBmbGV4LXdyYXAgaXRlbXMtY2VudGVyIGdhcC0yIj4KICAgICAgICAgICAgICAgIDxpbnB1dAogICAgICAgICAgICAgICAgICB2YWx1ZT17ZGVzY3JpcHRpb259CiAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0RGVzY3JpcHRpb24oZS50YXJnZXQudmFsdWUpfQogICAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj0iRGVzY3JpcGNpw7NuIgogICAgICAgICAgICAgICAgICBtYXhMZW5ndGg9ezUwMH0KICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJtaW4tdy1bMjAwcHhdIGZsZXgtMSBib3JkZXIgYm9yZGVyLVt2YXIoLS10LWxpbmUpXSBiZy13aGl0ZSBweC0yIHB5LTEuNSB0ZXh0LVsxMnB4XSBvdXRsaW5lLW5vbmUiCiAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSB0ZXh0LVsxMXB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPgogICAgICAgICAgICAgICAgICA8aW5wdXQgdHlwZT0iY2hlY2tib3giIGNoZWNrZWQ9e3ByaXZ9IG9uQ2hhbmdlPXsoZSkgPT4gc2V0UHJpdihlLnRhcmdldC5jaGVja2VkKX0gLz4KICAgICAgICAgICAgICAgICAgUHJpdmFkYQogICAgICAgICAgICAgICAgPC9sYWJlbD4KICAgICAgICAgICAgICAgIDxidXR0b24gdHlwZT0ic3VibWl0IiBjbGFzc05hbWU9InQtYnRuIiBkaXNhYmxlZD17dXBsb2FkLmlzUGVuZGluZ30+CiAgICAgICAgICAgICAgICAgIDxVcGxvYWQgc2l6ZT17MTJ9IGNsYXNzTmFtZT0ibXItMSBpbmxpbmUiIC8+CiAgICAgICAgICAgICAgICAgIHt1cGxvYWQuaXNQZW5kaW5nID8gIlN1YmllbmRv4oCmIiA6ICJTdWJpciBmb3RvIn0KICAgICAgICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICA8L2Zvcm0+CiAgICAgICAgICAgICkgOiBudWxsfQogICAgICAgICAgPC9kaXY+CgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9InQtcGFuZWwiPgogICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBmbGV4LXdyYXAgZ2FwLTQgYm9yZGVyLWIgYm9yZGVyLVt2YXIoLS10LWxpbmUpXSBweC0zIj4KICAgICAgICAgICAgICB7dGFicy5tYXAoKHQpID0+ICgKICAgICAgICAgICAgICAgIDxidXR0b24KICAgICAgICAgICAgICAgICAga2V5PXt0LmtleX0KICAgICAgICAgICAgICAgICAgdHlwZT0iYnV0dG9uIgogICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiB2b2lkIG5hdmlnYXRlKHsgdG86ICIvZm90b3MiLCBzZWFyY2g6IHsgdGFiOiB0LmtleSB9IH0pfQogICAgICAgICAgICAgICAgICBjbGFzc05hbWU9ewogICAgICAgICAgICAgICAgICAgIHQua2V5ID09PSB0YWIKICAgICAgICAgICAgICAgICAgICAgID8gIi1tYi1weCBib3JkZXItYi0yIGJvcmRlci1bdmFyKC0tdC1ibHVlKV0gcHktMiB0ZXh0LVsxMnB4XSBmb250LWJvbGQgdGV4dC1bdmFyKC0tdC1ibHVlKV0iCiAgICAgICAgICAgICAgICAgICAgICA6ICJweS0yIHRleHQtWzEycHhdIHRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSIKICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICB7dC5sYWJlbH0gPHNwYW4gY2xhc3NOYW1lPSJ0ZXh0LVsxMHB4XSI+e3QuY291bnR9PC9zcGFuPgogICAgICAgICAgICAgICAgPC9idXR0b24+CiAgICAgICAgICAgICAgKSl9CiAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAge3RhYiA9PT0gImV0aXF1ZXRhcyIgPyAoCiAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT0iZGl2aWRlLXkgZGl2aWRlLVt2YXIoLS10LWxpbmUpXSBwLTMgcHQtMCI+CiAgICAgICAgICAgICAgICB7KG15VGFncy5kYXRhID8/IFtdKS5sZW5ndGggPT09IDAgPyAoCiAgICAgICAgICAgICAgICAgIDxsaSBjbGFzc05hbWU9InB5LTggdGV4dC1jZW50ZXIgdGV4dC1bMTJweF0gdGV4dC1bdmFyKC0tdC1pbmstc29mdCldIj4KICAgICAgICAgICAgICAgICAgICBUb2RhdsOtYSBubyBoYXMgZXRpcXVldGFkbyBhIG5hZGllLgogICAgICAgICAgICAgICAgICA8L2xpPgogICAgICAgICAgICAgICAgKSA6ICgKICAgICAgICAgICAgICAgICAgKG15VGFncy5kYXRhID8/IFtdKS5tYXAoKHQpID0+IHsKICAgICAgICAgICAgICAgICAgICBjb25zdCBwaG90byA9IChteVRhZ1Bob3Rvcy5kYXRhID8/IFtdKS5maW5kKChwKSA9PiBwLmlkID09PSB0LnBob3RvX2lkKTsKICAgICAgICAgICAgICAgICAgICBjb25zdCBwZXJzb24gPSBwZW9wbGVNYXAuZ2V0KHQudGFnZ2VkX2lkKTsKICAgICAgICAgICAgICAgICAgICByZXR1cm4gKAogICAgICAgICAgICAgICAgICAgICAgPGxpIGtleT17YCR7dC5waG90b19pZH0tJHt0LnRhZ2dlZF9pZH1gfSBjbGFzc05hbWU9ImZsZXggaXRlbXMtY2VudGVyIGdhcC0yIHB5LTIiPgogICAgICAgICAgICAgICAgICAgICAgICA8TGluayB0bz0iL2ZvdG8vJHBob3RvSWQiIHBhcmFtcz17eyBwaG90b0lkOiB0LnBob3RvX2lkIH19PgogICAgICAgICAgICAgICAgICAgICAgICAgIDxNZWRpYUltYWdlCiAgICAgICAgICAgICAgICAgICAgICAgICAgICBwYXRoPXtwaG90bz8uaW1hZ2VfdXJsfQogICAgICAgICAgICAgICAgICAgICAgICAgICAgYWx0PXtwaG90bz8udGl0bGUgfHwgIkZvdG8gZXRpcXVldGFkYSJ9CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9ImgtMTAgdy0xMCBvYmplY3QtY292ZXIiCiAgICAgICAgICAgICAgICAgICAgICAgICAgICBmYWxsYmFjaz17CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJoLTEwIHctMTAgYmctW29rbGNoKDAuOTNfMC4wMl8yNDUpXSIgYXJpYS1oaWRkZW4gLz4KICAgICAgICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgICAgICAgICA8L0xpbms+CiAgICAgICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0ibWluLXctMCBmbGV4LTEgdGV4dC1bMTJweF0iPgogICAgICAgICAgICAgICAgICAgICAgICAgIEV0aXF1ZXRhc3RlIGF7IiAifQogICAgICAgICAgICAgICAgICAgICAgICAgIHtwZXJzb24gPyAoCiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8TGluawogICAgICAgICAgICAgICAgICAgICAgICAgICAgICB0bz0iL3BlcmZpbC8kdXNlcm5hbWUiCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHBhcmFtcz17eyB1c2VybmFtZTogcGVyc29uLnVzZXJuYW1lIH19CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0idC1saW5rIGZvbnQtYm9sZCIKICAgICAgICAgICAgICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAge3BlcnNvbi5kaXNwbGF5X25hbWUgfHwgcGVyc29uLnVzZXJuYW1lfQogICAgICAgICAgICAgICAgICAgICAgICAgICAgPC9MaW5rPgogICAgICAgICAgICAgICAgICAgICAgICAgICkgOiAoCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAiYWxndWllbiIKICAgICAgICAgICAgICAgICAgICAgICAgICApfXsiICJ9CiAgICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJ0ZXh0LVsxMHB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPgogICAgICAgICAgICAgICAgICAgICAgICAgICAge25ldyBEYXRlKHQuY3JlYXRlZF9hdCkudG9Mb2NhbGVEYXRlU3RyaW5nKCJlcy1FUyIpfQogICAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgICAgICAgICAgICAgPC9wPgogICAgICAgICAgICAgICAgICAgICAgICA8YnV0dG9uCiAgICAgICAgICAgICAgICAgICAgICAgICAgdHlwZT0iYnV0dG9uIgogICAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0idGV4dC1bMTFweF0gdGV4dC1bdmFyKC0tdC1pbmstc29mdCldIGhvdmVyOnVuZGVybGluZSIKICAgICAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PgogICAgICAgICAgICAgICAgICAgICAgICAgICAgcmVtb3ZlTXlUYWcubXV0YXRlKHsgcGhvdG9JZDogdC5waG90b19pZCwgdGFnZ2VkSWQ6IHQudGFnZ2VkX2lkIH0pCiAgICAgICAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgICAgICAgICAgUXVpdGFyCiAgICAgICAgICAgICAgICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAgICAgICAgICAgICAgPC9saT4KICAgICAgICAgICAgICAgICAgICApOwogICAgICAgICAgICAgICAgICB9KQogICAgICAgICAgICAgICAgKX0KICAgICAgICAgICAgICA8L3VsPgogICAgICAgICAgICApIDogKAogICAgICAgICAgICAgIDw+CiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBmbGV4LXdyYXAgaXRlbXMtY2VudGVyIGdhcC0yIHAtMyBwYi0wIj4KICAgICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZmxleCBtaW4tdy1bMjAwcHhdIGZsZXgtMSBpdGVtcy1jZW50ZXIgZ2FwLTIgcm91bmRlZC1tZCBib3JkZXIgYm9yZGVyLVt2YXIoLS10LWxpbmUpXSBiZy13aGl0ZSBweC0yIHB5LTEuNSI+CiAgICAgICAgICAgICAgICAgICAgPFNlYXJjaCBzaXplPXsxNH0gY2xhc3NOYW1lPSJ0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iIC8+CiAgICAgICAgICAgICAgICAgICAgPGlucHV0CiAgICAgICAgICAgICAgICAgICAgICB2YWx1ZT17cXVlcnl9CiAgICAgICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldFF1ZXJ5KGUudGFyZ2V0LnZhbHVlKX0KICAgICAgICAgICAgICAgICAgICAgIHBsYWNlaG9sZGVyPSJCdXNjYXIgZm90b3MuLi4iCiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9InctZnVsbCBiZy10cmFuc3BhcmVudCB0ZXh0LVsxMnB4XSBvdXRsaW5lLW5vbmUgcGxhY2Vob2xkZXI6dGV4dC1bdmFyKC0tdC1pbmstc29mdCldIgogICAgICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgICAgIDwvbGFiZWw+CiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMSByb3VuZGVkLW1kIGJvcmRlciBib3JkZXItW3ZhcigtLXQtbGluZSldIGJnLXdoaXRlIHB4LTIgcHktMS41IHRleHQtWzExcHhdIj4KICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9InRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSI+VmlzdGE6PC9zcGFuPgogICAgICAgICAgICAgICAgICAgIDxzZWxlY3QKICAgICAgICAgICAgICAgICAgICAgIHZhbHVlPXt2aWV3fQogICAgICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRWaWV3KGUudGFyZ2V0LnZhbHVlIGFzIHR5cGVvZiB2aWV3KX0KICAgICAgICAgICAgICAgICAgICAgIGFyaWEtbGFiZWw9IkNhbWJpYXIgdmlzdGEiCiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9ImJnLXRyYW5zcGFyZW50IHRleHQtWzExcHhdIG91dGxpbmUtbm9uZSIKICAgICAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgICAgICA8b3B0aW9uPkN1YWRyw61jdWxhPC9vcHRpb24+CiAgICAgICAgICAgICAgICAgICAgICA8b3B0aW9uPkxpc3RhPC9vcHRpb24+CiAgICAgICAgICAgICAgICAgICAgPC9zZWxlY3Q+CiAgICAgICAgICAgICAgICAgICAgPENoZXZyb25Eb3duIHNpemU9ezEyfSBjbGFzc05hbWU9InRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSIgLz4KICAgICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJncmlkIGdhcC0zIHAtMyBzbTpncmlkLWNvbHMtMyBsZzpncmlkLWNvbHMtNCI+CiAgICAgICAgICAgICAgICAgIHt0YWIgPT09ICJtaWFzIiA/ICgKICAgICAgICAgICAgICAgICAgICA8UGhvdG9HcmlkCiAgICAgICAgICAgICAgICAgICAgICBwaG90b3M9e2ZpbHRlcihtaW5lLmRhdGEgPz8gW10pfQogICAgICAgICAgICAgICAgICAgICAgZW1wdHk9IlRvZGF2w61hIG5vIGhhcyBzdWJpZG8gbmluZ3VuYSBmb3RvLiIKICAgICAgICAgICAgICAgICAgICAgIHZpZXc9e3ZpZXd9CiAgICAgICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICAgICAgKSA6ICgKICAgICAgICAgICAgICAgICAgICA8UGhvdG9HcmlkCiAgICAgICAgICAgICAgICAgICAgICBwaG90b3M9e2ZpbHRlcih0YWdnZWRQaG90b3MuZGF0YSA/PyBbXSl9CiAgICAgICAgICAgICAgICAgICAgICBlbXB0eT0iTmFkaWUgdGUgaGEgZXRpcXVldGFkbyBlbiBuaW5ndW5hIGZvdG8uIgogICAgICAgICAgICAgICAgICAgICAgdmlldz17dmlld30KICAgICAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgICApfQogICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgPC8+CiAgICAgICAgICAgICl9CgogICAgICAgICAgICB7dGFiID09PSAic2FsZ28iICYmICh0YWdnZWRQaG90b3MuZGF0YSA/PyBbXSkubGVuZ3RoID4gMCA/ICgKICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iYm9yZGVyLXQgYm9yZGVyLVt2YXIoLS10LWxpbmUpXSBwLTMiPgogICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJtYi0xLjUgdGV4dC1bMTFweF0gZm9udC1ib2xkIHRleHQtW3ZhcigtLXQtaW5rKV0iPgogICAgICAgICAgICAgICAgICBRdWl0YXIgbWlzIGV0aXF1ZXRhcwogICAgICAgICAgICAgICAgPC9wPgogICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXggZmxleC13cmFwIGdhcC0xLjUiPgogICAgICAgICAgICAgICAgICB7KHRhZ2dlZFBob3Rvcy5kYXRhID8/IFtdKS5tYXAoKHApID0+ICgKICAgICAgICAgICAgICAgICAgICA8YnV0dG9uCiAgICAgICAgICAgICAgICAgICAgICBrZXk9e3AuaWR9CiAgICAgICAgICAgICAgICAgICAgICB0eXBlPSJidXR0b24iCiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9ImJvcmRlciBib3JkZXItW3ZhcigtLXQtbGluZSldIGJnLXdoaXRlIHB4LTIgcHktMSB0ZXh0LVsxMHB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0gaG92ZXI6dW5kZXJsaW5lIgogICAgICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gdW50YWcubXV0YXRlKHAuaWQpfQogICAgICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgICAgIMOXIHtwLnRpdGxlIHx8ICJTaW4gdMOtdHVsbyJ9CiAgICAgICAgICAgICAgICAgICAgPC9idXR0b24+CiAgICAgICAgICAgICAgICAgICkpfQogICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICkgOiBudWxsfQogICAgICAgICAgPC9kaXY+CiAgICAgICAgPC9zZWN0aW9uPgoKICAgICAgICA8YXNpZGUgY2xhc3NOYW1lPSJzcGFjZS15LTMiPgogICAgICAgICAgPENhbGVuZGFyV2lkZ2V0CiAgICAgICAgICAgIG1hcmtzPXtBcnJheS5mcm9tKAogICAgICAgICAgICAgIG5ldyBTZXQoKG1pbmUuZGF0YSA/PyBbXSkubWFwKChwKSA9PiBuZXcgRGF0ZShwLmNyZWF0ZWRfYXQpLmdldERhdGUoKSkpLAogICAgICAgICAgICApfQogICAgICAgICAgLz4KICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJ0LXBhbmVsIHAtMyI+CiAgICAgICAgICAgIDxoMiBjbGFzc05hbWU9Im1iLTIgYm9yZGVyLWIgYm9yZGVyLVt2YXIoLS10LWxpbmUpXSBwYi0xLjUgdGV4dC1bMTJweF0gZm9udC1ib2xkIHVwcGVyY2FzZSB0ZXh0LVt2YXIoLS10LWluayldIj4KICAgICAgICAgICAgICBSZXN1bWVuCiAgICAgICAgICAgIDwvaDI+CiAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0idGV4dC1bMTFweF0gdGV4dC1bdmFyKC0tdC1pbmstc29mdCldIj4KICAgICAgICAgICAgICA8c3Ryb25nIGNsYXNzTmFtZT0idGV4dC1bdmFyKC0tdC1ncmVlbildIj57KG1pbmUuZGF0YSA/PyBbXSkubGVuZ3RofTwvc3Ryb25nPiBmb3RvcwogICAgICAgICAgICAgIHN1YmlkYXMKICAgICAgICAgICAgPC9wPgogICAgICAgICAgICA8cCBjbGFzc05hbWU9InRleHQtWzExcHhdIHRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSI+CiAgICAgICAgICAgICAgPHN0cm9uZyBjbGFzc05hbWU9InRleHQtW3ZhcigtLXQtZ3JlZW4pXSI+e3RhZ2dlZElkcy5sZW5ndGh9PC9zdHJvbmc+IGZvdG9zIGVuIGxhcyBxdWUKICAgICAgICAgICAgICBzYWxlcwogICAgICAgICAgICA8L3A+CiAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0idGV4dC1bMTFweF0gdGV4dC1bdmFyKC0tdC1pbmstc29mdCldIj4KICAgICAgICAgICAgICA8c3Ryb25nIGNsYXNzTmFtZT0idGV4dC1bdmFyKC0tdC1ncmVlbildIj57KG15VGFncy5kYXRhID8/IFtdKS5sZW5ndGh9PC9zdHJvbmc+eyIgIn0KICAgICAgICAgICAgICBldGlxdWV0YXMgcHVlc3RhcwogICAgICAgICAgICA8L3A+CiAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0idC1wYW5lbCBwLTMiPgogICAgICAgICAgICA8aDIgY2xhc3NOYW1lPSJtYi0yIGJvcmRlci1iIGJvcmRlci1bdmFyKC0tdC1saW5lKV0gcGItMS41IHRleHQtWzEycHhdIGZvbnQtYm9sZCB1cHBlcmNhc2UgdGV4dC1bdmFyKC0tdC1pbmspXSI+CiAgICAgICAgICAgICAgTWlzIMOhbGJ1bWVzCiAgICAgICAgICAgIDwvaDI+CiAgICAgICAgICAgIHsoYWxidW1zLmRhdGEgPz8gW10pLmxlbmd0aCA9PT0gMCA/ICgKICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9InRleHQtWzExcHhdIHRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSI+QcO6biBubyB0aWVuZXMgw6FsYnVtZXMuPC9wPgogICAgICAgICAgICApIDogKAogICAgICAgICAgICAgIDx1bCBjbGFzc05hbWU9InNwYWNlLXktMSI+CiAgICAgICAgICAgICAgICB7KGFsYnVtcy5kYXRhID8/IFtdKS5zbGljZSgwLCA2KS5tYXAoKGEpID0+ICgKICAgICAgICAgICAgICAgICAgPGxpIGtleT17YS5pZH0+CiAgICAgICAgICAgICAgICAgICAgPExpbmsKICAgICAgICAgICAgICAgICAgICAgIHRvPSIvYWxidW0vJGFsYnVtSWQiCiAgICAgICAgICAgICAgICAgICAgICBwYXJhbXM9e3sgYWxidW1JZDogYS5pZCB9fQogICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJ0LWxpbmsgdGV4dC1bMTFweF0iCiAgICAgICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICAgICAge2EudGl0bGV9CiAgICAgICAgICAgICAgICAgICAgPC9MaW5rPgogICAgICAgICAgICAgICAgICA8L2xpPgogICAgICAgICAgICAgICAgKSl9CiAgICAgICAgICAgICAgPC91bD4KICAgICAgICAgICAgKX0KICAgICAgICAgICAgPExpbmsgdG89Ii9hbGJ1bWVzIiBjbGFzc05hbWU9InQtbGluayBtdC0yIGlubGluZS1ibG9jayB0ZXh0LVsxMXB4XSBmb250LWJvbGQiPgogICAgICAgICAgICAgIFZlciB0b2RvcyDCuwogICAgICAgICAgICA8L0xpbms+CiAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0idC1wYW5lbCBwLTMiPgogICAgICAgICAgICA8aDIgY2xhc3NOYW1lPSJtYi0yIGZsZXggaXRlbXMtY2VudGVyIGdhcC0xLjUgYm9yZGVyLWIgYm9yZGVyLVt2YXIoLS10LWxpbmUpXSBwYi0xLjUgdGV4dC1bMTJweF0gZm9udC1ib2xkIHVwcGVyY2FzZSB0ZXh0LVt2YXIoLS10LWluayldIj4KICAgICAgICAgICAgICA8VGFnIHNpemU9ezEyfSAvPiBFdGlxdWV0YXMKICAgICAgICAgICAgPC9oMj4KICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJ0ZXh0LVsxMXB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPgogICAgICAgICAgICAgIFB1ZWRlcyBldGlxdWV0YXIgYSB0dXMgYW1pZ29zIGFicmllbmRvIGN1YWxxdWllciBmb3RvLgogICAgICAgICAgICA8L3A+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICA8L2FzaWRlPgogICAgICA8L21haW4+CiAgICA8L2Rpdj4KICApOwp9Cg==
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Camera, ChevronDown, Images, Lock, Search, Tag, Upload } from "lucide-react";
+
+import { SideMenu } from "@/components/SideMenu";
+import { MediaImage } from "@/components/MediaImage";
+import { CalendarWidget } from "@/components/CalendarWidget";
+import { useSession } from "@/lib/session";
+import { uploadMedia } from "@/lib/media";
+import {
+  createPhoto,
+  getAlbumsByUser,
+  getPhotosByIds,
+  getPhotosByUser,
+  getProfilesByIds,
+  getTagsByTagger,
+  getTagsWhereTagged,
+  removePhotoTag,
+  type Photo,
+} from "@/lib/api";
+import { photoSchema } from "@/lib/validation";
+
+type Tab = "mias" | "salgo" | "etiquetas";
+
+export const Route = createFileRoute("/_authenticated/fotos")({
+  validateSearch: (search: Record<string, unknown>): { tab: Tab } => {
+    const tab = search['tab'];
+    return { tab: tab === "salgo" || tab === "etiquetas" ? tab : "mias" };
+  },
+  head: () => ({
+    meta: [
+      { title: "Mis fotos — nocturno" },
+      {
+        name: "description",
+        content:
+          "Sube fotos, míralas todas, descubre en cuáles sales etiquetado y gestiona tus etiquetas.",
+      },
+      { property: "og:title", content: "Mis fotos — nocturno" },
+      {
+        property: "og:description",
+        content: "Tu fotolog: subidas, fotos en las que sales y etiquetas.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: FotosPage,
+});
+
+function PhotoGrid({
+  photos,
+  empty,
+  view,
+}: {
+  photos: Photo[];
+  empty: string;
+  view: "Cuadrícula" | "Lista";
+}) {
+  if (photos.length === 0) {
+    return (
+      <p className="col-span-full py-8 text-center text-[12px] text-[var(--t-ink-soft)]">{empty}</p>
+    );
+  }
+  if (view === "Lista") {
+    return (
+      <>
+        {photos.map((p) => (
+          <Link
+            key={p.id}
+            to="/foto/$photoId"
+            params={{ photoId: p.id }}
+            className="col-span-full flex items-center gap-3 rounded-md border border-[var(--t-line)] bg-white p-2"
+          >
+            <MediaImage
+              path={p.image_url}
+              alt={p.title || "Foto"}
+              className="h-12 w-16 object-cover"
+              fallback={<span className="block h-12 w-16 bg-[oklch(0.93_0.02_245)]" />}
+            />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[12px] font-bold text-[var(--t-ink)]">
+                {p.title || "Sin título"}
+              </span>
+              <span className="block text-[10px] text-[var(--t-ink-soft)]">
+                {new Date(p.created_at).toLocaleDateString("es-ES")}
+              </span>
+            </span>
+            {p.is_private ? <Lock size={11} className="text-[var(--t-ink-soft)]" /> : null}
+          </Link>
+        ))}
+      </>
+    );
+  }
+  return (
+    <>
+      {photos.map((p) => (
+        <Link
+          key={p.id}
+          to="/foto/$photoId"
+          params={{ photoId: p.id }}
+          className="block overflow-hidden rounded-md border border-[var(--t-line)] bg-white"
+        >
+          <MediaImage
+            path={p.image_url}
+            alt={p.title || "Foto"}
+            className="h-28 w-full object-cover"
+            fallback={
+              <div className="flex h-28 w-full items-center justify-center bg-[oklch(0.93_0.02_245)]">
+                <Images size={20} className="text-[var(--t-ink-soft)]" />
+              </div>
+            }
+          />
+          <div className="p-1.5">
+            <p className="truncate text-[11px] font-bold text-[var(--t-ink)]">
+              {p.title || "Sin título"}
+            </p>
+            <p className="flex items-center gap-1 text-[10px] text-[var(--t-ink-soft)]">
+              {new Date(p.created_at).toLocaleDateString("es-ES")}
+              {p.is_private ? <Lock size={9} /> : null}
+            </p>
+          </div>
+        </Link>
+      ))}
+    </>
+  );
+}
+
+function FotosPage() {
+  const { user } = useSession();
+  const { tab } = Route.useSearch();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priv, setPriv] = useState(false);
+  const [albumId, setAlbumId] = useState("");
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState<"Cuadrícula" | "Lista">("Cuadrícula");
+  const [openForm, setOpenForm] = useState(false);
+
+  const mine = useQuery({
+    queryKey: ["photos-by-user", user?.id],
+    queryFn: () => getPhotosByUser(user!.id),
+    enabled: Boolean(user),
+  });
+  const albums = useQuery({
+    queryKey: ["albums", user?.id],
+    queryFn: () => getAlbumsByUser(user!.id),
+    enabled: Boolean(user),
+  });
+  const tagged = useQuery({
+    queryKey: ["tags-where-tagged", user?.id],
+    queryFn: () => getTagsWhereTagged(user!.id),
+    enabled: Boolean(user),
+  });
+  const myTags = useQuery({
+    queryKey: ["tags-by-tagger", user?.id],
+    queryFn: () => getTagsByTagger(user!.id),
+    enabled: Boolean(user),
+  });
+
+  const taggedIds = (tagged.data ?? []).map((t) => t.photo_id);
+  const taggedPhotos = useQuery({
+    queryKey: ["photos-by-ids", taggedIds],
+    queryFn: () => getPhotosByIds(taggedIds),
+    enabled: taggedIds.length > 0,
+  });
+
+  const myTagPhotoIds = (myTags.data ?? []).map((t) => t.photo_id);
+  const myTagPhotos = useQuery({
+    queryKey: ["photos-by-ids", myTagPhotoIds],
+    queryFn: () => getPhotosByIds(myTagPhotoIds),
+    enabled: myTagPhotoIds.length > 0,
+  });
+  const taggedPeopleIds = Array.from(new Set((myTags.data ?? []).map((t) => t.tagged_id)));
+  const taggedPeople = useQuery({
+    queryKey: ["profiles-by-ids", taggedPeopleIds],
+    queryFn: () => getProfilesByIds(taggedPeopleIds),
+    enabled: taggedPeopleIds.length > 0,
+  });
+  const peopleMap = new Map((taggedPeople.data ?? []).map((p) => [p.id, p]));
+
+  const upload = useMutation({
+    mutationFn: async () => {
+      const file = fileRef.current?.files?.[0];
+      if (!file) throw new Error("Elige una foto");
+      const parsed = photoSchema.safeParse({ title, description, is_private: priv });
+      if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Datos no válidos");
+      const path = await uploadMedia(user!.id, file, "photos");
+      await createPhoto({
+        user_id: user!.id,
+        image_url: path,
+        ...parsed.data,
+        album_id: albumId || null,
+      });
+    },
+    onSuccess: () => {
+      setTitle("");
+      setDescription("");
+      setPriv(false);
+      if (fileRef.current) fileRef.current.value = "";
+      toast.success("Foto subida");
+      void qc.invalidateQueries({ queryKey: ["photos-by-user", user?.id] });
+      void qc.invalidateQueries({ queryKey: ["album-photos", user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const untag = useMutation({
+    mutationFn: (photoId: string) => removePhotoTag(photoId, user!.id),
+    onSuccess: () => {
+      toast.success("Etiqueta quitada");
+      void qc.invalidateQueries({ queryKey: ["tags-where-tagged", user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeMyTag = useMutation({
+    mutationFn: (v: { photoId: string; taggedId: string }) => removePhotoTag(v.photoId, v.taggedId),
+    onSuccess: () => {
+      toast.success("Etiqueta eliminada");
+      void qc.invalidateQueries({ queryKey: ["tags-by-tagger", user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const tabs: { key: Tab; label: string; count: number }[] = [
+    { key: "mias", label: "Mis fotos", count: (mine.data ?? []).length },
+    { key: "salgo", label: "Fotos en las que salgo", count: taggedIds.length },
+    { key: "etiquetas", label: "Mis etiquetas", count: (myTags.data ?? []).length },
+  ];
+
+  const filter = (arr: Photo[]) =>
+    arr.filter((p) => (p.title ?? "").toLowerCase().includes(query.trim().toLowerCase()));
+
+  return (
+    <div className="t-shell min-h-screen">
+      <main className="mx-auto grid max-w-6xl gap-3 px-3 py-4 lg:grid-cols-[230px_1fr_240px]">
+        <aside className="space-y-3">
+          <SideMenu active="fotos" />
+        </aside>
+
+        <section className="space-y-3">
+          <div className="t-panel p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[oklch(0.93_0.03_245)]">
+                  <Camera size={18} className="text-[var(--t-blue)]" />
+                </span>
+                <div>
+                  <h1 className="text-[18px] font-bold text-[var(--t-ink)]">Mis fotos</h1>
+                  <p className="text-[11px] text-[var(--t-ink-soft)]">
+                    Sube fotos, mira en cuáles sales y gestiona tus etiquetas.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="t-btn rounded-full px-3"
+                onClick={() => setOpenForm((v) => !v)}
+              >
+                <Upload size={12} className="mr-1 inline" /> Subir foto
+              </button>
+            </div>
+
+            {openForm ? (
+            <form
+              className="mt-3 space-y-2 border-t border-[var(--t-line)] pt-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                upload.mutate();
+              }}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  aria-label="Elegir foto"
+                  className="text-[11px]"
+                />
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Título"
+                  maxLength={80}
+                  className="min-w-[140px] flex-1 border border-[var(--t-line)] bg-white px-2 py-1.5 text-[12px] outline-none"
+                />
+                <select
+                  value={albumId}
+                  onChange={(e) => setAlbumId(e.target.value)}
+                  aria-label="Álbum"
+                  className="border border-[var(--t-line)] bg-white px-2 py-1.5 text-[11px] outline-none"
+                >
+                  <option value="">Sin álbum</option>
+                  {(albums.data ?? []).map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Descripción"
+                  maxLength={500}
+                  className="min-w-[200px] flex-1 border border-[var(--t-line)] bg-white px-2 py-1.5 text-[12px] outline-none"
+                />
+                <label className="flex items-center gap-1.5 text-[11px] text-[var(--t-ink-soft)]">
+                  <input type="checkbox" checked={priv} onChange={(e) => setPriv(e.target.checked)} />
+                  Privada
+                </label>
+                <button type="submit" className="t-btn" disabled={upload.isPending}>
+                  <Upload size={12} className="mr-1 inline" />
+                  {upload.isPending ? "Subiendo…" : "Subir foto"}
+                </button>
+              </div>
+            </form>
+            ) : null}
+          </div>
+
+          <div className="t-panel">
+            <div className="flex flex-wrap gap-4 border-b border-[var(--t-line)] px-3">
+              {tabs.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => void navigate({ to: "/fotos", search: { tab: t.key } })}
+                  className={
+                    t.key === tab
+                      ? "-mb-px border-b-2 border-[var(--t-blue)] py-2 text-[12px] font-bold text-[var(--t-blue)]"
+                      : "py-2 text-[12px] text-[var(--t-ink-soft)]"
+                  }
+                >
+                  {t.label} <span className="text-[10px]">{t.count}</span>
+                </button>
+              ))}
+            </div>
+
+            {tab === "etiquetas" ? (
+              <ul className="divide-y divide-[var(--t-line)] p-3 pt-0">
+                {(myTags.data ?? []).length === 0 ? (
+                  <li className="py-8 text-center text-[12px] text-[var(--t-ink-soft)]">
+                    Todavía no has etiquetado a nadie.
+                  </li>
+                ) : (
+                  (myTags.data ?? []).map((t) => {
+                    const photo = (myTagPhotos.data ?? []).find((p) => p.id === t.photo_id);
+                    const person = peopleMap.get(t.tagged_id);
+                    return (
+                      <li key={`${t.photo_id}-${t.tagged_id}`} className="flex items-center gap-2 py-2">
+                        <Link to="/foto/$photoId" params={{ photoId: t.photo_id }}>
+                          <MediaImage
+                            path={photo?.image_url}
+                            alt={photo?.title || "Foto etiquetada"}
+                            className="h-10 w-10 object-cover"
+                            fallback={
+                              <div className="h-10 w-10 bg-[oklch(0.93_0.02_245)]" aria-hidden />
+                            }
+                          />
+                        </Link>
+                        <p className="min-w-0 flex-1 text-[12px]">
+                          Etiquetaste a{" "}
+                          {person ? (
+                            <Link
+                              to="/perfil/$username"
+                              params={{ username: person.username }}
+                              className="t-link font-bold"
+                            >
+                              {person.display_name || person.username}
+                            </Link>
+                          ) : (
+                            "alguien"
+                          )}{" "}
+                          <span className="text-[10px] text-[var(--t-ink-soft)]">
+                            {new Date(t.created_at).toLocaleDateString("es-ES")}
+                          </span>
+                        </p>
+                        <button
+                          type="button"
+                          className="text-[11px] text-[var(--t-ink-soft)] hover:underline"
+                          onClick={() =>
+                            removeMyTag.mutate({ photoId: t.photo_id, taggedId: t.tagged_id })
+                          }
+                        >
+                          Quitar
+                        </button>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-2 p-3 pb-0">
+                  <label className="flex min-w-[200px] flex-1 items-center gap-2 rounded-md border border-[var(--t-line)] bg-white px-2 py-1.5">
+                    <Search size={14} className="text-[var(--t-ink-soft)]" />
+                    <input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Buscar fotos..."
+                      className="w-full bg-transparent text-[12px] outline-none placeholder:text-[var(--t-ink-soft)]"
+                    />
+                  </label>
+                  <div className="flex items-center gap-1 rounded-md border border-[var(--t-line)] bg-white px-2 py-1.5 text-[11px]">
+                    <span className="text-[var(--t-ink-soft)]">Vista:</span>
+                    <select
+                      value={view}
+                      onChange={(e) => setView(e.target.value as typeof view)}
+                      aria-label="Cambiar vista"
+                      className="bg-transparent text-[11px] outline-none"
+                    >
+                      <option>Cuadrícula</option>
+                      <option>Lista</option>
+                    </select>
+                    <ChevronDown size={12} className="text-[var(--t-ink-soft)]" />
+                  </div>
+                </div>
+                <div className="grid gap-3 p-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {tab === "mias" ? (
+                    <PhotoGrid
+                      photos={filter(mine.data ?? [])}
+                      empty="Todavía no has subido ninguna foto."
+                      view={view}
+                    />
+                  ) : (
+                    <PhotoGrid
+                      photos={filter(taggedPhotos.data ?? [])}
+                      empty="Nadie te ha etiquetado en ninguna foto."
+                      view={view}
+                    />
+                  )}
+                </div>
+              </>
+            )}
+
+            {tab === "salgo" && (taggedPhotos.data ?? []).length > 0 ? (
+              <div className="border-t border-[var(--t-line)] p-3">
+                <p className="mb-1.5 text-[11px] font-bold text-[var(--t-ink)]">
+                  Quitar mis etiquetas
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(taggedPhotos.data ?? []).map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="border border-[var(--t-line)] bg-white px-2 py-1 text-[10px] text-[var(--t-ink-soft)] hover:underline"
+                      onClick={() => untag.mutate(p.id)}
+                    >
+                      × {p.title || "Sin título"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        <aside className="space-y-3">
+          <CalendarWidget
+            marks={Array.from(
+              new Set((mine.data ?? []).map((p) => new Date(p.created_at).getDate())),
+            )}
+          />
+          <div className="t-panel p-3">
+            <h2 className="mb-2 border-b border-[var(--t-line)] pb-1.5 text-[12px] font-bold uppercase text-[var(--t-ink)]">
+              Resumen
+            </h2>
+            <p className="text-[11px] text-[var(--t-ink-soft)]">
+              <strong className="text-[var(--t-green)]">{(mine.data ?? []).length}</strong> fotos
+              subidas
+            </p>
+            <p className="text-[11px] text-[var(--t-ink-soft)]">
+              <strong className="text-[var(--t-green)]">{taggedIds.length}</strong> fotos en las que
+              sales
+            </p>
+            <p className="text-[11px] text-[var(--t-ink-soft)]">
+              <strong className="text-[var(--t-green)]">{(myTags.data ?? []).length}</strong>{" "}
+              etiquetas puestas
+            </p>
+          </div>
+
+          <div className="t-panel p-3">
+            <h2 className="mb-2 border-b border-[var(--t-line)] pb-1.5 text-[12px] font-bold uppercase text-[var(--t-ink)]">
+              Mis álbumes
+            </h2>
+            {(albums.data ?? []).length === 0 ? (
+              <p className="text-[11px] text-[var(--t-ink-soft)]">Aún no tienes álbumes.</p>
+            ) : (
+              <ul className="space-y-1">
+                {(albums.data ?? []).slice(0, 6).map((a) => (
+                  <li key={a.id}>
+                    <Link
+                      to="/album/$albumId"
+                      params={{ albumId: a.id }}
+                      className="t-link text-[11px]"
+                    >
+                      {a.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link to="/albumes" className="t-link mt-2 inline-block text-[11px] font-bold">
+              Ver todos »
+            </Link>
+          </div>
+
+          <div className="t-panel p-3">
+            <h2 className="mb-2 flex items-center gap-1.5 border-b border-[var(--t-line)] pb-1.5 text-[12px] font-bold uppercase text-[var(--t-ink)]">
+              <Tag size={12} /> Etiquetas
+            </h2>
+            <p className="text-[11px] text-[var(--t-ink-soft)]">
+              Puedes etiquetar a tus amigos abriendo cualquier foto.
+            </p>
+          </div>
+        </aside>
+      </main>
+    </div>
+  );
+}

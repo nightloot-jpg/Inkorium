@@ -1,1 +1,11 @@
-ZXhwb3J0IGZ1bmN0aW9uIHRpbWVBZ28oaXNvOiBzdHJpbmcpIHsKICBjb25zdCBkaWZmID0gRGF0ZS5ub3coKSAtIG5ldyBEYXRlKGlzbykuZ2V0VGltZSgpOwogIGNvbnN0IG1pbiA9IE1hdGguZmxvb3IoZGlmZiAvIDYwMDAwKTsKICBpZiAobWluIDwgMSkgcmV0dXJuICJhaG9yYSBtaXNtbyI7CiAgaWYgKG1pbiA8IDYwKSByZXR1cm4gYGhhY2UgJHttaW59IG1pbmA7CiAgY29uc3QgaCA9IE1hdGguZmxvb3IobWluIC8gNjApOwogIGlmIChoIDwgMjQpIHJldHVybiBgaGFjZSAke2h9IGhgOwogIGNvbnN0IGQgPSBNYXRoLmZsb29yKGggLyAyNCk7CiAgaWYgKGQgPCAzMCkgcmV0dXJuIGBoYWNlICR7ZH0gZGA7CiAgcmV0dXJuIG5ldyBEYXRlKGlzbykudG9Mb2NhbGVEYXRlU3RyaW5nKCJlcy1FUyIsIHsgZGF5OiAibnVtZXJpYyIsIG1vbnRoOiAic2hvcnQiLCB5ZWFyOiAibnVtZXJpYyIgfSk7Cn0=
+export function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "ahora mismo";
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `hace ${d} d`;
+  return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+}

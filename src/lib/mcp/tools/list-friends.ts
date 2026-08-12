@@ -1,1 +1,32 @@
-aW1wb3J0IHsgZGVmaW5lVG9vbCB9IGZyb20gIkBsb3ZhYmxlLmRldi9tY3AtanMiOwppbXBvcnQgeyBub3RBdXRoZW50aWNhdGVkLCBzdXBhYmFzZUZvclVzZXIgfSBmcm9tICIuLi9zdXBhYmFzZSI7CgpleHBvcnQgZGVmYXVsdCBkZWZpbmVUb29sKHsKICBuYW1lOiAibGlzdF9mcmllbmRzIiwKICB0aXRsZTogIlZlciBtaXMgYW1pZ29zIiwKICBkZXNjcmlwdGlvbjogIkxpc3RhIGxvcyBhbWlnb3MgYWNlcHRhZG9zIHkgbGFzIHNvbGljaXR1ZGVzIGRlIGFtaXN0YWQgcGVuZGllbnRlcyBkZSBsYSBwZXJzb25hIGNvbmVjdGFkYS4iLAogIGlucHV0U2NoZW1hOiB7fSwKICBhbm5vdGF0aW9uczogeyByZWFkT25seUhpbnQ6IHRydWUsIGlkZW1wb3RlbnRIaW50OiB0cnVlLCBvcGVuV29ybGRIaW50OiBmYWxzZSB9LAogIGhhbmRsZXI6IGFzeW5jIChfaW5wdXQsIGN0eCkgPT4gewogICAgaWYgKCFjdHguaXNBdXRoZW50aWNhdGVkKCkpIHJldHVybiBub3RBdXRoZW50aWNhdGVkKCk7CiAgICBjb25zdCB1c2VySWQgPSBjdHguZ2V0VXNlcklkKCk7CiAgICBjb25zdCBzdXBhYmFzZSA9IHN1cGFiYXNlRm9yVXNlcihjdHgpOwogICAgY29uc3QgeyBkYXRhLCBlcnJvciB9ID0gYXdhaXQgc3VwYWJhc2UKICAgICAgLmZyb20oImZyaWVuZHNoaXBzIikKICAgICAgLnNlbGVjdCgKICAgICAgICAiaWQsIHN0YXR1cywgcmVxdWVzdGVyX2lkLCBhZGRyZXNzZWVfaWQsIHJlcXVlc3RlcjpyZXF1ZXN0ZXJfaWQgKHVzZXJuYW1lLCBkaXNwbGF5X25hbWUpLCBhZGRyZXNzZWU6YWRkcmVzc2VlX2lkICh1c2VybmFtZSwgZGlzcGxheV9uYW1lKSIsCiAgICAgICkKICAgICAgLm9yKGByZXF1ZXN0ZXJfaWQuZXEuJHt1c2VySWR9LGFkZHJlc3NlZV9pZC5lcS4ke3VzZXJJZH1gKQogICAgICAub3JkZXIoImNyZWF0ZWRfYXQiLCB7IGFzY2VuZGluZzogZmFsc2UgfSkKICAgICAgLmxpbWl0KDIwMCk7CiAgICBpZiAoZXJyb3IpIHJldHVybiB7IGNvbnRlbnQ6IFt7IHR5cGU6ICJ0ZXh0IiwgdGV4dDogZXJyb3IubWVzc2FnZSB9XSwgaXNFcnJvcjogdHJ1ZSB9OwogICAgY29uc3Qgcm93cyA9IGRhdGEgPz8gW107CiAgICBjb25zdCBmcmllbmRzID0gcm93cy5maWx0ZXIoKHIpID0+IHIuc3RhdHVzID09PSAiYWNjZXB0ZWQiKTsKICAgIGNvbnN0IHBlbmRpbmcgPSByb3dzLmZpbHRlcigocikgPT4gci5zdGF0dXMgIT09ICJhY2NlcHRlZCIpOwogICAgY29uc3QgcGF5bG9hZCA9IHsgZnJpZW5kcywgcGVuZGluZyB9OwogICAgcmV0dXJuIHsKICAgICAgY29udGVudDogW3sgdHlwZTogInRleHQiLCB0ZXh0OiBKU09OLnN0cmluZ2lmeShwYXlsb2FkKSB9XSwKICAgICAgc3RydWN0dXJlZENvbnRlbnQ6IHBheWxvYWQsCiAgICB9OwogIH0sCn0pOw==
+import { defineTool } from "@lovable.dev/mcp-js";
+import { notAuthenticated, supabaseForUser } from "../supabase";
+
+export default defineTool({
+  name: "list_friends",
+  title: "Ver mis amigos",
+  description: "Lista los amigos aceptados y las solicitudes de amistad pendientes de la persona conectada.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    const userId = ctx.getUserId();
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase
+      .from("friendships")
+      .select(
+        "id, status, requester_id, addressee_id, requester:requester_id (username, display_name), addressee:addressee_id (username, display_name)",
+      )
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    const rows = data ?? [];
+    const friends = rows.filter((r) => r.status === "accepted");
+    const pending = rows.filter((r) => r.status !== "accepted");
+    const payload = { friends, pending };
+    return {
+      content: [{ type: "text", text: JSON.stringify(payload) }],
+      structuredContent: payload,
+    };
+  },
+});

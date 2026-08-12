@@ -1,1 +1,484 @@
-aW1wb3J0IHsgY3JlYXRlRmlsZVJvdXRlLCBMaW5rIH0gZnJvbSAiQHRhbnN0YWNrL3JlYWN0LXJvdXRlciI7CmltcG9ydCB7IHVzZU1lbW8sIHVzZVN0YXRlIH0gZnJvbSAicmVhY3QiOwppbXBvcnQgeyB1c2VNdXRhdGlvbiwgdXNlUXVlcnksIHVzZVF1ZXJ5Q2xpZW50IH0gZnJvbSAiQHRhbnN0YWNrL3JlYWN0LXF1ZXJ5IjsKaW1wb3J0IHsgdG9hc3QgfSBmcm9tICJzb25uZXIiOwppbXBvcnQgewogIENoZXZyb25Eb3duLAogIEdsb2JlLAogIEltYWdlcywKICBMb2NrLAogIE1vcmVIb3Jpem9udGFsLAogIFBsdXMsCiAgU2VhcmNoLAp9IGZyb20gImx1Y2lkZS1yZWFjdCI7CgppbXBvcnQgeyBTaWRlTWVudSB9IGZyb20gIkAvY29tcG9uZW50cy9TaWRlTWVudSI7CmltcG9ydCB7IE1lZGlhSW1hZ2UgfSBmcm9tICJAL2NvbXBvbmVudHMvTWVkaWFJbWFnZSI7CmltcG9ydCB7IENhbGVuZGFyV2lkZ2V0IH0gZnJvbSAiQC9jb21wb25lbnRzL0NhbGVuZGFyV2lkZ2V0IjsKaW1wb3J0IHsgdXNlU2Vzc2lvbiB9IGZyb20gIkAvbGliL3Nlc3Npb24iOwppbXBvcnQgewogIGNyZWF0ZUFsYnVtLAogIGdldEFsYnVtUGhvdG9zLAogIGdldEFsYnVtc0J5VXNlciwKICBnZXRGcmllbmRJZHMsCiAgZ2V0UHVibGljQWxidW1zQnlVc2VycywKICB0eXBlIEFsYnVtLAp9IGZyb20gIkAvbGliL2FwaSI7CgpleHBvcnQgY29uc3QgUm91dGUgPSBjcmVhdGVGaWxlUm91dGUoIi9fYXV0aGVudGljYXRlZC9hbGJ1bWVzIikoewogIGhlYWQ6ICgpID0+ICh7CiAgICBtZXRhOiBbCiAgICAgIHsgdGl0bGU6ICJNaXMgw6FsYnVtZXMg4oCUIG5vY3R1cm5vIiB9LAogICAgICB7CiAgICAgICAgbmFtZTogImRlc2NyaXB0aW9uIiwKICAgICAgICBjb250ZW50OgogICAgICAgICAgIk9yZ2FuaXphIHR1cyBmb3RvcyBlbiDDoWxidW1lczogY3JlYSDDoWxidW1lcyBww7pibGljb3MgbyBwcml2YWRvcyB5IG9yZGVuYSB0dXMgcmVjdWVyZG9zLiIsCiAgICAgIH0sCiAgICAgIHsgcHJvcGVydHk6ICJvZzp0aXRsZSIsIGNvbnRlbnQ6ICJNaXMgw6FsYnVtZXMg4oCUIG5vY3R1cm5vIiB9LAogICAgICB7CiAgICAgICAgcHJvcGVydHk6ICJvZzpkZXNjcmlwdGlvbiIsCiAgICAgICAgY29udGVudDogIkNyZWEgeSBnZXN0aW9uYSB0dXMgw6FsYnVtZXMgZGUgZm90b3MgZW4gbm9jdHVybm8uIiwKICAgICAgfSwKICAgICAgeyBwcm9wZXJ0eTogIm9nOnR5cGUiLCBjb250ZW50OiAid2Vic2l0ZSIgfSwKICAgICAgeyBuYW1lOiAidHdpdHRlcjpjYXJkIiwgY29udGVudDogInN1bW1hcnkiIH0sCiAgICBdLAogIH0pLAogIGNvbXBvbmVudDogQWxidW1lc1BhZ2UsCn0pOwoKY29uc3QgVEFCUyA9IFsiVG9kb3MiLCAiUMO6YmxpY29zIiwgIlByaXZhZG9zIiwgIkNvbXBhcnRpZG9zIGNvbm1pZ28iXSBhcyBjb25zdDsKdHlwZSBUYWIgPSAodHlwZW9mIFRBQlMpW251bWJlcl07Cgpjb25zdCBNT05USFMgPSBbCiAgIkVuZXJvIiwgIkZlYnJlcm8iLCAiTWFyem8iLCAiQWJyaWwiLCAiTWF5byIsICJKdW5pbyIsCiAgIkp1bGlvIiwgIkFnb3N0byIsICJTZXB0aWVtYnJlIiwgIk9jdHVicmUiLCAiTm92aWVtYnJlIiwgIkRpY2llbWJyZSIsCl07CgpmdW5jdGlvbiBmb3JtYXREYXRlKGlzbzogc3RyaW5nKSB7CiAgY29uc3QgZCA9IG5ldyBEYXRlKGlzbyk7CiAgcmV0dXJuIGAke2QuZ2V0RGF0ZSgpfSAke01PTlRIU1tkLmdldE1vbnRoKCldfSAke2QuZ2V0RnVsbFllYXIoKX1gOwp9Cgpjb25zdCBQQUdFID0gMTI7CgpmdW5jdGlvbiBBbGJ1bWVzUGFnZSgpIHsKICBjb25zdCB7IHVzZXIgfSA9IHVzZVNlc3Npb24oKTsKICBjb25zdCBxYyA9IHVzZVF1ZXJ5Q2xpZW50KCk7CiAgY29uc3QgW3RhYiwgc2V0VGFiXSA9IHVzZVN0YXRlPFRhYj4oIlRvZG9zIik7CiAgY29uc3QgW3F1ZXJ5LCBzZXRRdWVyeV0gPSB1c2VTdGF0ZSgiIik7CiAgY29uc3QgW3NvcnQsIHNldFNvcnRdID0gdXNlU3RhdGU8Ik3DoXMgcmVjaWVudGVzIiB8ICJNw6FzIGZvdG9zIiB8ICJBLVoiPigiTcOhcyByZWNpZW50ZXMiKTsKICBjb25zdCBbdmlldywgc2V0Vmlld10gPSB1c2VTdGF0ZTwiQ3VhZHLDrWN1bGEiIHwgIkxpc3RhIj4oIkN1YWRyw61jdWxhIik7CiAgY29uc3QgW3Zpc2libGUsIHNldFZpc2libGVdID0gdXNlU3RhdGUoUEFHRSk7CiAgY29uc3QgW29wZW5Gb3JtLCBzZXRPcGVuRm9ybV0gPSB1c2VTdGF0ZShmYWxzZSk7CiAgY29uc3QgW3RpdGxlLCBzZXRUaXRsZV0gPSB1c2VTdGF0ZSgiIik7CiAgY29uc3QgW3ByaXYsIHNldFByaXZdID0gdXNlU3RhdGUoZmFsc2UpOwoKICBjb25zdCBhbGJ1bXMgPSB1c2VRdWVyeSh7CiAgICBxdWVyeUtleTogWyJhbGJ1bXMiLCB1c2VyPy5pZF0sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRBbGJ1bXNCeVVzZXIodXNlciEuaWQpLAogICAgZW5hYmxlZDogQm9vbGVhbih1c2VyKSwKICB9KTsKICBjb25zdCBwaG90b3MgPSB1c2VRdWVyeSh7CiAgICBxdWVyeUtleTogWyJhbGJ1bS1waG90b3MiLCB1c2VyPy5pZF0sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRBbGJ1bVBob3Rvcyh1c2VyIS5pZCksCiAgICBlbmFibGVkOiBCb29sZWFuKHVzZXIpLAogIH0pOwogIGNvbnN0IGZyaWVuZElkcyA9IHVzZVF1ZXJ5KHsKICAgIHF1ZXJ5S2V5OiBbImZyaWVuZC1pZHMiLCB1c2VyPy5pZF0sCiAgICBxdWVyeUZuOiAoKSA9PiBnZXRGcmllbmRJZHModXNlciEuaWQpLAogICAgZW5hYmxlZDogQm9vbGVhbih1c2VyKSwKICB9KTsKICBjb25zdCBzaGFyZWQgPSB1c2VRdWVyeSh7CiAgICBxdWVyeUtleTogWyJzaGFyZWQtYWxidW1zIiwgZnJpZW5kSWRzLmRhdGFdLAogICAgcXVlcnlGbjogKCkgPT4gZ2V0UHVibGljQWxidW1zQnlVc2VycyhmcmllbmRJZHMuZGF0YSA/PyBbXSksCiAgICBlbmFibGVkOiAoZnJpZW5kSWRzLmRhdGEgPz8gW10pLmxlbmd0aCA+IDAsCiAgfSk7CgogIGNvbnN0IGNyZWF0ZSA9IHVzZU11dGF0aW9uKHsKICAgIG11dGF0aW9uRm46ICgpID0+CiAgICAgIGNyZWF0ZUFsYnVtKHsgdXNlcl9pZDogdXNlciEuaWQsIHRpdGxlOiB0aXRsZS50cmltKCksIGRlc2NyaXB0aW9uOiAiIiwgaXNfcHJpdmF0ZTogcHJpdiB9KSwKICAgIG9uU3VjY2VzczogKCkgPT4gewogICAgICBzZXRUaXRsZSgiIik7CiAgICAgIHNldFByaXYoZmFsc2UpOwogICAgICBzZXRPcGVuRm9ybShmYWxzZSk7CiAgICAgIHRvYXN0LnN1Y2Nlc3MoIsOBbGJ1bSBjcmVhZG8iKTsKICAgICAgdm9pZCBxYy5pbnZhbGlkYXRlUXVlcmllcyh7IHF1ZXJ5S2V5OiBbImFsYnVtcyIsIHVzZXI/LmlkXSB9KTsKICAgIH0sCiAgICBvbkVycm9yOiAoZTogRXJyb3IpID0+IHRvYXN0LmVycm9yKGUubWVzc2FnZSksCiAgfSk7CgogIGNvbnN0IHJvd3MgPSBhbGJ1bXMuZGF0YSA/PyBbXTsKICBjb25zdCBwaWNzID0gcGhvdG9zLmRhdGEgPz8gW107CiAgY29uc3Qgc2hhcmVkUm93cyA9IHNoYXJlZC5kYXRhID8/IFtdOwoKICBjb25zdCBjb3VudE9mID0gKGlkOiBzdHJpbmcpID0+IHBpY3MuZmlsdGVyKChwKSA9PiBwLmFsYnVtX2lkID09PSBpZCkubGVuZ3RoOwogIGNvbnN0IGNvdmVyT2YgPSAoYTogQWxidW0pID0+CiAgICBhLmNvdmVyX3VybCA/PyBwaWNzLmZpbmQoKHApID0+IHAuYWxidW1faWQgPT09IGEuaWQpPy5pbWFnZV91cmwgPz8gbnVsbDsKICBjb25zdCBtb3NhaWNPZiA9IChhOiBBbGJ1bSkgPT4KICAgIHBpY3MuZmlsdGVyKChwKSA9PiBwLmFsYnVtX2lkID09PSBhLmlkKS5zbGljZSgwLCA0KS5tYXAoKHApID0+IHAuaW1hZ2VfdXJsKTsKCiAgY29uc3QgbGlzdCA9IHVzZU1lbW8oKCkgPT4gewogICAgY29uc3QgYmFzZSA9IHRhYiA9PT0gIkNvbXBhcnRpZG9zIGNvbm1pZ28iID8gc2hhcmVkUm93cyA6IHJvd3M7CiAgICBsZXQgb3V0ID0gYmFzZS5maWx0ZXIoKGEpID0+IGEudGl0bGUudG9Mb3dlckNhc2UoKS5pbmNsdWRlcyhxdWVyeS50cmltKCkudG9Mb3dlckNhc2UoKSkpOwogICAgaWYgKHRhYiA9PT0gIlDDumJsaWNvcyIpIG91dCA9IG91dC5maWx0ZXIoKGEpID0+ICFhLmlzX3ByaXZhdGUpOwogICAgaWYgKHRhYiA9PT0gIlByaXZhZG9zIikgb3V0ID0gb3V0LmZpbHRlcigoYSkgPT4gYS5pc19wcml2YXRlKTsKICAgIGlmIChzb3J0ID09PSAiQS1aIikgb3V0ID0gWy4uLm91dF0uc29ydCgoYSwgYikgPT4gYS50aXRsZS5sb2NhbGVDb21wYXJlKGIudGl0bGUpKTsKICAgIGlmIChzb3J0ID09PSAiTcOhcyBmb3RvcyIpIG91dCA9IFsuLi5vdXRdLnNvcnQoKGEsIGIpID0+IGNvdW50T2YoYi5pZCkgLSBjb3VudE9mKGEuaWQpKTsKICAgIHJldHVybiBvdXQ7CiAgfSwgW3Jvd3MsIHNoYXJlZFJvd3MsIHBpY3MsIHF1ZXJ5LCB0YWIsIHNvcnRdKTsKCiAgY29uc3Qgc2hvd25MaXN0ID0gbGlzdC5zbGljZSgwLCB2aXNpYmxlKTsKCiAgY29uc3QgcHVibGljQ291bnQgPSByb3dzLmZpbHRlcigoYSkgPT4gIWEuaXNfcHJpdmF0ZSkubGVuZ3RoOwogIGNvbnN0IHByaXZhdGVDb3VudCA9IHJvd3MuZmlsdGVyKChhKSA9PiBhLmlzX3ByaXZhdGUpLmxlbmd0aDsKICBjb25zdCB0YWJDb3VudCA9ICh0OiBUYWIpID0+CiAgICB0ID09PSAiVG9kb3MiCiAgICAgID8gcm93cy5sZW5ndGgKICAgICAgOiB0ID09PSAiUMO6YmxpY29zIgogICAgICAgID8gcHVibGljQ291bnQKICAgICAgICA6IHQgPT09ICJQcml2YWRvcyIKICAgICAgICAgID8gcHJpdmF0ZUNvdW50CiAgICAgICAgICA6IHNoYXJlZFJvd3MubGVuZ3RoOwoKICBjb25zdCBmZWF0dXJlZCA9IFsuLi5yb3dzXS5zb3J0KChhLCBiKSA9PiBjb3VudE9mKGIuaWQpIC0gY291bnRPZihhLmlkKSlbMF07CiAgY29uc3QgcG9wdWxhciA9IFsuLi5yb3dzXS5zb3J0KChhLCBiKSA9PiBjb3VudE9mKGIuaWQpIC0gY291bnRPZihhLmlkKSkuc2xpY2UoMCwgNCk7CiAgY29uc3QgbWFya3MgPSBBcnJheS5mcm9tKG5ldyBTZXQocm93cy5tYXAoKGEpID0+IG5ldyBEYXRlKGEuY3JlYXRlZF9hdCkuZ2V0RGF0ZSgpKSkpOwoKICBjb25zdCBDb3ZlciA9ICh7IGEsIGggfTogeyBhOiBBbGJ1bTsgaDogc3RyaW5nIH0pID0+IHsKICAgIGNvbnN0IG1vc2FpYyA9IG1vc2FpY09mKGEpOwogICAgaWYgKG1vc2FpYy5sZW5ndGggPj0gNCkgewogICAgICByZXR1cm4gKAogICAgICAgIDxkaXYgY2xhc3NOYW1lPXtgZ3JpZCBncmlkLWNvbHMtMiBncmlkLXJvd3MtMiBnYXAtWzJweF0gJHtofSB3LWZ1bGwgb3ZlcmZsb3ctaGlkZGVuIGJnLVtva2xjaCgwLjkzXzAuMDJfMjQ1KV1gfT4KICAgICAgICAgIHttb3NhaWMubWFwKChtLCBpKSA9PiAoCiAgICAgICAgICAgIDxNZWRpYUltYWdlCiAgICAgICAgICAgICAga2V5PXtgJHthLmlkfS0ke2l9YH0KICAgICAgICAgICAgICBwYXRoPXttfQogICAgICAgICAgICAgIGFsdD17YS50aXRsZX0KICAgICAgICAgICAgICBjbGFzc05hbWU9ImgtZnVsbCB3LWZ1bGwgb2JqZWN0LWNvdmVyIgogICAgICAgICAgICAgIGZhbGxiYWNrPXs8c3BhbiBjbGFzc05hbWU9ImJsb2NrIGgtZnVsbCB3LWZ1bGwiIC8+fQogICAgICAgICAgICAvPgogICAgICAgICAgKSl9CiAgICAgICAgPC9kaXY+CiAgICAgICk7CiAgICB9CiAgICByZXR1cm4gKAogICAgICA8ZGl2IGNsYXNzTmFtZT17YCR7aH0gdy1mdWxsIG92ZXJmbG93LWhpZGRlbiBiZy1bb2tsY2goMC45M18wLjAyXzI0NSldYH0+CiAgICAgICAgPE1lZGlhSW1hZ2UKICAgICAgICAgIHBhdGg9e2NvdmVyT2YoYSl9CiAgICAgICAgICBhbHQ9e2EudGl0bGV9CiAgICAgICAgICBjbGFzc05hbWU9e2Ake2h9IHctZnVsbCBvYmplY3QtY292ZXJgfQogICAgICAgICAgZmFsbGJhY2s9ewogICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17YGZsZXggJHtofSB3LWZ1bGwgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyYH0+CiAgICAgICAgICAgICAgPEltYWdlcyBzaXplPXsyMn0gY2xhc3NOYW1lPSJ0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iIC8+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgfQogICAgICAgIC8+CiAgICAgIDwvZGl2PgogICAgKTsKICB9OwoKICByZXR1cm4gKAogICAgPGRpdiBjbGFzc05hbWU9InQtc2hlbGwgbWluLWgtc2NyZWVuIj4KICAgICAgPG1haW4gY2xhc3NOYW1lPSJteC1hdXRvIGdyaWQgbWF4LXctNnhsIGdhcC0zIHB4LTMgcHktNCBsZzpncmlkLWNvbHMtWzIzMHB4XzFmcl8yNDBweF0iPgogICAgICAgIDxhc2lkZSBjbGFzc05hbWU9InNwYWNlLXktMyI+CiAgICAgICAgICA8U2lkZU1lbnUgYWN0aXZlPSJhbGJ1bWVzIiAvPgogICAgICAgIDwvYXNpZGU+CgogICAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT0ic3BhY2UteS0zIj4KICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJ0LXBhbmVsIHAtMyI+CiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGl0ZW1zLXN0YXJ0IGp1c3RpZnktYmV0d2VlbiBnYXAtMyI+CiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXggZ2FwLTIiPgogICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJmbGV4IGgtOSB3LTkgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHJvdW5kZWQtbWQgYmctW29rbGNoKDAuOTNfMC4wM18yNDUpXSI+CiAgICAgICAgICAgICAgICAgIDxJbWFnZXMgc2l6ZT17MTh9IGNsYXNzTmFtZT0idGV4dC1bdmFyKC0tdC1ibHVlKV0iIC8+CiAgICAgICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICAgICAgICA8ZGl2PgogICAgICAgICAgICAgICAgICA8aDEgY2xhc3NOYW1lPSJ0ZXh0LVsxOHB4XSBmb250LWJvbGQgdGV4dC1bdmFyKC0tdC1pbmspXSI+TWlzIMOhbGJ1bWVzPC9oMT4KICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJ0ZXh0LVsxMXB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPgogICAgICAgICAgICAgICAgICAgIFRvZG9zIG1pcyByZWN1ZXJkb3MsIG9yZGVuYWRvcyBjb21vIG3DoXMgdGUgZ3VzdGFuLgogICAgICAgICAgICAgICAgICA8L3A+CiAgICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8YnV0dG9uCiAgICAgICAgICAgICAgICB0eXBlPSJidXR0b24iCiAgICAgICAgICAgICAgICBjbGFzc05hbWU9InQtYnRuIHJvdW5kZWQtZnVsbCBweC0zIgogICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0T3BlbkZvcm0oKHYpID0+ICF2KX0KICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICA8UGx1cyBzaXplPXsxMn0gY2xhc3NOYW1lPSJtci0xIGlubGluZSIgLz4gQ3JlYXIgw6FsYnVtCiAgICAgICAgICAgICAgPC9idXR0b24+CiAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAge29wZW5Gb3JtID8gKAogICAgICAgICAgICAgIDxmb3JtCiAgICAgICAgICAgICAgICBjbGFzc05hbWU9Im10LTMgZmxleCBmbGV4LXdyYXAgaXRlbXMtY2VudGVyIGdhcC0yIGJvcmRlci10IGJvcmRlci1bdmFyKC0tdC1saW5lKV0gcHQtMyIKICAgICAgICAgICAgICAgIG9uU3VibWl0PXsoZSkgPT4gewogICAgICAgICAgICAgICAgICBlLnByZXZlbnREZWZhdWx0KCk7CiAgICAgICAgICAgICAgICAgIGlmICghdGl0bGUudHJpbSgpKSB7CiAgICAgICAgICAgICAgICAgICAgdG9hc3QuZXJyb3IoIlBvbmxlIHVuIHTDrXR1bG8gYWwgw6FsYnVtIik7CiAgICAgICAgICAgICAgICAgICAgcmV0dXJuOwogICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgIGNyZWF0ZS5tdXRhdGUoKTsKICAgICAgICAgICAgICAgIH19CiAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgPGlucHV0CiAgICAgICAgICAgICAgICAgIHZhbHVlPXt0aXRsZX0KICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRUaXRsZShlLnRhcmdldC52YWx1ZSl9CiAgICAgICAgICAgICAgICAgIHBsYWNlaG9sZGVyPSJOb21icmUgZGVsIG51ZXZvIMOhbGJ1bS4uLiIKICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJtaW4tdy1bMjAwcHhdIGZsZXgtMSBib3JkZXIgYm9yZGVyLVt2YXIoLS10LWxpbmUpXSBiZy13aGl0ZSBweC0yIHB5LTEuNSB0ZXh0LVsxMnB4XSBvdXRsaW5lLW5vbmUiCiAgICAgICAgICAgICAgICAvPgogICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0iZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSB0ZXh0LVsxMXB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPgogICAgICAgICAgICAgICAgICA8aW5wdXQKICAgICAgICAgICAgICAgICAgICB0eXBlPSJjaGVja2JveCIKICAgICAgICAgICAgICAgICAgICBjaGVja2VkPXtwcml2fQogICAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0UHJpdihlLnRhcmdldC5jaGVja2VkKX0KICAgICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICAgICAgUHJpdmFkbwogICAgICAgICAgICAgICAgPC9sYWJlbD4KICAgICAgICAgICAgICAgIDxidXR0b24gdHlwZT0ic3VibWl0IiBjbGFzc05hbWU9InQtYnRuIiBkaXNhYmxlZD17Y3JlYXRlLmlzUGVuZGluZ30+CiAgICAgICAgICAgICAgICAgIEd1YXJkYXIKICAgICAgICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAgICAgIDwvZm9ybT4KICAgICAgICAgICAgKSA6IG51bGx9CiAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0idC1wYW5lbCI+CiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGZsZXgtd3JhcCBnYXAtNCBib3JkZXItYiBib3JkZXItW3ZhcigtLXQtbGluZSldIHB4LTMiPgogICAgICAgICAgICAgIHtUQUJTLm1hcCgodCkgPT4gKAogICAgICAgICAgICAgICAgPGJ1dHRvbgogICAgICAgICAgICAgICAgICBrZXk9e3R9CiAgICAgICAgICAgICAgICAgIHR5cGU9ImJ1dHRvbiIKICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gewogICAgICAgICAgICAgICAgICAgIHNldFRhYih0KTsKICAgICAgICAgICAgICAgICAgICBzZXRWaXNpYmxlKFBBR0UpOwogICAgICAgICAgICAgICAgICB9fQogICAgICAgICAgICAgICAgICBjbGFzc05hbWU9ewogICAgICAgICAgICAgICAgICAgIHQgPT09IHRhYgogICAgICAgICAgICAgICAgICAgICAgPyAiLW1iLXB4IGJvcmRlci1iLTIgYm9yZGVyLVt2YXIoLS10LWJsdWUpXSBweS0yIHRleHQtWzEycHhdIGZvbnQtYm9sZCB0ZXh0LVt2YXIoLS10LWJsdWUpXSIKICAgICAgICAgICAgICAgICAgICAgIDogInB5LTIgdGV4dC1bMTJweF0gdGV4dC1bdmFyKC0tdC1pbmstc29mdCldIgogICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgIHt0fSA8c3BhbiBjbGFzc05hbWU9InRleHQtWzEwcHhdIj57dGFiQ291bnQodCl9PC9zcGFuPgogICAgICAgICAgICAgICAgPC9idXR0b24+CiAgICAgICAgICAgICAgKSl9CiAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXggZmxleC13cmFwIGl0ZW1zLWNlbnRlciBnYXAtMiBwLTMiPgogICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9ImZsZXggbWluLXctWzIwMHB4XSBmbGV4LTEgaXRlbXMtY2VudGVyIGdhcC0yIHJvdW5kZWQtbWQgYm9yZGVyIGJvcmRlci1bdmFyKC0tdC1saW5lKV0gYmctd2hpdGUgcHgtMiBweS0xLjUiPgogICAgICAgICAgICAgICAgPFNlYXJjaCBzaXplPXsxNH0gY2xhc3NOYW1lPSJ0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iIC8+CiAgICAgICAgICAgICAgICA8aW5wdXQKICAgICAgICAgICAgICAgICAgdmFsdWU9e3F1ZXJ5fQogICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldFF1ZXJ5KGUudGFyZ2V0LnZhbHVlKX0KICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9IkJ1c2NhciDDoWxidW1lcy4uLiIKICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJ3LWZ1bGwgYmctdHJhbnNwYXJlbnQgdGV4dC1bMTJweF0gb3V0bGluZS1ub25lIHBsYWNlaG9sZGVyOnRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSIKICAgICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICAgPC9sYWJlbD4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEgcm91bmRlZC1tZCBib3JkZXIgYm9yZGVyLVt2YXIoLS10LWxpbmUpXSBiZy13aGl0ZSBweC0yIHB5LTEuNSB0ZXh0LVsxMXB4XSI+CiAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9InRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSI+T3JkZW5hciBwb3I6PC9zcGFuPgogICAgICAgICAgICAgICAgPHNlbGVjdAogICAgICAgICAgICAgICAgICB2YWx1ZT17c29ydH0KICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRTb3J0KGUudGFyZ2V0LnZhbHVlIGFzIHR5cGVvZiBzb3J0KX0KICAgICAgICAgICAgICAgICAgYXJpYS1sYWJlbD0iT3JkZW5hciDDoWxidW1lcyIKICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJiZy10cmFuc3BhcmVudCB0ZXh0LVsxMXB4XSBvdXRsaW5lLW5vbmUiCiAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgIDxvcHRpb24+TcOhcyByZWNpZW50ZXM8L29wdGlvbj4KICAgICAgICAgICAgICAgICAgPG9wdGlvbj5Nw6FzIGZvdG9zPC9vcHRpb24+CiAgICAgICAgICAgICAgICAgIDxvcHRpb24+QS1aPC9vcHRpb24+CiAgICAgICAgICAgICAgICA8L3NlbGVjdD4KICAgICAgICAgICAgICAgIDxDaGV2cm9uRG93biBzaXplPXsxMn0gY2xhc3NOYW1lPSJ0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iIC8+CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXggaXRlbXMtY2VudGVyIGdhcC0xIHJvdW5kZWQtbWQgYm9yZGVyIGJvcmRlci1bdmFyKC0tdC1saW5lKV0gYmctd2hpdGUgcHgtMiBweS0xLjUgdGV4dC1bMTFweF0iPgogICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJ0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPlZpc3RhOjwvc3Bhbj4KICAgICAgICAgICAgICAgIDxzZWxlY3QKICAgICAgICAgICAgICAgICAgdmFsdWU9e3ZpZXd9CiAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0VmlldyhlLnRhcmdldC52YWx1ZSBhcyB0eXBlb2Ygdmlldyl9CiAgICAgICAgICAgICAgICAgIGFyaWEtbGFiZWw9IkNhbWJpYXIgdmlzdGEiCiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0iYmctdHJhbnNwYXJlbnQgdGV4dC1bMTFweF0gb3V0bGluZS1ub25lIgogICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICA8b3B0aW9uPkN1YWRyw61jdWxhPC9vcHRpb24+CiAgICAgICAgICAgICAgICAgIDxvcHRpb24+TGlzdGE8L29wdGlvbj4KICAgICAgICAgICAgICAgIDwvc2VsZWN0PgogICAgICAgICAgICAgICAgPENoZXZyb25Eb3duIHNpemU9ezEyfSBjbGFzc05hbWU9InRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSIgLz4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPC9kaXY+CgogICAgICAgICAgICA8ZGl2CiAgICAgICAgICAgICAgY2xhc3NOYW1lPXsKICAgICAgICAgICAgICAgIHZpZXcgPT09ICJDdWFkcsOtY3VsYSIKICAgICAgICAgICAgICAgICAgPyAiZ3JpZCBnYXAtMyBweC0zIHBiLTMgc206Z3JpZC1jb2xzLTIgbGc6Z3JpZC1jb2xzLTQiCiAgICAgICAgICAgICAgICAgIDogImZsZXggZmxleC1jb2wgZ2FwLTIgcHgtMyBwYi0zIgogICAgICAgICAgICAgIH0KICAgICAgICAgICAgPgogICAgICAgICAgICAgIHtzaG93bkxpc3QubGVuZ3RoID09PSAwID8gKAogICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJjb2wtc3Bhbi1mdWxsIHB5LTggdGV4dC1jZW50ZXIgdGV4dC1bMTJweF0gdGV4dC1bdmFyKC0tdC1pbmstc29mdCldIj4KICAgICAgICAgICAgICAgICAge3RhYiA9PT0gIkNvbXBhcnRpZG9zIGNvbm1pZ28iCiAgICAgICAgICAgICAgICAgICAgPyAiVHVzIGFtaWdvcyBhw7puIG5vIGhhbiBjb21wYXJ0aWRvIMOhbGJ1bWVzLiIKICAgICAgICAgICAgICAgICAgICA6IHJvd3MubGVuZ3RoID09PSAwCiAgICAgICAgICAgICAgICAgICAgICA/ICJUb2RhdsOtYSBubyB0aWVuZXMgw6FsYnVtZXMuIENyZWEgZWwgcHJpbWVybyBhcnJpYmEuIgogICAgICAgICAgICAgICAgICAgICAgOiAiTm8gaGF5IMOhbGJ1bWVzIHF1ZSBjb2luY2lkYW4gY29uIHR1IGLDunNxdWVkYS4ifQogICAgICAgICAgICAgICAgPC9wPgogICAgICAgICAgICAgICkgOiAoCiAgICAgICAgICAgICAgICBzaG93bkxpc3QubWFwKChhKSA9PgogICAgICAgICAgICAgICAgICB2aWV3ID09PSAiQ3VhZHLDrWN1bGEiID8gKAogICAgICAgICAgICAgICAgICAgIDxMaW5rCiAgICAgICAgICAgICAgICAgICAgICBrZXk9e2EuaWR9CiAgICAgICAgICAgICAgICAgICAgICB0bz0iL2FsYnVtLyRhbGJ1bUlkIgogICAgICAgICAgICAgICAgICAgICAgcGFyYW1zPXt7IGFsYnVtSWQ6IGEuaWQgfX0KICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0iYmxvY2sgb3ZlcmZsb3ctaGlkZGVuIHJvdW5kZWQtbWQgYm9yZGVyIGJvcmRlci1bdmFyKC0tdC1saW5lKV0gYmctd2hpdGUiCiAgICAgICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICAgICAgPENvdmVyIGE9e2F9IGg9ImgtMzIiIC8+CiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0icC0yIj4KICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJ0cnVuY2F0ZSB0ZXh0LVsxMnB4XSBmb250LWJvbGQgdGV4dC1bdmFyKC0tdC1pbmspXSI+CiAgICAgICAgICAgICAgICAgICAgICAgICAge2EudGl0bGV9CiAgICAgICAgICAgICAgICAgICAgICAgIDwvcD4KICAgICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJtdC0wLjUgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEgdGV4dC1bMTBweF0gdGV4dC1bdmFyKC0tdC1pbmstc29mdCldIj4KICAgICAgICAgICAgICAgICAgICAgICAgICB7Zm9ybWF0RGF0ZShhLmNyZWF0ZWRfYXQpfSDCtyB7YS5pc19wcml2YXRlID8gIlByaXZhZG8iIDogIlDDumJsaWNvIn0KICAgICAgICAgICAgICAgICAgICAgICAgICB7YS5pc19wcml2YXRlID8gPExvY2sgc2l6ZT17MTB9IC8+IDogbnVsbH0KICAgICAgICAgICAgICAgICAgICAgICAgPC9wPgogICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0ibXQtMS41IGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBib3JkZXItdCBib3JkZXItW3ZhcigtLXQtbGluZSldIHB0LTEuNSI+CiAgICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJ0ZXh0LVsxMHB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPgogICAgICAgICAgICAgICAgICAgICAgICAgICAge2NvdW50T2YoYS5pZCl9IGZvdG9zCiAgICAgICAgICAgICAgICAgICAgICAgICAgPC9zcGFuPgogICAgICAgICAgICAgICAgICAgICAgICAgIHthLmlzX3ByaXZhdGUgPyAoCiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8TW9yZUhvcml6b250YWwgc2l6ZT17MTN9IGNsYXNzTmFtZT0idGV4dC1bdmFyKC0tdC1pbmstc29mdCldIiAvPgogICAgICAgICAgICAgICAgICAgICAgICAgICkgOiAoCiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8R2xvYmUgc2l6ZT17MTJ9IGNsYXNzTmFtZT0idGV4dC1bdmFyKC0tdC1pbmstc29mdCldIiAvPgogICAgICAgICAgICAgICAgICAgICAgICAgICl9CiAgICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgICAgICAgPC9MaW5rPgogICAgICAgICAgICAgICAgICApIDogKAogICAgICAgICAgICAgICAgICAgIDxMaW5rCiAgICAgICAgICAgICAgICAgICAgICBrZXk9e2EuaWR9CiAgICAgICAgICAgICAgICAgICAgICB0bz0iL2FsYnVtLyRhbGJ1bUlkIgogICAgICAgICAgICAgICAgICAgICAgcGFyYW1zPXt7IGFsYnVtSWQ6IGEuaWQgfX0KICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0iZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTMgcm91bmRlZC1tZCBib3JkZXIgYm9yZGVyLVt2YXIoLS10LWxpbmUpXSBiZy13aGl0ZSBwLTIiCiAgICAgICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJoLTEyIHctMTYgc2hyaW5rLTAgb3ZlcmZsb3ctaGlkZGVuIj4KICAgICAgICAgICAgICAgICAgICAgICAgPENvdmVyIGE9e2F9IGg9ImgtMTIiIC8+CiAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9Im1pbi13LTAgZmxleC0xIj4KICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJibG9jayB0cnVuY2F0ZSB0ZXh0LVsxMnB4XSBmb250LWJvbGQgdGV4dC1bdmFyKC0tdC1pbmspXSI+CiAgICAgICAgICAgICAgICAgICAgICAgICAge2EudGl0bGV9CiAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJibG9jayB0ZXh0LVsxMHB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPgogICAgICAgICAgICAgICAgICAgICAgICAgIHtmb3JtYXREYXRlKGEuY3JlYXRlZF9hdCl9IMK3IHthLmlzX3ByaXZhdGUgPyAiUHJpdmFkbyIgOiAiUMO6YmxpY28ifSDCt3siICJ9CiAgICAgICAgICAgICAgICAgICAgICAgICAge2NvdW50T2YoYS5pZCl9IGZvdG9zCiAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgICAgICAgICAgIHthLmlzX3ByaXZhdGUgPyAoCiAgICAgICAgICAgICAgICAgICAgICAgIDxMb2NrIHNpemU9ezEyfSBjbGFzc05hbWU9InRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSIgLz4KICAgICAgICAgICAgICAgICAgICAgICkgOiAoCiAgICAgICAgICAgICAgICAgICAgICAgIDxHbG9iZSBzaXplPXsxMn0gY2xhc3NOYW1lPSJ0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iIC8+CiAgICAgICAgICAgICAgICAgICAgICApfQogICAgICAgICAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgICAgICAgKSwKICAgICAgICAgICAgICAgICkKICAgICAgICAgICAgICApfQogICAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICAgIHtsaXN0Lmxlbmd0aCA+IHZpc2libGUgPyAoCiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImJvcmRlci10IGJvcmRlci1bdmFyKC0tdC1saW5lKV0gcC0zIHRleHQtY2VudGVyIj4KICAgICAgICAgICAgICAgIDxidXR0b24KICAgICAgICAgICAgICAgICAgdHlwZT0iYnV0dG9uIgogICAgICAgICAgICAgICAgICBjbGFzc05hbWU9InQtYnRuIHJvdW5kZWQtZnVsbCBweC00IgogICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRWaXNpYmxlKCh2KSA9PiB2ICsgUEFHRSl9CiAgICAgICAgICAgICAgICA+CiAgICAgICAgICAgICAgICAgIDxDaGV2cm9uRG93biBzaXplPXsxMn0gY2xhc3NOYW1lPSJtci0xIGlubGluZSIgLz4gQ2FyZ2FyIG3DoXMgw6FsYnVtZXMKICAgICAgICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICApIDogbnVsbH0KICAgICAgICAgIDwvZGl2PgogICAgICAgIDwvc2VjdGlvbj4KCiAgICAgICAgPGFzaWRlIGNsYXNzTmFtZT0ic3BhY2UteS0zIj4KICAgICAgICAgIDxDYWxlbmRhcldpZGdldCBtYXJrcz17bWFya3N9IC8+CgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9InQtcGFuZWwgcC0zIj4KICAgICAgICAgICAgPGgyIGNsYXNzTmFtZT0ibWItMiBib3JkZXItYiBib3JkZXItW3ZhcigtLXQtbGluZSldIHBiLTEuNSB0ZXh0LVsxMnB4XSBmb250LWJvbGQgdXBwZXJjYXNlIHRleHQtW3ZhcigtLXQtaW5rKV0iPgogICAgICAgICAgICAgIMOBbGJ1bSBkZXN0YWNhZG8KICAgICAgICAgICAgPC9oMj4KICAgICAgICAgICAge2ZlYXR1cmVkID8gKAogICAgICAgICAgICAgIDw+CiAgICAgICAgICAgICAgICA8Q292ZXIgYT17ZmVhdHVyZWR9IGg9ImgtMjQiIC8+CiAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9Im10LTIgdGV4dC1bMTJweF0gZm9udC1ib2xkIHRleHQtW3ZhcigtLXQtaW5rKV0iPntmZWF0dXJlZC50aXRsZX08L3A+CiAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9InRleHQtWzEwcHhdIHRleHQtW3ZhcigtLXQtaW5rLXNvZnQpXSI+CiAgICAgICAgICAgICAgICAgIHtmb3JtYXREYXRlKGZlYXR1cmVkLmNyZWF0ZWRfYXQpfSDCtyB7Y291bnRPZihmZWF0dXJlZC5pZCl9IGZvdG9zCiAgICAgICAgICAgICAgICA8L3A+CiAgICAgICAgICAgICAgICA8TGluawogICAgICAgICAgICAgICAgICB0bz0iL2FsYnVtLyRhbGJ1bUlkIgogICAgICAgICAgICAgICAgICBwYXJhbXM9e3sgYWxidW1JZDogZmVhdHVyZWQuaWQgfX0KICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPSJ0LWJ0biBtdC0yIGlubGluZS1ibG9jayByb3VuZGVkLWZ1bGwgcHgtMyIKICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAgVmVyIMOhbGJ1bQogICAgICAgICAgICAgICAgPC9MaW5rPgogICAgICAgICAgICAgIDwvPgogICAgICAgICAgICApIDogKAogICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0idGV4dC1bMTFweF0gdGV4dC1bdmFyKC0tdC1pbmstc29mdCldIj5Bw7puIG5vIGhheSDDoWxidW1lcy48L3A+CiAgICAgICAgICAgICl9CiAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0idC1wYW5lbCBwLTMiPgogICAgICAgICAgICA8aDIgY2xhc3NOYW1lPSJtYi0yIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBib3JkZXItYiBib3JkZXItW3ZhcigtLXQtbGluZSldIHBiLTEuNSB0ZXh0LVsxMnB4XSBmb250LWJvbGQgdXBwZXJjYXNlIHRleHQtW3ZhcigtLXQtaW5rKV0iPgogICAgICAgICAgICAgIMOBbGJ1bWVzIHBvcHVsYXJlcwogICAgICAgICAgICAgIDxMaW5rIHRvPSIvYWxidW1lcyIgY2xhc3NOYW1lPSJ0LWxpbmsgdGV4dC1bMTBweF0gZm9udC1ub3JtYWwgbm9ybWFsLWNhc2UiPgogICAgICAgICAgICAgICAgVmVyIHRvZG9zCiAgICAgICAgICAgICAgPC9MaW5rPgogICAgICAgICAgICA8L2gyPgogICAgICAgICAgICB7cG9wdWxhci5sZW5ndGggPT09IDAgPyAoCiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJ0ZXh0LVsxMXB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPlRvZGF2w61hIG5hZGEgcG9yIGFxdcOtLjwvcD4KICAgICAgICAgICAgKSA6ICgKICAgICAgICAgICAgICA8dWwgY2xhc3NOYW1lPSJzcGFjZS15LTIiPgogICAgICAgICAgICAgICAge3BvcHVsYXIubWFwKChhKSA9PiAoCiAgICAgICAgICAgICAgICAgIDxsaSBrZXk9e2EuaWR9IGNsYXNzTmFtZT0iZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIiPgogICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0iaC04IHctOCBzaHJpbmstMCBvdmVyZmxvdy1oaWRkZW4gYmctW29rbGNoKDAuOTNfMC4wMl8yNDUpXSI+CiAgICAgICAgICAgICAgICAgICAgICA8TWVkaWFJbWFnZQogICAgICAgICAgICAgICAgICAgICAgICBwYXRoPXtjb3Zlck9mKGEpfQogICAgICAgICAgICAgICAgICAgICAgICBhbHQ9e2EudGl0bGV9CiAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0iaC04IHctOCBvYmplY3QtY292ZXIiCiAgICAgICAgICAgICAgICAgICAgICAgIGZhbGxiYWNrPXs8c3BhbiBjbGFzc05hbWU9ImJsb2NrIGgtOCB3LTgiIC8+fQogICAgICAgICAgICAgICAgICAgICAgLz4KICAgICAgICAgICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJtaW4tdy0wIj4KICAgICAgICAgICAgICAgICAgICAgIDxMaW5rCiAgICAgICAgICAgICAgICAgICAgICAgIHRvPSIvYWxidW0vJGFsYnVtSWQiCiAgICAgICAgICAgICAgICAgICAgICAgIHBhcmFtcz17eyBhbGJ1bUlkOiBhLmlkIH19CiAgICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT0iYmxvY2sgdHJ1bmNhdGUgdGV4dC1bMTFweF0gZm9udC1ib2xkIHRleHQtW3ZhcigtLXQtYmx1ZSldIgogICAgICAgICAgICAgICAgICAgICAgPgogICAgICAgICAgICAgICAgICAgICAgICB7YS50aXRsZX0KICAgICAgICAgICAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0iYmxvY2sgdGV4dC1bMTBweF0gdGV4dC1bdmFyKC0tdC1pbmstc29mdCldIj4KICAgICAgICAgICAgICAgICAgICAgICAge2NvdW50T2YoYS5pZCl9IGZvdG9zCiAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICAgICAgICAgICAgPC9zcGFuPgogICAgICAgICAgICAgICAgICA8L2xpPgogICAgICAgICAgICAgICAgKSl9CiAgICAgICAgICAgICAgPC91bD4KICAgICAgICAgICAgKX0KICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJ0LXBhbmVsIHAtMyI+CiAgICAgICAgICAgIDxoMiBjbGFzc05hbWU9Im1iLTIgYm9yZGVyLWIgYm9yZGVyLVt2YXIoLS10LWxpbmUpXSBwYi0xLjUgdGV4dC1bMTJweF0gZm9udC1ib2xkIHVwcGVyY2FzZSB0ZXh0LVt2YXIoLS10LWluayldIj4KICAgICAgICAgICAgICBDcmVhIHR1IMOhbGJ1bQogICAgICAgICAgICA8L2gyPgogICAgICAgICAgICA8YnV0dG9uCiAgICAgICAgICAgICAgdHlwZT0iYnV0dG9uIgogICAgICAgICAgICAgIGNsYXNzTmFtZT0iZmxleCB3LWZ1bGwgaXRlbXMtY2VudGVyIGdhcC0yIHJvdW5kZWQtbWQgYm9yZGVyIGJvcmRlci1bdmFyKC0tdC1saW5lKV0gcC0yIHRleHQtbGVmdCIKICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRPcGVuRm9ybSh0cnVlKX0KICAgICAgICAgICAgPgogICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0iZmxleCBoLTggdy04IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciByb3VuZGVkLW1kIGJnLVtva2xjaCgwLjkzXzAuMDNfMjQ1KV0iPgogICAgICAgICAgICAgICAgPFBsdXMgc2l6ZT17MTZ9IGNsYXNzTmFtZT0idGV4dC1bdmFyKC0tdC1ibHVlKV0iIC8+CiAgICAgICAgICAgICAgPC9zcGFuPgogICAgICAgICAgICAgIDxzcGFuPgogICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJibG9jayB0ZXh0LVsxMXB4XSBmb250LWJvbGQgdGV4dC1bdmFyKC0tdC1ibHVlKV0iPgogICAgICAgICAgICAgICAgICBDcmVhIHVuIG51ZXZvIMOhbGJ1bQogICAgICAgICAgICAgICAgPC9zcGFuPgogICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJibG9jayB0ZXh0LVsxMHB4XSB0ZXh0LVt2YXIoLS10LWluay1zb2Z0KV0iPgogICAgICAgICAgICAgICAgICBDb21wYXJ0ZSB0dXMgbWVqb3JlcyBtb21lbnRvcwogICAgICAgICAgICAgICAgPC9zcGFuPgogICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgPC9idXR0b24+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICA8L2FzaWRlPgogICAgICA8L21haW4+CiAgICA8L2Rpdj4KICApOwp9Cg==
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  ChevronDown,
+  Globe,
+  Images,
+  Lock,
+  MoreHorizontal,
+  Plus,
+  Search,
+} from "lucide-react";
+
+import { SideMenu } from "@/components/SideMenu";
+import { MediaImage } from "@/components/MediaImage";
+import { CalendarWidget } from "@/components/CalendarWidget";
+import { useSession } from "@/lib/session";
+import {
+  createAlbum,
+  getAlbumPhotos,
+  getAlbumsByUser,
+  getFriendIds,
+  getPublicAlbumsByUsers,
+  type Album,
+} from "@/lib/api";
+
+export const Route = createFileRoute("/_authenticated/albumes")({
+  head: () => ({
+    meta: [
+      { title: "Mis álbumes — nocturno" },
+      {
+        name: "description",
+        content:
+          "Organiza tus fotos en álbumes: crea álbumes públicos o privados y ordena tus recuerdos.",
+      },
+      { property: "og:title", content: "Mis álbumes — nocturno" },
+      {
+        property: "og:description",
+        content: "Crea y gestiona tus álbumes de fotos en nocturno.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: AlbumesPage,
+});
+
+const TABS = ["Todos", "Públicos", "Privados", "Compartidos conmigo"] as const;
+type Tab = (typeof TABS)[number];
+
+const MONTHS = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+const PAGE = 12;
+
+function AlbumesPage() {
+  const { user } = useSession();
+  const qc = useQueryClient();
+  const [tab, setTab] = useState<Tab>("Todos");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<"Más recientes" | "Más fotos" | "A-Z">("Más recientes");
+  const [view, setView] = useState<"Cuadrícula" | "Lista">("Cuadrícula");
+  const [visible, setVisible] = useState(PAGE);
+  const [openForm, setOpenForm] = useState(false);
+  const [title, setTitle] = useState("");
+  const [priv, setPriv] = useState(false);
+
+  const albums = useQuery({
+    queryKey: ["albums", user?.id],
+    queryFn: () => getAlbumsByUser(user!.id),
+    enabled: Boolean(user),
+  });
+  const photos = useQuery({
+    queryKey: ["album-photos", user?.id],
+    queryFn: () => getAlbumPhotos(user!.id),
+    enabled: Boolean(user),
+  });
+  const friendIds = useQuery({
+    queryKey: ["friend-ids", user?.id],
+    queryFn: () => getFriendIds(user!.id),
+    enabled: Boolean(user),
+  });
+  const shared = useQuery({
+    queryKey: ["shared-albums", friendIds.data],
+    queryFn: () => getPublicAlbumsByUsers(friendIds.data ?? []),
+    enabled: (friendIds.data ?? []).length > 0,
+  });
+
+  const create = useMutation({
+    mutationFn: () =>
+      createAlbum({ user_id: user!.id, title: title.trim(), description: "", is_private: priv }),
+    onSuccess: () => {
+      setTitle("");
+      setPriv(false);
+      setOpenForm(false);
+      toast.success("Álbum creado");
+      void qc.invalidateQueries({ queryKey: ["albums", user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const rows = albums.data ?? [];
+  const pics = photos.data ?? [];
+  const sharedRows = shared.data ?? [];
+
+  const countOf = (id: string) => pics.filter((p) => p.album_id === id).length;
+  const coverOf = (a: Album) =>
+    a.cover_url ?? pics.find((p) => p.album_id === a.id)?.image_url ?? null;
+  const mosaicOf = (a: Album) =>
+    pics.filter((p) => p.album_id === a.id).slice(0, 4).map((p) => p.image_url);
+
+  const list = useMemo(() => {
+    const base = tab === "Compartidos conmigo" ? sharedRows : rows;
+    let out = base.filter((a) => a.title.toLowerCase().includes(query.trim().toLowerCase()));
+    if (tab === "Públicos") out = out.filter((a) => !a.is_private);
+    if (tab === "Privados") out = out.filter((a) => a.is_private);
+    if (sort === "A-Z") out = [...out].sort((a, b) => a.title.localeCompare(b.title));
+    if (sort === "Más fotos") out = [...out].sort((a, b) => countOf(b.id) - countOf(a.id));
+    return out;
+  }, [rows, sharedRows, pics, query, tab, sort]);
+
+  const shownList = list.slice(0, visible);
+
+  const publicCount = rows.filter((a) => !a.is_private).length;
+  const privateCount = rows.filter((a) => a.is_private).length;
+  const tabCount = (t: Tab) =>
+    t === "Todos"
+      ? rows.length
+      : t === "Públicos"
+        ? publicCount
+        : t === "Privados"
+          ? privateCount
+          : sharedRows.length;
+
+  const featured = [...rows].sort((a, b) => countOf(b.id) - countOf(a.id))[0];
+  const popular = [...rows].sort((a, b) => countOf(b.id) - countOf(a.id)).slice(0, 4);
+  const marks = Array.from(new Set(rows.map((a) => new Date(a.created_at).getDate())));
+
+  const Cover = ({ a, h }: { a: Album; h: string }) => {
+    const mosaic = mosaicOf(a);
+    if (mosaic.length >= 4) {
+      return (
+        <div className={`grid grid-cols-2 grid-rows-2 gap-[2px] ${h} w-full overflow-hidden bg-[oklch(0.93_0.02_245)]`}>
+          {mosaic.map((m, i) => (
+            <MediaImage
+              key={`${a.id}-${i}`}
+              path={m}
+              alt={a.title}
+              className="h-full w-full object-cover"
+              fallback={<span className="block h-full w-full" />}
+            />
+          ))}
+        </div>
+      );
+    }
+    return (
+      <div className={`${h} w-full overflow-hidden bg-[oklch(0.93_0.02_245)]`}>
+        <MediaImage
+          path={coverOf(a)}
+          alt={a.title}
+          className={`${h} w-full object-cover`}
+          fallback={
+            <div className={`flex ${h} w-full items-center justify-center`}>
+              <Images size={22} className="text-[var(--t-ink-soft)]" />
+            </div>
+          }
+        />
+      </div>
+    );
+  };
+
+  return (
+    <div className="t-shell min-h-screen">
+      <main className="mx-auto grid max-w-6xl gap-3 px-3 py-4 lg:grid-cols-[230px_1fr_240px]">
+        <aside className="space-y-3">
+          <SideMenu active="albumes" />
+        </aside>
+
+        <section className="space-y-3">
+          <div className="t-panel p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[oklch(0.93_0.03_245)]">
+                  <Images size={18} className="text-[var(--t-blue)]" />
+                </span>
+                <div>
+                  <h1 className="text-[18px] font-bold text-[var(--t-ink)]">Mis álbumes</h1>
+                  <p className="text-[11px] text-[var(--t-ink-soft)]">
+                    Todos mis recuerdos, ordenados como más te gustan.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="t-btn rounded-full px-3"
+                onClick={() => setOpenForm((v) => !v)}
+              >
+                <Plus size={12} className="mr-1 inline" /> Crear álbum
+              </button>
+            </div>
+
+            {openForm ? (
+              <form
+                className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--t-line)] pt-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!title.trim()) {
+                    toast.error("Ponle un título al álbum");
+                    return;
+                  }
+                  create.mutate();
+                }}
+              >
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Nombre del nuevo álbum..."
+                  className="min-w-[200px] flex-1 border border-[var(--t-line)] bg-white px-2 py-1.5 text-[12px] outline-none"
+                />
+                <label className="flex items-center gap-1.5 text-[11px] text-[var(--t-ink-soft)]">
+                  <input
+                    type="checkbox"
+                    checked={priv}
+                    onChange={(e) => setPriv(e.target.checked)}
+                  />
+                  Privado
+                </label>
+                <button type="submit" className="t-btn" disabled={create.isPending}>
+                  Guardar
+                </button>
+              </form>
+            ) : null}
+          </div>
+
+          <div className="t-panel">
+            <div className="flex flex-wrap gap-4 border-b border-[var(--t-line)] px-3">
+              {TABS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    setTab(t);
+                    setVisible(PAGE);
+                  }}
+                  className={
+                    t === tab
+                      ? "-mb-px border-b-2 border-[var(--t-blue)] py-2 text-[12px] font-bold text-[var(--t-blue)]"
+                      : "py-2 text-[12px] text-[var(--t-ink-soft)]"
+                  }
+                >
+                  {t} <span className="text-[10px]">{tabCount(t)}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 p-3">
+              <label className="flex min-w-[200px] flex-1 items-center gap-2 rounded-md border border-[var(--t-line)] bg-white px-2 py-1.5">
+                <Search size={14} className="text-[var(--t-ink-soft)]" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar álbumes..."
+                  className="w-full bg-transparent text-[12px] outline-none placeholder:text-[var(--t-ink-soft)]"
+                />
+              </label>
+              <div className="flex items-center gap-1 rounded-md border border-[var(--t-line)] bg-white px-2 py-1.5 text-[11px]">
+                <span className="text-[var(--t-ink-soft)]">Ordenar por:</span>
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as typeof sort)}
+                  aria-label="Ordenar álbumes"
+                  className="bg-transparent text-[11px] outline-none"
+                >
+                  <option>Más recientes</option>
+                  <option>Más fotos</option>
+                  <option>A-Z</option>
+                </select>
+                <ChevronDown size={12} className="text-[var(--t-ink-soft)]" />
+              </div>
+              <div className="flex items-center gap-1 rounded-md border border-[var(--t-line)] bg-white px-2 py-1.5 text-[11px]">
+                <span className="text-[var(--t-ink-soft)]">Vista:</span>
+                <select
+                  value={view}
+                  onChange={(e) => setView(e.target.value as typeof view)}
+                  aria-label="Cambiar vista"
+                  className="bg-transparent text-[11px] outline-none"
+                >
+                  <option>Cuadrícula</option>
+                  <option>Lista</option>
+                </select>
+                <ChevronDown size={12} className="text-[var(--t-ink-soft)]" />
+              </div>
+            </div>
+
+            <div
+              className={
+                view === "Cuadrícula"
+                  ? "grid gap-3 px-3 pb-3 sm:grid-cols-2 lg:grid-cols-4"
+                  : "flex flex-col gap-2 px-3 pb-3"
+              }
+            >
+              {shownList.length === 0 ? (
+                <p className="col-span-full py-8 text-center text-[12px] text-[var(--t-ink-soft)]">
+                  {tab === "Compartidos conmigo"
+                    ? "Tus amigos aún no han compartido álbumes."
+                    : rows.length === 0
+                      ? "Todavía no tienes álbumes. Crea el primero arriba."
+                      : "No hay álbumes que coincidan con tu búsqueda."}
+                </p>
+              ) : (
+                shownList.map((a) =>
+                  view === "Cuadrícula" ? (
+                    <Link
+                      key={a.id}
+                      to="/album/$albumId"
+                      params={{ albumId: a.id }}
+                      className="block overflow-hidden rounded-md border border-[var(--t-line)] bg-white"
+                    >
+                      <Cover a={a} h="h-32" />
+                      <div className="p-2">
+                        <p className="truncate text-[12px] font-bold text-[var(--t-ink)]">
+                          {a.title}
+                        </p>
+                        <p className="mt-0.5 flex items-center gap-1 text-[10px] text-[var(--t-ink-soft)]">
+                          {formatDate(a.created_at)} · {a.is_private ? "Privado" : "Público"}
+                          {a.is_private ? <Lock size={10} /> : null}
+                        </p>
+                        <div className="mt-1.5 flex items-center justify-between border-t border-[var(--t-line)] pt-1.5">
+                          <span className="text-[10px] text-[var(--t-ink-soft)]">
+                            {countOf(a.id)} fotos
+                          </span>
+                          {a.is_private ? (
+                            <MoreHorizontal size={13} className="text-[var(--t-ink-soft)]" />
+                          ) : (
+                            <Globe size={12} className="text-[var(--t-ink-soft)]" />
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <Link
+                      key={a.id}
+                      to="/album/$albumId"
+                      params={{ albumId: a.id }}
+                      className="flex items-center gap-3 rounded-md border border-[var(--t-line)] bg-white p-2"
+                    >
+                      <span className="h-12 w-16 shrink-0 overflow-hidden">
+                        <Cover a={a} h="h-12" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[12px] font-bold text-[var(--t-ink)]">
+                          {a.title}
+                        </span>
+                        <span className="block text-[10px] text-[var(--t-ink-soft)]">
+                          {formatDate(a.created_at)} · {a.is_private ? "Privado" : "Público"} ·{" "}
+                          {countOf(a.id)} fotos
+                        </span>
+                      </span>
+                      {a.is_private ? (
+                        <Lock size={12} className="text-[var(--t-ink-soft)]" />
+                      ) : (
+                        <Globe size={12} className="text-[var(--t-ink-soft)]" />
+                      )}
+                    </Link>
+                  ),
+                )
+              )}
+            </div>
+
+            {list.length > visible ? (
+              <div className="border-t border-[var(--t-line)] p-3 text-center">
+                <button
+                  type="button"
+                  className="t-btn rounded-full px-4"
+                  onClick={() => setVisible((v) => v + PAGE)}
+                >
+                  <ChevronDown size={12} className="mr-1 inline" /> Cargar más álbumes
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        <aside className="space-y-3">
+          <CalendarWidget marks={marks} />
+
+          <div className="t-panel p-3">
+            <h2 className="mb-2 border-b border-[var(--t-line)] pb-1.5 text-[12px] font-bold uppercase text-[var(--t-ink)]">
+              Álbum destacado
+            </h2>
+            {featured ? (
+              <>
+                <Cover a={featured} h="h-24" />
+                <p className="mt-2 text-[12px] font-bold text-[var(--t-ink)]">{featured.title}</p>
+                <p className="text-[10px] text-[var(--t-ink-soft)]">
+                  {formatDate(featured.created_at)} · {countOf(featured.id)} fotos
+                </p>
+                <Link
+                  to="/album/$albumId"
+                  params={{ albumId: featured.id }}
+                  className="t-btn mt-2 inline-block rounded-full px-3"
+                >
+                  Ver álbum
+                </Link>
+              </>
+            ) : (
+              <p className="text-[11px] text-[var(--t-ink-soft)]">Aún no hay álbumes.</p>
+            )}
+          </div>
+
+          <div className="t-panel p-3">
+            <h2 className="mb-2 flex items-center justify-between border-b border-[var(--t-line)] pb-1.5 text-[12px] font-bold uppercase text-[var(--t-ink)]">
+              Álbumes populares
+              <Link to="/albumes" className="t-link text-[10px] font-normal normal-case">
+                Ver todos
+              </Link>
+            </h2>
+            {popular.length === 0 ? (
+              <p className="text-[11px] text-[var(--t-ink-soft)]">Todavía nada por aquí.</p>
+            ) : (
+              <ul className="space-y-2">
+                {popular.map((a) => (
+                  <li key={a.id} className="flex items-center gap-2">
+                    <span className="h-8 w-8 shrink-0 overflow-hidden bg-[oklch(0.93_0.02_245)]">
+                      <MediaImage
+                        path={coverOf(a)}
+                        alt={a.title}
+                        className="h-8 w-8 object-cover"
+                        fallback={<span className="block h-8 w-8" />}
+                      />
+                    </span>
+                    <span className="min-w-0">
+                      <Link
+                        to="/album/$albumId"
+                        params={{ albumId: a.id }}
+                        className="block truncate text-[11px] font-bold text-[var(--t-blue)]"
+                      >
+                        {a.title}
+                      </Link>
+                      <span className="block text-[10px] text-[var(--t-ink-soft)]">
+                        {countOf(a.id)} fotos
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="t-panel p-3">
+            <h2 className="mb-2 border-b border-[var(--t-line)] pb-1.5 text-[12px] font-bold uppercase text-[var(--t-ink)]">
+              Crea tu álbum
+            </h2>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-md border border-[var(--t-line)] p-2 text-left"
+              onClick={() => setOpenForm(true)}
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[oklch(0.93_0.03_245)]">
+                <Plus size={16} className="text-[var(--t-blue)]" />
+              </span>
+              <span>
+                <span className="block text-[11px] font-bold text-[var(--t-blue)]">
+                  Crea un nuevo álbum
+                </span>
+                <span className="block text-[10px] text-[var(--t-ink-soft)]">
+                  Comparte tus mejores momentos
+                </span>
+              </span>
+            </button>
+          </div>
+        </aside>
+      </main>
+    </div>
+  );
+}

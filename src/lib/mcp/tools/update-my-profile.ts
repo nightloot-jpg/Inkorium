@@ -1,1 +1,34 @@
-aW1wb3J0IHsgZGVmaW5lVG9vbCB9IGZyb20gIkBsb3ZhYmxlLmRldi9tY3AtanMiOwppbXBvcnQgeyB6IH0gZnJvbSAiem9kIjsKaW1wb3J0IHsgbm90QXV0aGVudGljYXRlZCwgc3VwYWJhc2VGb3JVc2VyIH0gZnJvbSAiLi4vc3VwYWJhc2UiOwoKZXhwb3J0IGRlZmF1bHQgZGVmaW5lVG9vbCh7CiAgbmFtZTogInVwZGF0ZV9teV9wcm9maWxlIiwKICB0aXRsZTogIkFjdHVhbGl6YXIgbWkgcGVyZmlsIiwKICBkZXNjcmlwdGlvbjogIkNhbWJpYSBlbCBub21icmUgdmlzaWJsZSwgZWwgZXN0YWRvIGRlIMOhbmltbywgbGEgYmlvIG8gbGEgZnJhc2UgZmF2b3JpdGEgZGVsIHBlcmZpbCBjb25lY3RhZG8uIiwKICBpbnB1dFNjaGVtYTogewogICAgZGlzcGxheV9uYW1lOiB6LnN0cmluZygpLnRyaW0oKS5tYXgoNjApLm9wdGlvbmFsKCkuZGVzY3JpYmUoIk5vbWJyZSB2aXNpYmxlIiksCiAgICBtb29kOiB6LnN0cmluZygpLnRyaW0oKS5tYXgoNjApLm9wdGlvbmFsKCkuZGVzY3JpYmUoIkVzdGFkbyBkZSDDoW5pbW8iKSwKICAgIGJpbzogei5zdHJpbmcoKS50cmltKCkubWF4KDUwMCkub3B0aW9uYWwoKS5kZXNjcmliZSgiRGVzY3JpcGNpw7NuIGRlbCBwZXJmaWwiKSwKICAgIGZhdm9yaXRlX3F1b3RlOiB6LnN0cmluZygpLnRyaW0oKS5tYXgoMjAwKS5vcHRpb25hbCgpLmRlc2NyaWJlKCJGcmFzZSBmYXZvcml0YSIpLAogIH0sCiAgYW5ub3RhdGlvbnM6IHsgcmVhZE9ubHlIaW50OiBmYWxzZSwgZGVzdHJ1Y3RpdmVIaW50OiBmYWxzZSwgb3BlbldvcmxkSGludDogZmFsc2UgfSwKICBoYW5kbGVyOiBhc3luYyAoaW5wdXQsIGN0eCkgPT4gewogICAgaWYgKCFjdHguaXNBdXRoZW50aWNhdGVkKCkpIHJldHVybiBub3RBdXRoZW50aWNhdGVkKCk7CiAgICBjb25zdCBwYXRjaCA9IE9iamVjdC5mcm9tRW50cmllcyhPYmplY3QuZW50cmllcyhpbnB1dCkuZmlsdGVyKChbLCB2XSkgPT4gdiAhPT0gdW5kZWZpbmVkKSk7CiAgICBpZiAoT2JqZWN0LmtleXMocGF0Y2gpLmxlbmd0aCA9PT0gMCkKICAgICAgcmV0dXJuIHsgY29udGVudDogW3sgdHlwZTogInRleHQiLCB0ZXh0OiAiTm8gaGF5IG5hZGEgcXVlIGFjdHVhbGl6YXIuIiB9XSwgaXNFcnJvcjogdHJ1ZSB9OwogICAgY29uc3Qgc3VwYWJhc2UgPSBzdXBhYmFzZUZvclVzZXIoY3R4KTsKICAgIGNvbnN0IHsgZGF0YSwgZXJyb3IgfSA9IGF3YWl0IHN1cGFiYXNlCiAgICAgIC5mcm9tKCJwcm9maWxlcyIpCiAgICAgIC51cGRhdGUocGF0Y2gpCiAgICAgIC5lcSgiaWQiLCBjdHguZ2V0VXNlcklkKCkpCiAgICAgIC5zZWxlY3QoInVzZXJuYW1lLCBkaXNwbGF5X25hbWUsIG1vb2QsIGJpbywgZmF2b3JpdGVfcXVvdGUiKQogICAgICAubWF5YmVTaW5nbGUoKTsKICAgIGlmIChlcnJvcikgcmV0dXJuIHsgY29udGVudDogW3sgdHlwZTogInRleHQiLCB0ZXh0OiBlcnJvci5tZXNzYWdlIH1dLCBpc0Vycm9yOiB0cnVlIH07CiAgICByZXR1cm4gewogICAgICBjb250ZW50OiBbeyB0eXBlOiAidGV4dCIsIHRleHQ6IEpTT04uc3RyaW5naWZ5KGRhdGEpIH1dLAogICAgICBzdHJ1Y3R1cmVkQ29udGVudDogeyBwcm9maWxlOiBkYXRhIH0sCiAgICB9OwogIH0sCn0pOw==
+import { defineTool } from "@lovable.dev/mcp-js";
+import { z } from "zod";
+import { notAuthenticated, supabaseForUser } from "../supabase";
+
+export default defineTool({
+  name: "update_my_profile",
+  title: "Actualizar mi perfil",
+  description: "Cambia el nombre visible, el estado de ánimo, la bio o la frase favorita del perfil conectado.",
+  inputSchema: {
+    display_name: z.string().trim().max(60).optional().describe("Nombre visible"),
+    mood: z.string().trim().max(60).optional().describe("Estado de ánimo"),
+    bio: z.string().trim().max(500).optional().describe("Descripción del perfil"),
+    favorite_quote: z.string().trim().max(200).optional().describe("Frase favorita"),
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    const patch = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined));
+    if (Object.keys(patch).length === 0)
+      return { content: [{ type: "text", text: "No hay nada que actualizar." }], isError: true };
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("id", ctx.getUserId())
+      .select("username, display_name, mood, bio, favorite_quote")
+      .maybeSingle();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { profile: data },
+    };
+  },
+});
