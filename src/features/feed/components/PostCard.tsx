@@ -5,56 +5,13 @@ import { useHydrated } from '../../../hooks/useHydrated';
 import type { FeedPost } from '../types';
 
 export function PostCard({ post, onLike }: { post: FeedPost; onLike: (id: string) => void }) {
-  // Avoid React #418: relative time depends on Date.now(), which differs
-  // between SSR and the first client render. Render a stable absolute
-  // date on the server, then swap to the relative one after hydration.
   const hydrated = useHydrated();
   const createdAtDate = new Date(post.createdAt);
-  const timeLabel = hydrated
-    ? formatDistanceToNow(createdAtDate, { addSuffix: true, locale: es })
-    : createdAtDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-
-  return (
-    <article className="feed-post">
-      <header className="feed-post-header">
-        <img src={post.authorAvatar} alt="" className="feed-avatar" />
-        <div className="feed-post-meta">
-          <p className="feed-post-name">{post.authorName}</p>
-          <p className="feed-post-time"><span suppressHydrationWarning>{timeLabel}</span> · Público</p>
-        </div>
-        <button type="button" className="feed-post-menu" aria-label="Opciones">⌄</button>
-      </header>
-
-      {post.kind === 'music' ? (
-        <div className="feed-music">
-          <div className="feed-music-row">
-            <div className="feed-music-thumb">
-              {post.image && <img src={post.image} alt="" />}
-              <span className="feed-play"><Play size={22} fill="white" /></span>
-            </div>
-            <div className="feed-music-copy">
-              <p className="feed-music-title">{post.title || post.content || 'Publicación musical'}</p>
-              <p className="feed-music-subtitle">{post.subtitle || 'MHR MUSIC'}</p>
-            </div>
-            <span className="feed-music-duration">{post.duration || '5:05'}</span>
-          </div>
-        </div>
-      ) : (
-        <>
-          {post.content && <div className="feed-post-content">{post.content}</div>}
-          {post.image && <div className="feed-post-media"><img src={post.image} alt="" /></div>}
-        </>
-      )}
-
-      <div className="feed-post-stats">
-        <span>{post.likes} Me gusta</span>
-        <span>{post.comments} comentarios · {post.shares} compartidos</span>
-      </div>
-      <div className="feed-post-buttons">
-        <button type="button" onClick={() => onLike(post.id)} className={`feed-post-button ${post.liked ? 'feed-post-button-active' : ''}`}><Heart size={18} fill={post.liked ? 'currentColor' : 'none'} />Me gusta</button>
-        <button type="button" className="feed-post-button"><MessageCircle size={18} />Comentar</button>
-        <button type="button" className="feed-post-button"><Share2 size={18} />Compartir</button>
-      </div>
-    </article>
-  );
+  const timeLabel = hydrated ? formatDistanceToNow(createdAtDate,{addSuffix:true,locale:es}) : createdAtDate.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'});
+  return <article style={{overflow:'hidden',background:'#fff',border:'1px solid #d9e1e8',boxShadow:'0 1px 2px rgba(0,0,0,.04)'}}>
+    <header style={{display:'flex',alignItems:'center',gap:12,padding:'15px 18px'}}><img src={post.authorAvatar} alt="" style={{width:44,height:44,borderRadius:'50%',objectFit:'cover'}}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:14,fontWeight:800}}>{post.authorName}</div><div style={{fontSize:12,color:'#718096'}}><span suppressHydrationWarning>{timeLabel}</span> · Público</div></div><button type="button" aria-label="Opciones" style={{border:0,background:'transparent',fontSize:22,color:'#718096'}}>⌄</button></header>
+    {post.kind==='music' ? <div style={{background:'#171717',color:'#fff'}}><div style={{display:'flex',minHeight:118}}><div style={{width:125,position:'relative',display:'grid',placeItems:'center',background:'#59616a',overflow:'hidden'}}>{post.image&&<img src={post.image} alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:.7}}/>}<span style={{position:'relative',width:48,height:48,borderRadius:'50%',background:'rgba(0,0,0,.45)',display:'grid',placeItems:'center'}}><Play size={22} fill="white"/></span></div><div style={{flex:1,padding:'22px 26px',minWidth:0}}><div style={{fontSize:18,fontWeight:800,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{post.title||post.content||'Publicación musical'}</div><div style={{marginTop:7,color:'#aeb5bc',fontSize:14}}>{post.subtitle||'MHR MUSIC'}</div></div><span style={{padding:'17px 16px',fontSize:13,fontWeight:700}}>{post.duration||'5:05'}</span></div></div> : <>{post.content&&<div style={{padding:'0 18px 16px',whiteSpace:'pre-wrap',fontSize:14,lineHeight:1.6}}>{post.content}</div>}{post.image&&<div style={{width:'100%',background:'#eee'}}><img src={post.image} alt="" style={{display:'block',width:'100%',maxHeight:520,objectFit:'cover'}}/></div>}</>}
+    <div style={{display:'flex',justifyContent:'space-between',padding:'10px 18px',borderTop:'1px solid #edf0f3',color:'#718096',fontSize:12}}><span>{post.likes} Me gusta</span><span>{post.comments} comentarios · {post.shares} compartidos</span></div>
+    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',borderTop:'1px solid #edf0f3'}}><button type="button" onClick={()=>onLike(post.id)} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:7,padding:'12px 4px',border:0,background:post.liked?'#f1f6ff':'#fff',color:post.liked?'#0755b8':'#66768a',fontWeight:700,fontSize:13}}><Heart size={18} fill={post.liked?'currentColor':'none'}/>Me gusta</button><button type="button" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:7,padding:'12px 4px',border:0,background:'#fff',color:'#66768a',fontWeight:700,fontSize:13}}><MessageCircle size={18}/>Comentar</button><button type="button" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:7,padding:'12px 4px',border:0,background:'#fff',color:'#66768a',fontWeight:700,fontSize:13}}><Share2 size={18}/>Compartir</button></div>
+  </article>;
 }
