@@ -6,8 +6,6 @@ const FEED_KEY = ['feed'] as const;
 
 export function useFeed() {
   const queryClient = useQueryClient();
-
-
   const feed = useQuery<FeedPost[]>({
     queryKey: FEED_KEY,
     queryFn: () => getFeedFn(),

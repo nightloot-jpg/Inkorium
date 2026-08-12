@@ -6,7 +6,7 @@ export function FeedPage() {
   const { createPost } = useFeed();
 
   return (
-    <div className="feed-page" style={{ width: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="mx-auto flex w-full max-w-[820px] min-w-0 flex-col gap-4">
       <PostComposer
         isLoading={createPost.isPending}
         onSubmit={(content, type, photos) => createPost.mutate({ content, type, photos })}

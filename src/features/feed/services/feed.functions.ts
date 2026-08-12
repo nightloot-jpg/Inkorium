@@ -1,13 +1,9 @@
 import { createServerFn } from '@tanstack/react-start';
+import { getSupabaseServerClient } from '../../../lib/supabase.server';
 import type { FeedPost } from '../types';
 
-async function getServerSupabase() {
-  const { getSupabaseServerClient } = await import('../../../lib/supabase.server');
-  return getSupabaseServerClient();
-}
-
 async function requireUser() {
-  const supabase = await getServerSupabase();
+  const supabase = getSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) throw new Error('Not authenticated');
   return { supabase, user: data.user };
@@ -15,8 +11,8 @@ async function requireUser() {
 
 export const getFeedFn = createServerFn({ method: 'GET' }).handler(async (): Promise<FeedPost[]> => {
   const { supabase, user } = await requireUser();
-  const { data: posts, error: postsError } = await supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(20);
-  if (postsError) throw new Error(`Feed posts query failed: ${postsError.message}`);
+  const { data: posts, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(20);
+  if (error) throw new Error(`Feed posts query failed: ${error.message}`);
 
   const rows = posts ?? [];
   if (!rows.length) return [];
@@ -26,25 +22,24 @@ export const getFeedFn = createServerFn({ method: 'GET' }).handler(async (): Pro
   const results = await Promise.allSettled([
     userIds.length ? supabase.from('profiles').select('*').in('id', userIds) : Promise.resolve({ data: [], error: null }),
     supabase.from('photos').select('*').in('post_id', postIds),
-    supabase.from('comments').select('*').in('post_id', postIds).order('created_at', { ascending: true }),
+    supabase.from('comments').select('*').in('post_id', postIds),
     supabase.from('likes').select('*').in('post_id', postIds),
     supabase.from('post_shares').select('id, post_id').in('post_id', postIds),
   ]);
 
   const value = <T,>(result: PromiseSettledResult<{ data: T | null; error: unknown }>, fallback: T): T => result.status === 'fulfilled' && !result.value.error ? (result.value.data ?? fallback) : fallback;
-  const profiles = value(results[0], []).reduce((map: Map<string, any>, profile: any) => map.set(profile.id, profile), new Map());
+  const profiles = new Map(value(results[0], []).map((profile: any) => [profile.id, profile]));
   const photos = value(results[1], []);
   const comments = value(results[2], []);
   const likes = value(results[3], []);
   const shares = value(results[4], []);
 
   return rows.map((post) => {
-    const profile = profiles.get(post.user_id);
+    const profile = profiles.get(post.user_id) as any;
     const name = profile?.full_name || 'Usuario';
     const postLikes = likes.filter((like: any) => like.post_id === post.id);
     const postComments = comments.filter((comment: any) => comment.post_id === post.id);
     const postShares = shares.filter((share: any) => share.post_id === post.id);
-
     return {
       id: post.id,
       userId: post.user_id,
@@ -73,10 +68,8 @@ export const createFeedPostFn = createServerFn({ method: 'POST' })
     const type = data.get('type')?.toString() === 'photo' ? 'photo' : 'text';
     const photos = data.getAll('photos').filter((value): value is File => value instanceof File).slice(0, 4);
     if (!content && photos.length === 0) throw new Error('La publicación está vacía');
-
     const { data: post, error } = await supabase.from('posts').insert({ user_id: user.id, content, type } as any).select('id,user_id,content,type,created_at').single();
     if (error) throw new Error(`Create post failed: ${error.message}`);
-
     for (const photo of photos) {
       const extension = photo.name.split('.').pop()?.toLowerCase() || 'jpg';
       const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
