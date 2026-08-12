@@ -1,16 +1,26 @@
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Heart, MessageCircle, Play, Share2 } from 'lucide-react';
+import { useHydrated } from '../../../hooks/useHydrated';
 import type { FeedPost } from '../types';
 
 export function PostCard({ post, onLike }: { post: FeedPost; onLike: (id: string) => void }) {
+  // Avoid React #418: relative time depends on Date.now(), which differs
+  // between SSR and the first client render. Render a stable absolute
+  // date on the server, then swap to the relative one after hydration.
+  const hydrated = useHydrated();
+  const createdAtDate = new Date(post.createdAt);
+  const timeLabel = hydrated
+    ? formatDistanceToNow(createdAtDate, { addSuffix: true, locale: es })
+    : createdAtDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+
   return (
     <article className="feed-post">
       <header className="feed-post-header">
         <img src={post.authorAvatar} alt="" className="feed-avatar" />
         <div className="feed-post-meta">
           <p className="feed-post-name">{post.authorName}</p>
-          <p className="feed-post-time"><span suppressHydrationWarning>{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: es })}</span> · Público</p>
+          <p className="feed-post-time"><span suppressHydrationWarning>{timeLabel}</span> · Público</p>
         </div>
         <button type="button" className="feed-post-menu" aria-label="Opciones">⌄</button>
       </header>
