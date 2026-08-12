@@ -106,7 +106,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
             <section className="border border-slate-200 bg-white p-3">
               <SideNavItem to="/feed" icon={<Home size={19} />} label="Novedades" active />
-              <SideNavItem to="/feed" icon={<ImageIcon size={19} />} label="Fotos" />
+              <SideNavItem to="/photos" icon={<ImageIcon size={19} />} label="Álbumes" />
               <SideNavItem to="/feed" icon={<Video size={19} />} label="Vídeos" />
               <SideNavItem to="/events" icon={<Music2 size={19} />} label="Música" />
               <SideNavItem to="/events" icon={<CalendarDays size={19} />} label="Eventos" />
@@ -180,7 +180,7 @@ function HeaderLink({ to, label, active = false, badge, icon }: { to: '/feed' | 
   return <Link to={to} className={`relative flex h-full items-center gap-2 px-4 text-sm font-bold ${active ? 'border-b-4 border-white bg-blue-700' : 'hover:bg-blue-700'}`}>{icon}{label}{badge && <span className="absolute right-1 top-1 rounded-full bg-red-500 px-1.5 text-[9px] leading-4">{badge}</span>}</Link>;
 }
 
-function SideNavItem({ to, icon, label, active = false }: { to: '/feed' | '/events' | '/friends'; icon: React.ReactNode; label: string; active?: boolean }) {
+function SideNavItem({ to, icon, label, active = false }: { to: '/feed' | '/photos' | '/events' | '/friends'; icon: React.ReactNode; active?: boolean; label: string }) {
   return <Link to={to} className={`flex items-center gap-3 px-3 py-2.5 text-sm ${active ? 'rounded bg-slate-100 font-bold text-blue-800' : 'text-slate-700 hover:bg-slate-50'}`}>{icon}<span>{label}</span></Link>;
 }
 
