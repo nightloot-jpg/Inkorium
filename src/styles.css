@@ -1,16 +1,93 @@
-:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #edf2ff; background: #0b1020; font-synthesis: none; }
+:root {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #344c62;
+  background: #7fa9cf;
+  font-synthesis: none;
+}
+
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
-.shell { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at top right, #253c72 0, #0b1020 48%); }
-.card { width: min(100%, 440px); padding: 42px; border: 1px solid #ffffff1c; border-radius: 24px; background: #111a2eee; box-shadow: 0 24px 80px #0008; }
-.eyebrow { color: #8fb5ff; font-size: 12px; font-weight: 800; letter-spacing: .18em; }
-h1 { margin: 14px 0 10px; font-size: clamp(32px, 8vw, 52px); line-height: .98; letter-spacing: -.05em; }
-.muted, .card > p { color: #aebbd5; line-height: 1.6; }
-form { display: grid; gap: 16px; margin-top: 28px; }
-label { display: grid; gap: 7px; color: #d9e3f8; font-size: 14px; font-weight: 650; }
-input { width: 100%; border: 1px solid #ffffff22; border-radius: 11px; padding: 13px 14px; color: #fff; background: #0b1020; outline: none; }
-input:focus { border-color: #8fb5ff; box-shadow: 0 0 0 3px #8fb5ff22; }
-button { cursor: pointer; border: 0; border-radius: 11px; padding: 13px 16px; color: #07101f; background: #a9c5ff; font-weight: 800; }
+button, input { font: inherit; }
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 38px 20px 30px;
+  background: #7fa9cf;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 28px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -.03em;
+}
+
+.brand-mark { width: 18px; height: 18px; }
+
+.card {
+  width: min(100%, 360px);
+  padding: 25px 29px 28px;
+  border: 1px solid #ffffffaa;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 8px 18px #31567635;
+}
+
+.card-heading { text-align: center; }
+.card h1 { margin: 0; color: #344c62; font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+.card-heading p, .signed-in p { margin: 7px 0 0; color: #7d8d9b; font-size: 12px; }
+
+form { display: grid; gap: 12px; margin-top: 22px; }
+form > label { display: grid; gap: 5px; color: #5e7182; font-size: 10px; font-weight: 700; }
+input[type="email"], input[type="password"] {
+  width: 100%;
+  height: 28px;
+  padding: 5px 8px;
+  border: 1px solid #c8d2db;
+  border-radius: 2px;
+  color: #344c62;
+  background: #fff;
+  outline: none;
+  font-size: 11px;
+}
+input[type="email"]:focus, input[type="password"]:focus { border-color: #6e9fc8; box-shadow: 0 0 0 2px #6e9fc833; }
+
+.form-options { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: -2px; }
+.remember { display: inline-flex; align-items: center; gap: 4px; color: #718292; font-size: 8px; }
+.remember input { width: 10px; height: 10px; margin: 0; accent-color: #4d99d0; }
+
+button { cursor: pointer; border: 0; }
+.primary-button {
+  width: 78px;
+  justify-self: center;
+  padding: 6px 10px;
+  border-radius: 3px;
+  color: #fff;
+  background: #75a8d0;
+  font-size: 10px;
+  font-weight: 700;
+}
+.primary-button:hover { background: #6096c1; }
 button:disabled { cursor: wait; opacity: .65; }
-.link { margin-top: 18px; padding: 0; color: #a9c5ff; background: transparent; }
-.message { margin-bottom: 0; color: #b9d3ff !important; font-size: 14px; }
+.text-button { padding: 0; color: #4f94c6; background: transparent; font-size: 9px; }
+.text-button:hover { text-decoration: underline; }
+.form-options .text-button { color: #8294a2; font-size: 8px; }
+
+.message { margin: 14px 0 0; color: #5f829e; text-align: center; font-size: 10px; line-height: 1.4; }
+.page-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: min(100%, 360px); margin-top: 15px; color: #edf6ff; }
+.page-links .text-button { color: #f1f8ff; font-size: 9px; }
+.page-links .home-link { width: 100%; margin-top: 3px; }
+.signed-in { text-align: center; }
+.signed-in button { margin-top: 20px; padding: 8px 14px; border-radius: 3px; color: #fff; background: #75a8d0; font-size: 10px; font-weight: 700; }
+
+@media (max-width: 420px) {
+  .page { padding-top: 28px; }
+  .card { padding-inline: 23px; }
+}
