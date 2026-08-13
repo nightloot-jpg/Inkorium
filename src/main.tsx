@@ -1,7 +1,9 @@
-import { StrictMode, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { StrictMode, useEffect, useState, useCallback, type ChangeEvent, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
+import Cropper from 'react-easy-crop';
+import { getCroppedImg } from "./lib/cropImage";
 import "./styles.css";
 
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
@@ -35,21 +37,93 @@ function Feed({ session }: { session: Session }) {
 }
 
 type ProfileData = { username: string | null; full_name: string | null; bio: string | null; city: string | null; avatar_url: string | null; banner_url: string | null };
-function PhotoEditorFree({ file, kind, onCancel, onSave }: { file: File; kind: "avatar" | "banner"; onCancel: () => void; onSave: (file: File) => void }) { const [preview, setPreview] = useState(""); const [zoom, setZoom] = useState(1); const [x, setX] = useState(0); const [y, setY] = useState(0); const [width, setWidth] = useState(kind === "avatar" ? 600 : 1200); const [height, setHeight] = useState(kind === "avatar" ? 600 : 420); useEffect(() => { const url = URL.createObjectURL(file); setPreview(url); return () => URL.revokeObjectURL(url); }, [file]); function save() { const image = new Image(); image.onload = () => { const canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height; const context = canvas.getContext("2d"); if (!context) return; const scale = Math.max(width / image.width, height / image.height) * zoom; context.drawImage(image, (width - image.width * scale) / 2 + x, (height - image.height * scale) / 2 + y, image.width * scale, image.height * scale); canvas.toBlob((blob) => blob && onSave(new File([blob], `${kind}.jpg`, { type: "image/jpeg" })), "image/jpeg", .9); }; image.src = preview; } return <div className="photo-editor-backdrop"><section className="photo-editor"><header><strong>Editar {kind === "avatar" ? "foto de perfil" : "banner"}</strong><button onClick={onCancel}>×</button></header><div className="photo-crop" style={{ aspectRatio: `${width} / ${height}` }}><img src={preview} style={{ transform: `translate(${x}px, ${y}px) scale(${zoom})` }} alt="Vista previa" /></div><label>Ancho<input type="range" min="240" max="1600" value={width} onChange={(event) => setWidth(Number(event.target.value))} /></label><label>Alto<input type="range" min="180" max="1200" value={height} onChange={(event) => setHeight(Number(event.target.value))} /></label><label>Zoom<input type="range" min="1" max="3" step=".05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /></label><label>Horizontal<input type="range" min="-120" max="120" value={x} onChange={(event) => setX(Number(event.target.value))} /></label><label>Vertical<input type="range" min="-120" max="120" value={y} onChange={(event) => setY(Number(event.target.value))} /></label><footer><button onClick={onCancel}>Cancelar</button><button className="publish" onClick={save}>Guardar imagen</button></footer></section></div>; }
+function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avatar" | "banner"; onCancel: () => void; onSave: (file: File) => void }) {
+  const [preview, setPreview] = useState("");
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
-const PhotoEditor = PhotoEditorFree;
-function PhotoEditorLegacy({ file, kind, onCancel, onSave }: { file: File; kind: "avatar" | "banner"; onCancel: () => void; onSave: (file: File) => void }) {
-  const [zoom, setZoom] = useState(1); const [x, setX] = useState(0); const [y, setY] = useState(0); const [preview, setPreview] = useState(""); const [freeCrop, setFreeCrop] = useState(false); const [cropWidth, setCropWidth] = useState(kind === "avatar" ? 600 : 1200); const [cropHeight, setCropHeight] = useState(kind === "avatar" ? 600 : 420);
-  useEffect(() => { const url = URL.createObjectURL(file); setPreview(url); return () => URL.revokeObjectURL(url); }, [file]);
-  function save() { const image = new Image(); image.onload = () => { const width = freeCrop ? cropWidth : kind === "avatar" ? 600 : 1200; const height = freeCrop ? cropHeight : kind === "avatar" ? 600 : 420; const canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height; const context = canvas.getContext("2d"); if (!context) return; const scale = Math.max(width / image.width, height / image.height) * zoom; const drawWidth = image.width * scale; const drawHeight = image.height * scale; context.drawImage(image, (width - drawWidth) / 2 + x, (height - drawHeight) / 2 + y, drawWidth, drawHeight); canvas.toBlob((blob) => { if (blob) onSave(new File([blob], `${kind}.jpg`, { type: "image/jpeg" })); }, "image/jpeg", .9); }; image.src = preview; }
-  return <div className="photo-editor-backdrop"><section className="photo-editor"><header><strong>Editar {kind === "avatar" ? "foto de perfil" : "banner"}</strong><button onClick={onCancel}>×</button></header><div className={`photo-crop ${kind}`}><img src={preview} style={{ transform: `translate(${x}px, ${y}px) scale(${zoom})` }} alt="Vista previa" /></div><label>Zoom<input type="range" min="1" max="3" step=".05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /></label><label>Horizontal<input type="range" min="-120" max="120" value={x} onChange={(event) => setX(Number(event.target.value))} /></label><label>Vertical<input type="range" min="-120" max="120" value={y} onChange={(event) => setY(Number(event.target.value))} /></label><footer><button onClick={onCancel}>Cancelar</button><button className="publish" onClick={save}>Guardar imagen</button></footer></section></div>;
+  useEffect(() => {
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const save = useCallback(async () => {
+    if (!croppedAreaPixels) return;
+    try {
+      const croppedImage = await getCroppedImg(
+        preview,
+        croppedAreaPixels,
+        kind === "avatar" ? 600 : 1200,
+        kind === "avatar" ? 600 : 420,
+        kind
+      );
+      if (croppedImage) {
+        onSave(croppedImage);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [croppedAreaPixels, preview, kind, onSave]);
+
+  return (
+    <div className="photo-editor-backdrop">
+      <section className="photo-editor">
+        <header>
+          <strong>Editar {kind === "avatar" ? "foto de perfil" : "banner"}</strong>
+          <button onClick={onCancel}>×</button>
+        </header>
+        <div className="cropper-container">
+          <Cropper
+            image={preview}
+            crop={crop}
+            zoom={zoom}
+            aspect={kind === "avatar" ? 1 : 1200 / 420}
+            onCropChange={setCrop}
+            onCropComplete={onCropComplete}
+            onZoomChange={setZoom}
+            cropShape={kind === "avatar" ? "round" : "rect"}
+            showGrid={false}
+          />
+        </div>
+        <div className="zoom-controls">
+           <button onClick={() => setZoom(Math.max(1, zoom - 0.1))}>-</button>
+           <label>Zoom</label>
+           <button onClick={() => setZoom(Math.min(3, zoom + 0.1))}>+</button>
+        </div>
+        <footer>
+          <label className="change-image-btn">
+            Cambiar imagen
+            <input type="file" accept="image/*" onChange={(e) => {
+              const newFile = e.target.files?.[0];
+              if (newFile) {
+                const url = URL.createObjectURL(newFile);
+                setPreview(url);
+                setZoom(1);
+                setCrop({x:0, y:0});
+              }
+            }} style={{display: 'none'}}/>
+          </label>
+          <div className="footer-actions">
+            <button onClick={onCancel}>Cancelar</button>
+            <button className="publish" onClick={save}>Guardar</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  );
 }
 
 function ProfileViewLegacy({ session }: { session: Session }) {
   const fallbackName = session.user.email?.split("@")[0] || "usuario";
   const [profile, setProfile] = useState<ProfileData | null>(null); const [posts, setPosts] = useState<Post[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState("");
   const name = profile?.full_name || profile?.username || fallbackName; const initials = name.slice(0, 2).toUpperCase();
-  async function uploadMedia(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; } if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; } setUploading(kind); setError(""); const extension = file.name.split(".").pop()?.toLowerCase() || "jpg"; const path = `${session.user.id}/${kind}-${Date.now()}.${extension}`; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type }); if (uploadError) { setError(uploadError.message); setUploading(""); return; } const { data: publicData } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: profileError } = await supabase.from("profiles").update({ [field]: publicData.publicUrl }).eq("id", session.user.id); if (profileError) setError(profileError.message); else setProfile((current) => ({ ...(current || { username: null, full_name: null, bio: null, city: null, avatar_url: null }), [field]: publicData.publicUrl })); setUploading(""); event.target.value = ""; }
+  async function uploadMedia(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; } if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; } setUploading(kind); setError(""); const extension = file.name.split(".").pop()?.toLowerCase() || "jpg"; const path = `${session.user.id}/${kind}-${Date.now()}.${extension}`; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type }); if (uploadError) { setError(uploadError.message); setUploading(""); return; } const { data: publicData } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: profileError } = await supabase.from("profiles").update({ [field]: publicData.publicUrl }).eq("id", session.user.id); if (profileError) setError(profileError.message); else setProfile((current) => ({ ...(current || { username: null, full_name: null, bio: null, city: null, avatar_url: null, banner_url: null }), [field]: publicData.publicUrl })); setUploading(""); event.target.value = ""; }
   useEffect(() => { let cancelled = false; async function loadProfile() { const [{ data: profileData, error: profileError }, { data: postData, error: postError }] = await Promise.all([supabase.from("profiles").select("username, full_name, bio, city, avatar_url, banner_url").eq("id", session.user.id).maybeSingle(), supabase.from("posts").select("id, content, created_at").eq("author_id", session.user.id).order("created_at", { ascending: false }).limit(30)]); if (cancelled) return; if (profileError || postError) { setError((profileError || postError)?.message || "No se pudo cargar el perfil."); return; } setProfile(profileData as ProfileData | null); setPosts((postData ?? []).map((post) => ({ id: post.id, text: post.content ?? "", time: formatPostTime(post.created_at), likes: 0, authorName: name }))); } void loadProfile(); return () => { cancelled = true; }; }, [session.user.id, name]);
   async function publish(event: FormEvent) { event.preventDefault(); const content = draft.trim(); if (!content || saving) return; setSaving(true); setError(""); const { data, error: insertError } = await supabase.from("posts").insert({ author_id: session.user.id, content, visibility: "public" }).select("id, content, created_at").single(); if (insertError) setError(insertError.message); else if (data) { setPosts((current) => [{ id: data.id, text: data.content ?? content, time: "ahora", likes: 0, authorName: name }, ...current]); setDraft(""); } setSaving(false); }
   return <section className="profile-page"><aside className="profile-left"><section className="panel profile-summary"><div className="profile-summary-cover" /><div className="profile-summary-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><h2>{name}</h2><span className="online-dot">● En línea</span><p>{profile?.city || "Sin especificar"}</p><p>Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</p><p>0 amigos</p></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside><div className="profile-main"><section className="profile-hero panel"><div className="profile-cover" /><div className="profile-hero-body"><div className="profile-large-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><div className="profile-heading"><h1>{name}</h1><p>{profile?.bio || "Comparte tus ideas, música y momentos en Inkorium."}</p><span>● En línea</span></div><button className="profile-edit">Editar perfil</button><button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Amigos</button></nav></section><form className="profile-composer panel" onSubmit={(event) => void publish(event)}><div className="profile-mini-avatar">{initials}</div><input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe en tu tablón..." /><button className="publish" disabled={saving}>{saving ? "Guardando..." : "Publicar"}</button></form>{error && <p className="message">{error}</p>}{posts.length ? posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><div className="avatar">{initials}</div><div><strong>{name}</strong><span>{post.time} · ◉</span></div><button className="more">⌄</button></div><p className="post-text">{post.text}</p><div className="post-actions"><button>♡ Me gusta</button><button>◯ Comentar</button><button>♧ Compartir</button></div></article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p><p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p></section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside></section>;
@@ -78,4 +152,3 @@ function MusicView({ onPlay }: { onPlay: () => void }) { return <section classNa
 function Login() { const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [mode, setMode] = useState<"login" | "signup">("login"); const [remember, setRemember] = useState(true); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); async function submit(event: FormEvent) { event.preventDefault(); setBusy(true); setMessage(""); const result = mode === "login" ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password }); setMessage(result.error ? result.error.message : mode === "login" ? "Sesion iniciada." : "Cuenta creada. Revisa tu correo si hace falta."); setBusy(false); } async function recoverPassword() { if (!email) { setMessage("Escribe tu email para recuperar la contraseña."); return; } setBusy(true); const result = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/` }); setMessage(result.error ? result.error.message : "Te hemos enviado un enlace para cambiar la contraseña."); setBusy(false); } return <main className="page"><Brand /><div className="card"><div className="card-heading"><h1>{mode === "login" ? "Iniciar sesión" : "Crear una cuenta"}</h1><p>{mode === "login" ? "Entra en tu espacio creativo." : "Empieza tu espacio creativo."}</p></div><form onSubmit={(event) => void submit(event)}><label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label>Contraseña<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required /></label><div className="form-options"><label className="remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>Recordarme en este equipo</span></label><button type="button" className="text-button" onClick={() => void recoverPassword()}>¿Contraseña olvidada?</button></div><button className="primary-button" disabled={busy}>{busy ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}</button></form>{message && <p className="message">{message}</p>}</div><div className="page-links"><button className="text-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>{mode === "login" ? "¿Quieres crear una cuenta?" : "¿Ya tienes una cuenta?"}</button><span>|</span><button className="text-button" onClick={() => void recoverPassword()}>Recordar contraseña</button></div></main>; }
 function App() { const [session, setSession] = useState<Session | null>(null); useEffect(() => { void supabase.auth.getSession().then(({ data }) => setSession(data.session)); const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next)); return () => data.subscription.unsubscribe(); }, []); return session ? <Feed session={session} /> : <Login />; }
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
-
