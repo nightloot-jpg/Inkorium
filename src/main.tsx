@@ -4,6 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from "./lib/cropImage";
+import { Minus, Plus, Upload, Move, X } from "lucide-react";
 import "./styles.css";
 
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
@@ -42,6 +43,17 @@ function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avat
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [croppedAreaPercentages, setCroppedAreaPercentages] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  useEffect(() => {
+    // Lock body scroll
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
@@ -49,7 +61,8 @@ function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avat
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPercentages(croppedArea);
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
@@ -71,34 +84,85 @@ function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avat
     }
   }, [croppedAreaPixels, preview, kind, onSave]);
 
+  const handleInteraction = () => {
+    if (!hasInteracted) setHasInteracted(true);
+  };
+
   return (
-    <div className="photo-editor-backdrop">
+    <div className="photo-editor-backdrop" onTouchMove={(e) => e.stopPropagation()}>
       <section className="photo-editor">
         <header>
-          <strong>Editar {kind === "avatar" ? "foto de perfil" : "banner"}</strong>
-          <button onClick={onCancel}>×</button>
+          <div className="editor-header-text">
+            <strong>Editar {kind === "avatar" ? "foto de perfil" : "banner"}</strong>
+            <p className="editor-help-text">Ajusta tu foto</p>
+          </div>
+          <button className="close-btn" onClick={onCancel} aria-label="Cerrar"><X size={24} /></button>
         </header>
+
         <div className="cropper-container">
           <Cropper
             image={preview}
             crop={crop}
             zoom={zoom}
             aspect={kind === "avatar" ? 1 : 1200 / 420}
-            onCropChange={setCrop}
+            onCropChange={(c) => { setCrop(c); handleInteraction(); }}
             onCropComplete={onCropComplete}
-            onZoomChange={setZoom}
+            onZoomChange={(z) => { setZoom(z); handleInteraction(); }}
+            onInteractionStart={handleInteraction}
             cropShape={kind === "avatar" ? "round" : "rect"}
             showGrid={false}
           />
+          {!hasInteracted && (
+            <div className="drag-indicator">
+              <Move size={20} />
+              <span>ARRASTRA PARA AJUSTAR</span>
+            </div>
+          )}
         </div>
-        <div className="zoom-controls">
-           <button onClick={() => setZoom(Math.max(1, zoom - 0.1))}>-</button>
-           <label>Zoom</label>
-           <button onClick={() => setZoom(Math.min(3, zoom + 0.1))}>+</button>
+
+        <div className="editor-controls">
+          <div className="zoom-controls">
+            <button onClick={() => { setZoom(Math.max(1, zoom - 0.1)); handleInteraction(); }} aria-label="Alejar"><Minus size={18} /></button>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.01}
+              value={zoom}
+              onChange={(e) => { setZoom(Number(e.target.value)); handleInteraction(); }}
+            />
+            <button onClick={() => { setZoom(Math.min(3, zoom + 0.1)); handleInteraction(); }} aria-label="Acercar"><Plus size={18} /></button>
+          </div>
+
+          <div className="preview-section">
+            <span className="preview-label">Vista previa</span>
+            <div className={`preview-container ${kind}`}>
+               {croppedAreaPercentages && preview && (
+                 <div className="preview-crop-window">
+                   <img
+                     src={preview}
+                     alt="Preview"
+                     style={{
+                       position: 'absolute',
+                       width: `${100 / croppedAreaPercentages.width * 100}%`,
+                       height: `${100 / croppedAreaPercentages.height * 100}%`,
+                       left: `-${croppedAreaPercentages.x / croppedAreaPercentages.width * 100}%`,
+                       top: `-${croppedAreaPercentages.y / croppedAreaPercentages.height * 100}%`,
+                       maxWidth: 'none',
+                       maxHeight: 'none',
+                       pointerEvents: 'none'
+                     }}
+                   />
+                 </div>
+               )}
+            </div>
+          </div>
         </div>
+
         <footer>
           <label className="change-image-btn">
-            Cambiar imagen
+            <Upload size={18} />
+            <span>Cambiar foto</span>
             <input type="file" accept="image/*" onChange={(e) => {
               const newFile = e.target.files?.[0];
               if (newFile) {
@@ -106,12 +170,15 @@ function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avat
                 setPreview(url);
                 setZoom(1);
                 setCrop({x:0, y:0});
+                setHasInteracted(false);
               }
             }} style={{display: 'none'}}/>
           </label>
           <div className="footer-actions">
-            <button onClick={onCancel}>Cancelar</button>
-            <button className="publish" onClick={save}>Guardar</button>
+            <button onClick={onCancel} className="cancel-btn">Cancelar</button>
+            <button className="publish" onClick={save}>
+              {kind === "avatar" ? "Guardar foto" : "Guardar banner"}
+            </button>
           </div>
         </footer>
       </section>
