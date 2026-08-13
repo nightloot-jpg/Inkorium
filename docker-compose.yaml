@@ -4,6 +4,7 @@ services:
     restart: unless-stopped
     expose:
       - "80"
+      - "3000"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
       interval: 30s
