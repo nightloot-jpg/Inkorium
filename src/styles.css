@@ -128,3 +128,30 @@ button:disabled { cursor: wait; opacity: .65; }
 .mini-player { position: fixed; z-index: 30; display: flex; align-items: center; gap: 12px; width: 300px; padding: 11px 13px; border-radius: 6px; color: #fff; background: #132e50; box-shadow: 0 6px 18px #122e4b55; cursor: move; user-select: none; }.mini-player > button { position: absolute; top: 3px; right: 7px; color: #fff; background: transparent; }.drag-handle { color: #9bb8d5; font-size: 18px; }.mini-player .album { display: grid; width: 39px; height: 39px; place-items: center; background: var(--brand-a); font-size: 20px; }.mini-player div:nth-of-type(2) { display: grid; gap: 5px; flex: 1; }.mini-player small { color: #aac0d4; }.mini-player .play { font-size: 18px; }
 @media (max-width: 1100px) { .search-form { display: none; } }.logout { display: none; }
 @media (max-width: 720px) { .top-nav button { padding: 0 8px; font-size: 12px; }.result-grid, .people-grid { grid-template-columns: 1fr; }.messages-layout { grid-template-columns: 1fr; }.empty-chat { min-height: 260px; }.mini-player { max-width: calc(100vw - 30px); } }
+
+/* Compact visual pass inspired by the reference layout */
+@media (min-width: 721px) {
+  .topbar { height: 36px; gap: 10px; padding: 0 20px; }
+  .topbar .brand { flex-basis: 120px; font-size: 16px; }
+  .topbar .brand-mark { width: 18px; height: 18px; }
+  .top-nav { gap: 0; }
+  .top-nav button { padding: 0 14px; font-size: 11px; }
+  .top-actions { gap: 13px; font-size: 14px; }
+  .icon-button { font-size: 14px; }
+  .user-chip { padding-left: 10px; font-size: 11px; }
+  .user-chip .avatar.small { width: 20px; height: 20px; flex-basis: 20px; font-size: 9px; }
+  .search-form { max-width: 485px; margin-left: 10px; }
+  .search-form input { padding: 6px 17px; font-size: 10px; }
+  .feed-layout { grid-template-columns: 230px minmax(430px, 2.1fr) 250px; gap: 18px; max-width: 1120px; margin: 12px auto; padding: 0 18px; }
+  .panel { border-color: #dfe5ec; box-shadow: 0 1px 3px #17375b0b; }
+  .profile-card { gap: 11px; padding: 14px; }
+  .profile-avatar { width: 65px; height: 65px; font-size: 24px; }
+  .profile-card div:last-child { gap: 5px; }
+  .profile-card strong { font-size: 13px; }.profile-card span, .profile-card em, .profile-card button { font-size: 10px; }
+  .side-menu { gap: 0; margin-top: 12px; padding: 12px; }.side-menu button { gap: 10px; padding: 8px 9px; font-size: 11px; }.side-menu button span { width: 16px; font-size: 15px; }
+  .friends { margin-top: 12px; padding: 14px; }.friends > strong, .right-card > strong, .calendar > strong { font-size: 9px; }.friends > div { gap: 8px; margin-top: 11px; }.friends button, .see-all { font-size: 10px; }
+  .avatar { width: 42px; height: 42px; flex-basis: 42px; font-size: 16px; }.avatar.tiny { width: 24px; height: 24px; flex-basis: 24px; font-size: 9px; }
+  .composer { padding: 19px 16px 12px; }.composer-row { gap: 12px; }.composer-row input { height: 42px; padding: 8px 12px; font-size: 13px; }.composer-tools { padding: 12px 2px 10px; }.composer-tools button { font-size: 10px; }.composer-footer { gap: 15px; padding-top: 9px; font-size: 10px; }.publish { padding: 7px 16px !important; font-size: 10px !important; }
+  .post { margin-top: 12px; }.post-head { gap: 10px; padding: 13px 16px 8px; }.post-head > div:nth-child(2) { gap: 4px; }.post-head strong { font-size: 12px; }.post-head span { font-size: 10px; }.post-text { padding: 6px 16px 14px; font-size: 12px; }.post-actions { gap: 20px; padding: 10px 16px; }.post-actions button, .post-actions span { font-size: 10px; }
+  .right-card { padding: 16px; margin-bottom: 12px; }.right-card > a, .right-card > button { font-size: 10px; }.right-card > a { top: 16px; right: 16px; }.right-card p { margin: 15px 0 5px; font-size: 11px; }.event { gap: 9px; margin: 13px 0; }.event-image { flex-basis: 45px; height: 38px; font-size: 16px; }.event b, .event p { font-size: 10px; }.outline { padding: 6px 11px; font-size: 10px; }.calendar { padding: 16px; }.calendar h3 { margin: 20px 0; font-size: 14px; }.week { font-size: 10px; }.days { gap: 8px 2px; margin-top: 12px; }.days i { width: 22px; height: 22px; font-size: 10px; }
+}
