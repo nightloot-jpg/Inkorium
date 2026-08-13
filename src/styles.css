@@ -244,3 +244,74 @@ button:disabled { cursor: wait; opacity: .65; }
 .profile-upload-media { position: absolute; inset: 0; z-index: 2; pointer-events: none; }.uploaded-banner { position: absolute; top: 0; left: 0; width: 340px; height: 120px; border-radius: 6px 6px 0 0; background-position: center; background-size: cover; }.uploaded-avatar { position: absolute; top: 80px; left: 20px; width: 82px; height: 82px; border: 5px solid #fff; border-radius: 12px; object-fit: cover; }
 @media (max-width: 900px) { .profile-page { grid-template-columns: 1fr; }.profile-left, .profile-main, .profile-side { grid-column: 1; }.profile-left { order: 1; }.profile-main { order: 2; }.profile-side { order: 3; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }.profile-info, .profile-side-card { margin: 0; } }
 @media (max-width: 600px) { .profile-hero-body { align-items: flex-start; flex-wrap: wrap; }.profile-heading { min-width: calc(100% - 110px); }.profile-edit { margin-left: 110px; }.profile-side { display: block; }.profile-info, .profile-side-card { margin-bottom: 12px; }.profile-tabs button { padding-inline: 11px; }.profile-composer { flex-wrap: wrap; }.profile-composer input { flex-basis: calc(100% - 56px); }.profile-composer .publish { margin-left: 55px; } }
+
+
+.bell-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 9999px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.notifications-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 8px -12px;
+}
+.notification-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.notification-item:hover {
+  background-color: rgba(128, 128, 128, 0.1);
+}
+.notification-item.unread {
+  background-color: rgba(35, 59, 93, 0.05);
+}
+.notification-content {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.2;
+}
+.notification-content b {
+  color: var(--text);
+}
+.notification-content small {
+  display: block;
+  color: var(--subtext);
+  margin-top: 2px;
+}
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+  flex-shrink: 0;
+}
+.empty-notifications {
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--subtext);
+}
