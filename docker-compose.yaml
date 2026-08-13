@@ -21,8 +21,10 @@ services:
       VITE_SUPABASE_PROJECT_ID: ${VITE_SUPABASE_PROJECT_ID}
     ports:
       - "3000:3000"
+    expose:
+      - "3000"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 5
