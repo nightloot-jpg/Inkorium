@@ -4,32 +4,133 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from "./lib/cropImage";
-import { Minus, Plus, Upload, Move, X } from "lucide-react";
+import { getDisplayName, formatPostTime } from "./utils";
+import { Minus, Plus, Upload, Move, X, Bell } from "lucide-react";
 import "./styles.css";
 
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
 type Post = { id: string; text: string; time: string; likes: number; authorName?: string };
 type Page = "inicio" | "perfil" | "mensajes" | "personas" | "musica" | "buscar";
+export type ProfileData = { id?: string; username: string | null; full_name: string | null; bio: string | null; city: string | null; avatar_url: string | null; banner_url: string | null };
+type NotificationData = { id: string; actor_id: string; type: string; entity_id: string; is_read: boolean; created_at: string; actor?: ProfileData };
 const people = ["bg9222361", "Marta Creativa", "Alex Sonidos", "Clara Visual"]; const songs = ["MHR, EFY & SNEZ! - Hola", "Inalcanzable", "Atardecer en Madrid", "Noches de verano"];
 
-function formatPostTime(value: string) {
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000));
-  if (minutes < 1) return "ahora";
-  if (minutes < 60) return `hace ${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `hace ${hours} h`;
-  return `hace ${Math.floor(hours / 24)} d`;
-}
 
-function Feed({ session }: { session: Session }) {
-  const username = session.user.email?.split("@")[0] || "usuario";
-  const [page, setPage] = useState<Page>((sessionStorage.getItem("inkorium-page") as Page) || "inicio"); const [draft, setDraft] = useState(""); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [feedError, setFeedError] = useState(""); const [publishing, setPublishing] = useState(false); const [query, setQuery] = useState(""); const [notifications, setNotifications] = useState(false); const [userMenu, setUserMenu] = useState(false); const [player, setPlayer] = useState(false); const [theme, setTheme] = useState("blue"); const [position, setPosition] = useState({ x: 24, y: 90 }); const [dragging, setDragging] = useState(false);
-  useEffect(() => { let cancelled = false; async function loadPosts() { const { data, error } = await supabase.from("posts").select("id, content, created_at, author_id").eq("visibility", "public").is("group_id", null).order("created_at", { ascending: false }).limit(30); if (cancelled) return; if (error) { setFeedError(error.message); return; } const rows = data ?? []; const authorIds = [...new Set(rows.map((row) => row.author_id).filter(Boolean))]; const { data: profiles, error: profilesError } = authorIds.length ? await supabase.from("profiles").select("id, username, full_name").in("id", authorIds) : { data: [], error: null }; if (cancelled) return; if (profilesError) { setFeedError(profilesError.message); } const profileNames = new Map((profiles ?? []).map((profile) => [profile.id, profile.username || profile.full_name || "usuario"])); setPosts(rows.map((row) => ({ id: row.id, text: row.content ?? "", time: formatPostTime(row.created_at), likes: 0, authorName: profileNames.get(row.author_id) ?? (row.author_id === session.user.id ? username : "usuario") }))); } void loadPosts(); return () => { cancelled = true; }; }, [session.user.id, username]);
+
+function Feed({ session, profile }: { session: Session, profile: ProfileData | null }) {
+  const username = getDisplayName(profile, session.user.email);
+  const [page, setPage] = useState<Page>((sessionStorage.getItem("inkorium-page") as Page) || "inicio"); const [draft, setDraft] = useState(""); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [feedError, setFeedError] = useState(""); const [publishing, setPublishing] = useState(false); const [query, setQuery] = useState(""); const [notifications, setNotifications] = useState(false); const [unreadCount, setUnreadCount] = useState(0); const [userMenu, setUserMenu] = useState(false);
+  const [notificationItems, setNotificationItems] = useState<NotificationData[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadNotifications() {
+      const { data, error } = await supabase.from('notifications').select('*, actor:actor_id(id, username, full_name, avatar_url)').order('created_at', { ascending: false }).limit(20);
+      if (cancelled) return;
+      if (!error && data) {
+        setNotificationItems(data as NotificationData[]);
+        setUnreadCount(data.filter((n: any) => !n.is_read).length);
+      }
+    }
+    void loadNotifications();
+
+    const channel = supabase
+      .channel('realtime_notifications')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${session.user.id}` }, () => {
+        void loadNotifications();
+      })
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [session.user.id]);
+
+  async function markAllRead() {
+    await supabase.from('notifications').update({ is_read: true }).eq('user_id', session.user.id).eq('is_read', false);
+    setNotificationItems(items => items.map(i => ({ ...i, is_read: true })));
+    setUnreadCount(0);
+    setNotifications(false);
+  }
+
+  async function markRead(id: string) {
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    setNotificationItems(items => items.map(i => i.id === id ? { ...i, is_read: true } : i));
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  } const [player, setPlayer] = useState(false); const [theme, setTheme] = useState("blue"); const [position, setPosition] = useState({ x: 24, y: 90 }); const [dragging, setDragging] = useState(false);
+  useEffect(() => { let cancelled = false; async function loadPosts() { const [{ data: postsData, error: postsError }, { data: likesData }] = await Promise.all([
+      supabase.from("posts").select("id, content, created_at, author_id, post_likes(count)").eq("visibility", "public").is("group_id", null).order("created_at", { ascending: false }).limit(30),
+      supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
+    ]);
+    if (cancelled) return;
+    if (postsError) { setFeedError(postsError.message); return; }
+
+    const rows = postsData ?? [];
+    const authorIds = [...new Set(rows.map((row) => row.author_id).filter(Boolean))];
+    const { data: profiles, error: profilesError } = authorIds.length ? await supabase.from("profiles").select("id, username, full_name").in("id", authorIds) : { data: [], error: null };
+    if (cancelled) return;
+    if (profilesError) { setFeedError(profilesError.message); }
+
+    const profileNames = new Map((profiles ?? []).map((profile) => [profile.id, getDisplayName(profile, undefined)]));
+    setPosts(rows.map((row) => ({ id: row.id, text: row.content ?? "", time: formatPostTime(row.created_at), likes: row.post_likes?.[0]?.count ?? 0, authorName: profileNames.get(row.author_id) ?? (row.author_id === session.user.id ? username : "usuario") })));
+    setLiked((likesData ?? []).map(l => l.post_id)); } void loadPosts(); return () => { cancelled = true; }; }, [session.user.id, username]);
   async function publish(event: FormEvent) { event.preventDefault(); const content = draft.trim(); if (!content || publishing) return; setPublishing(true); setFeedError(""); const { data, error } = await supabase.from("posts").insert({ author_id: session.user.id, content, visibility: "public" }).select("id, content, created_at").single(); if (error) setFeedError(error.message); else if (data) { setPosts((current) => [{ id: data.id, text: data.content ?? content, time: "ahora", likes: 0, authorName: username }, ...current]); setDraft(""); } setPublishing(false); }
-  function toggleLike(id: string) { const active = liked.includes(id); setLiked(active ? liked.filter((item) => item !== id) : [...liked, id]); setPosts(posts.map((post) => post.id === id ? { ...post, likes: post.likes + (active ? -1 : 1) } : post)); }
+  async function toggleLike(id: string) {
+    const active = liked.includes(id);
+    setLiked(active ? liked.filter((item) => item !== id) : [...liked, id]);
+    setPosts(posts.map((post) => post.id === id ? { ...post, likes: post.likes + (active ? -1 : 1) } : post));
+
+    if (active) {
+      await supabase.from("post_likes").delete().eq("post_id", id).eq("user_id", session.user.id);
+    } else {
+      await supabase.from("post_likes").insert({ post_id: id, user_id: session.user.id });
+    }
+  }
   const navigate = (next: Page) => { setPage(next); sessionStorage.setItem("inkorium-page", next); setNotifications(false); setUserMenu(false); };
   return <div className={`feed-app theme-${theme}`}>
-    <header className="topbar"><button className="brand-button" onClick={() => navigate("inicio")}><Brand /></button><nav className="top-nav">{([["inicio", "Inicio"], ["perfil", "Perfil"], ["mensajes", "Mensajes"], ["personas", "Personas"], ["musica", "Musica"]] as [Page, string][]).map(([id, label]) => <button className={page === id ? "active" : ""} onClick={() => navigate(id)} key={id}>{label}</button>)}</nav><form className="search-form" onSubmit={(event) => { event.preventDefault(); navigate("buscar"); }}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar personas, musica, videos..." /></form><div className="top-actions"><button className="icon-button" onClick={() => setNotifications(!notifications)} aria-label="Notificaciones">♧</button><button className="icon-button" onClick={() => setPlayer(!player)} aria-label="Reproductor">♫</button><button className="user-chip" onClick={() => setUserMenu(!userMenu)}><span className="avatar small">{username[0].toUpperCase()}</span>{username}⌄</button></div>{notifications && <div className="popover notifications"><strong>NOTIFICACIONES</strong><p>♡ A alguien le ha gustado tu publicación.</p><p>♫ Hay nueva música para descubrir.</p><p>● Tienes una sugerencia de amistad.</p><button onClick={() => setNotifications(false)}>Marcar todo como leído</button></div>}{userMenu && <div className="popover user-menu"><strong>{username}</strong><button onClick={() => navigate("perfil")}>Mi perfil</button><button onClick={() => navigate("mensajes")}>Mis mensajes</button><hr /><span>Color de la web</span><div className="themes"><button className="theme-dot blue" onClick={() => setTheme("blue")} /><button className="theme-dot violet" onClick={() => setTheme("violet")} /><button className="theme-dot green" onClick={() => setTheme("green")} /><button className="theme-dot sunset" onClick={() => setTheme("sunset")} /></div><button onClick={() => void supabase.auth.signOut()}>Cerrar sesion</button></div>}</header>
+    <header className="topbar"><button className="brand-button" onClick={() => navigate("inicio")}><Brand /></button><nav className="top-nav">{([["inicio", "Inicio"], ["perfil", "Perfil"], ["mensajes", "Mensajes"], ["personas", "Personas"], ["musica", "Musica"]] as [Page, string][]).map(([id, label]) => <button className={page === id ? "active" : ""} onClick={() => navigate(id)} key={id}>{label}</button>)}</nav><form className="search-form" onSubmit={(event) => { event.preventDefault(); navigate("buscar"); }}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar personas, musica, videos..." /></form><div className="top-actions">
+  <button className="icon-button" onClick={() => setNotifications(!notifications)} aria-label="Notificaciones">
+    <div className="bell-container">
+      <Bell size={20} strokeWidth={2.5} />
+      {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+    </div>
+  </button>
+  <button className="icon-button" onClick={() => setPlayer(!player)} aria-label="Reproductor">♫</button>
+  <button className="user-chip" onClick={() => setUserMenu(!userMenu)}>
+    <span className="avatar small">{username[0].toUpperCase()}</span>{username}
+  </button>
+</div>{notifications && <div className="popover notifications">
+  <strong>NOTIFICACIONES</strong>
+  <div className="notifications-list">
+    {notificationItems.length === 0 ? (
+      <div className="empty-notifications">
+        <Bell size={24} style={{ opacity: 0.5, margin: "0 auto 8px", display: "block" }} />
+        <p>No tienes notificaciones nuevas.</p>
+      </div>
+    ) : (
+      notificationItems.map(notif => {
+        const actorName = getDisplayName(notif.actor as any, undefined);
+        let text = "ha interactuado contigo";
+        if (notif.type === 'like') text = "Le ha gustado tu publicación";
+        else if (notif.type === 'comment') text = "Ha comentado tu publicación";
+        else if (notif.type === 'friend_request') text = "Te ha enviado una solicitud";
+
+        return (
+          <div key={notif.id} className={`notification-item ${notif.is_read ? 'read' : 'unread'}`} onClick={() => !notif.is_read && void markRead(notif.id)}>
+            <span className="avatar tiny">{notif.actor?.avatar_url ? <img src={notif.actor.avatar_url} alt="" /> : actorName[0].toUpperCase()}</span>
+            <div className="notification-content">
+              <span><b>{actorName}</b><br/>{text}</span>
+              <small>{formatPostTime(notif.created_at)}</small>
+            </div>
+            {!notif.is_read && <div className="unread-dot"></div>}
+          </div>
+        );
+      })
+    )}
+  </div>
+  {notificationItems.length > 0 && <button onClick={() => void markAllRead()}>Marcar todo como leído</button>}
+</div>}{userMenu && <div className="popover user-menu"><strong>{username}</strong><button onClick={() => navigate("perfil")}>Mi perfil</button><button onClick={() => navigate("mensajes")}>Mis mensajes</button><hr /><span>Color de la web</span><div className="themes"><button className="theme-dot blue" onClick={() => setTheme("blue")} /><button className="theme-dot violet" onClick={() => setTheme("violet")} /><button className="theme-dot green" onClick={() => setTheme("green")} /><button className="theme-dot sunset" onClick={() => setTheme("sunset")} /></div><button onClick={() => void supabase.auth.signOut()}>Cerrar sesion</button></div>}</header>
     <div className="feed-layout"><aside className="left-column"><section className="profile-card panel"><div className="avatar profile-avatar">{username[0].toUpperCase()}</div><div><strong>{username}</strong><span>Mas rapido</span><em>● En linea</em><button onClick={() => navigate("perfil")}>Ver mi perfil »</button></div></section><nav className="side-menu panel">{[["⌂", "Novedades", "inicio"], ["▧", "Fotos", "buscar"], ["▹", "Videos", "buscar"], ["♫", "Musica", "musica"], ["□", "Eventos", "buscar"], ["♧", "Grupos", "personas"], ["⚑", "Paginas", "personas"], ["▥", "Encuestas", "buscar"], ["▱", "Guardados", "buscar"], ["⚙", "Configuracion", "personas"]].map(([icon, label, id], index) => <button className={page === id && index === 0 ? "selected" : ""} onClick={() => navigate(id as Page)} key={label}><span>{icon}</span>{label}</button>)}</nav><section className="friends panel"><strong>AMIGOS CONECTADOS (1)</strong><div><span className="avatar tiny">B</span><button onClick={() => navigate("personas")}>bg9222361</button><i /></div><button className="see-all" onClick={() => navigate("personas")}>Ver todos »</button></section></aside>
       <main className="stream">{page === "inicio" && <><section className="composer panel"><div className="composer-row"><div className="avatar">{username[0].toUpperCase()}</div><input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={`Que estas pensando, ${username}?`} /></div><div className="composer-tools"><button>▧ Estado</button><button>▣ Foto</button><button>▹ Video</button><button onClick={() => { setPlayer(true); }}>♫ Musica</button><button>▧ Encuesta</button><button>▤ Noticia</button><button>☷ Mas⌄</button></div><div className="composer-footer"><span>◉ Publico⌄</span><button className="publish" onClick={publish} disabled={publishing}>{publishing ? "Guardando..." : "Publicar"}</button></div>{feedError && <p className="message">{feedError}</p>}</section>{posts.length === 0 && !feedError && <p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><div className="avatar">{(post.authorName || username)[0].toUpperCase()}</div><div><strong>{post.authorName || username}</strong><span>{post.time} · ◉</span></div><button className="more">⌄</button></div><p className="post-text">{post.text}</p><div className="post-actions"><button onClick={() => toggleLike(post.id)} className={liked.includes(post.id) ? "is-liked" : ""}>♡ Me gusta <small>{post.likes || ""}</small></button><button>◯ Comentar</button><button>♧ Compartir</button><span>♡ {post.likes}</span></div></article>)}</>}{page === "perfil" && <ProfileView session={session} />}{page === "buscar" && <SearchView query={query} navigate={navigate} />}{page === "mensajes" && <MessagesView />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => setPlayer(true)} />}</main>
       <aside className="right-column"><section className="panel right-card"><strong>SOLICITUDES</strong><button>Ver todas</button><p>No tienes solicitudes pendientes.</p></section><section className="panel right-card"><strong>EVENTOS DESTACADOS</strong><button>Ver todos</button><div className="event"><div className="event-image">♫</div><div><b>Descubre Inkorium</b><p>Comparte tus momentos y musica.</p></div></div><button className="outline">Añadir a mi calendario</button></section><section className="panel calendar"><strong>CALENDARIO</strong><span>▣</span><h3>Agosto 2026</h3><div className="week">Lu　 Ma　 Mi　 Ju　 Vi　 Sa　 Do</div><div className="days">{Array.from({ length: 31 }, (_, index) => <i className={index === 12 ? "today" : ""} key={index}>{index + 1}</i>)}</div></section></aside></div>
@@ -37,7 +138,6 @@ function Feed({ session }: { session: Session }) {
   </div>;
 }
 
-type ProfileData = { username: string | null; full_name: string | null; bio: string | null; city: string | null; avatar_url: string | null; banner_url: string | null };
 function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avatar" | "banner"; onCancel: () => void; onSave: (file: File) => void }) {
   const [preview, setPreview] = useState("");
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -187,13 +287,34 @@ function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avat
 }
 
 function ProfileViewLegacy({ session }: { session: Session }) {
-  const fallbackName = session.user.email?.split("@")[0] || "usuario";
-  const [profile, setProfile] = useState<ProfileData | null>(null); const [posts, setPosts] = useState<Post[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState("");
-  const name = profile?.full_name || profile?.username || fallbackName; const initials = name.slice(0, 2).toUpperCase();
+  const fallbackName = "";
+  const [profile, setProfile] = useState<ProfileData | null>(null); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState("");
+
+async function toggleLike(id: string) {
+    const active = liked.includes(id);
+    setLiked(active ? liked.filter((item) => item !== id) : [...liked, id]);
+    setPosts(posts.map((post) => post.id === id ? { ...post, likes: post.likes + (active ? -1 : 1) } : post));
+
+    if (active) {
+      await supabase.from("post_likes").delete().eq("post_id", id).eq("user_id", session.user.id);
+    } else {
+      await supabase.from("post_likes").insert({ post_id: id, user_id: session.user.id });
+    }
+  }
+  const name = getDisplayName(profile, session.user.email); const initials = name.slice(0, 2).toUpperCase();
   async function uploadMedia(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; } if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; } setUploading(kind); setError(""); const extension = file.name.split(".").pop()?.toLowerCase() || "jpg"; const path = `${session.user.id}/${kind}-${Date.now()}.${extension}`; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type }); if (uploadError) { setError(uploadError.message); setUploading(""); return; } const { data: publicData } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: profileError } = await supabase.from("profiles").update({ [field]: publicData.publicUrl }).eq("id", session.user.id); if (profileError) setError(profileError.message); else setProfile((current) => ({ ...(current || { username: null, full_name: null, bio: null, city: null, avatar_url: null, banner_url: null }), [field]: publicData.publicUrl })); setUploading(""); event.target.value = ""; }
-  useEffect(() => { let cancelled = false; async function loadProfile() { const [{ data: profileData, error: profileError }, { data: postData, error: postError }] = await Promise.all([supabase.from("profiles").select("username, full_name, bio, city, avatar_url, banner_url").eq("id", session.user.id).maybeSingle(), supabase.from("posts").select("id, content, created_at").eq("author_id", session.user.id).order("created_at", { ascending: false }).limit(30)]); if (cancelled) return; if (profileError || postError) { setError((profileError || postError)?.message || "No se pudo cargar el perfil."); return; } setProfile(profileData as ProfileData | null); setPosts((postData ?? []).map((post) => ({ id: post.id, text: post.content ?? "", time: formatPostTime(post.created_at), likes: 0, authorName: name }))); } void loadProfile(); return () => { cancelled = true; }; }, [session.user.id, name]);
+  useEffect(() => { let cancelled = false; async function loadProfile() { const [{ data: profileData, error: profileError }, { data: postData, error: postError }, { data: likesData }] = await Promise.all([
+      supabase.from("profiles").select("username, full_name, bio, city, avatar_url, banner_url").eq("id", session.user.id).maybeSingle(),
+      supabase.from("posts").select("id, content, created_at, post_likes(count)").eq("author_id", session.user.id).order("created_at", { ascending: false }).limit(30),
+      supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
+    ]);
+    if (cancelled) return;
+    if (profileError || postError) { setError((profileError || postError)?.message || "No se pudo cargar el perfil."); return; }
+    setProfile(profileData as ProfileData | null);
+    setPosts((postData ?? []).map((post) => ({ id: post.id, text: post.content ?? "", time: formatPostTime(post.created_at), likes: post.post_likes?.[0]?.count ?? 0, authorName: name })));
+    setLiked((likesData ?? []).map(l => l.post_id)); } void loadProfile(); return () => { cancelled = true; }; }, [session.user.id, name]);
   async function publish(event: FormEvent) { event.preventDefault(); const content = draft.trim(); if (!content || saving) return; setSaving(true); setError(""); const { data, error: insertError } = await supabase.from("posts").insert({ author_id: session.user.id, content, visibility: "public" }).select("id, content, created_at").single(); if (insertError) setError(insertError.message); else if (data) { setPosts((current) => [{ id: data.id, text: data.content ?? content, time: "ahora", likes: 0, authorName: name }, ...current]); setDraft(""); } setSaving(false); }
-  return <section className="profile-page"><aside className="profile-left"><section className="panel profile-summary"><div className="profile-summary-cover" /><div className="profile-summary-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><h2>{name}</h2><span className="online-dot">● En línea</span><p>{profile?.city || "Sin especificar"}</p><p>Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</p><p>0 amigos</p></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside><div className="profile-main"><section className="profile-hero panel"><div className="profile-cover" /><div className="profile-hero-body"><div className="profile-large-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><div className="profile-heading"><h1>{name}</h1><p>{profile?.bio || "Comparte tus ideas, música y momentos en Inkorium."}</p><span>● En línea</span></div><button className="profile-edit">Editar perfil</button><button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Amigos</button></nav></section><form className="profile-composer panel" onSubmit={(event) => void publish(event)}><div className="profile-mini-avatar">{initials}</div><input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe en tu tablón..." /><button className="publish" disabled={saving}>{saving ? "Guardando..." : "Publicar"}</button></form>{error && <p className="message">{error}</p>}{posts.length ? posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><div className="avatar">{initials}</div><div><strong>{name}</strong><span>{post.time} · ◉</span></div><button className="more">⌄</button></div><p className="post-text">{post.text}</p><div className="post-actions"><button>♡ Me gusta</button><button>◯ Comentar</button><button>♧ Compartir</button></div></article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p><p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p></section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside></section>;
+  return <section className="profile-page"><aside className="profile-left"><section className="panel profile-summary"><div className="profile-summary-cover" /><div className="profile-summary-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><h2>{name}</h2><span className="online-dot">● En línea</span><p>{profile?.city || "Sin especificar"}</p><p>Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</p><p>0 amigos</p></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside><div className="profile-main"><section className="profile-hero panel"><div className="profile-cover" /><div className="profile-hero-body"><div className="profile-large-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><div className="profile-heading"><h1>{name}</h1><p>{profile?.bio || "Comparte tus ideas, música y momentos en Inkorium."}</p><span>● En línea</span></div><button className="profile-edit">Editar perfil</button><button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Amigos</button></nav></section><form className="profile-composer panel" onSubmit={(event) => void publish(event)}><div className="profile-mini-avatar">{initials}</div><input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe en tu tablón..." /><button className="publish" disabled={saving}>{saving ? "Guardando..." : "Publicar"}</button></form>{error && <p className="message">{error}</p>}{posts.length ? posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><div className="avatar">{initials}</div><div><strong>{name}</strong><span>{post.time} · ◉</span></div><button className="more">⌄</button></div><p className="post-text">{post.text}</p><div className="post-actions"><button onClick={() => void toggleLike(post.id)} className={liked.includes(post.id) ? "is-liked" : ""}>♡ Me gusta <small>{post.likes || ""}</small></button><button>◯ Comentar</button><button>♧ Compartir</button></div></article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p><p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p></section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside></section>;
 }
 
 function ProfileMedia({ session }: { session: Session }) { const [media, setMedia] = useState<{ avatar_url: string | null; banner_url: string | null }>({ avatar_url: null, banner_url: null }); useEffect(() => { void supabase.from("profiles").select("avatar_url, banner_url").eq("id", session.user.id).maybeSingle().then(({ data }) => { if (data) setMedia(data); }); }, [session.user.id]); return <div className="profile-upload-media">{media.banner_url && <div className="uploaded-banner" style={{ backgroundImage: `url(${media.banner_url})` }} />}{media.avatar_url && <img className="uploaded-avatar" src={media.avatar_url} alt="Foto de perfil" />}</div>; }
@@ -217,5 +338,25 @@ function PeopleView({ navigate }: { navigate: (page: Page) => void }) { return <
 function MusicView({ onPlay }: { onPlay: () => void }) { return <section className="content-view"><h1>Musica</h1><p className="view-subtitle">Escucha, descubre y comparte nuevos sonidos.</p><div className="music-list panel">{songs.map((song, index) => <div className="song-row" key={song}><span className="music-square">♫</span><div><strong>{song}</strong><small>Inkorium Music · pista {index + 1}</small></div><button onClick={onPlay}>▶ Escuchar</button></div>)}</div></section>; }
 
 function Login() { const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [mode, setMode] = useState<"login" | "signup">("login"); const [remember, setRemember] = useState(true); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); async function submit(event: FormEvent) { event.preventDefault(); setBusy(true); setMessage(""); const result = mode === "login" ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password }); setMessage(result.error ? result.error.message : mode === "login" ? "Sesion iniciada." : "Cuenta creada. Revisa tu correo si hace falta."); setBusy(false); } async function recoverPassword() { if (!email) { setMessage("Escribe tu email para recuperar la contraseña."); return; } setBusy(true); const result = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/` }); setMessage(result.error ? result.error.message : "Te hemos enviado un enlace para cambiar la contraseña."); setBusy(false); } return <main className="page"><Brand /><div className="card"><div className="card-heading"><h1>{mode === "login" ? "Iniciar sesión" : "Crear una cuenta"}</h1><p>{mode === "login" ? "Entra en tu espacio creativo." : "Empieza tu espacio creativo."}</p></div><form onSubmit={(event) => void submit(event)}><label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label>Contraseña<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required /></label><div className="form-options"><label className="remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>Recordarme en este equipo</span></label><button type="button" className="text-button" onClick={() => void recoverPassword()}>¿Contraseña olvidada?</button></div><button className="primary-button" disabled={busy}>{busy ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}</button></form>{message && <p className="message">{message}</p>}</div><div className="page-links"><button className="text-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>{mode === "login" ? "¿Quieres crear una cuenta?" : "¿Ya tienes una cuenta?"}</button><span>|</span><button className="text-button" onClick={() => void recoverPassword()}>Recordar contraseña</button></div></main>; }
-function App() { const [session, setSession] = useState<Session | null>(null); useEffect(() => { void supabase.auth.getSession().then(({ data }) => setSession(data.session)); const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next)); return () => data.subscription.unsubscribe(); }, []); return session ? <Feed session={session} /> : <Login />; }
+function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    let cancelled = false;
+    supabase.from("profiles").select("id, username, full_name, bio, city, avatar_url, banner_url").eq("id", session.user.id).maybeSingle().then(({ data }) => {
+      if (!cancelled && data) setProfile(data as ProfileData);
+    });
+    return () => { cancelled = true; };
+  }, [session?.user?.id]);
+
+  return session ? <Feed session={session} profile={profile} /> : <Login />;
+}
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
