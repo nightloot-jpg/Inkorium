@@ -89,6 +89,7 @@ function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avat
             onZoomChange={setZoom}
             cropShape={kind === "avatar" ? "round" : "rect"}
             showGrid={false}
+            objectFit="cover"
           />
         </div>
         <div className="zoom-controls">
@@ -119,23 +120,206 @@ function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avat
   );
 }
 
-function ProfileViewLegacy({ session }: { session: Session }) {
-  const fallbackName = session.user.email?.split("@")[0] || "usuario";
-  const [profile, setProfile] = useState<ProfileData | null>(null); const [posts, setPosts] = useState<Post[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState("");
-  const name = profile?.full_name || profile?.username || fallbackName; const initials = name.slice(0, 2).toUpperCase();
-  async function uploadMedia(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; } if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; } setUploading(kind); setError(""); const extension = file.name.split(".").pop()?.toLowerCase() || "jpg"; const path = `${session.user.id}/${kind}-${Date.now()}.${extension}`; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type }); if (uploadError) { setError(uploadError.message); setUploading(""); return; } const { data: publicData } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: profileError } = await supabase.from("profiles").update({ [field]: publicData.publicUrl }).eq("id", session.user.id); if (profileError) setError(profileError.message); else setProfile((current) => ({ ...(current || { username: null, full_name: null, bio: null, city: null, avatar_url: null, banner_url: null }), [field]: publicData.publicUrl })); setUploading(""); event.target.value = ""; }
-  useEffect(() => { let cancelled = false; async function loadProfile() { const [{ data: profileData, error: profileError }, { data: postData, error: postError }] = await Promise.all([supabase.from("profiles").select("username, full_name, bio, city, avatar_url, banner_url").eq("id", session.user.id).maybeSingle(), supabase.from("posts").select("id, content, created_at").eq("author_id", session.user.id).order("created_at", { ascending: false }).limit(30)]); if (cancelled) return; if (profileError || postError) { setError((profileError || postError)?.message || "No se pudo cargar el perfil."); return; } setProfile(profileData as ProfileData | null); setPosts((postData ?? []).map((post) => ({ id: post.id, text: post.content ?? "", time: formatPostTime(post.created_at), likes: 0, authorName: name }))); } void loadProfile(); return () => { cancelled = true; }; }, [session.user.id, name]);
-  async function publish(event: FormEvent) { event.preventDefault(); const content = draft.trim(); if (!content || saving) return; setSaving(true); setError(""); const { data, error: insertError } = await supabase.from("posts").insert({ author_id: session.user.id, content, visibility: "public" }).select("id, content, created_at").single(); if (insertError) setError(insertError.message); else if (data) { setPosts((current) => [{ id: data.id, text: data.content ?? content, time: "ahora", likes: 0, authorName: name }, ...current]); setDraft(""); } setSaving(false); }
-  return <section className="profile-page"><aside className="profile-left"><section className="panel profile-summary"><div className="profile-summary-cover" /><div className="profile-summary-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><h2>{name}</h2><span className="online-dot">● En línea</span><p>{profile?.city || "Sin especificar"}</p><p>Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</p><p>0 amigos</p></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside><div className="profile-main"><section className="profile-hero panel"><div className="profile-cover" /><div className="profile-hero-body"><div className="profile-large-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><div className="profile-heading"><h1>{name}</h1><p>{profile?.bio || "Comparte tus ideas, música y momentos en Inkorium."}</p><span>● En línea</span></div><button className="profile-edit">Editar perfil</button><button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Amigos</button></nav></section><form className="profile-composer panel" onSubmit={(event) => void publish(event)}><div className="profile-mini-avatar">{initials}</div><input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe en tu tablón..." /><button className="publish" disabled={saving}>{saving ? "Guardando..." : "Publicar"}</button></form>{error && <p className="message">{error}</p>}{posts.length ? posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><div className="avatar">{initials}</div><div><strong>{name}</strong><span>{post.time} · ◉</span></div><button className="more">⌄</button></div><p className="post-text">{post.text}</p><div className="post-actions"><button>♡ Me gusta</button><button>◯ Comentar</button><button>♧ Compartir</button></div></article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p><p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p></section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside></section>;
-}
-
-function ProfileMedia({ session }: { session: Session }) { const [media, setMedia] = useState<{ avatar_url: string | null; banner_url: string | null }>({ avatar_url: null, banner_url: null }); useEffect(() => { void supabase.from("profiles").select("avatar_url, banner_url").eq("id", session.user.id).maybeSingle().then(({ data }) => { if (data) setMedia(data); }); }, [session.user.id]); return <div className="profile-upload-media">{media.banner_url && <div className="uploaded-banner" style={{ backgroundImage: `url(${media.banner_url})` }} />}{media.avatar_url && <img className="uploaded-avatar" src={media.avatar_url} alt="Foto de perfil" />}</div>; }
 
 function ProfileView({ session }: { session: Session }) {
-  const [uploading, setUploading] = useState(""); const [error, setError] = useState(""); const [editing, setEditing] = useState<{ file: File; kind: "avatar" | "banner" } | null>(null);
-  function openEditor(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) { setError("Selecciona una imagen de hasta 5 MB."); return; } setEditing({ file, kind }); event.target.value = ""; }
-  async function saveEdited(file: File) { if (!editing) return; const kind = editing.kind; setEditing(null); setUploading(kind); setError(""); const path = session.user.id + "/" + kind + "-" + Date.now() + ".jpg"; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { upsert: true, contentType: file.type }); if (uploadError) setError(uploadError.message); else { const { data } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: updateError } = await supabase.from("profiles").update({ [field]: data.publicUrl }).eq("id", session.user.id); if (updateError) setError(updateError.message); else window.location.reload(); } setUploading(""); }
-  return <div className="profile-edit-shell"><ProfileViewLegacy session={session} /><div className="profile-upload-zones"><label className="upload-banner" title="Cambiar banner"><input type="file" accept="image/*" onChange={(event) => openEditor(event, "banner")} />{uploading === "banner" && <span>Subiendo...</span>}</label><label className="upload-avatar" title="Cambiar foto de perfil"><input type="file" accept="image/*" onChange={(event) => openEditor(event, "avatar")} />{uploading === "avatar" && <span>...</span>}</label></div>{error && <p className="message profile-upload-error">{error}</p>}{editing && <PhotoEditor file={editing.file} kind={editing.kind} onCancel={() => setEditing(null)} onSave={(file) => void saveEdited(file)} />}<ProfileMedia session={session} /></div>;
+  const fallbackName = session.user.email?.split("@")[0] || "usuario";
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState<"avatar" | "banner" | "">("");
+  const [error, setError] = useState("");
+  const [editing, setEditing] = useState<{ file: File; kind: "avatar" | "banner" } | null>(null);
+
+  const name = profile?.full_name || profile?.username || fallbackName;
+  const initials = name.slice(0, 2).toUpperCase();
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadProfile() {
+      const [
+        { data: profileData, error: profileError },
+        { data: postData, error: postError }
+      ] = await Promise.all([
+        supabase.from("profiles").select("username, full_name, bio, city, avatar_url, banner_url").eq("id", session.user.id).maybeSingle(),
+        supabase.from("posts").select("id, content, created_at").eq("author_id", session.user.id).order("created_at", { ascending: false }).limit(30)
+      ]);
+      if (cancelled) return;
+      if (profileError || postError) {
+        setError((profileError || postError)?.message || "No se pudo cargar el perfil.");
+        return;
+      }
+      setProfile(profileData as ProfileData | null);
+      setPosts((postData ?? []).map((post) => ({ id: post.id, text: post.content ?? "", time: formatPostTime(post.created_at), likes: 0, authorName: name })));
+    }
+    void loadProfile();
+    return () => { cancelled = true; };
+  }, [session.user.id, name]);
+
+  function openEditor(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+      setError("Selecciona una imagen válida de hasta 5 MB.");
+      return;
+    }
+    setEditing({ file, kind });
+    event.target.value = "";
+  }
+
+  async function saveEdited(file: File) {
+    if (!editing) return;
+    const kind = editing.kind;
+    setEditing(null);
+    setUploading(kind);
+    setError("");
+    const path = `${session.user.id}/${kind}-${Date.now()}.jpg`;
+
+    const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { upsert: true, contentType: file.type });
+    if (uploadError) {
+      setError(uploadError.message);
+      setUploading("");
+      return;
+    }
+
+    const { data } = supabase.storage.from("profile-media").getPublicUrl(path);
+    const field = kind === "avatar" ? "avatar_url" : "banner_url";
+
+    const { error: updateError } = await supabase.from("profiles").update({ [field]: data.publicUrl }).eq("id", session.user.id);
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      setProfile((current) => ({
+        ...(current || { username: null, full_name: null, bio: null, city: null, avatar_url: null, banner_url: null }),
+        [field]: data.publicUrl
+      }));
+    }
+    setUploading("");
+  }
+
+  async function publish(event: FormEvent) {
+    event.preventDefault();
+    const content = draft.trim();
+    if (!content || saving) return;
+    setSaving(true);
+    setError("");
+    const { data, error: insertError } = await supabase.from("posts").insert({ author_id: session.user.id, content, visibility: "public" }).select("id, content, created_at").single();
+    if (insertError) setError(insertError.message);
+    else if (data) {
+      setPosts((current) => [{ id: data.id, text: data.content ?? content, time: "ahora", likes: 0, authorName: name }, ...current]);
+      setDraft("");
+    }
+    setSaving(false);
+  }
+
+  return (
+    <section className="profile-page">
+      {editing && <PhotoEditor file={editing.file} kind={editing.kind} onCancel={() => setEditing(null)} onSave={(file) => void saveEdited(file)} />}
+      <aside className="profile-left">
+        <section className="panel profile-summary">
+          <div className="profile-summary-cover" style={{ backgroundImage: profile?.banner_url ? `url(${profile.banner_url})` : undefined }} />
+          <div className="profile-summary-avatar">
+            {profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}
+          </div>
+          <h2>{name}</h2>
+          <span className="online-dot">● En línea</span>
+          <p>{profile?.city || "Sin especificar"}</p>
+          <p>Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</p>
+          <p>0 amigos</p>
+        </section>
+        <section className="panel profile-side-card">
+          <strong>ESCUCHANDO AHORA</strong>
+          <div className="profile-music-card">
+            <span>♫</span>
+            <div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div>
+          </div>
+        </section>
+      </aside>
+
+      <div className="profile-main">
+        <section className="profile-hero panel">
+          <label className="profile-cover upload-zone" title="Cambiar banner" style={{ backgroundImage: profile?.banner_url ? `url(${profile.banner_url})` : undefined, cursor: 'pointer' }}>
+            <input type="file" accept="image/*" onChange={(event) => openEditor(event, "banner")} style={{ display: "none" }} />
+            {uploading === "banner" && <span className="upload-indicator">Subiendo...</span>}
+            <div className="upload-hint">Haz clic para cambiar banner</div>
+          </label>
+          <div className="profile-hero-body">
+            <label className="profile-large-avatar upload-zone" title="Cambiar foto de perfil" style={{ cursor: 'pointer' }}>
+              <input type="file" accept="image/*" onChange={(event) => openEditor(event, "avatar")} style={{ display: "none" }} />
+              {profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : <div>{initials}</div>}
+              {uploading === "avatar" && <span className="upload-indicator avatar-indicator">...</span>}
+              <div className="upload-hint avatar-hint">Cambiar</div>
+            </label>
+            <div className="profile-heading">
+              <h1>{name}</h1>
+              <p>{profile?.bio || "Comparte tus ideas, música y momentos en Inkorium."}</p>
+              <span>● En línea</span>
+            </div>
+            <button className="profile-edit">Editar perfil</button>
+            <button className="profile-more">•••</button>
+          </div>
+          <nav className="profile-tabs">
+            <button className="active">Tablón</button>
+            <button>Información</button>
+            <button>Fotos (0)</button>
+            <button>Vídeos (0)</button>
+            <button>Amigos</button>
+          </nav>
+        </section>
+
+        <form className="profile-composer panel" onSubmit={(event) => void publish(event)}>
+          <div className="profile-mini-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div>
+          <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe en tu tablón..." />
+          <button className="publish" disabled={saving}>{saving ? "Guardando..." : "Publicar"}</button>
+        </form>
+
+        {error && <p className="message">{error}</p>}
+
+        {posts.length ? posts.map((post) => (
+          <article className="post panel" key={post.id}>
+            <div className="post-head">
+              <div className="avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div>
+              <div>
+                <strong>{name}</strong>
+                <span>{post.time} · ◉</span>
+              </div>
+              <button className="more">⌄</button>
+            </div>
+            <p className="post-text">{post.text}</p>
+            <div className="post-actions">
+              <button>♡ Me gusta</button>
+              <button>◯ Comentar</button>
+              <button>♧ Compartir</button>
+            </div>
+          </article>
+        )) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}
+      </div>
+
+      <aside className="profile-side">
+        <section className="panel profile-info">
+          <div className="profile-section-title">
+            <strong>INFORMACIÓN</strong>
+            <button>Editar</button>
+          </div>
+          <p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p>
+          <p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p>
+          <p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p>
+        </section>
+        <section className="panel profile-side-card">
+          <strong>FOTOS</strong>
+          <p>Comparte tus primeras fotos con la comunidad.</p>
+          <button>Subir una foto</button>
+        </section>
+        <section className="panel profile-side-card">
+          <strong>ESCUCHANDO AHORA</strong>
+          <div className="profile-music-card">
+            <span>♫</span>
+            <div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  );
 }
 
 type SearchResult = { kind: "person" | "post" | "music" | "event"; id: string; title: string; subtitle: string | null; content: string | null; created_at: string | null };
