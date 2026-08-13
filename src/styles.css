@@ -23,14 +23,14 @@ button, input { font: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 0 0 20px;
+  margin: 0 0 9px;
   color: #fff;
-  font-size: 18px;
+  font-size: 25px;
   font-weight: 700;
   letter-spacing: -.03em;
 }
 
-.brand-mark { width: 21px; height: 21px; object-fit: contain; }
+.brand-mark { width: 35px; height: 35px; object-fit: contain; }
 
 .card {
   width: min(100%, 360px);
