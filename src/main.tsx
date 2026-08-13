@@ -7,10 +7,7 @@ import "./styles.css";
 function Brand() {
   return (
     <div className="brand" aria-label="Inkorium">
-      <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-        <path d="M7 5h12.5A5.5 5.5 0 0 1 25 10.5V27H12.5A5.5 5.5 0 0 1 7 21.5V5Z" fill="currentColor" />
-        <path d="M12 10h8M12 15h8M12 20h5" stroke="#7fa9cf" strokeWidth="2.2" strokeLinecap="round" />
-      </svg>
+      <img className="brand-mark" src="/inkorium-logo-white.svg" alt="" />
       <span>inkorium</span>
     </div>
   );
