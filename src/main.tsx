@@ -59,11 +59,13 @@ function Composer({
       author_id: session.user.id,
       content,
       visibility: "public",
-      target_profile_id: targetProfileId || null
+      target_profile_id: targetProfileId ? targetProfileId : null
     }).select("id, content, created_at").single();
 
-    if (submitError) setError(submitError.message);
-    else if (data) {
+    if (submitError) {
+      console.error("Error al publicar:", submitError);
+      setError(submitError.message || "Error al publicar");
+    } else if (data) {
       onPublish({
         id: data.id,
         text: data.content ?? content,
@@ -71,7 +73,7 @@ function Composer({
         likes: 0,
         authorName: username,
         author_id: session.user.id,
-        target_profile_id: targetProfileId || null, shared_post_id: null,
+        target_profile_id: targetProfileId ? targetProfileId : null, shared_post_id: null,
         targetName: targetName
       });
       setDraft("");
@@ -135,8 +137,8 @@ function CommentsSection({ postId, session, navigate }: { postId: string; sessio
     let cancelled = false;
     async function loadComments() {
       const { data, error } = await supabase
-        .from("post_comments")
-        .select("id, content, created_at, author_id, profiles(username, full_name, avatar_url)")
+        .from("comments")
+        .select("id, content, created_at, author_id, profiles!comments_author_id_fkey(username, full_name, avatar_url)")
         .eq("post_id", postId)
         .order("created_at", { ascending: true });
 
@@ -155,9 +157,9 @@ function CommentsSection({ postId, session, navigate }: { postId: string; sessio
     setNewComment("");
 
     const { data, error } = await supabase
-      .from("post_comments")
+      .from("comments")
       .insert({ post_id: postId, author_id: session.user.id, content: txt })
-      .select("id, content, created_at, author_id, profiles(username, full_name, avatar_url)")
+      .select("id, content, created_at, author_id, profiles!comments_author_id_fkey(username, full_name, avatar_url)")
       .single();
 
     if (!error && data) {
@@ -320,7 +322,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
     setUnreadCount(prev => Math.max(0, prev - 1));
   } const [player, setPlayer] = useState(false); const [theme, setTheme] = useState("blue"); const [position, setPosition] = useState({ x: 24, y: 90 }); const [dragging, setDragging] = useState(false);
   useEffect(() => { let cancelled = false; async function loadPosts() { const [{ data: postsData, error: postsError }, { data: likesData }] = await Promise.all([
-      supabase.from("posts").select("id, content, created_at, author_id, target_profile_id, shared_post_id, post_likes(count), post_comments(count), original_post:shared_post_id(content, created_at, author_id, profiles(username, full_name))").eq("visibility", "public").is("group_id", null).is("target_profile_id", null).order("created_at", { ascending: false }).limit(30),
+      supabase.from("posts").select("id, content, created_at, author_id, target_profile_id, shared_post_id, post_likes(count), comments(count), original_post:shared_post_id(content, created_at, author_id, profiles!posts_author_id_fkey(username, full_name))").eq("visibility", "public").is("group_id", null).is("target_profile_id", null).order("created_at", { ascending: false }).limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
     ]);
     if (cancelled) return;
@@ -348,7 +350,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
         time: formatPostTime(row.original_post.created_at),
         author_id: row.original_post.author_id
       } : undefined,
-      commentsCount: row.post_comments?.[0]?.count || 0
+      commentsCount: row.comments?.[0]?.count || 0
     })));
     setLiked((likesData ?? []).map(l => l.post_id)); } void loadPosts(); return () => { cancelled = true; }; }, [session.user.id, username]);
 
@@ -612,7 +614,7 @@ async function toggleLike(id: string) {
   async function uploadMedia(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; } if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; } setUploading(kind); setError(""); const extension = file.name.split(".").pop()?.toLowerCase() || "jpg"; const path = `${session.user.id}/${kind}-${Date.now()}.${extension}`; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type }); if (uploadError) { setError(uploadError.message); setUploading(""); return; } const { data: publicData } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: profileError } = await supabase.from("profiles").update({ [field]: publicData.publicUrl }).eq("id", session.user.id); if (profileError) setError(profileError.message); else setProfile((current) => ({ ...(current || { username: null, full_name: null, bio: null, city: null, avatar_url: null, banner_url: null }), [field]: publicData.publicUrl })); setUploading(""); event.target.value = ""; }
   useEffect(() => { let cancelled = false; async function loadProfile() { const [{ data: profileData, error: profileError }, { data: postData, error: postError }, { data: likesData }] = await Promise.all([
       supabase.from("profiles").select("username, full_name, bio, city, avatar_url, banner_url").eq("id", targetUserId).maybeSingle(),
-      supabase.from("posts").select("id, content, created_at, target_profile_id, author_id, shared_post_id, post_likes(count), post_comments(count), original_post:shared_post_id(content, created_at, author_id, profiles(username, full_name))").or(`author_id.eq.${targetUserId},target_profile_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(30),
+      supabase.from("posts").select("id, content, created_at, target_profile_id, author_id, shared_post_id, post_likes(count), comments(count), original_post:shared_post_id(content, created_at, author_id, profiles!posts_author_id_fkey(username, full_name))").or(`author_id.eq.${targetUserId},target_profile_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
     ]);
     if (cancelled) return;
@@ -639,7 +641,7 @@ async function toggleLike(id: string) {
         time: formatPostTime(post.original_post.created_at),
         author_id: post.original_post.author_id
       } : undefined,
-      commentsCount: post.post_comments?.[0]?.count || 0
+      commentsCount: post.comments?.[0]?.count || 0
     })));
 
     setLiked((likesData ?? []).map(l => l.post_id)); } void loadProfile();
