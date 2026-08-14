@@ -9,7 +9,7 @@ import { Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarCha
 import "./styles.css";
 
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
-type Post = { id: string; text: string; time: string; likes: number; authorName?: string; author_id: string; target_profile_id?: string | null; targetName?: string; shared_post_id?: string | null; originalPost?: { text: string; authorName: string; time: string; author_id: string; }; commentsCount?: number; media_data?: any; poll_id?: string; };
+type Post = { id: string; text: string; time: string; likes: number; authorName?: string; authorAvatarUrl?: string | null; author_id: string; target_profile_id?: string | null; targetName?: string; shared_post_id?: string | null; originalPost?: { text: string; authorName: string; authorAvatarUrl?: string | null; time: string; author_id: string; }; commentsCount?: number; media_data?: any; poll_id?: string; };
 type Page = "inicio" | "perfil" | "mensajes" | "personas" | "musica" | "buscar";
 export type ProfileData = { id?: string; username: string | null; full_name: string | null; bio: string | null; city: string | null; avatar_url: string | null; banner_url: string | null };
 type NotificationData = { id: string; actor_id: string; type: string; entity_id: string; is_read: boolean; created_at: string; actor?: ProfileData };
@@ -479,17 +479,154 @@ function ShareMenu({ post, session, onClose }: { post: Post; session: Session; o
 }
 
 
+
+
+function YoutubePlaylist({ media }: { media: any }) {
+    const [tracks, setTracks] = useState<any[]>([]);
+    const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [playingId, setPlayingId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+
+    useEffect(() => {
+        if (apiKey && media.youtube_id) {
+            loadMore();
+        }
+    }, [media.youtube_id, apiKey]);
+
+    async function loadMore() {
+        if (!apiKey || loading) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+            url.searchParams.append("part", "snippet");
+            url.searchParams.append("playlistId", media.youtube_id);
+            url.searchParams.append("maxResults", "4");
+            url.searchParams.append("key", apiKey);
+            if (nextPageToken) {
+                url.searchParams.append("pageToken", nextPageToken);
+            }
+
+            const res = await fetch(url.toString());
+            if (!res.ok) {
+                throw new Error("Error loading playlist");
+            }
+            const data = await res.json();
+
+            setTracks(prev => [...prev, ...data.items]);
+            setNextPageToken(data.nextPageToken || null);
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    if (!apiKey) {
+        return (
+            <div style={{ marginTop: 12, padding: 16, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--panel-bg)' }}>
+                <strong style={{ display: 'block', fontSize: '1.1em', marginBottom: 4 }}>{media.title}</strong>
+                <span style={{ color: 'var(--text-light)', fontSize: '0.9em' }}>Configuración de YouTube pendiente (falta VITE_YOUTUBE_API_KEY).</span>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', background: 'var(--panel-bg)' }}>
+            {playingId ? (
+                <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, background: '#000' }}>
+                    <iframe
+                        src={`https://www.youtube.com/embed/${playingId}?autoplay=1`}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+                        allow="autoplay; encrypted-media"
+                        allowFullScreen
+                        title="YouTube Video"
+                    />
+                </div>
+            ) : (
+                <div style={{ padding: 16, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {media.thumbnail && <img src={media.thumbnail} alt={media.title} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 4 }} />}
+                    <div>
+                        <strong style={{ display: 'block', fontSize: '1.1em' }}>{media.title}</strong>
+                        <span style={{ color: 'var(--text-light)', fontSize: '0.9em' }}>Lista de reproducción</span>
+                    </div>
+                </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {tracks.map((track, i) => (
+                    <button
+                        key={track.id + i}
+                        onClick={() => setPlayingId(track.snippet.resourceId.videoId)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '12px 16px',
+                            background: playingId === track.snippet.resourceId.videoId ? 'rgba(0,0,0,0.05)' : 'transparent',
+                            border: 'none',
+                            borderBottom: '1px solid var(--border)',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            color: 'var(--text)'
+                        }}
+                    >
+                        <span style={{ width: 24, color: 'var(--text-light)' }}>{i + 1}.</span>
+                        <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: playingId === track.snippet.resourceId.videoId ? 'bold' : 'normal' }}>
+                            {track.snippet.title}
+                        </span>
+                        {playingId === track.snippet.resourceId.videoId && <span style={{ color: 'var(--primary)', fontSize: '0.9em' }}>▶</span>}
+                    </button>
+                ))}
+            </div>
+
+            {error && <div style={{ padding: 16, color: 'red', fontSize: '0.9em' }}>{error}</div>}
+
+            {nextPageToken && (
+                <button
+                    onClick={loadMore}
+                    disabled={loading}
+                    style={{ width: '100%', padding: '12px', background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                    {loading ? "Cargando..." : "Cargar más canciones"}
+                </button>
+            )}
+        </div>
+    );
+}
+
 function PostMedia({ media, pollId, session }: { media?: any, pollId?: string, session: Session }) {
     if (!media && !pollId) return null;
 
     if (media?.type === "photo") {
-        return <img src={media.url} alt="Post media" style={{width: '100%', borderRadius: 8, marginTop: 12, maxHeight: 500, objectFit: 'contain', background: '#000'}} />;
+        return <div style={{width: '100%', borderRadius: 8, marginTop: 12, maxHeight: 500, overflow: 'hidden', background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'center'}}><img src={media.url} alt="Post media" style={{maxWidth: '100%', maxHeight: 500, objectFit: 'contain'}} /></div>;
     }
     
     if (media?.type === "video") {
-        return <video src={media.url} controls style={{width: '100%', borderRadius: 8, marginTop: 12, maxHeight: 500, background: '#000'}} />;
+        return <div style={{width: '100%', borderRadius: 8, marginTop: 12, maxHeight: 500, overflow: 'hidden', background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'center'}}><video src={media.url} controls style={{maxWidth: '100%', maxHeight: 500}} /></div>;
     }
     
+
+    if (media?.type === "youtube_video") {
+        return (
+            <div style={{ marginTop: 12, borderRadius: 8, overflow: 'hidden', background: '#000', position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+                <iframe
+                    src={`https://www.youtube.com/embed/${media.youtube_id}`}
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={media.title || "YouTube Video"}
+                />
+            </div>
+        );
+    }
+
+    if (media?.type === "youtube_playlist") {
+        return <YoutubePlaylist media={media} />;
+    }
+
     if (media?.type === "news") {
         return (
             <a href={media.url} target="_blank" rel="noopener noreferrer" style={{display: 'block', textDecoration: 'none', color: 'inherit', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', marginTop: 12}}>
@@ -658,7 +795,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
     setUnreadCount(prev => Math.max(0, prev - 1));
   } const [player, setPlayer] = useState(false); const [theme, setTheme] = useState("blue"); const [position, setPosition] = useState({ x: 24, y: 90 }); const [dragging, setDragging] = useState(false);
   useEffect(() => { let cancelled = false; async function loadPosts() { const [{ data: postsData, error: postsError }, { data: likesData }] = await Promise.all([
-      supabase.from("posts").select("id, content, created_at, author_id, target_profile_id, shared_post_id, media_data, poll_id, post_likes(count), comments(count), original_post:shared_post_id(content, created_at, author_id, profiles!posts_author_id_fkey(username, full_name))").eq("visibility", "public").is("group_id", null).is("target_profile_id", null).order("created_at", { ascending: false }).limit(30),
+      supabase.from("posts").select("id, content, created_at, author_id, target_profile_id, shared_post_id, media_data, poll_id, post_likes(count), comments(count), original_post:shared_post_id(content, created_at, author_id, profiles!posts_author_id_fkey(username, full_name, avatar_url))").eq("visibility", "public").is("group_id", null).is("target_profile_id", null).order("created_at", { ascending: false }).limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
     ]);
     if (cancelled) return;
@@ -666,23 +803,26 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
 
     const rows = postsData ?? [];
     const authorIds = [...new Set(rows.map((row) => row.author_id).filter(Boolean))];
-    const { data: profiles, error: profilesError } = authorIds.length ? await supabase.from("profiles").select("id, username, full_name").in("id", authorIds) : { data: [], error: null };
+    const { data: profiles, error: profilesError } = authorIds.length ? await supabase.from("profiles").select("id, username, full_name, avatar_url").in("id", authorIds) : { data: [], error: null };
     if (cancelled) return;
     if (profilesError) { setFeedError(profilesError.message); }
 
-    const profileNames = new Map((profiles ?? []).map((profile) => [profile.id, getDisplayName(profile, undefined)]));
+    const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
     setPosts(rows.map((row: any) => ({
       id: row.id,
       text: row.content ?? "",
       time: formatPostTime(row.created_at),
       likes: row.post_likes?.[0]?.count ?? 0,
-      authorName: profileNames.get(row.author_id) ?? (row.author_id === session.user.id ? username : "usuario"),
+      authorName: profileMap.has(row.author_id) ? getDisplayName(profileMap.get(row.author_id) || null, undefined) : (row.author_id === session.user.id ? username : "usuario"),
+      authorAvatarUrl: profileMap.get(row.author_id)?.avatar_url || (row.author_id === session.user.id ? profile?.avatar_url : null),
+      media_data: row.media_data,
       author_id: row.author_id,
       target_profile_id: row.target_profile_id,
       shared_post_id: row.shared_post_id,
       originalPost: row.original_post ? {
         text: row.original_post.content || "",
         authorName: row.original_post.profiles?.username || row.original_post.profiles?.full_name || "Usuario",
+        authorAvatarUrl: row.original_post.profiles?.avatar_url || null,
         time: formatPostTime(row.original_post.created_at),
         author_id: row.original_post.author_id
       } : undefined,
@@ -746,7 +886,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
   {notificationItems.length > 0 && <button onClick={() => void markAllRead()}>Marcar todo como leído</button>}
 </div>}{userMenu && <div className="popover user-menu"><strong>{username}</strong><button onClick={() => navigate("perfil")}>Mi perfil</button><button onClick={() => navigate("mensajes")}>Mis mensajes</button><hr /><span>Color de la web</span><div className="themes"><button className="theme-dot blue" onClick={() => setTheme("blue")} /><button className="theme-dot violet" onClick={() => setTheme("violet")} /><button className="theme-dot green" onClick={() => setTheme("green")} /><button className="theme-dot sunset" onClick={() => setTheme("sunset")} /></div><button onClick={() => void supabase.auth.signOut()}>Cerrar sesion</button></div>}</header>
     <div className="feed-layout"><aside className="left-column"><section className="profile-card panel"><div className="avatar profile-avatar">{username[0].toUpperCase()}</div><div><strong>{username}</strong><span>Mas rapido</span><em>● En linea</em><button onClick={() => navigate("perfil")}>Ver mi perfil »</button></div></section><nav className="side-menu panel">{[["⌂", "Novedades", "inicio"], ["▧", "Fotos", "buscar"], ["▹", "Videos", "buscar"], ["♫", "Musica", "musica"], ["□", "Eventos", "buscar"], ["♧", "Grupos", "personas"], ["⚑", "Paginas", "personas"], ["▥", "Encuestas", "buscar"], ["▱", "Guardados", "buscar"], ["⚙", "Configuracion", "personas"]].map(([icon, label, id], index) => <button className={page === id && index === 0 ? "selected" : ""} onClick={() => navigate(id as Page)} key={label}><span>{icon}</span>{label}</button>)}</nav><section className="friends panel"><strong>AMIGOS CONECTADOS (1)</strong><div><span className="avatar tiny">B</span><button onClick={() => navigate("personas")}>bg9222361</button><i /></div><button className="see-all" onClick={() => navigate("personas")}>Ver todos »</button></section></aside>
-      <main className="stream">{page === "inicio" && <><Composer session={session} profile={profile} onPublish={(newPost) => setPosts(current => [newPost, ...current])} />{posts.length === 0 && !feedError && <p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><UserLink userId={post.author_id} name={post.authorName || username} avatarUrl={undefined} navigate={navigate} />
+      <main className="stream">{page === "inicio" && <><Composer session={session} profile={profile} onPublish={(newPost) => setPosts(current => [newPost, ...current])} />{posts.length === 0 && !feedError && <p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><UserLink userId={post.author_id} name={post.authorName || username} avatarUrl={post.authorAvatarUrl} navigate={navigate} />
           <div>
             {post.target_profile_id && post.target_profile_id !== post.author_id ? (
               <span className="signature-meta" style={{display: "block", fontSize: "0.85em", color: "var(--text-light)"}}>
@@ -760,7 +900,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
                Compartió una publicación de <strong>{post.originalPost.authorName}</strong>
              </div>
           )}
-          {post.text && <p className="post-text">{post.text}</p>}
+          {post.text && <p className="post-text">{post.text}</p>}<PostMedia media={post.media_data} pollId={post.poll_id} session={session} />
           {post.shared_post_id && post.originalPost && (
             <div className="shared-post-ref">
                <div className="post-head">
@@ -950,7 +1090,7 @@ async function toggleLike(id: string) {
   async function uploadMedia(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; } if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; } setUploading(kind); setError(""); const extension = file.name.split(".").pop()?.toLowerCase() || "jpg"; const path = `${session.user.id}/${kind}-${Date.now()}.${extension}`; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type }); if (uploadError) { setError(uploadError.message); setUploading(""); return; } const { data: publicData } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: profileError } = await supabase.from("profiles").update({ [field]: publicData.publicUrl }).eq("id", session.user.id); if (profileError) setError(profileError.message); else setProfile((current) => ({ ...(current || { username: null, full_name: null, bio: null, city: null, avatar_url: null, banner_url: null }), [field]: publicData.publicUrl })); setUploading(""); event.target.value = ""; }
   useEffect(() => { let cancelled = false; async function loadProfile() { const [{ data: profileData, error: profileError }, { data: postData, error: postError }, { data: likesData }] = await Promise.all([
       supabase.from("profiles").select("username, full_name, bio, city, avatar_url, banner_url").eq("id", targetUserId).maybeSingle(),
-      supabase.from("posts").select("id, content, created_at, target_profile_id, author_id, shared_post_id, media_data, poll_id, post_likes(count), comments(count), original_post:shared_post_id(content, created_at, author_id, profiles!posts_author_id_fkey(username, full_name))").or(`author_id.eq.${targetUserId},target_profile_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(30),
+      supabase.from("posts").select("id, content, created_at, target_profile_id, author_id, shared_post_id, media_data, poll_id, post_likes(count), comments(count), original_post:shared_post_id(content, created_at, author_id, profiles!posts_author_id_fkey(username, full_name, avatar_url))").or(`author_id.eq.${targetUserId},target_profile_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
     ]);
     if (cancelled) return;
@@ -959,14 +1099,16 @@ async function toggleLike(id: string) {
 
     const rows = postData ?? [];
     const authorIds = [...new Set(rows.map((row) => row.author_id).filter(Boolean))];
-    const { data: authors } = authorIds.length ? await supabase.from("profiles").select("id, username, full_name").in("id", authorIds) : { data: [] };
-    const authorMap = new Map((authors || []).map((a: any) => [a.id, getDisplayName(a, undefined)]));
+    const { data: authors } = authorIds.length ? await supabase.from("profiles").select("id, username, full_name, avatar_url").in("id", authorIds) : { data: [] };
+    const authorMap = new Map((authors || []).map((a: any) => [a.id, a]));
     setPosts(rows.map((post: any) => ({
       id: post.id,
       text: post.content ?? "",
       time: formatPostTime(post.created_at),
       likes: post.post_likes?.[0]?.count ?? 0,
-      authorName: authorMap.get(post.author_id) || "Usuario",
+      authorName: authorMap.has(post.author_id) ? getDisplayName(authorMap.get(post.author_id) || null, undefined) : "Usuario",
+      authorAvatarUrl: authorMap.get(post.author_id)?.avatar_url || null,
+      media_data: post.media_data,
       author_id: post.author_id,
       target_profile_id: post.target_profile_id,
       targetName: name,
@@ -974,6 +1116,7 @@ async function toggleLike(id: string) {
       originalPost: post.original_post ? {
         text: post.original_post.content || "",
         authorName: post.original_post.profiles?.username || post.original_post.profiles?.full_name || "Usuario",
+        authorAvatarUrl: post.original_post.profiles?.avatar_url || null,
         time: formatPostTime(post.original_post.created_at),
         author_id: post.original_post.author_id
       } : undefined,
@@ -1034,7 +1177,7 @@ async function toggleLike(id: string) {
                Compartió una publicación de <strong>{post.originalPost.authorName}</strong>
              </div>
           )}
-          {post.text && <p className="post-text">{post.text}</p>}
+          {post.text && <p className="post-text">{post.text}</p>}<PostMedia media={post.media_data} pollId={post.poll_id} session={session} />
           {post.shared_post_id && post.originalPost && (
             <div className="shared-post-ref">
                <div className="post-head">
