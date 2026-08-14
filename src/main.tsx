@@ -9,13 +9,147 @@ import { Minus, Plus, Upload, Move, X, Bell } from "lucide-react";
 import "./styles.css";
 
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
-type Post = { id: string; text: string; time: string; likes: number; authorName?: string; author_id: string };
+type Post = { id: string; text: string; time: string; likes: number; authorName?: string; author_id: string; target_profile_id?: string | null; targetName?: string };
 type Page = "inicio" | "perfil" | "mensajes" | "personas" | "musica" | "buscar";
 export type ProfileData = { id?: string; username: string | null; full_name: string | null; bio: string | null; city: string | null; avatar_url: string | null; banner_url: string | null };
 type NotificationData = { id: string; actor_id: string; type: string; entity_id: string; is_read: boolean; created_at: string; actor?: ProfileData };
  const songs = ["MHR, EFY & SNEZ! - Hola", "Inalcanzable", "Atardecer en Madrid", "Noches de verano"];
 
 
+
+
+
+function FeedComposer({ session, username, onPublish, feedError, setFeedError, targetProfileId }: { session: Session; username: string; onPublish: (post: Post) => void; feedError: string; setFeedError: (e: string) => void; targetProfileId?: string }) {
+  const [draft, setDraft] = useState("");
+  const [publishing, setPublishing] = useState(false);
+
+  async function publish(event: FormEvent) {
+    event.preventDefault();
+    const content = draft.trim();
+    if (!content || publishing) return;
+    setPublishing(true);
+    setFeedError("");
+    const { data, error } = await supabase.from("posts").insert({
+      author_id: session.user.id,
+      content,
+      visibility: "public",
+      target_profile_id: targetProfileId || null
+    }).select("id, content, created_at").single();
+
+    if (error) setFeedError(error.message);
+    else if (data) {
+      onPublish({
+        id: data.id,
+        text: data.content ?? content,
+        time: "ahora",
+        likes: 0,
+        authorName: username,
+        author_id: session.user.id,
+        target_profile_id: targetProfileId || null
+      });
+      setDraft("");
+    }
+    setPublishing(false);
+  }
+
+  return (
+    <section className="composer panel">
+      <div className="composer-row">
+        <div className="avatar">{username.slice(0, 2).toUpperCase()}</div>
+        <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={targetProfileId ? "Escribe en tu tablón..." : `Qué estás pensando, ${username}?`} />
+      </div>
+      <div className="composer-tools">
+        <button type="button">▧ Estado</button><button type="button">▣ Foto</button><button type="button">▹ Video</button><button type="button">♫ Musica</button><button type="button">▧ Encuesta</button><button type="button">▤ Noticia</button><button type="button">☷ Mas⌄</button>
+      </div>
+      <div className="composer-footer">
+        <span>◉ Publico⌄</span>
+        <button className="publish" onClick={publish} disabled={publishing}>{publishing ? "Guardando..." : "Publicar"}</button>
+      </div>
+      {feedError && <p className="message">{feedError}</p>}
+    </section>
+  );
+}
+
+function SignatureComposer({ session, targetName, targetProfileId, onPublish }: { session: Session; targetName: string; targetProfileId: string; onPublish: (post: Post) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [error, setError] = useState("");
+
+  const editorRef = useCallback((node: HTMLDivElement | null) => {
+    if (node && expanded && draft === "") {
+      node.focus();
+    }
+  }, [expanded, draft]);
+
+  async function publish(event: FormEvent) {
+    event.preventDefault();
+    const content = draft.trim();
+    if (!content || publishing) return;
+    setPublishing(true);
+    setError("");
+    const { data, error: insertError } = await supabase.from("posts").insert({
+      author_id: session.user.id,
+      content,
+      visibility: "public",
+      target_profile_id: targetProfileId
+    }).select("id, content, created_at").single();
+
+    if (insertError) {
+      setError(insertError.message);
+    } else if (data) {
+      onPublish({
+        id: data.id,
+        text: data.content ?? content,
+        time: "ahora",
+        likes: 0,
+        authorName: "Tú", // Render will handle fallback
+        author_id: session.user.id,
+        target_profile_id: targetProfileId
+      });
+      setDraft("");
+      setExpanded(false);
+    }
+    setPublishing(false);
+  }
+
+  if (!expanded) {
+    return (
+      <div className="signature-prompt panel" onClick={() => setExpanded(true)} style={{ cursor: "text", padding: "16px", color: "var(--text-light)", marginBottom: "16px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+        Escribe en el tablón de {targetName}...
+      </div>
+    );
+  }
+
+  return (
+    <form className="signature-composer panel" onSubmit={publish} style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px", marginBottom: "16px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+      <div className="editor-toolbar" style={{ display: "flex", gap: "8px", paddingBottom: "12px", borderBottom: "1px solid var(--border)", flexWrap: "wrap", alignItems: "center" }}>
+        <button type="button" onClick={() => document.execCommand('bold')} title="Negrita" style={{background: "none", border: "none", cursor: "pointer", fontWeight: "bold"}}>B</button>
+        <button type="button" onClick={() => document.execCommand('italic')} title="Cursiva" style={{background: "none", border: "none", cursor: "pointer", fontStyle: "italic"}}>I</button>
+        <button type="button" onClick={() => document.execCommand('underline')} title="Subrayado" style={{background: "none", border: "none", cursor: "pointer", textDecoration: "underline"}}>U</button>
+        <span style={{ borderLeft: "1px solid var(--border)", height: "16px", margin: "0 4px" }}></span>
+        <button type="button" onClick={() => document.execCommand('justifyLeft')} title="Izquierda" style={{background: "none", border: "none", cursor: "pointer"}}>▤</button>
+        <button type="button" onClick={() => document.execCommand('justifyCenter')} title="Centro" style={{background: "none", border: "none", cursor: "pointer"}}>▥</button>
+        <span style={{ borderLeft: "1px solid var(--border)", height: "16px", margin: "0 4px" }}></span>
+        <button type="button" title="Emojis" style={{background: "none", border: "none", cursor: "pointer"}}>😀</button>
+        <button type="button" title="Enlace" style={{background: "none", border: "none", cursor: "pointer"}}>🔗</button>
+        <button type="button" title="Dibujar" style={{background: "none", border: "none", cursor: "pointer"}}>🖌️</button>
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        className="rich-editor"
+        style={{ minHeight: "80px", outline: "none", padding: "8px 0" }}
+        onInput={(e) => setDraft(e.currentTarget.innerHTML)}
+      />
+      {error && <p className="message">{error}</p>}
+      <div className="composer-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "8px", alignItems: "center" }}>
+        <button type="button" className="text-button" onClick={() => setExpanded(false)} style={{background: "none", border: "none", cursor: "pointer", color: "var(--text-light)"}}>Cancelar</button>
+        <button type="submit" className="primary-button" disabled={publishing || !draft.trim()}>{publishing ? "Firmando..." : "Firmar"}</button>
+      </div>
+    </form>
+  );
+}
 
 function Feed({ session, profile }: { session: Session, profile: ProfileData | null }) {
   const username = getDisplayName(profile, session.user.email);
@@ -89,7 +223,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
     setUnreadCount(prev => Math.max(0, prev - 1));
   } const [player, setPlayer] = useState(false); const [theme, setTheme] = useState("blue"); const [position, setPosition] = useState({ x: 24, y: 90 }); const [dragging, setDragging] = useState(false);
   useEffect(() => { let cancelled = false; async function loadPosts() { const [{ data: postsData, error: postsError }, { data: likesData }] = await Promise.all([
-      supabase.from("posts").select("id, content, created_at, author_id, post_likes(count)").eq("visibility", "public").is("group_id", null).order("created_at", { ascending: false }).limit(30),
+      supabase.from("posts").select("id, content, created_at, author_id, post_likes(count)").eq("visibility", "public").is("group_id", null).is("target_profile_id", null).order("created_at", { ascending: false }).limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
     ]);
     if (cancelled) return;
@@ -104,7 +238,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
     const profileNames = new Map((profiles ?? []).map((profile) => [profile.id, getDisplayName(profile, undefined)]));
     setPosts(rows.map((row) => ({ id: row.id, text: row.content ?? "", time: formatPostTime(row.created_at), likes: row.post_likes?.[0]?.count ?? 0, authorName: profileNames.get(row.author_id) ?? (row.author_id === session.user.id ? username : "usuario"), author_id: row.author_id })));
     setLiked((likesData ?? []).map(l => l.post_id)); } void loadPosts(); return () => { cancelled = true; }; }, [session.user.id, username]);
-  async function publish(event: FormEvent) { event.preventDefault(); const content = draft.trim(); if (!content || publishing) return; setPublishing(true); setFeedError(""); const { data, error } = await supabase.from("posts").insert({ author_id: session.user.id, content, visibility: "public" }).select("id, content, created_at").single(); if (error) setFeedError(error.message); else if (data) { setPosts((current) => [{ id: data.id, text: data.content ?? content, time: "ahora", likes: 0, authorName: username, author_id: session.user.id }, ...current]); setDraft(""); } setPublishing(false); }
+
   async function toggleLike(id: string) {
     const active = liked.includes(id);
     setLiked(active ? liked.filter((item) => item !== id) : [...liked, id]);
@@ -161,7 +295,15 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
   {notificationItems.length > 0 && <button onClick={() => void markAllRead()}>Marcar todo como leído</button>}
 </div>}{userMenu && <div className="popover user-menu"><strong>{username}</strong><button onClick={() => navigate("perfil")}>Mi perfil</button><button onClick={() => navigate("mensajes")}>Mis mensajes</button><hr /><span>Color de la web</span><div className="themes"><button className="theme-dot blue" onClick={() => setTheme("blue")} /><button className="theme-dot violet" onClick={() => setTheme("violet")} /><button className="theme-dot green" onClick={() => setTheme("green")} /><button className="theme-dot sunset" onClick={() => setTheme("sunset")} /></div><button onClick={() => void supabase.auth.signOut()}>Cerrar sesion</button></div>}</header>
     <div className="feed-layout"><aside className="left-column"><section className="profile-card panel"><div className="avatar profile-avatar">{username[0].toUpperCase()}</div><div><strong>{username}</strong><span>Mas rapido</span><em>● En linea</em><button onClick={() => navigate("perfil")}>Ver mi perfil »</button></div></section><nav className="side-menu panel">{[["⌂", "Novedades", "inicio"], ["▧", "Fotos", "buscar"], ["▹", "Videos", "buscar"], ["♫", "Musica", "musica"], ["□", "Eventos", "buscar"], ["♧", "Grupos", "personas"], ["⚑", "Paginas", "personas"], ["▥", "Encuestas", "buscar"], ["▱", "Guardados", "buscar"], ["⚙", "Configuracion", "personas"]].map(([icon, label, id], index) => <button className={page === id && index === 0 ? "selected" : ""} onClick={() => navigate(id as Page)} key={label}><span>{icon}</span>{label}</button>)}</nav><section className="friends panel"><strong>AMIGOS CONECTADOS (1)</strong><div><span className="avatar tiny">B</span><button onClick={() => navigate("personas")}>bg9222361</button><i /></div><button className="see-all" onClick={() => navigate("personas")}>Ver todos »</button></section></aside>
-      <main className="stream">{page === "inicio" && <><section className="composer panel"><div className="composer-row"><div className="avatar">{username[0].toUpperCase()}</div><input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={`Que estas pensando, ${username}?`} /></div><div className="composer-tools"><button>▧ Estado</button><button>▣ Foto</button><button>▹ Video</button><button onClick={() => { setPlayer(true); }}>♫ Musica</button><button>▧ Encuesta</button><button>▤ Noticia</button><button>☷ Mas⌄</button></div><div className="composer-footer"><span>◉ Publico⌄</span><button className="publish" onClick={publish} disabled={publishing}>{publishing ? "Guardando..." : "Publicar"}</button></div>{feedError && <p className="message">{feedError}</p>}</section>{posts.length === 0 && !feedError && <p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><UserLink userId={post.author_id} name={post.authorName || username} avatarUrl={undefined} navigate={navigate} /><div><span>{post.time} · ◉</span></div><button className="more">⌄</button></div><p className="post-text">{post.text}</p><div className="post-actions"><button onClick={() => toggleLike(post.id)} className={liked.includes(post.id) ? "is-liked" : ""}>♡ Me gusta <small>{post.likes || ""}</small></button><button>◯ Comentar</button><button>♧ Compartir</button><span>♡ {post.likes}</span></div></article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => setPlayer(true)} />}</main>
+      <main className="stream">{page === "inicio" && <><FeedComposer session={session} username={username} targetProfileId="" onPublish={(newPost) => setPosts((current) => [newPost, ...current])} feedError={feedError} setFeedError={setFeedError} />{posts.length === 0 && !feedError && <p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><UserLink userId={post.author_id} name={post.authorName || username} avatarUrl={undefined} navigate={navigate} />
+          <div>
+            {post.target_profile_id && post.target_profile_id !== post.author_id ? (
+              <span className="signature-meta" style={{display: "block", fontSize: "0.85em", color: "var(--text-light)"}}>
+                dejó un mensaje en el tablón de {post.targetName || "alguien"}
+              </span>
+            ) : null}
+            <span>{post.time} · ◉</span>
+          </div><button className="more">⌄</button></div><p className="post-text">{post.text}</p><div className="post-actions"><button onClick={() => toggleLike(post.id)} className={liked.includes(post.id) ? "is-liked" : ""}>♡ Me gusta <small>{post.likes || ""}</small></button><button>◯ Comentar</button><button>♧ Compartir</button><span>♡ {post.likes}</span></div></article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => setPlayer(true)} />}</main>
       <aside className="right-column"><section className="panel right-card"><strong>SOLICITUDES</strong><button>Ver todas</button><p>No tienes solicitudes pendientes.</p></section><section className="panel right-card"><strong>EVENTOS DESTACADOS</strong><button>Ver todos</button><div className="event"><div className="event-image">♫</div><div><b>Descubre Inkorium</b><p>Comparte tus momentos y musica.</p></div></div><button className="outline">Añadir a mi calendario</button></section><section className="panel calendar"><strong>CALENDARIO</strong><span>▣</span><h3>Agosto 2026</h3><div className="week">Lu　 Ma　 Mi　 Ju　 Vi　 Sa　 Do</div><div className="days">{Array.from({ length: 31 }, (_, index) => <i className={index === 12 ? "today" : ""} key={index}>{index + 1}</i>)}</div></section></aside></div>
     <button className="chat">▢ Chat (0)</button>{player && <div className="mini-player" style={{ left: position.x, top: position.y }} onPointerDown={() => setDragging(true)} onPointerMove={(event) => { if (dragging) setPosition({ x: Math.max(5, event.clientX - 150), y: Math.max(65, event.clientY - 25) }); }} onPointerUp={() => setDragging(false)}><span className="drag-handle">⠿</span><button onClick={() => setPlayer(false)}>×</button><div className="album">♫</div><div><strong>Inkorium Mix</strong><small>Descubriendo sonidos...</small></div><span className="play">▶</span></div>}
   </div>;
@@ -337,13 +479,19 @@ async function toggleLike(id: string) {
   async function uploadMedia(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; } if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; } setUploading(kind); setError(""); const extension = file.name.split(".").pop()?.toLowerCase() || "jpg"; const path = `${session.user.id}/${kind}-${Date.now()}.${extension}`; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type }); if (uploadError) { setError(uploadError.message); setUploading(""); return; } const { data: publicData } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: profileError } = await supabase.from("profiles").update({ [field]: publicData.publicUrl }).eq("id", session.user.id); if (profileError) setError(profileError.message); else setProfile((current) => ({ ...(current || { username: null, full_name: null, bio: null, city: null, avatar_url: null, banner_url: null }), [field]: publicData.publicUrl })); setUploading(""); event.target.value = ""; }
   useEffect(() => { let cancelled = false; async function loadProfile() { const [{ data: profileData, error: profileError }, { data: postData, error: postError }, { data: likesData }] = await Promise.all([
       supabase.from("profiles").select("username, full_name, bio, city, avatar_url, banner_url").eq("id", targetUserId).maybeSingle(),
-      supabase.from("posts").select("id, content, created_at, post_likes(count)").eq("author_id", targetUserId).order("created_at", { ascending: false }).limit(30),
+      supabase.from("posts").select("id, content, created_at, target_profile_id, author_id, post_likes(count)").or(`author_id.eq.${targetUserId},target_profile_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
     ]);
     if (cancelled) return;
     if (profileError || postError || (!isOwnProfile && !profileData)) { setError((profileError || postError)?.message || "No se pudo cargar el perfil."); setProfileNotFound(true); return; }
     setProfile(profileData as ProfileData | null);
-    setPosts((postData ?? []).map((post) => ({ id: post.id, text: post.content ?? "", time: formatPostTime(post.created_at), likes: post.post_likes?.[0]?.count ?? 0, authorName: name, author_id: (session as any).user ? (session as any).user.id : "" })));
+
+    const rows = postData ?? [];
+    const authorIds = [...new Set(rows.map((row) => row.author_id).filter(Boolean))];
+    const { data: authors } = authorIds.length ? await supabase.from("profiles").select("id, username, full_name").in("id", authorIds) : { data: [] };
+    const authorMap = new Map((authors || []).map((a: any) => [a.id, getDisplayName(a, undefined)]));
+    setPosts(rows.map((post) => ({ id: post.id, text: post.content ?? "", time: formatPostTime(post.created_at), likes: post.post_likes?.[0]?.count ?? 0, authorName: authorMap.get(post.author_id) || "Usuario", author_id: post.author_id, target_profile_id: post.target_profile_id, targetName: name })));
+
     setLiked((likesData ?? []).map(l => l.post_id)); } void loadProfile();
 
     if (!isOwnProfile && targetUserId) {
@@ -355,7 +503,7 @@ async function toggleLike(id: string) {
     }
 
     return () => { cancelled = true; }; }, [targetUserId, name]);
-  async function publish(event: FormEvent) { event.preventDefault(); const content = draft.trim(); if (!content || saving) return; setSaving(true); setError(""); const { data, error: insertError } = await supabase.from("posts").insert({ author_id: session.user.id, content, visibility: "public" }).select("id, content, created_at").single(); if (insertError) setError(insertError.message); else if (data) { setPosts((current) => [{ id: data.id, text: data.content ?? content, time: "ahora", likes: 0, authorName: name, author_id: session.user.id }, ...current]); setDraft(""); } setSaving(false); }
+
   if (profileNotFound) {
     return <section className="profile-page" style={{padding: '2rem', textAlign: 'center'}}>
       <h2>Usuario no encontrado</h2>
@@ -377,7 +525,22 @@ async function toggleLike(id: string) {
     )}
     </div>
     {goBack && <button onClick={goBack} className="profile-edit" style={{marginRight: 8}}>Atrás</button>}
-    {isOwnProfile && <button className="profile-edit">Editar perfil</button>}<button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Amigos</button></nav></section>{isOwnProfile && <form className="profile-composer panel" onSubmit={(event) => void publish(event)}><div className="profile-mini-avatar">{initials}</div><input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe en tu tablón..." /><button className="publish" disabled={saving}>{saving ? "Guardando..." : "Publicar"}</button></form>}{error && <p className="message">{error}</p>}{posts.length ? posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><div className="avatar">{profile?.avatar_url ? <img src={profile.avatar_url} style={{width:"100%", height:"100%", borderRadius:"50%", objectFit:"cover"}}/> : initials}</div><div><strong>{name}</strong><span>{post.time} · ◉</span></div><button className="more">⌄</button></div><p className="post-text">{post.text}</p><div className="post-actions"><button onClick={() => void toggleLike(post.id)} className={liked.includes(post.id) ? "is-liked" : ""}>♡ Me gusta <small>{post.likes || ""}</small></button><button>◯ Comentar</button><button>♧ Compartir</button></div></article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p>{isOwnProfile && <p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p>}</section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside></section>;
+    {isOwnProfile && <button className="profile-edit">Editar perfil</button>}<button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Amigos</button></nav></section>
+      {isOwnProfile ? (
+        <FeedComposer session={session} username={name} targetProfileId={session.user.id} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} feedError={error} setFeedError={setError} />
+      ) : (
+        <SignatureComposer session={session} targetName={name} targetProfileId={targetUserId!} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} />
+      )}
+{error && <p className="message">{error}</p>}{posts.length ? posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><div className="avatar">{profile?.avatar_url ? <img src={profile.avatar_url} style={{width:"100%", height:"100%", borderRadius:"50%", objectFit:"cover"}}/> : initials}</div>
+          <div>
+            <strong>{post.authorName || (post as any).name || "Usuario"}</strong>
+            {post.target_profile_id && post.target_profile_id !== post.author_id ? (
+              <span className="signature-meta" style={{display: "block", fontSize: "0.85em", color: "var(--text-light)"}}>
+                dejó un mensaje en el tablón de {post.targetName || "alguien"}
+              </span>
+            ) : null}
+            <span>{post.time} · ◉</span>
+          </div><button className="more">⌄</button></div><p className="post-text">{post.text}</p><div className="post-actions"><button onClick={() => void toggleLike(post.id)} className={liked.includes(post.id) ? "is-liked" : ""}>♡ Me gusta <small>{post.likes || ""}</small></button><button>◯ Comentar</button><button>♧ Compartir</button></div></article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p>{isOwnProfile && <p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p>}</section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside></section>;
 }
 
 function ProfileMedia({ session }: { session: Session }) { const [media, setMedia] = useState<{ avatar_url: string | null; banner_url: string | null }>({ avatar_url: null, banner_url: null }); useEffect(() => { void supabase.from("profiles").select("avatar_url, banner_url").eq("id", session.user.id).maybeSingle().then(({ data }) => { if (data) setMedia(data); }); }, [session.user.id]); return <div className="profile-upload-media">{media.banner_url && <div className="uploaded-banner" style={{ backgroundImage: `url(${media.banner_url})` }} />}{media.avatar_url && <img className="uploaded-avatar" src={media.avatar_url} alt="Foto de perfil" />}</div>; }
