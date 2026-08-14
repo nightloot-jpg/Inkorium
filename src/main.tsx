@@ -5,7 +5,7 @@ import { supabase } from "./lib/supabase";
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from "./lib/cropImage";
 import { getDisplayName, formatPostTime } from "./utils";
-import { Minus, Plus, Upload, Move, X, Bell } from "lucide-react";
+import { Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, Globe } from "lucide-react";
 import "./styles.css";
 
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
@@ -19,24 +19,50 @@ type NotificationData = { id: string; actor_id: string; type: string; entity_id:
 
 
 
-function FeedComposer({ session, username, onPublish, feedError, setFeedError, targetProfileId }: { session: Session; username: string; onPublish: (post: Post) => void; feedError: string; setFeedError: (e: string) => void; targetProfileId?: string }) {
+
+function Composer({
+  session,
+  profile,
+  onPublish,
+  targetProfileId,
+  targetName
+}: {
+  session: Session;
+  profile: ProfileData | null;
+  onPublish: (post: Post) => void;
+  targetProfileId?: string;
+  targetName?: string
+}) {
   const [draft, setDraft] = useState("");
   const [publishing, setPublishing] = useState(false);
+  const [error, setError] = useState("");
+
+  const username = getDisplayName(profile, session.user.email);
+  const initials = username.slice(0, 2).toUpperCase();
+  const avatarUrl = profile?.avatar_url;
+
+  const isOwnProfile = !targetProfileId || targetProfileId === session.user.id;
+
+  const placeholderText = targetProfileId && !isOwnProfile && targetName
+    ? `¿Qué estás pensando, ${targetName}?`
+    : `¿Qué estás pensando, ${username}?`;
+
+  const buttonText = targetProfileId && !isOwnProfile ? "Firmar" : "Publicar";
 
   async function publish(event: FormEvent) {
     event.preventDefault();
     const content = draft.trim();
     if (!content || publishing) return;
     setPublishing(true);
-    setFeedError("");
-    const { data, error } = await supabase.from("posts").insert({
+    setError("");
+    const { data, error: submitError } = await supabase.from("posts").insert({
       author_id: session.user.id,
       content,
       visibility: "public",
       target_profile_id: targetProfileId || null
     }).select("id, content, created_at").single();
 
-    if (error) setFeedError(error.message);
+    if (submitError) setError(submitError.message);
     else if (data) {
       onPublish({
         id: data.id,
@@ -45,111 +71,59 @@ function FeedComposer({ session, username, onPublish, feedError, setFeedError, t
         likes: 0,
         authorName: username,
         author_id: session.user.id,
-        target_profile_id: targetProfileId || null
+        target_profile_id: targetProfileId || null,
+        targetName: targetName
       });
       setDraft("");
     }
     setPublishing(false);
   }
 
+  const handleInput = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    setDraft(e.target.value);
+    e.target.style.height = 'auto';
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  };
+
   return (
-    <section className="composer panel">
-      <div className="composer-row">
-        <div className="avatar">{username.slice(0, 2).toUpperCase()}</div>
-        <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={targetProfileId ? "Escribe en tu tablón..." : `Qué estás pensando, ${username}?`} />
+    <section className="new-composer panel">
+      <div className="new-composer-row">
+        <div className="new-composer-avatar">
+          {avatarUrl ? <img src={avatarUrl} alt={username} /> : initials}
+        </div>
+        <textarea
+          className="new-composer-input"
+          value={draft}
+          onChange={handleInput}
+          placeholder={placeholderText}
+          rows={1}
+        />
       </div>
-      <div className="composer-tools">
-        <button type="button">▧ Estado</button><button type="button">▣ Foto</button><button type="button">▹ Video</button><button type="button">♫ Musica</button><button type="button">▧ Encuesta</button><button type="button">▤ Noticia</button><button type="button">☷ Mas⌄</button>
+      <div className="new-composer-tools">
+        <button type="button" className="composer-tool-btn"><Search size={18} /> Estado</button>
+        <button type="button" className="composer-tool-btn"><Image size={18} /> Foto</button>
+        <button type="button" className="composer-tool-btn"><Video size={18} /> Vídeo</button>
+        <button type="button" className="composer-tool-btn"><Music size={18} /> Música</button>
+        <button type="button" className="composer-tool-btn"><BarChart3 size={18} /> Encuesta</button>
+        <button type="button" className="composer-tool-btn"><Newspaper size={18} /> Noticia</button>
+        <button type="button" className="composer-tool-btn"><List size={18} /> Más <ChevronDown size={14} style={{marginLeft: -2}}/></button>
       </div>
-      <div className="composer-footer">
-        <span>◉ Publico⌄</span>
-        <button className="publish" onClick={publish} disabled={publishing}>{publishing ? "Guardando..." : "Publicar"}</button>
+      <div className="new-composer-divider"></div>
+      <div className="new-composer-footer">
+        <div className="new-composer-privacy">
+          <Globe size={16} /> Público <ChevronDown size={14} />
+        </div>
+        <button className="new-composer-publish" onClick={publish} disabled={publishing}>
+          {publishing ? "Guardando..." : buttonText}
+        </button>
       </div>
-      {feedError && <p className="message">{feedError}</p>}
+      {error && <p className="message">{error}</p>}
     </section>
   );
 }
 
-function SignatureComposer({ session, targetName, targetProfileId, onPublish }: { session: Session; targetName: string; targetProfileId: string; onPublish: (post: Post) => void }) {
-  const [expanded, setExpanded] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [publishing, setPublishing] = useState(false);
-  const [error, setError] = useState("");
 
-  const editorRef = useCallback((node: HTMLDivElement | null) => {
-    if (node && expanded && draft === "") {
-      node.focus();
-    }
-  }, [expanded, draft]);
 
-  async function publish(event: FormEvent) {
-    event.preventDefault();
-    const content = draft.trim();
-    if (!content || publishing) return;
-    setPublishing(true);
-    setError("");
-    const { data, error: insertError } = await supabase.from("posts").insert({
-      author_id: session.user.id,
-      content,
-      visibility: "public",
-      target_profile_id: targetProfileId
-    }).select("id, content, created_at").single();
-
-    if (insertError) {
-      setError(insertError.message);
-    } else if (data) {
-      onPublish({
-        id: data.id,
-        text: data.content ?? content,
-        time: "ahora",
-        likes: 0,
-        authorName: "Tú", // Render will handle fallback
-        author_id: session.user.id,
-        target_profile_id: targetProfileId
-      });
-      setDraft("");
-      setExpanded(false);
-    }
-    setPublishing(false);
-  }
-
-  if (!expanded) {
-    return (
-      <div className="signature-prompt panel" onClick={() => setExpanded(true)} style={{ cursor: "text", padding: "16px", color: "var(--text-light)", marginBottom: "16px", borderRadius: "8px", border: "1px solid var(--border)" }}>
-        Escribe en el tablón de {targetName}...
-      </div>
-    );
-  }
-
-  return (
-    <form className="signature-composer panel" onSubmit={publish} style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px", marginBottom: "16px", borderRadius: "8px", border: "1px solid var(--border)" }}>
-      <div className="editor-toolbar" style={{ display: "flex", gap: "8px", paddingBottom: "12px", borderBottom: "1px solid var(--border)", flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" onClick={() => document.execCommand('bold')} title="Negrita" style={{background: "none", border: "none", cursor: "pointer", fontWeight: "bold"}}>B</button>
-        <button type="button" onClick={() => document.execCommand('italic')} title="Cursiva" style={{background: "none", border: "none", cursor: "pointer", fontStyle: "italic"}}>I</button>
-        <button type="button" onClick={() => document.execCommand('underline')} title="Subrayado" style={{background: "none", border: "none", cursor: "pointer", textDecoration: "underline"}}>U</button>
-        <span style={{ borderLeft: "1px solid var(--border)", height: "16px", margin: "0 4px" }}></span>
-        <button type="button" onClick={() => document.execCommand('justifyLeft')} title="Izquierda" style={{background: "none", border: "none", cursor: "pointer"}}>▤</button>
-        <button type="button" onClick={() => document.execCommand('justifyCenter')} title="Centro" style={{background: "none", border: "none", cursor: "pointer"}}>▥</button>
-        <span style={{ borderLeft: "1px solid var(--border)", height: "16px", margin: "0 4px" }}></span>
-        <button type="button" title="Emojis" style={{background: "none", border: "none", cursor: "pointer"}}>😀</button>
-        <button type="button" title="Enlace" style={{background: "none", border: "none", cursor: "pointer"}}>🔗</button>
-        <button type="button" title="Dibujar" style={{background: "none", border: "none", cursor: "pointer"}}>🖌️</button>
-      </div>
-      <div
-        ref={editorRef}
-        contentEditable
-        className="rich-editor"
-        style={{ minHeight: "80px", outline: "none", padding: "8px 0" }}
-        onInput={(e) => setDraft(e.currentTarget.innerHTML)}
-      />
-      {error && <p className="message">{error}</p>}
-      <div className="composer-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "8px", alignItems: "center" }}>
-        <button type="button" className="text-button" onClick={() => setExpanded(false)} style={{background: "none", border: "none", cursor: "pointer", color: "var(--text-light)"}}>Cancelar</button>
-        <button type="submit" className="primary-button" disabled={publishing || !draft.trim()}>{publishing ? "Firmando..." : "Firmar"}</button>
-      </div>
-    </form>
-  );
-}
 
 function Feed({ session, profile }: { session: Session, profile: ProfileData | null }) {
   const username = getDisplayName(profile, session.user.email);
@@ -295,7 +269,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
   {notificationItems.length > 0 && <button onClick={() => void markAllRead()}>Marcar todo como leído</button>}
 </div>}{userMenu && <div className="popover user-menu"><strong>{username}</strong><button onClick={() => navigate("perfil")}>Mi perfil</button><button onClick={() => navigate("mensajes")}>Mis mensajes</button><hr /><span>Color de la web</span><div className="themes"><button className="theme-dot blue" onClick={() => setTheme("blue")} /><button className="theme-dot violet" onClick={() => setTheme("violet")} /><button className="theme-dot green" onClick={() => setTheme("green")} /><button className="theme-dot sunset" onClick={() => setTheme("sunset")} /></div><button onClick={() => void supabase.auth.signOut()}>Cerrar sesion</button></div>}</header>
     <div className="feed-layout"><aside className="left-column"><section className="profile-card panel"><div className="avatar profile-avatar">{username[0].toUpperCase()}</div><div><strong>{username}</strong><span>Mas rapido</span><em>● En linea</em><button onClick={() => navigate("perfil")}>Ver mi perfil »</button></div></section><nav className="side-menu panel">{[["⌂", "Novedades", "inicio"], ["▧", "Fotos", "buscar"], ["▹", "Videos", "buscar"], ["♫", "Musica", "musica"], ["□", "Eventos", "buscar"], ["♧", "Grupos", "personas"], ["⚑", "Paginas", "personas"], ["▥", "Encuestas", "buscar"], ["▱", "Guardados", "buscar"], ["⚙", "Configuracion", "personas"]].map(([icon, label, id], index) => <button className={page === id && index === 0 ? "selected" : ""} onClick={() => navigate(id as Page)} key={label}><span>{icon}</span>{label}</button>)}</nav><section className="friends panel"><strong>AMIGOS CONECTADOS (1)</strong><div><span className="avatar tiny">B</span><button onClick={() => navigate("personas")}>bg9222361</button><i /></div><button className="see-all" onClick={() => navigate("personas")}>Ver todos »</button></section></aside>
-      <main className="stream">{page === "inicio" && <><FeedComposer session={session} username={username} targetProfileId="" onPublish={(newPost) => setPosts((current) => [newPost, ...current])} feedError={feedError} setFeedError={setFeedError} />{posts.length === 0 && !feedError && <p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><UserLink userId={post.author_id} name={post.authorName || username} avatarUrl={undefined} navigate={navigate} />
+      <main className="stream">{page === "inicio" && <><Composer session={session} profile={profile} onPublish={(newPost) => setPosts(current => [newPost, ...current])} />{posts.length === 0 && !feedError && <p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><UserLink userId={post.author_id} name={post.authorName || username} avatarUrl={undefined} navigate={navigate} />
           <div>
             {post.target_profile_id && post.target_profile_id !== post.author_id ? (
               <span className="signature-meta" style={{display: "block", fontSize: "0.85em", color: "var(--text-light)"}}>
@@ -527,9 +501,9 @@ async function toggleLike(id: string) {
     {goBack && <button onClick={goBack} className="profile-edit" style={{marginRight: 8}}>Atrás</button>}
     {isOwnProfile && <button className="profile-edit">Editar perfil</button>}<button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Amigos</button></nav></section>
       {isOwnProfile ? (
-        <FeedComposer session={session} username={name} targetProfileId={session.user.id} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} feedError={error} setFeedError={setError} />
+        <Composer session={session} profile={profile} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} targetProfileId={session.user.id} />
       ) : (
-        <SignatureComposer session={session} targetName={name} targetProfileId={targetUserId!} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} />
+        <Composer session={session} profile={profile} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} targetProfileId={targetUserId!} targetName={name} />
       )}
 {error && <p className="message">{error}</p>}{posts.length ? posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><div className="avatar">{profile?.avatar_url ? <img src={profile.avatar_url} style={{width:"100%", height:"100%", borderRadius:"50%", objectFit:"cover"}}/> : initials}</div>
           <div>
