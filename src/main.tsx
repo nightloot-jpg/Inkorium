@@ -1,4 +1,5 @@
 import { StrictMode, useEffect, useState, useCallback, type ChangeEvent, type FormEvent } from "react";
+import { useAuthStore, usePlayerStore, type ProfileData as StoreProfileData, type PlayerItem } from "./lib/store";
 import { createRoot } from "react-dom/client";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
@@ -42,7 +43,10 @@ function Composer({
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   
   const [videoUrl, setVideoUrl] = useState("");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   
+  const [musicTab, setMusicTab] = useState<'canciones' | 'playlists'>('canciones');
   const [youtubeSearch, setYoutubeSearch] = useState("");
   const [youtubeResults, setYoutubeResults] = useState<any[]>([]);
   const [youtubeSearching, setYoutubeSearching] = useState(false);
@@ -74,7 +78,9 @@ function Composer({
     try {
       const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
       // Search for both videos and playlists
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(youtubeSearch)}&type=video,playlist&key=${apiKey}`);
+      const ytType = musicTab === 'canciones' ? 'video' : 'playlist';
+      const category = musicTab === 'canciones' ? '&videoCategoryId=10' : '';
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(youtubeSearch)}&type=${ytType}${category}&key=${apiKey}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error.message);
       setYoutubeResults(data.items || []);
@@ -92,6 +98,18 @@ function Composer({
     setPhotoFile(file);
     const url = URL.createObjectURL(file);
     setPhotoPreview(url);
+    setError("");
+  }
+
+  
+  async function handleVideoSelect(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("video/")) { setError("Selecciona un vídeo válido."); return; }
+    if (file.size > 50 * 1024 * 1024) { setError("El vídeo no puede superar los 50 MB."); return; }
+    setVideoFile(file);
+    const url = URL.createObjectURL(file);
+    setVideoPreview(url);
     setError("");
   }
 
@@ -116,12 +134,26 @@ function Composer({
         }
         const { data: publicData } = supabase.storage.from("post-media").getPublicUrl(path);
         media_data = { type: "photo", url: publicData.publicUrl };
-    } else if (mode === "video" && videoUrl) {
-        media_data = { type: "video", url: videoUrl };
+    } else if (mode === "video") {
+        if (videoFile) {
+            const extension = videoFile.name.split(".").pop()?.toLowerCase() || "mp4";
+            const path = `${session.user.id}/video-${Date.now()}.${extension}`;
+            const { error: uploadError } = await supabase.storage.from("post-media").upload(path, videoFile, { cacheControl: "3600", upsert: true, contentType: videoFile.type });
+            if (uploadError) {
+              setError("Error al subir vídeo: " + uploadError.message);
+              setPublishing(false);
+              return;
+            }
+            const { data: publicData } = supabase.storage.from("post-media").getPublicUrl(path);
+            media_data = { type: "video", url: publicData.publicUrl };
+        } else if (videoUrl) {
+            media_data = { type: "video", url: videoUrl };
+        }
+    
     } else if (mode === "music" && youtubeSelected) {
         const isPlaylist = youtubeSelected.id.kind === 'youtube#playlist';
         media_data = { 
-            type: isPlaylist ? "youtube_playlist" : "youtube_video",
+            type: isPlaylist ? "youtube_playlist" : "youtube_song",
             youtube_id: isPlaylist ? youtubeSelected.id.playlistId : youtubeSelected.id.videoId,
             title: youtubeSelected.snippet.title,
             thumbnail: youtubeSelected.snippet.thumbnails?.high?.url || youtubeSelected.snippet.thumbnails?.default?.url
@@ -192,6 +224,8 @@ function Composer({
       setPhotoFile(null);
       setPhotoPreview(null);
       setVideoUrl("");
+      setVideoFile(null);
+      setVideoPreview(null);
       setYoutubeSelected(null);
       setNewsUrl("");
       setNewsTitle("");
@@ -243,8 +277,21 @@ function Composer({
 
       {mode === "video" && (
           <div style={{padding: '0 16px', marginBottom: 16}}>
-              <input type="url" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="Introduce una URL de vídeo (ej. .mp4)" className="primary-input" style={{width: '100%'}} />
-              {videoUrl && <video src={videoUrl} controls style={{width: '100%', marginTop: 16, borderRadius: 8, maxHeight: 300}} />}
+              <div style={{display: 'flex', gap: 8, marginBottom: 8}}>
+                  <input type="url" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} disabled={!!videoFile} placeholder="URL del vídeo... (ej. .mp4)" className="primary-input" style={{flex: 1}} />
+                  <label className="primary-button" style={{cursor: 'pointer', whiteSpace: 'nowrap'}}>
+                      <input type="file" accept="video/*" style={{display: 'none'}} onChange={handleVideoSelect} disabled={!!videoUrl} />
+                      Subir desde dispositivo
+                  </label>
+              </div>
+              {(videoUrl || videoPreview) && (
+                  <div style={{position: 'relative'}}>
+                      <video src={videoPreview || videoUrl} controls style={{width: '100%', marginTop: 8, borderRadius: 8, maxHeight: 300, background: '#000'}} />
+                      <button type="button" onClick={() => { setVideoPreview(null); setVideoFile(null); setVideoUrl(""); }} style={{position: 'absolute', top: 16, right: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'}}>
+                          <X size={16} />
+                      </button>
+                  </div>
+              )}
           </div>
       )}
 
@@ -296,8 +343,12 @@ function Composer({
                   </div>
               ) : !youtubeSelected ? (
                   <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+                      <div style={{display: 'flex', gap: 8, marginBottom: 8}}>
+                          <button type="button" className={`text-button ${musicTab === 'canciones' ? 'active' : ''}`} style={{fontWeight: musicTab === 'canciones' ? 'bold' : 'normal'}} onClick={() => { setMusicTab('canciones'); setYoutubeResults([]); setYoutubeSelected(null); setYoutubeSearch(''); }}>Canciones</button>
+                          <button type="button" className={`text-button ${musicTab === 'playlists' ? 'active' : ''}`} style={{fontWeight: musicTab === 'playlists' ? 'bold' : 'normal'}} onClick={() => { setMusicTab('playlists'); setYoutubeResults([]); setYoutubeSelected(null); setYoutubeSearch(''); }}>Playlists</button>
+                      </div>
                       <form onSubmit={searchYoutube} style={{display: 'flex', gap: 8}}>
-                          <input type="text" value={youtubeSearch} onChange={e => setYoutubeSearch(e.target.value)} placeholder="Buscar canciones, vídeos o playlists..." className="primary-input" style={{flex: 1}} />
+                          <input type="text" value={youtubeSearch} onChange={e => setYoutubeSearch(e.target.value)} placeholder={musicTab === 'canciones' ? "Buscar canciones o artistas..." : "Buscar playlists..."} className="primary-input" style={{flex: 1}} />
                           <button type="submit" className="primary-button" disabled={youtubeSearching}>{youtubeSearching ? "Buscando..." : "Buscar"}</button>
                       </form>
                       {youtubeResults.length > 0 && (
@@ -534,65 +585,59 @@ function YoutubePlaylist({ media }: { media: any }) {
         );
     }
 
+    
+    function playTrack(track: any) {
+        usePlayerStore.getState().openPlayer({
+            type: 'youtube_song',
+            youtube_id: track.snippet.resourceId.videoId,
+            title: track.snippet.title,
+            thumbnail: track.snippet.thumbnails?.default?.url
+        });
+    }
+
+    function playPlaylist() {
+        usePlayerStore.getState().openPlayer({
+            type: 'youtube_playlist',
+            youtube_id: media.youtube_id,
+            title: media.title,
+            thumbnail: media.thumbnail,
+            queue: tracks
+        });
+    }
+
     return (
         <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', background: 'var(--panel-bg)' }}>
-            {playingId ? (
-                <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, background: '#000' }}>
-                    <iframe
-                        src={`https://www.youtube.com/embed/${playingId}?autoplay=1`}
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                        allow="autoplay; encrypted-media"
-                        allowFullScreen
-                        title="YouTube Video"
-                    />
+            <div style={{ padding: 16, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <img src={media.thumbnail} alt={media.title} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8 }} />
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <strong style={{ display: 'block', fontSize: '1.1em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{media.title}</strong>
+                    <span style={{ color: 'var(--text-light)', fontSize: '0.9em' }}>Playlist de YouTube</span>
                 </div>
-            ) : (
-                <div style={{ padding: 16, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
-                    {media.thumbnail && <img src={media.thumbnail} alt={media.title} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 4 }} />}
-                    <div>
-                        <strong style={{ display: 'block', fontSize: '1.1em' }}>{media.title}</strong>
-                        <span style={{ color: 'var(--text-light)', fontSize: '0.9em' }}>Lista de reproducción</span>
-                    </div>
-                </div>
-            )}
-
+                <button onClick={playPlaylist} className="primary-button" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    ▶ Reproducir
+                </button>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {tracks.map((track, i) => (
-                    <button
-                        key={track.id + i}
-                        onClick={() => setPlayingId(track.snippet.resourceId.videoId)}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '12px 16px',
-                            background: playingId === track.snippet.resourceId.videoId ? 'rgba(0,0,0,0.05)' : 'transparent',
-                            border: 'none',
-                            borderBottom: '1px solid var(--border)',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            color: 'var(--text)'
-                        }}
-                    >
-                        <span style={{ width: 24, color: 'var(--text-light)' }}>{i + 1}.</span>
-                        <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: playingId === track.snippet.resourceId.videoId ? 'bold' : 'normal' }}>
-                            {track.snippet.title}
-                        </span>
-                        {playingId === track.snippet.resourceId.videoId && <span style={{ color: 'var(--primary)', fontSize: '0.9em' }}>▶</span>}
-                    </button>
+                    <div key={i} className="hover-bg" onClick={() => playTrack(track)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', cursor: 'pointer', borderBottom: i < tracks.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                        <div style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
+                            <img src={track.snippet.thumbnails?.default?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }} />
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4 }}>
+                                <span style={{ color: 'white', fontSize: '0.8em' }}>▶</span>
+                            </div>
+                        </div>
+                        <div style={{ flex: 1, overflow: 'hidden' }}>
+                            <strong style={{ display: 'block', fontSize: '0.9em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.snippet.title}</strong>
+                            <small style={{ color: 'var(--text-light)' }}>{track.snippet.videoOwnerChannelTitle}</small>
+                        </div>
+                    </div>
                 ))}
+                {nextPageToken && (
+                    <button onClick={loadMore} disabled={loading} style={{ padding: 12, background: 'none', border: 'none', borderTop: '1px solid var(--border)', color: 'var(--primary)', cursor: 'pointer', fontWeight: 'bold' }}>
+                        {loading ? "Cargando..." : "Cargar más canciones"}
+                    </button>
+                )}
             </div>
-
-            {error && <div style={{ padding: 16, color: 'red', fontSize: '0.9em' }}>{error}</div>}
-
-            {nextPageToken && (
-                <button
-                    onClick={loadMore}
-                    disabled={loading}
-                    style={{ width: '100%', padding: '12px', background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 'bold' }}
-                >
-                    {loading ? "Cargando..." : "Cargar más canciones"}
-                </button>
-            )}
         </div>
     );
 }
@@ -723,7 +768,8 @@ function PollView({ pollId, session }: { pollId: string, session: Session }) {
     );
 }
 
-function Feed({ session, profile }: { session: Session, profile: ProfileData | null }) {
+function Feed({ session, profile: initialProfile }: { session: Session, profile: ProfileData | null }) {
+  const profile = useAuthStore(state => state.profile) || initialProfile;
   const username = getDisplayName(profile, session.user.email);
   const [history, setHistory] = useState<{page: Page, params?: Record<string, any>}[]>(() => {
     const saved = sessionStorage.getItem("inkorium-history");
@@ -756,6 +802,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
     });
   }; const [draft, setDraft] = useState(""); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [feedError, setFeedError] = useState(""); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [publishing, setPublishing] = useState(false); const [query, setQuery] = useState(""); const [notifications, setNotifications] = useState(false); const [unreadCount, setUnreadCount] = useState(0); const [userMenu, setUserMenu] = useState(false);
   const [notificationItems, setNotificationItems] = useState<NotificationData[]>([]);
+  const playerState = usePlayerStore();
 
   useEffect(() => {
     let cancelled = false;
@@ -793,7 +840,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
     await supabase.from('notifications').update({ is_read: true }).eq('id', id);
     setNotificationItems(items => items.map(i => i.id === id ? { ...i, is_read: true } : i));
     setUnreadCount(prev => Math.max(0, prev - 1));
-  } const [player, setPlayer] = useState(false); const [theme, setTheme] = useState("blue"); const [position, setPosition] = useState({ x: 24, y: 90 }); const [dragging, setDragging] = useState(false);
+  }  const [theme, setTheme] = useState("blue"); const [position, setPosition] = useState({ x: 24, y: 90 }); const [dragging, setDragging] = useState(false);
   useEffect(() => { let cancelled = false; async function loadPosts() { const [{ data: postsData, error: postsError }, { data: likesData }] = await Promise.all([
       supabase.from("posts").select("id, content, created_at, author_id, target_profile_id, shared_post_id, media_data, poll_id, post_likes(count), comments(count), original_post:shared_post_id(content, created_at, author_id, profiles!posts_author_id_fkey(username, full_name, avatar_url))").eq("visibility", "public").is("group_id", null).is("target_profile_id", null).order("created_at", { ascending: false }).limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
@@ -850,7 +897,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
       {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
     </div>
   </button>
-  <button className="icon-button" onClick={() => setPlayer(!player)} aria-label="Reproductor">♫</button>
+  <button className="icon-button" onClick={() => playerState.isOpen ? playerState.closePlayer() : (playerState.currentItem && playerState.openPlayer(playerState.currentItem))} aria-label="Reproductor">♫</button>
   <button className="user-chip" onClick={() => setUserMenu(!userMenu)}>
     <span className="avatar small">{username[0].toUpperCase()}</span>{username}
   </button>
@@ -914,9 +961,30 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
           {shareMenu === post.id && <ShareMenu post={post} session={session} onClose={() => setShareMenu(null)} />}
           </div>
           {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
-          </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => setPlayer(true)} />}</main>
+          </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => {}} />}</main>
       <aside className="right-column"><section className="panel right-card"><strong>SOLICITUDES</strong><button>Ver todas</button><p>No tienes solicitudes pendientes.</p></section><section className="panel right-card"><strong>EVENTOS DESTACADOS</strong><button>Ver todos</button><div className="event"><div className="event-image">♫</div><div><b>Descubre Inkorium</b><p>Comparte tus momentos y musica.</p></div></div><button className="outline">Añadir a mi calendario</button></section><section className="panel calendar"><strong>CALENDARIO</strong><span>▣</span><h3>Agosto 2026</h3><div className="week">Lu　 Ma　 Mi　 Ju　 Vi　 Sa　 Do</div><div className="days">{Array.from({ length: 31 }, (_, index) => <i className={index === 12 ? "today" : ""} key={index}>{index + 1}</i>)}</div></section></aside></div>
-    <button className="chat">▢ Chat (0)</button>{player && <div className="mini-player" style={{ left: position.x, top: position.y }} onPointerDown={() => setDragging(true)} onPointerMove={(event) => { if (dragging) setPosition({ x: Math.max(5, event.clientX - 150), y: Math.max(65, event.clientY - 25) }); }} onPointerUp={() => setDragging(false)}><span className="drag-handle">⠿</span><button onClick={() => setPlayer(false)}>×</button><div className="album">♫</div><div><strong>Inkorium Mix</strong><small>Descubriendo sonidos...</small></div><span className="play">▶</span></div>}
+    <button className="chat">▢ Chat (0)</button>{playerState.isOpen && playerState.currentItem && (
+      <div className="mini-player" style={{ left: position.x, top: position.y, width: 300, background: 'var(--panel-bg)', padding: 12, borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.2)', border: '1px solid var(--border)' }}>
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8}}>
+              <span className="drag-handle" style={{cursor: 'move', opacity: 0.5}} onPointerDown={() => setDragging(true)} onPointerMove={(event) => { if (dragging) setPosition({ x: Math.max(5, event.clientX - 150), y: Math.max(65, event.clientY - 25) }); }} onPointerUp={() => setDragging(false)}>⠿ Arrastrar</span>
+              <button onClick={() => playerState.closePlayer()} style={{background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer'}}><X size={16} /></button>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8}}>
+              <img src={playerState.currentItem.thumbnail} style={{width: 48, height: 48, borderRadius: 8, objectFit: 'cover'}} />
+              <div style={{flex: 1, overflow: 'hidden'}}>
+                  <strong style={{display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.9em'}}>{playerState.currentItem.title}</strong>
+                  <small style={{color: 'var(--text-light)', fontSize: '0.8em'}}>{playerState.currentItem.type === 'youtube_playlist' ? 'Playlist' : 'Canción'}</small>
+              </div>
+          </div>
+          <div style={{borderRadius: 8, overflow: 'hidden', background: '#000', height: 80}}>
+              {playerState.currentItem.type === 'youtube_song' ? (
+                  <iframe src={`https://www.youtube.com/embed/${playerState.currentItem.youtube_id}?autoplay=1`} style={{width: '100%', height: '100%', border: 'none'}} allow="autoplay" />
+              ) : (
+                  <iframe src={`https://www.youtube.com/embed/videoseries?list=${playerState.currentItem.youtube_id}&autoplay=1`} style={{width: '100%', height: '100%', border: 'none'}} allow="autoplay" />
+              )}
+          </div>
+      </div>
+    )}
   </div>;
 }
 
@@ -1073,7 +1141,8 @@ function ProfileViewLegacy({ session, visitedUserId, goBack, navigate }: { sessi
   const isOwnProfile = !visitedUserId || visitedUserId === session.user.id;
   const targetUserId = isOwnProfile ? session.user.id : visitedUserId;
   const [viewCount, setViewCount] = useState<number | null>(null);
-  const [profile, setProfile] = useState<ProfileData | null>(null); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null);
+  const profile = useAuthStore(state => state.profile);
+  const setProfile = useAuthStore(state => state.setProfile); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null);
 
 async function toggleLike(id: string) {
     const active = liked.includes(id);
@@ -1087,7 +1156,7 @@ async function toggleLike(id: string) {
     }
   }
   const name = getDisplayName(profile, isOwnProfile ? session.user.email : undefined); const initials = name.slice(0, 2).toUpperCase();
-  async function uploadMedia(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; } if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; } setUploading(kind); setError(""); const extension = file.name.split(".").pop()?.toLowerCase() || "jpg"; const path = `${session.user.id}/${kind}-${Date.now()}.${extension}`; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type }); if (uploadError) { setError(uploadError.message); setUploading(""); return; } const { data: publicData } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: profileError } = await supabase.from("profiles").update({ [field]: publicData.publicUrl }).eq("id", session.user.id); if (profileError) setError(profileError.message); else setProfile((current) => ({ ...(current || { username: null, full_name: null, bio: null, city: null, avatar_url: null, banner_url: null }), [field]: publicData.publicUrl })); setUploading(""); event.target.value = ""; }
+  async function uploadMedia(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; } if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; } setUploading(kind); setError(""); const extension = file.name.split(".").pop()?.toLowerCase() || "jpg"; const path = `${session.user.id}/${kind}-${Date.now()}.${extension}`; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type }); if (uploadError) { setError(uploadError.message); setUploading(""); return; } const { data: publicData } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: profileError } = await supabase.from("profiles").update({ [field]: publicData.publicUrl }).eq("id", session.user.id); if (profileError) setError(profileError.message); else useAuthStore.getState().updateProfile({ [field]: publicData.publicUrl }); setUploading(""); event.target.value = ""; }
   useEffect(() => { let cancelled = false; async function loadProfile() { const [{ data: profileData, error: profileError }, { data: postData, error: postError }, { data: likesData }] = await Promise.all([
       supabase.from("profiles").select("username, full_name, bio, city, avatar_url, banner_url").eq("id", targetUserId).maybeSingle(),
       supabase.from("posts").select("id, content, created_at, target_profile_id, author_id, shared_post_id, media_data, poll_id, post_likes(count), comments(count), original_post:shared_post_id(content, created_at, author_id, profiles!posts_author_id_fkey(username, full_name, avatar_url))").or(`author_id.eq.${targetUserId},target_profile_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(30),
@@ -1199,7 +1268,7 @@ function ProfileMedia({ session }: { session: Session }) { const [media, setMedi
 function ProfileView({ session, visitedUserId, goBack, navigate }: { session: Session; visitedUserId?: string; goBack?: () => void; navigate: any }) {
   const [uploading, setUploading] = useState(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [editing, setEditing] = useState<{ file: File; kind: "avatar" | "banner" } | null>(null);
   function openEditor(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) { setError("Selecciona una imagen de hasta 5 MB."); return; } setEditing({ file, kind }); event.target.value = ""; }
-  async function saveEdited(file: File) { if (!editing) return; const kind = editing.kind; setEditing(null); setUploading(kind); setError(""); const path = session.user.id + "/" + kind + "-" + Date.now() + ".jpg"; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { upsert: true, contentType: file.type }); if (uploadError) setError(uploadError.message); else { const { data } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: updateError } = await supabase.from("profiles").update({ [field]: data.publicUrl }).eq("id", session.user.id); if (updateError) setError(updateError.message); else window.location.reload(); } setUploading(""); }
+  async function saveEdited(file: File) { if (!editing) return; const kind = editing.kind; setEditing(null); setUploading(kind); setError(""); const path = session.user.id + "/" + kind + "-" + Date.now() + ".jpg"; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { upsert: true, contentType: file.type }); if (uploadError) setError(uploadError.message); else { const { data } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: updateError } = await supabase.from("profiles").update({ [field]: data.publicUrl }).eq("id", session.user.id); if (updateError) setError(updateError.message); else { useAuthStore.getState().updateProfile({ [field]: data.publicUrl }); } } setUploading(""); }
   const isOwnProfile = !visitedUserId || visitedUserId === session.user.id;
   return <div className="profile-edit-shell"><ProfileViewLegacy session={session} visitedUserId={visitedUserId} goBack={goBack} navigate={navigate} />{isOwnProfile && <div className="profile-upload-zones"><label className="upload-banner" title="Cambiar banner"><input type="file" accept="image/*" onChange={(event) => openEditor(event, "banner")} />{uploading === "banner" && <span>Subiendo...</span>}</label><label className="upload-avatar" title="Cambiar foto de perfil"><input type="file" accept="image/*" onChange={(event) => openEditor(event, "avatar")} />{uploading === "avatar" && <span>...</span>}</label></div>}{error && <p className="message profile-upload-error">{error}</p>}{editing && <PhotoEditor file={editing.file} kind={editing.kind} onCancel={() => setEditing(null)} onSave={(file) => void saveEdited(file)} />}{isOwnProfile && <ProfileMedia session={session} />}</div>;
 }
