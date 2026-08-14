@@ -3,8 +3,7 @@
 > vite
 
 
-  VITE v8.2.1  ready in 484 ms
+  VITE v8.2.1  ready in 261 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: http://192.168.0.2:5173/  eth0
-10:47:50 PM [vite] (client) [optimizer] bundling dependencies...

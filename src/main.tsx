@@ -5,11 +5,11 @@ import { supabase } from "./lib/supabase";
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from "./lib/cropImage";
 import { getDisplayName, formatPostTime } from "./utils";
-import { Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, Globe } from "lucide-react";
+import { Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send } from "lucide-react";
 import "./styles.css";
 
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
-type Post = { id: string; text: string; time: string; likes: number; authorName?: string; author_id: string; target_profile_id?: string | null; targetName?: string };
+type Post = { id: string; text: string; time: string; likes: number; authorName?: string; author_id: string; target_profile_id?: string | null; targetName?: string; shared_post_id?: string | null; originalPost?: { text: string; authorName: string; time: string; author_id: string; }; commentsCount?: number; };
 type Page = "inicio" | "perfil" | "mensajes" | "personas" | "musica" | "buscar";
 export type ProfileData = { id?: string; username: string | null; full_name: string | null; bio: string | null; city: string | null; avatar_url: string | null; banner_url: string | null };
 type NotificationData = { id: string; actor_id: string; type: string; entity_id: string; is_read: boolean; created_at: string; actor?: ProfileData };
@@ -71,7 +71,7 @@ function Composer({
         likes: 0,
         authorName: username,
         author_id: session.user.id,
-        target_profile_id: targetProfileId || null,
+        target_profile_id: targetProfileId || null, shared_post_id: null,
         targetName: targetName
       });
       setDraft("");
@@ -125,6 +125,129 @@ function Composer({
 
 
 
+
+function CommentsSection({ postId, session, navigate }: { postId: string; session: Session; navigate: any }) {
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadComments() {
+      const { data, error } = await supabase
+        .from("post_comments")
+        .select("id, content, created_at, author_id, profiles(username, full_name, avatar_url)")
+        .eq("post_id", postId)
+        .order("created_at", { ascending: true });
+
+      if (!cancelled && !error && data) {
+        setComments(data);
+      }
+      if (!cancelled) setLoading(false);
+    }
+    loadComments();
+    return () => { cancelled = true; };
+  }, [postId]);
+
+  async function postComment() {
+    if (!newComment.trim()) return;
+    const txt = newComment.trim();
+    setNewComment("");
+
+    const { data, error } = await supabase
+      .from("post_comments")
+      .insert({ post_id: postId, author_id: session.user.id, content: txt })
+      .select("id, content, created_at, author_id, profiles(username, full_name, avatar_url)")
+      .single();
+
+    if (!error && data) {
+      setComments((prev) => [...prev, data]);
+    }
+  }
+
+  return (
+    <div className="post-comments">
+      {loading ? <p style={{fontSize: "0.85em", color: "var(--text-light)"}}>Cargando comentarios...</p> : (
+        <div className="comment-list">
+          {comments.map(c => {
+            const author = c.profiles;
+            const name = author.username || author.full_name || "Usuario";
+            return (
+              <div key={c.id} className="comment-item">
+                <UserLink userId={c.author_id} name={name} avatarUrl={author.avatar_url} navigate={navigate} />
+                <div style={{flex: 1}}>
+                  <div className="comment-content">
+                    {c.content}
+                  </div>
+                  <div className="comment-meta">{formatPostTime(c.created_at)}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <div className="comment-input-area">
+        <input
+          type="text"
+          placeholder="Escribe un comentario..."
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          onKeyDown={(e) => { if(e.key === 'Enter') postComment(); }}
+        />
+        <button onClick={postComment} disabled={!newComment.trim()}><Send size={14} /></button>
+      </div>
+    </div>
+  );
+}
+
+function ShareMenu({ post, session, onClose }: { post: Post; session: Session; onClose: () => void }) {
+  const shareUrl = `${window.location.origin}/post/${post.id}`; // Simple URL for now
+
+  async function shareToFeed() {
+    onClose();
+    await supabase.from("posts").insert({
+      author_id: session.user.id,
+      content: "", // Can be empty if just sharing
+      visibility: "public",
+      shared_post_id: post.shared_post_id || post.id // Share original if it's already a share
+    });
+    // Ideally we'd trigger a reload here, but let's rely on optimistic UI if needed, or just let them see it on refresh
+    window.location.reload();
+  }
+
+  return (
+    <div className="share-menu-popover" style={{right: 16}}>
+      <strong>Compartir</strong>
+      <button onClick={shareToFeed}><Share2 size={16} /> Compartir en mi feed</button>
+      <div style={{height: 1, background: "var(--border)", margin: "4px 0"}} />
+      <strong style={{marginTop: 4}}>Compartir fuera de Inkorium</strong>
+      <button onClick={() => {
+        window.open(`https://api.whatsapp.com/send?text=Mira esta publicación en Inkorium: ${encodeURIComponent(shareUrl)}`);
+        onClose();
+      }}>WhatsApp</button>
+      <button onClick={() => {
+        window.open(`sms:?body=Mira esta publicación en Inkorium: ${encodeURIComponent(shareUrl)}`);
+        onClose();
+      }}>Mensajes</button>
+      <button onClick={() => {
+        navigator.clipboard.writeText(shareUrl);
+        alert("Enlace copiado al portapapeles");
+        onClose();
+      }}><Copy size={16} /> Copiar enlace</button>
+      {navigator.share && (
+        <button onClick={() => {
+          navigator.share({
+            title: 'Publicación en Inkorium',
+            text: 'Mira esta publicación en Inkorium',
+            url: shareUrl,
+          });
+          onClose();
+        }}>Otras opciones nativas...</button>
+      )}
+    </div>
+  );
+}
+
 function Feed({ session, profile }: { session: Session, profile: ProfileData | null }) {
   const username = getDisplayName(profile, session.user.email);
   const [history, setHistory] = useState<{page: Page, params?: Record<string, any>}[]>(() => {
@@ -156,7 +279,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
       sessionStorage.setItem("inkorium-page", next[next.length - 1].page);
       return next;
     });
-  }; const [draft, setDraft] = useState(""); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [feedError, setFeedError] = useState(""); const [publishing, setPublishing] = useState(false); const [query, setQuery] = useState(""); const [notifications, setNotifications] = useState(false); const [unreadCount, setUnreadCount] = useState(0); const [userMenu, setUserMenu] = useState(false);
+  }; const [draft, setDraft] = useState(""); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [feedError, setFeedError] = useState(""); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [publishing, setPublishing] = useState(false); const [query, setQuery] = useState(""); const [notifications, setNotifications] = useState(false); const [unreadCount, setUnreadCount] = useState(0); const [userMenu, setUserMenu] = useState(false);
   const [notificationItems, setNotificationItems] = useState<NotificationData[]>([]);
 
   useEffect(() => {
@@ -197,7 +320,7 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
     setUnreadCount(prev => Math.max(0, prev - 1));
   } const [player, setPlayer] = useState(false); const [theme, setTheme] = useState("blue"); const [position, setPosition] = useState({ x: 24, y: 90 }); const [dragging, setDragging] = useState(false);
   useEffect(() => { let cancelled = false; async function loadPosts() { const [{ data: postsData, error: postsError }, { data: likesData }] = await Promise.all([
-      supabase.from("posts").select("id, content, created_at, author_id, post_likes(count)").eq("visibility", "public").is("group_id", null).is("target_profile_id", null).order("created_at", { ascending: false }).limit(30),
+      supabase.from("posts").select("id, content, created_at, author_id, target_profile_id, shared_post_id, post_likes(count), post_comments(count), original_post:shared_post_id(content, created_at, author_id, profiles(username, full_name))").eq("visibility", "public").is("group_id", null).is("target_profile_id", null).order("created_at", { ascending: false }).limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
     ]);
     if (cancelled) return;
@@ -210,7 +333,23 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
     if (profilesError) { setFeedError(profilesError.message); }
 
     const profileNames = new Map((profiles ?? []).map((profile) => [profile.id, getDisplayName(profile, undefined)]));
-    setPosts(rows.map((row) => ({ id: row.id, text: row.content ?? "", time: formatPostTime(row.created_at), likes: row.post_likes?.[0]?.count ?? 0, authorName: profileNames.get(row.author_id) ?? (row.author_id === session.user.id ? username : "usuario"), author_id: row.author_id })));
+    setPosts(rows.map((row: any) => ({
+      id: row.id,
+      text: row.content ?? "",
+      time: formatPostTime(row.created_at),
+      likes: row.post_likes?.[0]?.count ?? 0,
+      authorName: profileNames.get(row.author_id) ?? (row.author_id === session.user.id ? username : "usuario"),
+      author_id: row.author_id,
+      target_profile_id: row.target_profile_id,
+      shared_post_id: row.shared_post_id,
+      originalPost: row.original_post ? {
+        text: row.original_post.content || "",
+        authorName: row.original_post.profiles?.username || row.original_post.profiles?.full_name || "Usuario",
+        time: formatPostTime(row.original_post.created_at),
+        author_id: row.original_post.author_id
+      } : undefined,
+      commentsCount: row.post_comments?.[0]?.count || 0
+    })));
     setLiked((likesData ?? []).map(l => l.post_id)); } void loadPosts(); return () => { cancelled = true; }; }, [session.user.id, username]);
 
   async function toggleLike(id: string) {
@@ -277,7 +416,27 @@ function Feed({ session, profile }: { session: Session, profile: ProfileData | n
               </span>
             ) : null}
             <span>{post.time} · ◉</span>
-          </div><button className="more">⌄</button></div><p className="post-text">{post.text}</p><div className="post-actions"><button onClick={() => toggleLike(post.id)} className={liked.includes(post.id) ? "is-liked" : ""}>♡ Me gusta <small>{post.likes || ""}</small></button><button>◯ Comentar</button><button>♧ Compartir</button><span>♡ {post.likes}</span></div></article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => setPlayer(true)} />}</main>
+          </div></div>
+          {post.shared_post_id && post.originalPost && (
+             <div style={{fontSize: "0.85em", color: "var(--text-light)", marginBottom: 8, marginLeft: 16}}>
+               Compartió una publicación de <strong>{post.originalPost.authorName}</strong>
+             </div>
+          )}
+          {post.text && <p className="post-text">{post.text}</p>}
+          {post.shared_post_id && post.originalPost && (
+            <div className="shared-post-ref">
+               <div className="post-head">
+                 <strong>{post.originalPost.authorName}</strong>
+                 <span style={{fontSize: "0.85em", color: "var(--text-light)"}}>{post.originalPost.time}</span>
+               </div>
+               <p className="post-text">{post.originalPost.text}</p>
+            </div>
+          )}
+          <div className="post-actions" style={{position: "relative"}}><button onClick={() => toggleLike(post.id)} className={liked.includes(post.id) ? "is-liked" : ""}><Heart size={16} fill={liked.includes(post.id) ? "currentColor" : "none"} /> Me gusta</button><button onClick={() => setOpenComments(post.id === openComments ? null : post.id)}><MessageCircle size={16} /> Comentar {post.commentsCount ? `(${post.commentsCount})` : ''}</button><button onClick={() => setShareMenu(post.id === shareMenu ? null : post.id)}><Share2 size={16} /> Compartir</button><span style={{marginLeft: "auto", display: "flex", alignItems: "center", fontSize: "0.85em", color: "var(--text-light)"}}><Heart size={14} style={{display:"inline", verticalAlign:"middle", marginRight: 4, opacity: 0.7}} /> {post.likes}</span>
+          {shareMenu === post.id && <ShareMenu post={post} session={session} onClose={() => setShareMenu(null)} />}
+          </div>
+          {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
+          </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => setPlayer(true)} />}</main>
       <aside className="right-column"><section className="panel right-card"><strong>SOLICITUDES</strong><button>Ver todas</button><p>No tienes solicitudes pendientes.</p></section><section className="panel right-card"><strong>EVENTOS DESTACADOS</strong><button>Ver todos</button><div className="event"><div className="event-image">♫</div><div><b>Descubre Inkorium</b><p>Comparte tus momentos y musica.</p></div></div><button className="outline">Añadir a mi calendario</button></section><section className="panel calendar"><strong>CALENDARIO</strong><span>▣</span><h3>Agosto 2026</h3><div className="week">Lu　 Ma　 Mi　 Ju　 Vi　 Sa　 Do</div><div className="days">{Array.from({ length: 31 }, (_, index) => <i className={index === 12 ? "today" : ""} key={index}>{index + 1}</i>)}</div></section></aside></div>
     <button className="chat">▢ Chat (0)</button>{player && <div className="mini-player" style={{ left: position.x, top: position.y }} onPointerDown={() => setDragging(true)} onPointerMove={(event) => { if (dragging) setPosition({ x: Math.max(5, event.clientX - 150), y: Math.max(65, event.clientY - 25) }); }} onPointerUp={() => setDragging(false)}><span className="drag-handle">⠿</span><button onClick={() => setPlayer(false)}>×</button><div className="album">♫</div><div><strong>Inkorium Mix</strong><small>Descubriendo sonidos...</small></div><span className="play">▶</span></div>}
   </div>;
@@ -431,12 +590,12 @@ function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avat
   );
 }
 
-function ProfileViewLegacy({ session, visitedUserId, goBack }: { session: Session; visitedUserId?: string; goBack?: () => void }) {
+function ProfileViewLegacy({ session, visitedUserId, goBack, navigate }: { session: Session; visitedUserId?: string; goBack?: () => void; navigate: any }) {
   const fallbackName = "";
   const isOwnProfile = !visitedUserId || visitedUserId === session.user.id;
   const targetUserId = isOwnProfile ? session.user.id : visitedUserId;
   const [viewCount, setViewCount] = useState<number | null>(null);
-  const [profile, setProfile] = useState<ProfileData | null>(null); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false);
+  const [profile, setProfile] = useState<ProfileData | null>(null); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null);
 
 async function toggleLike(id: string) {
     const active = liked.includes(id);
@@ -453,7 +612,7 @@ async function toggleLike(id: string) {
   async function uploadMedia(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; } if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; } setUploading(kind); setError(""); const extension = file.name.split(".").pop()?.toLowerCase() || "jpg"; const path = `${session.user.id}/${kind}-${Date.now()}.${extension}`; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type }); if (uploadError) { setError(uploadError.message); setUploading(""); return; } const { data: publicData } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: profileError } = await supabase.from("profiles").update({ [field]: publicData.publicUrl }).eq("id", session.user.id); if (profileError) setError(profileError.message); else setProfile((current) => ({ ...(current || { username: null, full_name: null, bio: null, city: null, avatar_url: null, banner_url: null }), [field]: publicData.publicUrl })); setUploading(""); event.target.value = ""; }
   useEffect(() => { let cancelled = false; async function loadProfile() { const [{ data: profileData, error: profileError }, { data: postData, error: postError }, { data: likesData }] = await Promise.all([
       supabase.from("profiles").select("username, full_name, bio, city, avatar_url, banner_url").eq("id", targetUserId).maybeSingle(),
-      supabase.from("posts").select("id, content, created_at, target_profile_id, author_id, post_likes(count)").or(`author_id.eq.${targetUserId},target_profile_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(30),
+      supabase.from("posts").select("id, content, created_at, target_profile_id, author_id, shared_post_id, post_likes(count), post_comments(count), original_post:shared_post_id(content, created_at, author_id, profiles(username, full_name))").or(`author_id.eq.${targetUserId},target_profile_id.eq.${targetUserId}`).order("created_at", { ascending: false }).limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
     ]);
     if (cancelled) return;
@@ -464,7 +623,24 @@ async function toggleLike(id: string) {
     const authorIds = [...new Set(rows.map((row) => row.author_id).filter(Boolean))];
     const { data: authors } = authorIds.length ? await supabase.from("profiles").select("id, username, full_name").in("id", authorIds) : { data: [] };
     const authorMap = new Map((authors || []).map((a: any) => [a.id, getDisplayName(a, undefined)]));
-    setPosts(rows.map((post) => ({ id: post.id, text: post.content ?? "", time: formatPostTime(post.created_at), likes: post.post_likes?.[0]?.count ?? 0, authorName: authorMap.get(post.author_id) || "Usuario", author_id: post.author_id, target_profile_id: post.target_profile_id, targetName: name })));
+    setPosts(rows.map((post: any) => ({
+      id: post.id,
+      text: post.content ?? "",
+      time: formatPostTime(post.created_at),
+      likes: post.post_likes?.[0]?.count ?? 0,
+      authorName: authorMap.get(post.author_id) || "Usuario",
+      author_id: post.author_id,
+      target_profile_id: post.target_profile_id,
+      targetName: name,
+      shared_post_id: post.shared_post_id,
+      originalPost: post.original_post ? {
+        text: post.original_post.content || "",
+        authorName: post.original_post.profiles?.username || post.original_post.profiles?.full_name || "Usuario",
+        time: formatPostTime(post.original_post.created_at),
+        author_id: post.original_post.author_id
+      } : undefined,
+      commentsCount: post.post_comments?.[0]?.count || 0
+    })));
 
     setLiked((likesData ?? []).map(l => l.post_id)); } void loadProfile();
 
@@ -514,22 +690,42 @@ async function toggleLike(id: string) {
               </span>
             ) : null}
             <span>{post.time} · ◉</span>
-          </div><button className="more">⌄</button></div><p className="post-text">{post.text}</p><div className="post-actions"><button onClick={() => void toggleLike(post.id)} className={liked.includes(post.id) ? "is-liked" : ""}>♡ Me gusta <small>{post.likes || ""}</small></button><button>◯ Comentar</button><button>♧ Compartir</button></div></article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p>{isOwnProfile && <p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p>}</section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside></section>;
+          </div></div>
+          {post.shared_post_id && post.originalPost && (
+             <div style={{fontSize: "0.85em", color: "var(--text-light)", marginBottom: 8, marginLeft: 16}}>
+               Compartió una publicación de <strong>{post.originalPost.authorName}</strong>
+             </div>
+          )}
+          {post.text && <p className="post-text">{post.text}</p>}
+          {post.shared_post_id && post.originalPost && (
+            <div className="shared-post-ref">
+               <div className="post-head">
+                 <strong>{post.originalPost.authorName}</strong>
+                 <span style={{fontSize: "0.85em", color: "var(--text-light)"}}>{post.originalPost.time}</span>
+               </div>
+               <p className="post-text">{post.originalPost.text}</p>
+            </div>
+          )}
+          <div className="post-actions" style={{position: "relative"}}><button onClick={() => void toggleLike(post.id)} className={liked.includes(post.id) ? "is-liked" : ""}><Heart size={16} fill={liked.includes(post.id) ? "currentColor" : "none"} /> Me gusta</button><button onClick={() => setOpenComments(post.id === openComments ? null : post.id)}><MessageCircle size={16} /> Comentar {post.commentsCount ? `(${post.commentsCount})` : ''}</button><button onClick={() => setShareMenu(post.id === shareMenu ? null : post.id)}><Share2 size={16} /> Compartir</button><span style={{marginLeft: "auto", display: "flex", alignItems: "center", fontSize: "0.85em", color: "var(--text-light)"}}><Heart size={14} style={{display:"inline", verticalAlign:"middle", marginRight: 4, opacity: 0.7}} /> {post.likes}</span>
+          {shareMenu === post.id && <ShareMenu post={post} session={session} onClose={() => setShareMenu(null)} />}
+          </div>
+          {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
+          </article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p>{isOwnProfile && <p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p>}</section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside></section>;
 }
 
 function ProfileMedia({ session }: { session: Session }) { const [media, setMedia] = useState<{ avatar_url: string | null; banner_url: string | null }>({ avatar_url: null, banner_url: null }); useEffect(() => { void supabase.from("profiles").select("avatar_url, banner_url").eq("id", session.user.id).maybeSingle().then(({ data }) => { if (data) setMedia(data); }); }, [session.user.id]); return <div className="profile-upload-media">{media.banner_url && <div className="uploaded-banner" style={{ backgroundImage: `url(${media.banner_url})` }} />}{media.avatar_url && <img className="uploaded-avatar" src={media.avatar_url} alt="Foto de perfil" />}</div>; }
 
-function ProfileView({ session, visitedUserId, goBack }: { session: Session; visitedUserId?: string; goBack?: () => void }) {
-  const [uploading, setUploading] = useState(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [editing, setEditing] = useState<{ file: File; kind: "avatar" | "banner" } | null>(null);
+function ProfileView({ session, visitedUserId, goBack, navigate }: { session: Session; visitedUserId?: string; goBack?: () => void; navigate: any }) {
+  const [uploading, setUploading] = useState(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [editing, setEditing] = useState<{ file: File; kind: "avatar" | "banner" } | null>(null);
   function openEditor(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "banner") { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) { setError("Selecciona una imagen de hasta 5 MB."); return; } setEditing({ file, kind }); event.target.value = ""; }
   async function saveEdited(file: File) { if (!editing) return; const kind = editing.kind; setEditing(null); setUploading(kind); setError(""); const path = session.user.id + "/" + kind + "-" + Date.now() + ".jpg"; const { error: uploadError } = await supabase.storage.from("profile-media").upload(path, file, { upsert: true, contentType: file.type }); if (uploadError) setError(uploadError.message); else { const { data } = supabase.storage.from("profile-media").getPublicUrl(path); const field = kind === "avatar" ? "avatar_url" : "banner_url"; const { error: updateError } = await supabase.from("profiles").update({ [field]: data.publicUrl }).eq("id", session.user.id); if (updateError) setError(updateError.message); else window.location.reload(); } setUploading(""); }
   const isOwnProfile = !visitedUserId || visitedUserId === session.user.id;
-  return <div className="profile-edit-shell"><ProfileViewLegacy session={session} visitedUserId={visitedUserId} goBack={goBack} />{isOwnProfile && <div className="profile-upload-zones"><label className="upload-banner" title="Cambiar banner"><input type="file" accept="image/*" onChange={(event) => openEditor(event, "banner")} />{uploading === "banner" && <span>Subiendo...</span>}</label><label className="upload-avatar" title="Cambiar foto de perfil"><input type="file" accept="image/*" onChange={(event) => openEditor(event, "avatar")} />{uploading === "avatar" && <span>...</span>}</label></div>}{error && <p className="message profile-upload-error">{error}</p>}{editing && <PhotoEditor file={editing.file} kind={editing.kind} onCancel={() => setEditing(null)} onSave={(file) => void saveEdited(file)} />}{isOwnProfile && <ProfileMedia session={session} />}</div>;
+  return <div className="profile-edit-shell"><ProfileViewLegacy session={session} visitedUserId={visitedUserId} goBack={goBack} navigate={navigate} />{isOwnProfile && <div className="profile-upload-zones"><label className="upload-banner" title="Cambiar banner"><input type="file" accept="image/*" onChange={(event) => openEditor(event, "banner")} />{uploading === "banner" && <span>Subiendo...</span>}</label><label className="upload-avatar" title="Cambiar foto de perfil"><input type="file" accept="image/*" onChange={(event) => openEditor(event, "avatar")} />{uploading === "avatar" && <span>...</span>}</label></div>}{error && <p className="message profile-upload-error">{error}</p>}{editing && <PhotoEditor file={editing.file} kind={editing.kind} onCancel={() => setEditing(null)} onSave={(file) => void saveEdited(file)} />}{isOwnProfile && <ProfileMedia session={session} />}</div>;
 }
 
 type SearchResult = { kind: "person" | "post" | "music" | "event"; id: string; title: string; subtitle: string | null; content: string | null; created_at: string | null };
 function SearchView({ query, navigate, goBack }: { query: string; navigate: (page: Page, params?: Record<string, any>) => void; goBack?: () => void }) {
-  const [results, setResults] = useState<SearchResult[]>([]); const [loading, setLoading] = useState(false); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false);
+  const [results, setResults] = useState<SearchResult[]>([]); const [loading, setLoading] = useState(false); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null);
   useEffect(() => { let cancelled = false; const term = query.trim(); if (!term) { setResults([]); return; } setLoading(true); setError(""); const timer = window.setTimeout(async () => { const { data, error: searchError } = await supabase.rpc("search_inkorium", { search_text: term }); if (cancelled) return; if (searchError) setError(searchError.message); else setResults((data ?? []) as SearchResult[]); setLoading(false); }, 250); return () => { cancelled = true; window.clearTimeout(timer); }; }, [query]);
   const group = (kind: SearchResult["kind"]) => results.filter((item) => item.kind === kind);
   return <section className="content-view"><h1>Resultados de busqueda</h1><p className="view-subtitle">Resultados reales de Supabase para <strong>{query || "todo"}</strong></p>{loading && <p>Buscando...</p>}{error && <p className="message">No se pudo realizar la búsqueda: {error}</p>}<div className="result-grid"><div className="result-card panel"><h2>Personas</h2>{group("person").length ? group("person").map((person) => <button className="result-row" key={person.id}><UserLink userId={person.id} name={person.title} navigate={navigate} /><span><small>{person.subtitle}</small></span></button>) : !loading && <p>No hay personas.</p>}</div><div className="result-card panel"><h2>Musica</h2>{group("music").length ? group("music").map((song) => <button className="result-row" key={song.id}><span className="music-square">♫</span><span><strong>{song.title}</strong><small>{song.subtitle}</small></span></button>) : !loading && <p>No hay canciones.</p>}</div></div><div className="result-card panel"><h2>Publicaciones y eventos</h2>{[...group("post"), ...group("event")].length ? [...group("post"), ...group("event")].map((item) => <p className="search-post" key={item.id}><span><strong>{item.title}</strong><br />{item.content || item.subtitle}</span><small>{item.kind}</small></p>) : !loading && <p>No hay publicaciones ni eventos.</p>}</div><button className="back-button" onClick={() => goBack ? goBack() : navigate("inicio")}>Volver</button></section>;
