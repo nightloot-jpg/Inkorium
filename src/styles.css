@@ -585,3 +585,16 @@ button:disabled { cursor: wait; opacity: .65; }
 .shared-post-ref .post-text {
   padding: 0;
 }
+
+.left-nav, .right-column {
+  z-index: 10;
+}
+.floating-music-player {
+  z-index: 9000;
+}
+.music-player-expanded {
+  z-index: 9500;
+}
+.modal-overlay, .photo-editor {
+  z-index: 9999;
+}

@@ -1,12 +1,13 @@
 import { StrictMode, useEffect, useState, useCallback, type ChangeEvent, type FormEvent } from "react";
 import { useAuthStore, usePlayerStore, type ProfileData as StoreProfileData, type PlayerItem } from "./lib/store";
+import { FloatingMusicPlayer } from "./components_player";
 import { createRoot } from "react-dom/client";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from "./lib/cropImage";
 import { getDisplayName, formatPostTime } from "./utils";
-import { Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send } from "lucide-react";
+import { Play, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send } from "lucide-react";
 import "./styles.css";
 
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
@@ -325,7 +326,11 @@ function Composer({
       )}
 
       {mode === "music" && (
-          <div style={{padding: '0 16px', marginBottom: 16}}>
+          <div className="composer-music-popover panel">
+              <div className="composer-music-header">
+                 <span>🎵 Música</span>
+                 <button onClick={() => setMode("text")}><X size={16}/></button>
+              </div>
               {!youtubeHasKey ? (
                   <div className="message" style={{textAlign: 'left', padding: 16, background: 'rgba(255,0,0,0.1)', color: 'var(--text)', borderRadius: 8}}>
                       <h4 style={{marginTop: 0}}>Falta configurar YouTube Data API v3</h4>
@@ -533,114 +538,102 @@ function ShareMenu({ post, session, onClose }: { post: Post; session: Session; o
 
 
 function YoutubePlaylist({ media }: { media: any }) {
-    const [tracks, setTracks] = useState<any[]>([]);
-    const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+    const playerState = usePlayerStore();
+    const [tracks, setTracks] = useState<any[]>(media.initial_tracks || []);
+    const [nextPageToken, setNextPageToken] = useState<string | null>(media.nextPageToken || null);
     const [loading, setLoading] = useState(false);
-    const [playingId, setPlayingId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
-
     useEffect(() => {
-        if (apiKey && media.youtube_id) {
-            loadMore();
+        if (!tracks || tracks.length === 0) {
+            loadMore(true);
         }
-    }, [media.youtube_id, apiKey]);
+    }, [media.youtube_id, media.playlist_id]);
 
-    async function loadMore() {
-        if (!apiKey || loading) return;
+    async function loadMore(isInitial = false) {
+        if (loading) return;
         setLoading(true);
-        setError(null);
         try {
-            const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
-            url.searchParams.append("part", "snippet");
-            url.searchParams.append("playlistId", media.youtube_id);
-            url.searchParams.append("maxResults", "4");
-            url.searchParams.append("key", apiKey);
-            if (nextPageToken) {
-                url.searchParams.append("pageToken", nextPageToken);
-            }
-
-            const res = await fetch(url.toString());
-            if (!res.ok) {
-                throw new Error("Error loading playlist");
-            }
+            const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+            const pid = media.playlist_id || media.youtube_id;
+            const pageTokenParam = !isInitial && nextPageToken ? `&pageToken=${nextPageToken}` : '';
+            const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=10&playlistId=${pid}${pageTokenParam}&key=${apiKey}`);
             const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
 
-            setTracks(prev => [...prev, ...data.items]);
+            const newTracks = data.items ? data.items.map((t: any) => ({
+                video_id: t.snippet.resourceId.videoId,
+                title: t.snippet.title,
+                channel_title: t.snippet.videoOwnerChannelTitle,
+                thumbnail: t.snippet.thumbnails?.default?.url
+            })) : [];
+
+            setTracks(prev => {
+                const map = new Map();
+                [...prev, ...newTracks].forEach(item => map.set(item.video_id, item));
+                return Array.from(map.values());
+            });
             setNextPageToken(data.nextPageToken || null);
-        } catch (e: any) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
+        } catch (err: any) {
+            setError(err.message);
         }
+        setLoading(false);
     }
-
-    if (!apiKey) {
-        return (
-            <div style={{ marginTop: 12, padding: 16, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--panel-bg)' }}>
-                <strong style={{ display: 'block', fontSize: '1.1em', marginBottom: 4 }}>{media.title}</strong>
-                <span style={{ color: 'var(--text-light)', fontSize: '0.9em' }}>Configuración de YouTube pendiente (falta VITE_YOUTUBE_API_KEY).</span>
-            </div>
-        );
-    }
-
     
-    function playTrack(track: any) {
-        usePlayerStore.getState().openPlayer({
-            type: 'youtube_song',
-            youtube_id: track.snippet.resourceId.videoId,
-            title: track.snippet.title,
-            thumbnail: track.snippet.thumbnails?.default?.url
-        });
+    function playTrack(idx: number) {
+        const playlist = {
+            type: 'youtube_playlist' as const,
+            playlist_id: media.playlist_id || media.youtube_id,
+            title: media.title || "Playlist",
+        };
+        playerState.playPlaylist(playlist, tracks, idx);
     }
 
-    function playPlaylist() {
-        usePlayerStore.getState().openPlayer({
-            type: 'youtube_playlist',
-            youtube_id: media.youtube_id,
-            title: media.title,
-            thumbnail: media.thumbnail,
-            queue: tracks
-        });
+    function playPlaylistFull() {
+        if (tracks.length > 0) playTrack(0);
     }
 
     return (
-        <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', background: 'var(--panel-bg)' }}>
-            <div style={{ padding: 16, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <img src={media.thumbnail} alt={media.title} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8 }} />
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <strong style={{ display: 'block', fontSize: '1.1em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{media.title}</strong>
-                    <span style={{ color: 'var(--text-light)', fontSize: '0.9em' }}>Playlist de YouTube</span>
+        <div className="post-playlist-card">
+            <div className="playlist-header">
+                <div className="playlist-cover-wrapper">
+                    <img src={media.thumbnail || 'https://placehold.co/150'} alt="Cover" className="playlist-cover" />
+                    <button className="play-overlay" onClick={playPlaylistFull}><Play fill="currentColor" size={32}/></button>
                 </div>
-                <button onClick={playPlaylist} className="primary-button" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    ▶ Reproducir
-                </button>
+                <div className="playlist-info">
+                    <h3>{media.title || "Playlist"}</h3>
+                    <p>{media.channel_title || ""}</p>
+                    <small>{tracks.length} canciones cargadas</small>
+
+                    <button onClick={playPlaylistFull} className="outline-button mt-auto" style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                        <Play size={16} /> Reproducir en reproductor
+                    </button>
+                </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {tracks.map((track, i) => (
-                    <div key={i} className="hover-bg" onClick={() => playTrack(track)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', cursor: 'pointer', borderBottom: i < tracks.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                        <div style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
-                            <img src={track.snippet.thumbnails?.default?.url} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4 }} />
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4 }}>
-                                <span style={{ color: 'white', fontSize: '0.8em' }}>▶</span>
+
+            <div className="playlist-tracks">
+                {tracks.map((t: any, i: number) => {
+                    const isActive = playerState.currentSong?.video_id === t.video_id && playerState.currentPlaylist?.playlist_id === (media.playlist_id || media.youtube_id);
+                    return (
+                        <div key={i} className={`playlist-track ${isActive ? 'active' : ''}`} onClick={() => playTrack(i)}>
+                            <span className="track-number">{isActive ? <Play size={14} fill="currentColor"/> : i + 1}</span>
+                            <div className="track-details">
+                                <strong>{t.title}</strong>
+                                <span>{t.channel_title}</span>
                             </div>
                         </div>
-                        <div style={{ flex: 1, overflow: 'hidden' }}>
-                            <strong style={{ display: 'block', fontSize: '0.9em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.snippet.title}</strong>
-                            <small style={{ color: 'var(--text-light)' }}>{track.snippet.videoOwnerChannelTitle}</small>
-                        </div>
-                    </div>
-                ))}
-                {nextPageToken && (
-                    <button onClick={loadMore} disabled={loading} style={{ padding: 12, background: 'none', border: 'none', borderTop: '1px solid var(--border)', color: 'var(--primary)', cursor: 'pointer', fontWeight: 'bold' }}>
-                        {loading ? "Cargando..." : "Cargar más canciones"}
-                    </button>
-                )}
+                    );
+                })}
             </div>
+            {nextPageToken && (
+                <button onClick={() => loadMore()} disabled={loading} className="load-more-tracks" style={{width: '100%', padding: '8px', background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', marginTop: 12}}>
+                    {loading ? 'Cargando...' : 'Cargar más canciones ▼'}
+                </button>
+            )}
         </div>
     );
 }
+
 
 function PostMedia({ media, pollId, session }: { media?: any, pollId?: string, session: Session }) {
     if (!media && !pollId) return null;
@@ -653,17 +646,26 @@ function PostMedia({ media, pollId, session }: { media?: any, pollId?: string, s
         return <div style={{width: '100%', borderRadius: 8, marginTop: 12, maxHeight: 500, overflow: 'hidden', background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'center'}}><video src={media.url} controls style={{maxWidth: '100%', maxHeight: 500}} /></div>;
     }
     
-
-    if (media?.type === "youtube_video") {
+    if (media?.type === "youtube_video" || media?.type === "youtube_song") {
         return (
-            <div style={{ marginTop: 12, borderRadius: 8, overflow: 'hidden', background: '#000', position: 'relative', paddingBottom: '56.25%', height: 0 }}>
-                <iframe
-                    src={`https://www.youtube.com/embed/${media.youtube_id}`}
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    title={media.title || "YouTube Video"}
-                />
+            <div className="post-song-card hover-bg" onClick={() => {
+                usePlayerStore.getState().playSong({
+                    video_id: media.youtube_id || media.video_id,
+                    title: media.title,
+                    channel_title: media.channel_title,
+                    thumbnail: media.thumbnail
+                });
+            }} style={{display: 'flex', gap: 16, padding: 12, border: '1px solid var(--border)', borderRadius: 8, marginTop: 12, cursor: 'pointer', alignItems: 'center'}}>
+                <div style={{position: 'relative', width: 64, height: 64, borderRadius: 8, overflow: 'hidden'}}>
+                    <img src={media.thumbnail || `https://i.ytimg.com/vi/${media.youtube_id || media.video_id}/default.jpg`} alt={media.title} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                    <div style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.3)'}}>
+                        <Play fill="white" color="white" size={24} />
+                    </div>
+                </div>
+                <div className="song-info" style={{flex: 1, minWidth: 0}}>
+                    <strong style={{display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '1.1em'}}>{media.title || "Canción de YouTube"}</strong>
+                    <span style={{color: 'var(--text-light)', fontSize: '0.9em'}}>{media.channel_title || ""}</span>
+                </div>
             </div>
         );
     }
@@ -682,29 +684,13 @@ function PostMedia({ media, pollId, session }: { media?: any, pollId?: string, s
             </a>
         );
     }
-    
-    if (media?.type === "youtube_video") {
-        return (
-            <div style={{marginTop: 12, position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: 8}}>
-                <iframe src={`https://www.youtube.com/embed/${media.youtube_id}`} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'}}></iframe>
-            </div>
-        );
-    }
-    
-    if (media?.type === "youtube_playlist") {
-        return (
-            <div style={{marginTop: 12, position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: 8}}>
-                <iframe src={`https://www.youtube.com/embed/videoseries?list=${media.youtube_id}`} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'}}></iframe>
-            </div>
-        );
-    }
-    
+
     if (pollId) {
         return <PollView pollId={pollId} session={session} />;
     }
-
     return null;
 }
+
 
 function PollView({ pollId, session }: { pollId: string, session: Session }) {
     const [options, setOptions] = useState<any[]>([]);
@@ -890,6 +876,7 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
   }
 
   return <div className={`feed-app theme-${theme}`}>
+    <FloatingMusicPlayer />
     <header className="topbar"><button className="brand-button" onClick={() => navigate("inicio")}><Brand /></button><nav className="top-nav">{([["inicio", "Inicio"], ["perfil", "Perfil"], ["mensajes", "Mensajes"], ["personas", "Personas"], ["musica", "Musica"]] as [Page, string][]).map(([id, label]) => <button className={page === id ? "active" : ""} onClick={() => navigate(id)} key={id}>{label}</button>)}</nav><form className="search-form" onSubmit={(event) => { event.preventDefault(); navigate("buscar"); }}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar personas, musica, videos..." /></form><div className="top-actions">
   <button className="icon-button" onClick={() => setNotifications(!notifications)} aria-label="Notificaciones">
     <div className="bell-container">
@@ -897,7 +884,7 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
       {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
     </div>
   </button>
-  <button className="icon-button" onClick={() => playerState.isOpen ? playerState.closePlayer() : (playerState.currentItem && playerState.openPlayer(playerState.currentItem))} aria-label="Reproductor">♫</button>
+  <button className="icon-button" onClick={() => playerState.isOpen ? playerState.closePlayer() : (playerState.currentSong && playerState.openPlayer())} aria-label="Reproductor">♫</button>
   <button className="user-chip" onClick={() => setUserMenu(!userMenu)}>
     <span className="avatar small">{username[0].toUpperCase()}</span>{username}
   </button>
@@ -963,28 +950,7 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
           {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
           </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => {}} />}</main>
       <aside className="right-column"><section className="panel right-card"><strong>SOLICITUDES</strong><button>Ver todas</button><p>No tienes solicitudes pendientes.</p></section><section className="panel right-card"><strong>EVENTOS DESTACADOS</strong><button>Ver todos</button><div className="event"><div className="event-image">♫</div><div><b>Descubre Inkorium</b><p>Comparte tus momentos y musica.</p></div></div><button className="outline">Añadir a mi calendario</button></section><section className="panel calendar"><strong>CALENDARIO</strong><span>▣</span><h3>Agosto 2026</h3><div className="week">Lu　 Ma　 Mi　 Ju　 Vi　 Sa　 Do</div><div className="days">{Array.from({ length: 31 }, (_, index) => <i className={index === 12 ? "today" : ""} key={index}>{index + 1}</i>)}</div></section></aside></div>
-    <button className="chat">▢ Chat (0)</button>{playerState.isOpen && playerState.currentItem && (
-      <div className="mini-player" style={{ left: position.x, top: position.y, width: 300, background: 'var(--panel-bg)', padding: 12, borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.2)', border: '1px solid var(--border)' }}>
-          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8}}>
-              <span className="drag-handle" style={{cursor: 'move', opacity: 0.5}} onPointerDown={() => setDragging(true)} onPointerMove={(event) => { if (dragging) setPosition({ x: Math.max(5, event.clientX - 150), y: Math.max(65, event.clientY - 25) }); }} onPointerUp={() => setDragging(false)}>⠿ Arrastrar</span>
-              <button onClick={() => playerState.closePlayer()} style={{background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer'}}><X size={16} /></button>
-          </div>
-          <div style={{display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8}}>
-              <img src={playerState.currentItem.thumbnail} style={{width: 48, height: 48, borderRadius: 8, objectFit: 'cover'}} />
-              <div style={{flex: 1, overflow: 'hidden'}}>
-                  <strong style={{display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.9em'}}>{playerState.currentItem.title}</strong>
-                  <small style={{color: 'var(--text-light)', fontSize: '0.8em'}}>{playerState.currentItem.type === 'youtube_playlist' ? 'Playlist' : 'Canción'}</small>
-              </div>
-          </div>
-          <div style={{borderRadius: 8, overflow: 'hidden', background: '#000', height: 80}}>
-              {playerState.currentItem.type === 'youtube_song' ? (
-                  <iframe src={`https://www.youtube.com/embed/${playerState.currentItem.youtube_id}?autoplay=1`} style={{width: '100%', height: '100%', border: 'none'}} allow="autoplay" />
-              ) : (
-                  <iframe src={`https://www.youtube.com/embed/videoseries?list=${playerState.currentItem.youtube_id}&autoplay=1`} style={{width: '100%', height: '100%', border: 'none'}} allow="autoplay" />
-              )}
-          </div>
-      </div>
-    )}
+    <button className="chat">▢ Chat (0)</button>
   </div>;
 }
 
