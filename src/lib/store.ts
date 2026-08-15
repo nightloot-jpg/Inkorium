@@ -64,6 +64,7 @@ interface PlayerStore {
   seek: (time: number) => void;
   setVolume: (vol: number) => void;
   updateProgress: (currentTime: number, duration: number) => void;
+  setIsPlaying: (isPlaying: boolean) => void;
 
   openPlayer: () => void;
   closePlayer: () => void;
@@ -107,6 +108,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   clearSeekRequest: () => set({ seekRequest: null }),
   setVolume: (vol) => set({ volume: vol }),
   updateProgress: (currentTime, duration) => set({ currentTime, duration }),
+  setIsPlaying: (isPlaying) => set({ isPlaying }),
 
   openPlayer: () => set({ isOpen: true }),
   closePlayer: () => set({ isOpen: false, isPlaying: false, currentSong: null, currentPlaylist: null, queue: [], currentTime: 0, isExpanded: false }),
