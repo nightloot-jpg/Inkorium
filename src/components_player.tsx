@@ -116,16 +116,15 @@ export function FloatingMusicPlayer() {
      }
   }, [playerState.volume, isReady]);
 
-  if (!playerState.isOpen || !playerState.currentSong) return (
-      <div id="youtube-player-container" style={{ position: 'absolute', left: '-9999px' }}></div>
-  );
-
   const song = playerState.currentSong;
 
-  if (playerState.isExpanded) {
-    return (
+  return (
+    <>
+      {/* ALWAYS render the YouTube iframe container so it doesn't get destroyed on state changes */}
+      <div id="youtube-player-container" style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}></div>
+
+      {(!playerState.isOpen || !playerState.currentSong) ? null : playerState.isExpanded ? (
       <div className="music-player-expanded">
-        <div id="youtube-player-container" style={{ position: 'absolute', left: '-9999px' }}></div>
         <div className="player-expanded-header">
           <button onClick={() => playerState.minimizePlayer()} className="icon-btn" aria-label="Minimizar">
             <Minimize2 size={24} />
@@ -141,11 +140,11 @@ export function FloatingMusicPlayer() {
 
         {!showQueue ? (
           <div className="player-expanded-content">
-            <img src={song.thumbnail || 'https://placehold.co/400x400/233B5D/FFF?text=Music'} alt={song.title} className="cover-large" />
+            <img src={song?.thumbnail || 'https://placehold.co/400x400/233B5D/FFF?text=Music'} alt={song?.title} className="cover-large" />
 
             <div className="info-large">
-              <h2>{song.title}</h2>
-              <p>{song.channel_title}</p>
+              <h2>{song?.title}</h2>
+              <p>{song?.channel_title}</p>
               {playerState.currentPlaylist && <span className="playlist-badge">De: {playerState.currentPlaylist.title}</span>}
             </div>
 
@@ -205,17 +204,13 @@ export function FloatingMusicPlayer() {
           </div>
         )}
       </div>
-    );
-  }
-
-  return (
+      ) : (
     <div className="floating-music-player">
-      <div id="youtube-player-container" style={{ position: 'absolute', left: '-9999px' }}></div>
       <div className="player-left" onClick={() => playerState.expandPlayer()}>
-        <img src={song.thumbnail || 'https://placehold.co/100x100/233B5D/FFF?text=Music'} alt={song.title} className="cover-small" />
+        <img src={song?.thumbnail || 'https://placehold.co/100x100/233B5D/FFF?text=Music'} alt={song?.title} className="cover-small" />
         <div className="info-small">
-          <strong>{song.title}</strong>
-          <span>{song.channel_title} {playerState.currentPlaylist ? `· ${playerState.currentPlaylist.title}` : ''}</span>
+          <strong>{song?.title}</strong>
+          <span>{song?.channel_title} {playerState.currentPlaylist ? `· ${playerState.currentPlaylist.title}` : ''}</span>
         </div>
       </div>
 
@@ -265,5 +260,7 @@ export function FloatingMusicPlayer() {
         </button>
       </div>
     </div>
+      )}
+    </>
   );
 }
