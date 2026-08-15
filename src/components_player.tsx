@@ -49,12 +49,14 @@ export function FloatingMusicPlayer() {
             onStateChange: (event: any) => {
               // 1: playing, 2: paused, 0: ended
               if (event.data === 1) {
-                playerState.resume();
-                playerState.updateProgress(playerRef.current.getCurrentTime(), playerRef.current.getDuration());
+                usePlayerStore.getState().setIsPlaying(true);
+                const current = playerRef.current.getCurrentTime();
+                const dur = playerRef.current.getDuration();
+                if (current && dur) usePlayerStore.getState().updateProgress(current, dur);
               } else if (event.data === 2) {
-                playerState.pause();
+                usePlayerStore.getState().setIsPlaying(false);
               } else if (event.data === 0) {
-                playerState.next();
+                usePlayerStore.getState().next();
               }
             }
           }
@@ -68,39 +70,52 @@ export function FloatingMusicPlayer() {
       window.onYouTubeIframeAPIReady = initPlayer;
     }
 
-    const interval = setInterval(() => {
-      if (playerRef.current && isReady && playerState.isPlaying) {
-        try {
-          const currentTime = playerRef.current.getCurrentTime();
-          const duration = playerRef.current.getDuration();
-          if (currentTime && duration) {
-            playerState.updateProgress(currentTime, duration);
-          }
-        } catch (e) {}
-      }
-    }, 1000);
+    let pollingInterval: any;
+    if (isReady) {
+      pollingInterval = setInterval(() => {
+        if (playerRef.current && typeof playerRef.current.getPlayerState === 'function') {
+          try {
+            const state = playerRef.current.getPlayerState();
+            // 1 === playing
+            if (state === 1) {
+              const currentTime = playerRef.current.getCurrentTime();
+              const duration = playerRef.current.getDuration();
+              if (currentTime !== undefined && duration !== undefined) {
+                usePlayerStore.getState().updateProgress(currentTime, duration);
+              }
+            }
+          } catch (e) {}
+        }
+      }, 250);
+    }
 
-    return () => clearInterval(interval);
+    return () => {
+      if (pollingInterval) clearInterval(pollingInterval);
+    };
   }, [isReady]); // We deliberately don't want to re-run this on every state change
 
   useEffect(() => {
     if (isReady && playerRef.current && playerState.currentSong) {
       const currentVideoId = playerState.currentSong.video_id;
-      // Need a way to check if we need to load or just play
       try {
         const videoData = playerRef.current.getVideoData();
+        const state = playerRef.current.getPlayerState();
         if (videoData && videoData.video_id === currentVideoId) {
-          if (playerState.isPlaying) {
+          if (playerState.isPlaying && state !== 1) {
              playerRef.current.playVideo();
-          } else {
+          } else if (!playerState.isPlaying && state === 1) {
              playerRef.current.pauseVideo();
           }
         } else {
-          playerRef.current.loadVideoById(currentVideoId);
+          if (playerState.isPlaying) {
+             playerRef.current.loadVideoById(currentVideoId);
+          } else {
+             playerRef.current.cueVideoById(currentVideoId);
+          }
         }
       } catch (e) {}
     }
-  }, [playerState.currentSong, playerState.isPlaying, isReady]);
+  }, [playerState.currentSong?.video_id, playerState.isPlaying, isReady]);
 
 
   useEffect(() => {

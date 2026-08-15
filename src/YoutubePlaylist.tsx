@@ -101,7 +101,14 @@ export function YoutubePlaylist({ media }: { media: any }) {
         <div className="ink-playlist-card-v2">
             <div className="ink-playlist-v2-header">
                 {/* Cover Art */}
-                <div className="ink-playlist-v2-cover-container group" onClick={() => { if (tracks.length > 0) { playerState.playPlaylist({ type: "youtube_playlist", playlist_id: media.playlist_id || media.youtube_id, title: media.title || "Playlist" }, tracks, 0, true); } }}>
+                <div className="ink-playlist-v2-cover-container group" onClick={() => {
+                                if (isActivePlaylist) {
+                                    if (playerState.isPlaying) playerState.pause();
+                                    else playerState.resume();
+                                } else if (tracks.length > 0) {
+                                    playerState.playPlaylist({ type: "youtube_playlist", playlist_id: media.playlist_id || media.youtube_id, title: media.title || "Playlist" }, tracks, 0, false);
+                                }
+                            }}>
                     <img src={media.thumbnail || 'https://placehold.co/120'} alt="Cover" className="ink-playlist-v2-cover" />
                     <div className="ink-playlist-v2-cover-overlay">
                         <Play className="ink-playlist-v2-cover-icon" fill="currentColor" size={24} />
@@ -236,7 +243,17 @@ export function YoutubePlaylist({ media }: { media: any }) {
                         <div 
                             key={i} 
                             className={`ink-playlist-v2-track group ${isActive ? 'active' : ''} ${i === visibleTracks.length - 1 ? 'last' : ''}`}
-                            onClick={() => playTrack(i)}
+                            onClick={() => {
+                                if (isActive) {
+                                    if (playerState.isPlaying) {
+                                        playerState.pause();
+                                    } else {
+                                        playerState.resume();
+                                    }
+                                } else {
+                                    playTrack(i);
+                                }
+                            }}
                         >
                             <div className="ink-playlist-v2-track-num">
                                 <span className={isActive ? 'hidden' : 'group-hover:hidden'}>{i + 1}</span>
