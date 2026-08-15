@@ -558,7 +558,7 @@ function PostMedia({ media, pollId, session }: { media?: any, pollId?: string, s
                     title: media.title,
                     channel_title: media.channel_title,
                     thumbnail: media.thumbnail
-                });
+                }, false);
             }} style={{display: 'flex', gap: 16, padding: 12, border: '1px solid var(--border)', borderRadius: 8, marginTop: 12, cursor: 'pointer', alignItems: 'center'}}>
                 <div style={{position: 'relative', width: 64, height: 64, borderRadius: 8, overflow: 'hidden'}}>
                     <img src={media.thumbnail || `https://i.ytimg.com/vi/${media.youtube_id || media.video_id}/default.jpg`} alt={media.title} style={{width: '100%', height: '100%', objectFit: 'cover'}} />

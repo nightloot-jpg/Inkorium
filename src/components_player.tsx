@@ -116,9 +116,14 @@ export function FloatingMusicPlayer() {
      }
   }, [playerState.volume, isReady]);
 
-  if (!playerState.isOpen || !playerState.currentSong) return (
-      <div id="youtube-player-container" style={{ position: 'absolute', left: '-9999px' }}></div>
-  );
+  // If not open, we just hide the UI but keep the player mounted so it plays music.
+  if (!playerState.isOpen || !playerState.currentSong) {
+      return (
+          <div style={{ display: 'none' }}>
+              <div id="youtube-player-container" style={{ position: 'absolute', left: '-9999px' }}></div>
+          </div>
+      );
+  }
 
   const song = playerState.currentSong;
 

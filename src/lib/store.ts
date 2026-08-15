@@ -55,8 +55,8 @@ interface PlayerStore {
   seekRequest: number | null;
   clearSeekRequest: () => void;
 
-  playSong: (song: QueueItem) => void;
-  playPlaylist: (playlist: PlayerItem, queue: QueueItem[], startIndex?: number) => void;
+  playSong: (song: QueueItem, openUI?: boolean) => void;
+  playPlaylist: (playlist: PlayerItem, queue: QueueItem[], startIndex?: number, openUI?: boolean) => void;
   pause: () => void;
   resume: () => void;
   next: () => void;
@@ -85,8 +85,8 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   volume: 100,
   seekRequest: null,
 
-  playSong: (song) => set({ isOpen: true, currentSong: song, currentPlaylist: null, queue: [song], currentIndex: 0, isPlaying: true }),
-  playPlaylist: (playlist, queue, startIndex = 0) => set({ isOpen: true, currentPlaylist: playlist, queue, currentIndex: startIndex, currentSong: queue[startIndex] || null, isPlaying: true }),
+  playSong: (song, openUI = true) => set({ isOpen: openUI, currentSong: song, currentPlaylist: null, queue: [song], currentIndex: 0, isPlaying: true }),
+  playPlaylist: (playlist, queue, startIndex = 0, openUI = false) => set({ isOpen: openUI, currentPlaylist: playlist, queue, currentIndex: startIndex, currentSong: queue[startIndex] || null, isPlaying: true }),
   pause: () => set({ isPlaying: false }),
   resume: () => set({ isPlaying: true }),
   next: () => set((state) => {
