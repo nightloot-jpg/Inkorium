@@ -1,3 +1,4 @@
+import { parseISO8601Duration } from "./utils";
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ExternalLink, ChevronDown } from 'lucide-react';
 import { usePlayerStore } from './lib/store';
@@ -32,13 +33,31 @@ export function YoutubePlaylist({ media }: { media: any }) {
             const data = await res.json();
             if (data.error) throw new Error(data.error.message);
 
-            const newTracks = data.items ? data.items.map((t: any) => ({
+            let newTracks = data.items ? data.items.map((t: any) => ({
                 video_id: t.snippet.resourceId.videoId,
                 title: t.snippet.title,
                 channel_title: t.snippet.videoOwnerChannelTitle,
                 thumbnail: t.snippet.thumbnails?.default?.url,
-                duration: t.duration || ''
+                duration: ''
             })) : [];
+
+            if (newTracks.length > 0) {
+                const videoIds = newTracks.map((t: any) => t.video_id).join(',');
+                const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${apiKey}`);
+                const videosData = await videosRes.json();
+
+                if (videosData.items) {
+                    const durationMap = new Map();
+                    videosData.items.forEach((v: any) => {
+                        durationMap.set(v.id, parseISO8601Duration(v.contentDetails.duration));
+                    });
+
+                    newTracks = newTracks.map((t: any) => ({
+                        ...t,
+                        duration: durationMap.get(t.video_id) || ''
+                    }));
+                }
+            }
 
             setTracks(prev => {
                 const map = new Map();
@@ -93,7 +112,7 @@ export function YoutubePlaylist({ media }: { media: any }) {
                 <div className="ink-playlist-v2-main">
                     <div>
                         <h3 className="ink-playlist-v2-title">{media.title || "Playlist"}</h3>
-                        <p className="ink-playlist-v2-artist">{media.channel_title || "The Algorithms"}</p>
+                        {media.channel_title && <p className="ink-playlist-v2-artist">{media.channel_title}</p>}
                     </div>
 
                     {/* Progress Bar Area */}
