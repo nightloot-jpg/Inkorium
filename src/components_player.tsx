@@ -116,157 +116,153 @@ export function FloatingMusicPlayer() {
      }
   }, [playerState.volume, isReady]);
 
-  // Ensure the YouTube container is always rendered if there's a song, even if the UI is closed
-  if (!playerState.isOpen || !playerState.currentSong) {
-      return (
-          <div id="youtube-player-container" style={{ position: 'absolute', left: '-9999px' }}></div>
-      );
-  }
+    // Create a persistent container for the YouTube iframe that doesn't get unmounted
+  // when the player expands or minimizes.
+  return (
+    <>
+      {/* The YouTube iframe container must be entirely static in the DOM to avoid re-creation */}
+      <div id="youtube-player-container" style={{ position: 'fixed', left: '-9999px', top: '-9999px', width: '1px', height: '1px' }}></div>
 
-  const song = playerState.currentSong;
-
-  if (playerState.isExpanded) {
-    return (
-      <div className="music-player-expanded">
-        <div id="youtube-player-container" style={{ position: 'absolute', left: '-9999px' }}></div>
-        <div className="player-expanded-header">
-          <button onClick={() => playerState.minimizePlayer()} className="icon-btn" aria-label="Minimizar">
-            <Minimize2 size={24} />
-          </button>
-          <div className="tabs">
-              <button className={!showQueue ? "active" : ""} onClick={() => setShowQueue(false)}>Reproduciendo</button>
-              {playerState.queue.length > 1 && <button className={showQueue ? "active" : ""} onClick={() => setShowQueue(true)}>Cola ({playerState.queue.length})</button>}
-          </div>
-          <button onClick={() => playerState.closePlayer()} className="icon-btn" aria-label="Cerrar">
-            <X size={24} />
-          </button>
-        </div>
-
-        {!showQueue ? (
-          <div className="player-expanded-content">
-            <img src={song.thumbnail || 'https://placehold.co/400x400/233B5D/FFF?text=Music'} alt={song.title} className="cover-large" />
-
-            <div className="info-large">
-              <h2>{song.title}</h2>
-              <p>{song.channel_title}</p>
-              {playerState.currentPlaylist && <span className="playlist-badge">De: {playerState.currentPlaylist.title}</span>}
+      {playerState.isOpen && playerState.currentSong && (
+        playerState.isExpanded ? (
+          <div className="music-player-expanded">
+            <div className="player-expanded-header">
+              <button onClick={() => playerState.minimizePlayer()} className="icon-btn" aria-label="Minimizar">
+                <Minimize2 size={24} />
+              </button>
+              <div className="tabs">
+                  <button className={!showQueue ? "active" : ""} onClick={() => setShowQueue(false)}>Reproduciendo</button>
+                  {playerState.queue.length > 1 && <button className={showQueue ? "active" : ""} onClick={() => setShowQueue(true)}>Cola ({playerState.queue.length})</button>}
+              </div>
+              <button onClick={() => playerState.closePlayer()} className="icon-btn" aria-label="Cerrar">
+                <X size={24} />
+              </button>
             </div>
 
-            <div className="progress-container">
-              <input
-                type="range"
-                min="0"
-                max={playerState.duration || 100}
-                value={playerState.currentTime || 0}
-                onChange={(e) => {
-                  const t = parseFloat(e.target.value);
-                  playerState.seek(t);
-                }}
-              />
-              <div className="time-labels">
-                <span>{formatTime(playerState.currentTime)}</span>
-                <span>{formatTime(playerState.duration)}</span>
+            {!showQueue ? (
+              <div className="player-expanded-content">
+                <img src={playerState.currentSong.thumbnail || 'https://placehold.co/400x400/233B5D/FFF?text=Music'} alt={playerState.currentSong.title} className="cover-large" />
+
+                <div className="info-large">
+                  <h2>{playerState.currentSong.title}</h2>
+                  <p>{playerState.currentSong.channel_title}</p>
+                  {playerState.currentPlaylist && <span className="playlist-badge">De: {playerState.currentPlaylist.title}</span>}
+                </div>
+
+                <div className="progress-container">
+                  <input
+                    type="range"
+                    min="0"
+                    max={playerState.duration || 100}
+                    value={playerState.currentTime || 0}
+                    onChange={(e) => {
+                      const t = parseFloat(e.target.value);
+                      playerState.seek(t);
+                    }}
+                  />
+                  <div className="time-labels">
+                    <span>{formatTime(playerState.currentTime)}</span>
+                    <span>{formatTime(playerState.duration)}</span>
+                  </div>
+                </div>
+
+                <div className="controls-large">
+                  <button onClick={() => playerState.previous()} disabled={playerState.currentIndex === 0} className="icon-btn">
+                    <SkipBack size={32} />
+                  </button>
+                  <button onClick={() => playerState.isPlaying ? playerState.pause() : playerState.resume()} className="play-btn-large">
+                    {playerState.isPlaying ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" />}
+                  </button>
+                  <button onClick={() => playerState.next()} disabled={playerState.currentIndex >= playerState.queue.length - 1} className="icon-btn">
+                    <SkipForward size={32} />
+                  </button>
+                </div>
+
+                <div className="volume-control">
+                   {playerState.volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                   <input
+                     type="range"
+                     min="0" max="100"
+                     value={playerState.volume}
+                     onChange={(e) => playerState.setVolume(parseInt(e.target.value))}
+                   />
+                </div>
+              </div>
+            ) : (
+              <div className="player-expanded-queue">
+                 {playerState.queue.map((item, idx) => (
+                    <div key={idx} className={`queue-item ${idx === playerState.currentIndex ? 'active' : ''}`} onClick={() => {
+                       playerState.playPlaylist(playerState.currentPlaylist!, playerState.queue, idx);
+                    }}>
+                       <span className="queue-idx">{idx + 1}</span>
+                       <div className="queue-info">
+                          <span className="title">{item.title}</span>
+                          <span className="artist">{item.channel_title}</span>
+                       </div>
+                       {idx === playerState.currentIndex && playerState.isPlaying && <span className="playing-icon"><Play size={16} fill="currentColor" /></span>}
+                    </div>
+                 ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="floating-music-player">
+            <div className="player-left" onClick={() => playerState.expandPlayer()}>
+              <img src={playerState.currentSong.thumbnail || 'https://placehold.co/100x100/233B5D/FFF?text=Music'} alt={playerState.currentSong.title} className="cover-small" />
+              <div className="info-small">
+                <strong>{playerState.currentSong.title}</strong>
+                <span>{playerState.currentSong.channel_title} {playerState.currentPlaylist ? `· ${playerState.currentPlaylist.title}` : ''}</span>
               </div>
             </div>
 
-            <div className="controls-large">
-              <button onClick={() => playerState.previous()} disabled={playerState.currentIndex === 0} className="icon-btn">
-                <SkipBack size={32} />
-              </button>
-              <button onClick={() => playerState.isPlaying ? playerState.pause() : playerState.resume()} className="play-btn-large">
-                {playerState.isPlaying ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" />}
-              </button>
-              <button onClick={() => playerState.next()} disabled={playerState.currentIndex >= playerState.queue.length - 1} className="icon-btn">
-                <SkipForward size={32} />
-              </button>
+            <div className="player-center">
+              <div className="controls-small">
+                <button onClick={() => playerState.previous()} disabled={playerState.currentIndex === 0} className="icon-btn">
+                  <SkipBack size={20} />
+                </button>
+                <button onClick={() => playerState.isPlaying ? playerState.pause() : playerState.resume()} className="play-btn-small">
+                  {playerState.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
+                </button>
+                <button onClick={() => playerState.next()} disabled={playerState.currentIndex >= playerState.queue.length - 1} className="icon-btn">
+                  <SkipForward size={20} />
+                </button>
+              </div>
+              <div className="progress-small">
+                 <span>{formatTime(playerState.currentTime)}</span>
+                 <input
+                    type="range"
+                    min="0"
+                    max={playerState.duration || 100}
+                    value={playerState.currentTime || 0}
+                    onChange={(e) => {
+                      const t = parseFloat(e.target.value);
+                      playerState.seek(t);
+                    }}
+                  />
+                  <span>{formatTime(playerState.duration)}</span>
+              </div>
             </div>
 
-            <div className="volume-control">
-               {playerState.volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
-               <input
-                 type="range"
-                 min="0" max="100"
-                 value={playerState.volume}
-                 onChange={(e) => playerState.setVolume(parseInt(e.target.value))}
-               />
+            <div className="player-right">
+              <div className="volume-control-small">
+                 {playerState.volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                 <input
+                   type="range"
+                   min="0" max="100"
+                   value={playerState.volume}
+                   onChange={(e) => playerState.setVolume(parseInt(e.target.value))}
+                 />
+              </div>
+              <button onClick={() => playerState.expandPlayer()} className="icon-btn" aria-label="Expandir">
+                <Maximize2 size={20} />
+              </button>
+              <button onClick={() => playerState.closePlayer()} className="icon-btn" aria-label="Cerrar">
+                <X size={20} />
+              </button>
             </div>
           </div>
-        ) : (
-          <div className="player-expanded-queue">
-             {playerState.queue.map((item, idx) => (
-                <div key={idx} className={`queue-item ${idx === playerState.currentIndex ? 'active' : ''}`} onClick={() => {
-                   playerState.playPlaylist(playerState.currentPlaylist!, playerState.queue, idx);
-                }}>
-                   <span className="queue-idx">{idx + 1}</span>
-                   <div className="queue-info">
-                      <span className="title">{item.title}</span>
-                      <span className="artist">{item.channel_title}</span>
-                   </div>
-                   {idx === playerState.currentIndex && playerState.isPlaying && <span className="playing-icon"><Play size={16} fill="currentColor" /></span>}
-                </div>
-             ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="floating-music-player">
-      <div id="youtube-player-container" style={{ position: 'absolute', left: '-9999px' }}></div>
-      <div className="player-left" onClick={() => playerState.expandPlayer()}>
-        <img src={song.thumbnail || 'https://placehold.co/100x100/233B5D/FFF?text=Music'} alt={song.title} className="cover-small" />
-        <div className="info-small">
-          <strong>{song.title}</strong>
-          <span>{song.channel_title} {playerState.currentPlaylist ? `· ${playerState.currentPlaylist.title}` : ''}</span>
-        </div>
-      </div>
-
-      <div className="player-center">
-        <div className="controls-small">
-          <button onClick={() => playerState.previous()} disabled={playerState.currentIndex === 0} className="icon-btn">
-            <SkipBack size={20} />
-          </button>
-          <button onClick={() => playerState.isPlaying ? playerState.pause() : playerState.resume()} className="play-btn-small">
-            {playerState.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
-          </button>
-          <button onClick={() => playerState.next()} disabled={playerState.currentIndex >= playerState.queue.length - 1} className="icon-btn">
-            <SkipForward size={20} />
-          </button>
-        </div>
-        <div className="progress-small">
-           <span>{formatTime(playerState.currentTime)}</span>
-           <input
-              type="range"
-              min="0"
-              max={playerState.duration || 100}
-              value={playerState.currentTime || 0}
-              onChange={(e) => {
-                const t = parseFloat(e.target.value);
-                playerState.seek(t);
-              }}
-            />
-            <span>{formatTime(playerState.duration)}</span>
-        </div>
-      </div>
-
-      <div className="player-right">
-        <div className="volume-control-small">
-           {playerState.volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
-           <input
-             type="range"
-             min="0" max="100"
-             value={playerState.volume}
-             onChange={(e) => playerState.setVolume(parseInt(e.target.value))}
-           />
-        </div>
-        <button onClick={() => playerState.expandPlayer()} className="icon-btn" aria-label="Expandir">
-          <Maximize2 size={20} />
-        </button>
-        <button onClick={() => playerState.closePlayer()} className="icon-btn" aria-label="Cerrar">
-          <X size={20} />
-        </button>
-      </div>
-    </div>
+        )
+      )}
+    </>
   );
 }
