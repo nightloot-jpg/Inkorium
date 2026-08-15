@@ -116,12 +116,10 @@ export function FloatingMusicPlayer() {
      }
   }, [playerState.volume, isReady]);
 
-  // If not open, we just hide the UI but keep the player mounted so it plays music.
+  // Ensure the YouTube container is always rendered if there's a song, even if the UI is closed
   if (!playerState.isOpen || !playerState.currentSong) {
       return (
-          <div style={{ display: 'none' }}>
-              <div id="youtube-player-container" style={{ position: 'absolute', left: '-9999px' }}></div>
-          </div>
+          <div id="youtube-player-container" style={{ position: 'absolute', left: '-9999px' }}></div>
       );
   }
 

@@ -602,8 +602,10 @@ button:disabled { cursor: wait; opacity: .65; }
 
 .ink-playlist-card-v2 {
     background-color: #ffffff;
-    border-radius: 0.5rem;
-    border: 1px solid var(--border, #c2c6d4);
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid var(--border, #c2c6d4);
+    border-bottom: 1px solid var(--border, #c2c6d4);
     overflow: hidden;
     font-family: 'Hanken Grotesk', sans-serif;
     color: #1a1c1c;
