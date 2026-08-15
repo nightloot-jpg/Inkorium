@@ -102,6 +102,14 @@ export function FloatingMusicPlayer() {
     }
   }, [playerState.currentSong, playerState.isPlaying, isReady]);
 
+
+  useEffect(() => {
+     if (isReady && playerRef.current && playerState.seekRequest !== null) {
+         playerRef.current.seekTo(playerState.seekRequest, true);
+         playerState.clearSeekRequest();
+     }
+  }, [playerState.seekRequest, isReady]);
+
   useEffect(() => {
      if (isReady && playerRef.current) {
          playerRef.current.setVolume(playerState.volume);
@@ -150,7 +158,6 @@ export function FloatingMusicPlayer() {
                 onChange={(e) => {
                   const t = parseFloat(e.target.value);
                   playerState.seek(t);
-                  if (playerRef.current) playerRef.current.seekTo(t, true);
                 }}
               />
               <div className="time-labels">
@@ -234,7 +241,6 @@ export function FloatingMusicPlayer() {
               onChange={(e) => {
                 const t = parseFloat(e.target.value);
                 playerState.seek(t);
-                if (playerRef.current) playerRef.current.seekTo(t, true);
               }}
             />
             <span>{formatTime(playerState.duration)}</span>
