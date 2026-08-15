@@ -59,7 +59,7 @@ export function YoutubePlaylist({ media }: { media: any }) {
             playlist_id: media.playlist_id || media.youtube_id,
             title: media.title || "Playlist",
         };
-        playerState.playPlaylist(playlist, tracks, idx);
+        playerState.playPlaylist(playlist, tracks, idx, false);
     }
 
     function playPlaylistFull() {
@@ -82,7 +82,7 @@ export function YoutubePlaylist({ media }: { media: any }) {
         <div className="ink-playlist-card-v2">
             <div className="ink-playlist-v2-header">
                 {/* Cover Art */}
-                <div className="ink-playlist-v2-cover-container group" onClick={playPlaylistFull}>
+                <div className="ink-playlist-v2-cover-container group" onClick={() => { if (tracks.length > 0) { playerState.playPlaylist({ type: "youtube_playlist", playlist_id: media.playlist_id || media.youtube_id, title: media.title || "Playlist" }, tracks, 0, true); } }}>
                     <img src={media.thumbnail || 'https://placehold.co/120'} alt="Cover" className="ink-playlist-v2-cover" />
                     <div className="ink-playlist-v2-cover-overlay">
                         <Play className="ink-playlist-v2-cover-icon" fill="currentColor" size={24} />
@@ -187,7 +187,20 @@ export function YoutubePlaylist({ media }: { media: any }) {
                         
                         <button 
                             className="ink-playlist-v2-btn-secondary"
-                            onClick={playPlaylistFull}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (isActivePlaylist) {
+                                    playerState.openPlayer();
+                                } else {
+                                    if (tracks.length > 0) {
+                                        playerState.playPlaylist({
+                                            type: 'youtube_playlist',
+                                            playlist_id: media.playlist_id || media.youtube_id,
+                                            title: media.title || "Playlist",
+                                        }, tracks, 0, true);
+                                    }
+                                }
+                            }}
                         >
                             <ExternalLink size={14} />
                             Reproducir en reproductor
