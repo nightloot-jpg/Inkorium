@@ -54,6 +54,8 @@ interface PlayerStore {
   currentTime: number;
   duration: number;
   volume: number;
+  isMuted: boolean;
+  previousVolume: number;
   seekRequest: number | null;
   clearSeekRequest: () => void;
 
@@ -65,6 +67,7 @@ interface PlayerStore {
   previous: () => void;
   seek: (time: number) => void;
   setVolume: (vol: number) => void;
+  toggleMute: () => void;
   updateProgress: (currentTime: number, duration: number) => void;
   setIsPlaying: (isPlaying: boolean) => void;
 
@@ -87,6 +90,8 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   currentTime: 0,
   duration: 0,
   volume: 100,
+  isMuted: false,
+  previousVolume: 100,
   seekRequest: null,
 
   playSong: (song, openUI = true) => set({ isOpen: openUI, currentSong: song, currentPlaylist: null, queue: [song], currentIndex: 0, isPlaying: false, pendingPlay: true }),
@@ -109,7 +114,21 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   }),
   seek: (time) => set({ currentTime: time, seekRequest: time }),
   clearSeekRequest: () => set({ seekRequest: null }),
-  setVolume: (vol) => set({ volume: vol }),
+  setVolume: (vol) => set((state) => {
+    const clamped = Math.max(0, Math.min(100, vol));
+    if (clamped === 0) {
+      return { volume: 0, isMuted: true };
+    }
+    return { volume: clamped, isMuted: false, previousVolume: clamped };
+  }),
+  toggleMute: () => set((state) => {
+    if (state.isMuted) {
+      const restoreVol = state.previousVolume > 0 ? state.previousVolume : 100;
+      return { isMuted: false, volume: restoreVol };
+    } else {
+      return { isMuted: true, previousVolume: state.volume, volume: 0 };
+    }
+  }),
   updateProgress: (currentTime, duration) => set({ currentTime, duration }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setPendingPlay: (pendingPlay) => set({ pendingPlay }),

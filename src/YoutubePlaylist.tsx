@@ -203,12 +203,27 @@ export function YoutubePlaylist({ media }: { media: any }) {
                                 <SkipForward size={24} fill="currentColor" />
                             </button>
                             
-                            <button 
-                                className="ink-playlist-v2-btn-icon ink-playlist-v2-btn-volume hidden-mobile" 
-                                aria-label="Volume"
-                            >
-                                <Volume2 size={24} fill="currentColor" />
-                            </button>
+                            <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button
+                                    className="ink-playlist-v2-btn-icon ink-playlist-v2-btn-volume"
+                                    aria-label="Volume"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        playerState.toggleMute();
+                                    }}
+                                >
+                                    {playerState.isMuted || playerState.volume === 0 ? <VolumeX size={24} fill="currentColor" /> : <Volume2 size={24} fill="currentColor" />}
+                                </button>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={playerState.volume}
+                                    onChange={(e) => playerState.setVolume(parseInt(e.target.value))}
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{ width: '60px', height: '4px', cursor: 'pointer' }}
+                                />
+                            </div>
                         </div>
                         
                         <button 
