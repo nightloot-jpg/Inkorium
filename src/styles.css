@@ -2301,3 +2301,36 @@ button:disabled { cursor: wait; opacity: .65; }
     background: white;
 }
 
+
+
+/* Fix Composer Media Preview */
+.composer-media-preview {
+    position: relative;
+    max-width: 100%;
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.composer-media-preview img,
+.composer-media-preview video {
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    max-height: 350px;
+    object-fit: contain;
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .composer-media-preview img,
+    .composer-media-preview video {
+        max-height: 250px;
+    }
+}
+
