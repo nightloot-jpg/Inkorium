@@ -191,7 +191,7 @@ export function FloatingMusicPlayer() {
                   <small>Selecciona una canción</small>
                 </div>
                 <button onClick={() => playerState.closePlayer()} className="icon-btn no-drag close-btn" aria-label="Cerrar">
-                  <X size={20} />
+                  <X size={16} />
                 </button>
              </div>
           ) : playerState.isExpanded ? (
@@ -295,13 +295,13 @@ export function FloatingMusicPlayer() {
               <div className="player-center no-drag">
                 <div className="controls-small">
                   <button onClick={() => playerState.previous()} disabled={playerState.currentIndex === 0} className="icon-btn">
-                    <SkipBack size={20} />
+                    <SkipBack size={16} />
                   </button>
                   <button onClick={() => playerState.isPlaying ? playerState.pause() : playerState.resume()} className="play-btn-small">
-                    {playerState.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
+                    {playerState.isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
                   </button>
                   <button onClick={() => playerState.next()} disabled={playerState.currentIndex >= playerState.queue.length - 1} className="icon-btn">
-                    <SkipForward size={20} />
+                    <SkipForward size={16} />
                   </button>
                 </div>
                 <div className="progress-small">
@@ -333,10 +333,10 @@ export function FloatingMusicPlayer() {
                    />
                 </div>
                 <button onClick={() => playerState.expandPlayer()} className="icon-btn no-drag" aria-label="Expandir">
-                  <Maximize2 size={20} />
+                  <Maximize2 size={16} />
                 </button>
                 <button onClick={() => playerState.closePlayer()} className="icon-btn no-drag" aria-label="Cerrar">
-                  <X size={20} />
+                  <X size={16} />
                 </button>
               </div>
             </div>
