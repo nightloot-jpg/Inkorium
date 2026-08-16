@@ -45,6 +45,8 @@ interface PlayerStore {
   isOpen: boolean;
   isExpanded: boolean;
   isPlaying: boolean;
+  pendingPlay: boolean;
+  setPendingPlay: (pending: boolean) => void;
   currentSong: QueueItem | null;
   currentPlaylist: PlayerItem | null;
   currentIndex: number;
@@ -77,6 +79,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   isOpen: false,
   isExpanded: false,
   isPlaying: false,
+  pendingPlay: false,
   currentSong: null,
   currentPlaylist: null,
   currentIndex: 0,
@@ -86,21 +89,21 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   volume: 100,
   seekRequest: null,
 
-  playSong: (song, openUI = true) => set({ isOpen: openUI, currentSong: song, currentPlaylist: null, queue: [song], currentIndex: 0, isPlaying: true }),
-  playPlaylist: (playlist, queue, startIndex = 0, openUI = false) => set({ isOpen: openUI, currentPlaylist: playlist, queue, currentIndex: startIndex, currentSong: queue[startIndex] || null, isPlaying: true }),
-  pause: () => set({ isPlaying: false }),
-  resume: () => set({ isPlaying: true }),
+  playSong: (song, openUI = true) => set({ isOpen: openUI, currentSong: song, currentPlaylist: null, queue: [song], currentIndex: 0, isPlaying: false, pendingPlay: true }),
+  playPlaylist: (playlist, queue, startIndex = 0, openUI = false) => set({ isOpen: openUI, currentPlaylist: playlist, queue, currentIndex: startIndex, currentSong: queue[startIndex] || null, isPlaying: false, pendingPlay: true }),
+  pause: () => set({ isPlaying: false, pendingPlay: false }),
+  resume: () => set({ pendingPlay: true }),
   next: () => set((state) => {
     const nextIndex = state.currentIndex + 1;
     if (nextIndex < state.queue.length) {
-      return { currentIndex: nextIndex, currentSong: state.queue[nextIndex], isPlaying: true };
+      return { currentIndex: nextIndex, currentSong: state.queue[nextIndex], isPlaying: false, pendingPlay: true };
     }
     return state;
   }),
   previous: () => set((state) => {
     const prevIndex = state.currentIndex - 1;
     if (prevIndex >= 0) {
-      return { currentIndex: prevIndex, currentSong: state.queue[prevIndex], isPlaying: true };
+      return { currentIndex: prevIndex, currentSong: state.queue[prevIndex], isPlaying: false, pendingPlay: true };
     }
     return state;
   }),
@@ -109,9 +112,11 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   setVolume: (vol) => set({ volume: vol }),
   updateProgress: (currentTime, duration) => set({ currentTime, duration }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
+  setPendingPlay: (pendingPlay) => set({ pendingPlay }),
 
   openPlayer: () => set({ isOpen: true }),
-  closePlayer: () => set({ isOpen: false, isPlaying: false, currentSong: null, currentPlaylist: null, queue: [], currentTime: 0, isExpanded: false }),
+  closePlayer: () => set({ isOpen: false, isPlaying: false,
+  pendingPlay: false, currentSong: null, currentPlaylist: null, queue: [], currentTime: 0, isExpanded: false }),
   minimizePlayer: () => set({ isExpanded: false }),
   expandPlayer: () => set({ isExpanded: true }),
   setQueue: (queue) => set({ queue }),

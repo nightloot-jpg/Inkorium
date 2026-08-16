@@ -1,6 +1,6 @@
 import { parseISO8601Duration } from "./utils";
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ExternalLink, ChevronDown } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ExternalLink, ChevronDown, Loader2 } from 'lucide-react';
 import { usePlayerStore } from './lib/store';
 
 export function YoutubePlaylist({ media }: { media: any }) {
@@ -180,16 +180,16 @@ export function YoutubePlaylist({ media }: { media: any }) {
                                 className="ink-playlist-v2-btn-play" 
                                 aria-label="Play/Pause"
                                 onClick={() => {
-                                    if (isActivePlaylist && playerState.isPlaying) {
+                                    if (isActivePlaylist && (playerState.isPlaying || playerState.pendingPlay)) {
                                         playerState.pause();
-                                    } else if (isActivePlaylist && !playerState.isPlaying) {
+                                    } else if (isActivePlaylist && !playerState.isPlaying && !playerState.pendingPlay) {
                                         playerState.resume();
                                     } else {
                                         playPlaylistFull();
                                     }
                                 }}
                             >
-                                {isActivePlaylist && playerState.isPlaying ? (
+                                {isActivePlaylist && (playerState.isPlaying || playerState.pendingPlay) ? (
                                     <Pause size={24} fill="currentColor" />
                                 ) : (
                                     <Play size={24} fill="currentColor" />
@@ -245,7 +245,7 @@ export function YoutubePlaylist({ media }: { media: any }) {
                             className={`ink-playlist-v2-track group ${isActive ? 'active' : ''} ${i === visibleTracks.length - 1 ? 'last' : ''}`}
                             onClick={() => {
                                 if (isActive) {
-                                    if (playerState.isPlaying) {
+                                    if (playerState.isPlaying || playerState.pendingPlay) {
                                         playerState.pause();
                                     } else {
                                         playerState.resume();
@@ -258,7 +258,7 @@ export function YoutubePlaylist({ media }: { media: any }) {
                             <div className="ink-playlist-v2-track-num">
                                 <span className={isActive ? 'hidden' : 'group-hover:hidden'}>{i + 1}</span>
                                 <span className={isActive ? 'block text-primary' : 'hidden group-hover:block text-primary'}>
-                                    {isActive && playerState.isPlaying ? (
+                                    {isActive && (playerState.isPlaying || playerState.pendingPlay) ? (
                                         <Pause size={16} fill="currentColor" />
                                     ) : (
                                         <Play size={16} fill="currentColor" />
