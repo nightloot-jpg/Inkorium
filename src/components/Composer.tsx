@@ -388,7 +388,7 @@ export function Composer({
                       </label>
                   </div>
               ) : (
-                  <div className="preview-container">
+                  <div className="composer-media-preview">
                       <img src={photoPreview} alt="Preview" />
                       <button type="button" className="remove-btn" onClick={removePhoto}><X size={16}/></button>
                   </div>
@@ -407,7 +407,7 @@ export function Composer({
                       </label>
                   </div>
               ) : (
-                  <div className="preview-container video-preview-container">
+                  <div className="composer-media-preview video-preview-container">
                       <video src={videoPreview} controls />
                       <div className="video-info">
                           <span>{videoFile?.name}</span>
