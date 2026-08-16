@@ -10,6 +10,7 @@ import { getDisplayName, formatPostTime } from "./utils";
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, MoreVertical, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send } from "lucide-react";
 import "./styles.css";
 import { YoutubePlaylist } from './YoutubePlaylist';
+import { SingleSongPlayer } from './components/SingleSongPlayer';
 
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
 type Post = { id: string; text: string; time: string; likes: number; authorName?: string; authorAvatarUrl?: string | null; author_id: string; target_profile_id?: string | null; targetName?: string; shared_post_id?: string | null; originalPost?: { text: string; authorName: string; authorAvatarUrl?: string | null; time: string; author_id: string; }; commentsCount?: number; media_data?: any; poll_id?: string; };
@@ -551,27 +552,7 @@ function PostMedia({ media, pollId, session }: { media?: any, pollId?: string, s
     }
     
     if (media?.type === "youtube_video" || media?.type === "youtube_song") {
-        return (
-            <div className="post-song-card hover-bg" onClick={() => {
-                usePlayerStore.getState().playSong({
-                    video_id: media.youtube_id || media.video_id,
-                    title: media.title,
-                    channel_title: media.channel_title,
-                    thumbnail: media.thumbnail
-                }, false);
-            }} style={{display: 'flex', gap: 16, padding: 12, border: '1px solid var(--border)', borderRadius: 8, marginTop: 12, cursor: 'pointer', alignItems: 'center'}}>
-                <div style={{position: 'relative', width: 64, height: 64, borderRadius: 8, overflow: 'hidden'}}>
-                    <img src={media.thumbnail || `https://i.ytimg.com/vi/${media.youtube_id || media.video_id}/default.jpg`} alt={media.title} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-                    <div style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.3)'}}>
-                        <Play fill="white" color="white" size={24} />
-                    </div>
-                </div>
-                <div className="song-info" style={{flex: 1, minWidth: 0}}>
-                    <strong style={{display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '1.1em'}}>{media.title || "Canción de YouTube"}</strong>
-                    <span style={{color: 'var(--text-light)', fontSize: '0.9em'}}>{media.channel_title || ""}</span>
-                </div>
-            </div>
-        );
+        return <SingleSongPlayer media={{...media, youtube_id: media.youtube_id || media.video_id}} />;
     }
 
     if (media?.type === "youtube_playlist") {
