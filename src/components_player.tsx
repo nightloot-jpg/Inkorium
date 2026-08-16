@@ -160,9 +160,19 @@ export function FloatingMusicPlayer() {
 
   useEffect(() => {
      if (isReady && playerRef.current) {
-         playerRef.current.setVolume(playerState.volume);
+         if (playerState.isMuted) {
+             console.log('[MusicPlayer] mute');
+             playerRef.current.mute();
+             // Some youtube iframe API might need to see volume set to 0 even on mute, but mute is standard
+         } else {
+             console.log('[MusicPlayer] unMute');
+             playerRef.current.unMute();
+             console.log('[MusicPlayer] Volume:', playerState.volume);
+             console.log('[MusicPlayer] setVolume(' + playerState.volume + ')');
+             playerRef.current.setVolume(playerState.volume);
+         }
      }
-  }, [playerState.volume, isReady]);
+  }, [playerState.volume, playerState.isMuted, isReady]);
 
     // Create a persistent container for the YouTube iframe that doesn't get unmounted
   // when the player expands or minimizes.
@@ -227,7 +237,9 @@ export function FloatingMusicPlayer() {
                 </div>
 
                 <div className="volume-control">
-                   {playerState.volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                   <button onClick={() => playerState.toggleMute()} className="icon-btn-vol" style={{background:'none', border:'none', color:'inherit', cursor:'pointer'}}>
+                     {playerState.isMuted || playerState.volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                   </button>
                    <input
                      type="range"
                      min="0" max="100"
@@ -293,7 +305,9 @@ export function FloatingMusicPlayer() {
 
             <div className="player-right">
               <div className="volume-control-small">
-                 {playerState.volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                 <button onClick={() => playerState.toggleMute()} className="icon-btn-vol" style={{background:'none', border:'none', color:'inherit', cursor:'pointer'}}>
+                   {playerState.isMuted || playerState.volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                 </button>
                  <input
                    type="range"
                    min="0" max="100"
