@@ -769,7 +769,7 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
       {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
     </div>
   </button>
-  <button className="icon-button" onClick={() => playerState.isOpen ? playerState.closePlayer() : (playerState.currentSong && playerState.openPlayer())} aria-label="Reproductor">♫</button>
+  <button className="icon-button" onClick={() => playerState.isOpen ? playerState.closePlayer() : playerState.openPlayer()} aria-label="Reproductor">♫</button>
   <button className="user-chip" onClick={() => setUserMenu(!userMenu)}>
     <span className="avatar small">{username[0].toUpperCase()}</span>{username}
   </button>

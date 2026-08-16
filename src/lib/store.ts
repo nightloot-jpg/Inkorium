@@ -134,8 +134,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   setPendingPlay: (pendingPlay) => set({ pendingPlay }),
 
   openPlayer: () => set({ isOpen: true }),
-  closePlayer: () => set({ isOpen: false, isPlaying: false,
-  pendingPlay: false, currentSong: null, currentPlaylist: null, queue: [], currentTime: 0, isExpanded: false }),
+  closePlayer: () => set({ isOpen: false, isExpanded: false }),
   minimizePlayer: () => set({ isExpanded: false }),
   expandPlayer: () => set({ isExpanded: true }),
   setQueue: (queue) => set({ queue }),

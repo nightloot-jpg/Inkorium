@@ -1,183 +1,36 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { usePlayerStore } from './lib/store';
-import { Play, Pause, SkipBack, SkipForward, X, Maximize2, Minimize2, Volume2, VolumeX, ListMusic, GripVertical, Music } from 'lucide-react';
+import re
 
-declare global {
-  interface Window {
-    YT: any;
-    onYouTubeIframeAPIReady: () => void;
-  }
-}
+with open('src/components_player.tsx', 'r') as f:
+    content = f.read()
 
-export function formatTime(seconds: number) {
-  if (isNaN(seconds)) return '0:00';
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s < 10 ? '0' : ''}${s}`;
-}
+# Fix the broken return statement replacement. The previous script messed up due to backslashes/quotes.
 
-export function FloatingMusicPlayer() {
-  const playerState = usePlayerStore();
-  const playerRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+# Load the backup or reset to HEAD to do it cleanly
+import subprocess
+subprocess.run(['git', 'checkout', 'src/components_player.tsx'])
 
-  const [isReady, setIsReady] = useState(false);
-  const [showQueue, setShowQueue] = useState(false);
+with open('src/components_player.tsx', 'r') as f:
+    content = f.read()
 
-  useEffect(() => {
-    if (!window.YT) {
-      console.log('[MusicPlayer] YouTube API loaded');
-      const tag = document.createElement('script');
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-    }
-  }, []);
+if 'GripVertical' not in content:
+    content = content.replace('ListMusic } from', 'ListMusic, GripVertical, Music } from')
 
-  useEffect(() => {
-    // YT API init
-    const initPlayer = () => {
-      if (window.YT && window.YT.Player && !playerRef.current) {
-        console.log('[MusicPlayer] Player created');
-        playerRef.current = new window.YT.Player('youtube-player-container', {
-          height: '0',
-          width: '0',
-          playerVars: {
-            autoplay: 1,
-            controls: 0,
-            disablekb: 1,
-            fs: 0,
-            modestbranding: 1,
-            rel: 0
-          },
-          events: {
-            onReady: () => {
-              console.log('[MusicPlayer] Player ready');
-              setIsReady(true);
-              if (usePlayerStore.getState().volume !== undefined) {
-                playerRef.current.setVolume(usePlayerStore.getState().volume);
-              }
-              // If there's a pending play on ready, trigger it
-              if (usePlayerStore.getState().pendingPlay && usePlayerStore.getState().currentSong) {
-                const vid = usePlayerStore.getState().currentSong?.video_id;
-                console.log('[MusicPlayer] loadVideoById (onReady):', vid);
-                playerRef.current.loadVideoById(vid);
-              }
-            },
-            onStateChange: (event: any) => {
-              // 1: playing, 2: paused, 0: ended, 3: buffering
-              if (event.data === 1) {
-                console.log('[MusicPlayer] YouTube state: PLAYING');
-                usePlayerStore.getState().setIsPlaying(true);
-                usePlayerStore.getState().setPendingPlay(false);
-                const current = playerRef.current.getCurrentTime();
-                const dur = playerRef.current.getDuration();
-                if (current !== undefined && dur !== undefined) usePlayerStore.getState().updateProgress(current, dur);
-              } else if (event.data === 2) {
-                console.log('[MusicPlayer] YouTube state: PAUSED');
-                usePlayerStore.getState().setIsPlaying(false);
-              } else if (event.data === 3) {
-                console.log('[MusicPlayer] YouTube state: BUFFERING');
-              } else if (event.data === 0) {
-                console.log('[MusicPlayer] YouTube state: ENDED');
-                usePlayerStore.getState().next();
-              }
-            }
-          }
-        });
-      }
-    };
+# Find the start of the return statement
+start_idx = content.find('return (')
+if start_idx == -1:
+    print("Could not find 'return ('")
+    exit(1)
 
-    if (window.YT && window.YT.Player) {
-      initPlayer();
-    } else {
-      window.onYouTubeIframeAPIReady = initPlayer;
-    }
+# we want to replace from 'return (' to the end of the FloatingMusicPlayer function,
+# which is right before the last closing brace in that file or right before the next export/function.
+# Looking at the file, FloatingMusicPlayer is the main function.
+# We can just use the provided new return statement and replace it cleanly using regex.
 
-    let pollingInterval: any;
-    if (isReady) {
-      pollingInterval = setInterval(() => {
-        if (playerRef.current && typeof playerRef.current.getPlayerState === 'function') {
-          try {
-            const state = playerRef.current.getPlayerState();
-            // 1 === playing
-            if (state === 1) {
-              const currentTime = playerRef.current.getCurrentTime();
-              const duration = playerRef.current.getDuration();
-              if (currentTime !== undefined && duration !== undefined) {
-                usePlayerStore.getState().updateProgress(currentTime, duration);
-              }
-            }
-          } catch (e) {}
-        }
-      }, 250);
-    }
+pattern = re.compile(r'return\s*\(\s*<>\s*\{\/\* The YouTube iframe container.*?\);\s*\}', re.DOTALL)
 
-    return () => {
-      if (pollingInterval) clearInterval(pollingInterval);
-    };
-  }, [isReady]); // We deliberately don't want to re-run this on every state change
-
-
-  useEffect(() => {
-    if (isReady && playerRef.current && playerState.currentSong) {
-      const currentVideoId = playerState.currentSong.video_id;
-
-      try {
-        const videoData = playerRef.current.getVideoData();
-        const state = playerRef.current.getPlayerState();
-        const isSameVideo = videoData && videoData.video_id === currentVideoId;
-
-        if (playerState.pendingPlay) {
-           console.log('[MusicPlayer] current song:', currentVideoId);
-           if (!isSameVideo) {
-              console.log('[MusicPlayer] Video ID:', currentVideoId);
-              console.log('[MusicPlayer] loadVideoById:', currentVideoId);
-              playerRef.current.loadVideoById(currentVideoId);
-           } else {
-              if (state !== 1) {
-                 console.log('[MusicPlayer] playVideo()');
-                 playerRef.current.playVideo();
-              }
-           }
-        } else if (!playerState.isPlaying && !playerState.pendingPlay && isSameVideo && state === 1) {
-           playerRef.current.pauseVideo();
-        }
-      } catch (e) {
-         console.error('[MusicPlayer] Error interacting with player:', e);
-      }
-    }
-  }, [playerState.currentSong?.video_id, playerState.pendingPlay, playerState.isPlaying, isReady]);
-
-
-
-  useEffect(() => {
-     if (isReady && playerRef.current && playerState.seekRequest !== null) {
-         playerRef.current.seekTo(playerState.seekRequest, true);
-         playerState.clearSeekRequest();
-     }
-  }, [playerState.seekRequest, isReady]);
-
-  useEffect(() => {
-     if (isReady && playerRef.current) {
-         if (playerState.isMuted) {
-             console.log('[MusicPlayer] mute');
-             playerRef.current.mute();
-             // Some youtube iframe API might need to see volume set to 0 even on mute, but mute is standard
-         } else {
-             console.log('[MusicPlayer] unMute');
-             playerRef.current.unMute();
-             console.log('[MusicPlayer] Volume:', playerState.volume);
-             console.log('[MusicPlayer] setVolume(' + playerState.volume + ')');
-             playerRef.current.setVolume(playerState.volume);
-         }
-     }
-  }, [playerState.volume, playerState.isMuted, isReady]);
-
-    // Create a persistent container for the YouTube iframe that doesn't get unmounted
-  // when the player expands or minimizes.
-  return (
+new_return = """return (
     <>
+      {/* The YouTube iframe container must be entirely static in the DOM to avoid re-creation */}
       <div id="youtube-player-container" style={{ position: 'fixed', left: '-9999px', top: '-9999px', width: '1px', height: '1px' }}></div>
 
       {playerState.isOpen && (
@@ -185,7 +38,7 @@ export function FloatingMusicPlayer() {
           {!playerState.currentSong ? (
              <div className="player-empty-state">
                 <div className="drag-handle"><GripVertical size={16} /></div>
-                <div className="empty-content no-drag">
+                <div className="empty-content">
                   <Music size={24} style={{ opacity: 0.5, marginBottom: 8 }} />
                   <span>No hay ninguna canción</span>
                   <small>Selecciona una canción</small>
@@ -451,3 +304,9 @@ function DraggablePlayerContainer({ children, isExpanded }: { children: React.Re
     </div>
   );
 }
+"""
+
+content = pattern.sub(new_return.replace('\\', '\\\\'), content)
+
+with open('src/components_player.tsx', 'w') as f:
+    f.write(content)
