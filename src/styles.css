@@ -1287,3 +1287,40 @@ button:disabled { cursor: wait; opacity: .65; }
 .single-song-player__progress .progress-bar-container:hover .progress-thumb {
     opacity: 1;
 }
+
+
+/* Spin animation for loading state */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.single-song-player__progress-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border);
+    height: 4px;
+    border-radius: 2px;
+    outline: none;
+}
+
+.single-song-player__progress-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.single-song-player__progress-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}

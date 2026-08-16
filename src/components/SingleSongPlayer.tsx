@@ -92,26 +92,18 @@ export function SingleSongPlayer({ media }: { media: any }) {
 
                     <div className="single-song-player__progress">
                         <span className="time">{formatTime(playerState.currentTime)}</span>
-                        <div
-                            className="progress-bar-container group"
-                            onClick={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const x = e.clientX - rect.left;
-                                const percentage = Math.max(0, Math.min(1, x / rect.width));
-                                playerState.seek(percentage * playerState.duration);
+                        <input
+                            type="range"
+                            min="0"
+                            max={playerState.duration || 100}
+                            step="0.1"
+                            value={playerState.currentTime || 0}
+                            onChange={(e) => {
+                                playerState.seek(parseFloat(e.target.value));
                             }}
-                        >
-                            <div className="progress-bg">
-                                <div
-                                    className="progress-fill"
-                                    style={{ width: `${(playerState.currentTime / (playerState.duration || 1)) * 100}%` }}
-                                ></div>
-                            </div>
-                            <div
-                                className="progress-thumb group-hover:opacity-100"
-                                style={{ left: `${(playerState.currentTime / (playerState.duration || 1)) * 100}%` }}
-                            ></div>
-                        </div>
+                            className="single-song-player__progress-slider"
+                            style={{ flex: 1, cursor: 'pointer' }}
+                        />
                         <span className="time">{formatTime(playerState.duration)}</span>
                     </div>
 
@@ -128,7 +120,13 @@ export function SingleSongPlayer({ media }: { media: any }) {
                                 className="play-btn"
                                 onClick={handlePlayPause}
                             >
-                                {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+                                {isActiveSong && playerState.pendingPlay ? (
+                                    <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid white', borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }} />
+                                ) : isPlaying ? (
+                                    <Pause size={24} fill="currentColor" color="currentColor" />
+                                ) : (
+                                    <Play size={24} fill="currentColor" color="currentColor" style={{ marginLeft: 2 }} />
+                                )}
                             </button>
                             <button
                                 className="icon-btn"
