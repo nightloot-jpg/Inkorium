@@ -26,6 +26,7 @@ export function FloatingMusicPlayer() {
 
   useEffect(() => {
     if (!window.YT) {
+      console.log('[MusicPlayer] YouTube API loaded');
       const tag = document.createElement('script');
       tag.src = "https://www.youtube.com/iframe_api";
       const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -37,6 +38,7 @@ export function FloatingMusicPlayer() {
     // YT API init
     const initPlayer = () => {
       if (window.YT && window.YT.Player && !playerRef.current) {
+        console.log('[MusicPlayer] Player created');
         playerRef.current = new window.YT.Player('youtube-player-container', {
           height: '0',
           width: '0',
@@ -50,21 +52,34 @@ export function FloatingMusicPlayer() {
           },
           events: {
             onReady: () => {
+              console.log('[MusicPlayer] Player ready');
               setIsReady(true);
-              if (playerState.volume !== undefined) {
-                playerRef.current.setVolume(playerState.volume);
+              if (usePlayerStore.getState().volume !== undefined) {
+                playerRef.current.setVolume(usePlayerStore.getState().volume);
+              }
+              // If there's a pending play on ready, trigger it
+              if (usePlayerStore.getState().pendingPlay && usePlayerStore.getState().currentSong) {
+                const vid = usePlayerStore.getState().currentSong?.video_id;
+                console.log('[MusicPlayer] loadVideoById (onReady):', vid);
+                playerRef.current.loadVideoById(vid);
               }
             },
             onStateChange: (event: any) => {
-              // 1: playing, 2: paused, 0: ended
+              // 1: playing, 2: paused, 0: ended, 3: buffering
               if (event.data === 1) {
+                console.log('[MusicPlayer] YouTube state: PLAYING');
                 usePlayerStore.getState().setIsPlaying(true);
+                usePlayerStore.getState().setPendingPlay(false);
                 const current = playerRef.current.getCurrentTime();
                 const dur = playerRef.current.getDuration();
-                if (current && dur) usePlayerStore.getState().updateProgress(current, dur);
+                if (current !== undefined && dur !== undefined) usePlayerStore.getState().updateProgress(current, dur);
               } else if (event.data === 2) {
+                console.log('[MusicPlayer] YouTube state: PAUSED');
                 usePlayerStore.getState().setIsPlaying(false);
+              } else if (event.data === 3) {
+                console.log('[MusicPlayer] YouTube state: BUFFERING');
               } else if (event.data === 0) {
+                console.log('[MusicPlayer] YouTube state: ENDED');
                 usePlayerStore.getState().next();
               }
             }
@@ -103,28 +118,37 @@ export function FloatingMusicPlayer() {
     };
   }, [isReady]); // We deliberately don't want to re-run this on every state change
 
+
   useEffect(() => {
     if (isReady && playerRef.current && playerState.currentSong) {
       const currentVideoId = playerState.currentSong.video_id;
+
       try {
         const videoData = playerRef.current.getVideoData();
         const state = playerRef.current.getPlayerState();
-        if (videoData && videoData.video_id === currentVideoId) {
-          if (playerState.isPlaying && state !== 1) {
-             playerRef.current.playVideo();
-          } else if (!playerState.isPlaying && state === 1) {
-             playerRef.current.pauseVideo();
-          }
-        } else {
-          if (playerState.isPlaying) {
-             playerRef.current.loadVideoById(currentVideoId);
-          } else {
-             playerRef.current.cueVideoById(currentVideoId);
-          }
+        const isSameVideo = videoData && videoData.video_id === currentVideoId;
+
+        if (playerState.pendingPlay) {
+           console.log('[MusicPlayer] current song:', currentVideoId);
+           if (!isSameVideo) {
+              console.log('[MusicPlayer] Video ID:', currentVideoId);
+              console.log('[MusicPlayer] loadVideoById:', currentVideoId);
+              playerRef.current.loadVideoById(currentVideoId);
+           } else {
+              if (state !== 1) {
+                 console.log('[MusicPlayer] playVideo()');
+                 playerRef.current.playVideo();
+              }
+           }
+        } else if (!playerState.isPlaying && !playerState.pendingPlay && isSameVideo && state === 1) {
+           playerRef.current.pauseVideo();
         }
-      } catch (e) {}
+      } catch (e) {
+         console.error('[MusicPlayer] Error interacting with player:', e);
+      }
     }
-  }, [playerState.currentSong?.video_id, playerState.isPlaying, isReady]);
+  }, [playerState.currentSong?.video_id, playerState.pendingPlay, playerState.isPlaying, isReady]);
+
 
 
   useEffect(() => {
