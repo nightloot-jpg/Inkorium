@@ -1,0 +1,201 @@
+27:function Composer({
+28-  session,
+29-  profile,
+30-  onPublish,
+31-  targetProfileId,
+32-  targetName
+33-}: {
+34-  session: Session;
+35-  profile: ProfileData | null;
+36-  onPublish: (post: Post) => void;
+37-  targetProfileId?: string;
+38-  targetName?: string
+39-}) {
+40-  const [draft, setDraft] = useState("");
+41-  const [publishing, setPublishing] = useState(false);
+42-  const [error, setError] = useState("");
+43-  
+44-  const [mode, setMode] = useState<"text" | "photo" | "video" | "music" | "poll" | "news">("text");
+45-  const [photoFile, setPhotoFile] = useState<File | null>(null);
+46-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+47-  
+48-  const [videoUrl, setVideoUrl] = useState("");
+49-  const [videoFile, setVideoFile] = useState<File | null>(null);
+50-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+51-  
+52-  const [musicTab, setMusicTab] = useState<'canciones' | 'playlists'>('canciones');
+53-  const [youtubeSearch, setYoutubeSearch] = useState("");
+54-  const [youtubeResults, setYoutubeResults] = useState<any[]>([]);
+55-  const [youtubeSearching, setYoutubeSearching] = useState(false);
+56-  const [youtubeSelected, setYoutubeSelected] = useState<any | null>(null);
+57-  const [youtubeHasKey, setYoutubeHasKey] = useState(!!import.meta.env.VITE_YOUTUBE_API_KEY);
+58-  
+59-  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+60-  
+61-  const [newsUrl, setNewsUrl] = useState("");
+62-  const [newsTitle, setNewsTitle] = useState("");
+63-
+64-  const username = getDisplayName(profile, session.user.email);
+65-  const initials = username.slice(0, 2).toUpperCase();
+66-  const avatarUrl = profile?.avatar_url;
+67-
+68-  const isOwnProfile = !targetProfileId || targetProfileId === session.user.id;
+69-
+70-  const placeholderText = targetProfileId && !isOwnProfile && targetName
+71-    ? `¿Qué estás pensando, ${targetName}?`
+72-    : `¿Qué estás pensando, ${username}?`;
+73-
+74-  const buttonText = targetProfileId && !isOwnProfile ? "Firmar" : "Publicar";
+75-
+76-  async function searchYoutube(e: React.FormEvent) {
+77-    e.preventDefault();
+78-    if (!youtubeSearch.trim() || !youtubeHasKey) return;
+79-    setYoutubeSearching(true);
+80-    setError("");
+81-    try {
+82-      const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+83-      // Search for both videos and playlists
+84-      const ytType = musicTab === 'canciones' ? 'video' : 'playlist';
+85-      const category = musicTab === 'canciones' ? '&videoCategoryId=10' : '';
+86-      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(youtubeSearch)}&type=${ytType}${category}&key=${apiKey}`);
+87-      const data = await res.json();
+88-      if (data.error) throw new Error(data.error.message);
+89-      setYoutubeResults(data.items || []);
+90-    } catch (err: any) {
+91-      setError("Error al buscar en YouTube: " + err.message);
+92-    }
+93-    setYoutubeSearching(false);
+94-  }
+95-
+96-  async function handlePhotoSelect(e: ChangeEvent<HTMLInputElement>) {
+97-    const file = e.target.files?.[0];
+98-    if (!file) return;
+99-    if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; }
+100-    if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; }
+101-    setPhotoFile(file);
+102-    const url = URL.createObjectURL(file);
+103-    setPhotoPreview(url);
+104-    setError("");
+105-  }
+106-
+107-  
+108-  async function handleVideoSelect(e: ChangeEvent<HTMLInputElement>) {
+109-    const file = e.target.files?.[0];
+110-    if (!file) return;
+111-    if (!file.type.startsWith("video/")) { setError("Selecciona un vídeo válido."); return; }
+112-    if (file.size > 50 * 1024 * 1024) { setError("El vídeo no puede superar los 50 MB."); return; }
+113-    setVideoFile(file);
+114-    const url = URL.createObjectURL(file);
+115-    setVideoPreview(url);
+116-    setError("");
+117-  }
+118-
+119-  async function publish(event: FormEvent) {
+120-    event.preventDefault();
+121-    const contentText = draft.trim();
+122-    if ((!contentText && mode === "text") || publishing) return;
+123-    setPublishing(true);
+124-    setError("");
+125-    
+126-    let media_data: any = null;
+127-    let poll_id: string | undefined = undefined;
+128-    
+129-    if (mode === "photo" && photoFile) {
+130-        const extension = photoFile.name.split(".").pop()?.toLowerCase() || "jpg";
+131-        const path = `${session.user.id}/post-${Date.now()}.${extension}`;
+132-        const { error: uploadError } = await supabase.storage.from("post-media").upload(path, photoFile, { cacheControl: "3600", upsert: true, contentType: photoFile.type });
+133-        if (uploadError) {
+134-          setError("Error al subir foto (¿existe el bucket 'post-media'?): " + uploadError.message);
+135-          setPublishing(false);
+136-          return;
+137-        }
+138-        const { data: publicData } = supabase.storage.from("post-media").getPublicUrl(path);
+139-        media_data = { type: "photo", url: publicData.publicUrl };
+140-    } else if (mode === "video") {
+141-        if (videoFile) {
+142-            const extension = videoFile.name.split(".").pop()?.toLowerCase() || "mp4";
+143-            const path = `${session.user.id}/video-${Date.now()}.${extension}`;
+144-            const { error: uploadError } = await supabase.storage.from("post-media").upload(path, videoFile, { cacheControl: "3600", upsert: true, contentType: videoFile.type });
+145-            if (uploadError) {
+146-              setError("Error al subir vídeo: " + uploadError.message);
+147-              setPublishing(false);
+148-              return;
+149-            }
+150-            const { data: publicData } = supabase.storage.from("post-media").getPublicUrl(path);
+151-            media_data = { type: "video", url: publicData.publicUrl };
+152-        } else if (videoUrl) {
+153-            media_data = { type: "video", url: videoUrl };
+154-        }
+155-    
+156-    } else if (mode === "music" && youtubeSelected) {
+157-        const isPlaylist = youtubeSelected.id.kind === 'youtube#playlist';
+158-        media_data = { 
+159-            type: isPlaylist ? "youtube_playlist" : "youtube_song",
+160-            youtube_id: isPlaylist ? youtubeSelected.id.playlistId : youtubeSelected.id.videoId,
+161-            title: youtubeSelected.snippet.title,
+162-            thumbnail: youtubeSelected.snippet.thumbnails?.high?.url || youtubeSelected.snippet.thumbnails?.default?.url
+163-        };
+164-    } else if (mode === "news" && newsUrl) {
+165-        media_data = { type: "news", url: newsUrl, title: newsTitle };
+166-    } else if (mode === "poll") {
+167-        const validOptions = pollOptions.filter(o => o.trim().length > 0);
+168-        if (validOptions.length < 2) {
+169-            setError("Una encuesta necesita al menos 2 opciones.");
+170-            setPublishing(false);
+171-            return;
+172-        }
+173-        if (!contentText) {
+174-            setError("Debes escribir una pregunta en el estado.");
+175-            setPublishing(false);
+176-            return;
+177-        }
+178-        // Insert poll
+179-        const { data: pollData, error: pollError } = await supabase.from("polls").insert({
+180-            question: contentText,
+181-            author_id: session.user.id
+182-        }).select("id").single();
+183-        
+184-        if (pollError) {
+185-            setError("Error al crear encuesta: " + pollError.message);
+186-            setPublishing(false);
+187-            return;
+188-        }
+189-        poll_id = pollData.id;
+190-        
+191-        // Insert options
+192-        const optionsToInsert = validOptions.map((opt, i) => ({
+193-            poll_id: pollData.id,
+194-            text: opt.trim(),
+195-            order_index: i
+196-        }));
+197-        await supabase.from("poll_options").insert(optionsToInsert);
+198-    }
+199-
+200-    const { data, error: submitError } = await supabase.from("posts").insert({
+201-      author_id: session.user.id,
+202-      content: contentText,
+203-      visibility: "public",
+204-      target_profile_id: targetProfileId ? targetProfileId : null,
+205-      media_data,
+206-      poll_id
+207-    }).select("id, content, created_at, media_data, poll_id").single();
+208-
+209-    if (submitError) {
+210-      console.error("Error al publicar:", submitError);
+211-      setError(submitError.message || "Error al publicar");
+212-    } else if (data) {
+213-      onPublish({
+214-        id: data.id,
+215-        text: data.content ?? contentText,
+216-        time: "ahora",
+217-        likes: 0,
+218-        authorName: username,
+219-        author_id: session.user.id,
+220-        target_profile_id: targetProfileId ? targetProfileId : null, shared_post_id: null,
+221-        targetName: targetName,
+222-        media_data: data.media_data,
+223-        poll_id: data.poll_id
+224-      });
+225-      setDraft("");
+226-      setMode("text");
+227-      setPhotoFile(null);

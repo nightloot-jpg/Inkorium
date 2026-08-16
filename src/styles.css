@@ -1803,3 +1803,501 @@ button:disabled { cursor: wait; opacity: .65; }
     display: none; /* Hide volume slider on very small screens to save space */
   }
 }
+
+/* COMPOSER STYLES */
+.composer-container {
+    padding: 16px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 10;
+}
+
+.composer-top {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.composer-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 15px;
+    padding: 8px 0;
+    min-height: 40px;
+    color: var(--text);
+    font-family: inherit;
+    background: transparent;
+}
+
+.composer-input::placeholder {
+    color: #8c9eb3;
+}
+
+.new-composer-divider {
+    height: 1px;
+    background: #eef2f6;
+    margin: 12px -16px;
+}
+
+.composer-toolbar-container {
+    overflow-x: auto;
+    margin: 0 -16px;
+    padding: 0 16px;
+}
+
+.new-composer-tools {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.composer-tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 20px;
+    color: #68788c;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.composer-tool-btn:hover {
+    background: #f4f7fb;
+    color: #344457;
+}
+
+.composer-tool-btn.active {
+    color: #075bb3;
+    background: #edf2f8;
+}
+
+.composer-more-wrapper {
+    position: relative;
+}
+
+.composer-more-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #fff;
+    border: 1px solid #eef2f6;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 8px 0;
+    min-width: 180px;
+    z-index: 100;
+}
+
+.composer-more-menu button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    color: #344457;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.composer-more-menu button:hover {
+    background: #f4f7fb;
+}
+
+.soon-badge {
+    background: #eef2f6;
+    color: #68788c;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.new-composer-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 4px;
+}
+
+.new-composer-privacy {
+    position: relative;
+}
+
+.privacy-trigger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #68788c;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.privacy-trigger:hover {
+    background: #f4f7fb;
+}
+
+.privacy-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #fff;
+    border: 1px solid #eef2f6;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 8px;
+    min-width: 220px;
+    z-index: 100;
+    margin-top: 4px;
+}
+
+.privacy-dropdown button {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.privacy-dropdown button:hover {
+    background: #f4f7fb;
+}
+
+.privacy-dropdown button svg {
+    color: #075bb3;
+    margin-top: 2px;
+}
+
+.privacy-option-text strong {
+    display: block;
+    color: #1f2e40;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.privacy-option-text small {
+    display: block;
+    color: #68788c;
+    font-size: 12px;
+}
+
+.new-composer-publish {
+    background: #075bb3;
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.new-composer-publish:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Composer Extended Modes */
+.composer-extended {
+    margin-top: 12px;
+    padding: 0 4px;
+}
+
+.file-upload-box {
+    position: relative;
+    border: 2px dashed #eef2f6;
+    border-radius: 8px;
+    background: #fcfcfd;
+    transition: all 0.2s;
+}
+
+.file-upload-box:hover {
+    border-color: #075bb3;
+    background: #f4f7fb;
+}
+
+.file-upload-box input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-upload-box label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    gap: 8px;
+    color: #68788c;
+    font-weight: 500;
+    pointer-events: none;
+}
+
+.preview-container {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-container img {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+}
+
+.video-preview-container video {
+    max-width: 100%;
+    max-height: 300px;
+}
+
+.video-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 8px 12px;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.remove-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.remove-btn:hover {
+    background: rgba(0,0,0,0.8);
+}
+
+.music-tabs {
+    display: flex;
+    border-bottom: 1px solid #eef2f6;
+    margin-bottom: 12px;
+}
+
+.music-tabs button {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 10px;
+    font-weight: 600;
+    color: #68788c;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.music-tabs button.active {
+    color: #075bb3;
+    border-bottom-color: #075bb3;
+}
+
+.music-search-form {
+    display: flex;
+    gap: 8px;
+}
+
+.music-search-form input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #eef2f6;
+    border-radius: 20px;
+    outline: none;
+    background: #f4f7fb;
+}
+
+.music-search-form button {
+    background: #075bb3;
+    color: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.music-results {
+    margin-top: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #eef2f6;
+    border-radius: 8px;
+}
+
+.music-result-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #eef2f6;
+    text-align: left;
+    cursor: pointer;
+}
+
+.music-result-item:last-child {
+    border-bottom: none;
+}
+
+.music-result-item:hover {
+    background: #f4f7fb;
+}
+
+.music-result-item img {
+    width: 48px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.music-result-info strong {
+    display: block;
+    font-size: 13px;
+    color: #1f2e40;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.music-result-info span {
+    display: block;
+    font-size: 11px;
+    color: #68788c;
+}
+
+.music-selected {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    background: #f4f7fb;
+    border-radius: 8px;
+    position: relative;
+}
+
+.music-selected img {
+    width: 56px;
+    height: 42px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.music-selected-info strong {
+    display: block;
+    font-size: 14px;
+    color: #1f2e40;
+}
+
+.music-selected-info span {
+    display: block;
+    font-size: 12px;
+    color: #68788c;
+}
+
+.poll-option-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.poll-option-input input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #eef2f6;
+    border-radius: 6px;
+    outline: none;
+}
+
+.poll-option-input button {
+    background: transparent;
+    border: none;
+    color: #8c9eb3;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.poll-option-input button:hover {
+    color: red;
+}
+
+.add-option-btn {
+    padding: 4px 0;
+}
+
+.news-mode input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #eef2f6;
+    border-radius: 6px;
+    outline: none;
+}
+
+.private-users-selector {
+    background: #fcfcfd;
+    border: 1px solid #eef2f6;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+}
+
+.private-users-search input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #eef2f6;
+    border-radius: 20px;
+    outline: none;
+    background: white;
+}
+

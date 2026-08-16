@@ -1,3 +1,2 @@
 #!/bin/bash
-# Tool replacement for plan step complete
-echo "Plan step completed!"
+python3 plan_step_complete.py
