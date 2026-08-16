@@ -18,6 +18,7 @@ export function SingleSongPlayer({ media }: { media: any }) {
     // Format the duration string
     // media.duration might be available from the API, if not we fallback
     // Since we don't have media.duration in the exact same way always, let's check
+    const progressPercentage = playerState.duration ? (playerState.currentTime / playerState.duration) * 100 : 0;
     const displayDuration = isActiveSong ? formatTime(playerState.duration) : (media.duration || '');
 
     const handlePlayPause = (e: React.MouseEvent) => {
@@ -72,7 +73,7 @@ export function SingleSongPlayer({ media }: { media: any }) {
                     {media.duration || ''}
                 </div>
                 <button className="single-song-player__play-btn" onClick={handlePlayPause}>
-                    <Play size={24} fill="currentColor" />
+                    <Play size={24} fill="white" />
                 </button>
             </div>
         );
@@ -102,7 +103,11 @@ export function SingleSongPlayer({ media }: { media: any }) {
                                 playerState.seek(parseFloat(e.target.value));
                             }}
                             className="single-song-player__progress-slider"
-                            style={{ flex: 1, cursor: 'pointer' }}
+                            style={{
+                                flex: 1,
+                                cursor: 'pointer',
+                                background: `linear-gradient(to right, #003f87 ${progressPercentage}%, #e2e2e2 ${progressPercentage}%)`
+                            }}
                         />
                         <span className="time">{formatTime(playerState.duration)}</span>
                     </div>
@@ -114,7 +119,7 @@ export function SingleSongPlayer({ media }: { media: any }) {
                                 onClick={(e) => { e.stopPropagation(); playerState.previous(); }}
                                 disabled={playerState.currentIndex === 0}
                             >
-                                <SkipBack size={20} fill="currentColor" />
+                                <SkipBack size={20} fill="white" />
                             </button>
                             <button
                                 className="play-btn"
@@ -123,9 +128,9 @@ export function SingleSongPlayer({ media }: { media: any }) {
                                 {isActiveSong && playerState.pendingPlay ? (
                                     <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid white', borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }} />
                                 ) : isPlaying ? (
-                                    <Pause size={24} fill="currentColor" color="currentColor" />
+                                    <Pause size={24} fill="white" color="white" />
                                 ) : (
-                                    <Play size={24} fill="currentColor" color="currentColor" style={{ marginLeft: 2 }} />
+                                    <Play size={24} fill="white" color="white" style={{ marginLeft: 2 }} />
                                 )}
                             </button>
                             <button
@@ -133,7 +138,7 @@ export function SingleSongPlayer({ media }: { media: any }) {
                                 onClick={(e) => { e.stopPropagation(); playerState.next(); }}
                                 disabled={playerState.currentIndex >= playerState.queue.length - 1}
                             >
-                                <SkipForward size={20} fill="currentColor" />
+                                <SkipForward size={20} fill="white" />
                             </button>
 
                             <div className="volume-controls hidden-mobile">
