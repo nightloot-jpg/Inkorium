@@ -602,8 +602,8 @@ export function Composer({
             </button>
             
             <div className="composer-more-wrapper" ref={moreMenuRef}>
-                <button type="button" className="composer-tool-btn" onClick={() => setMoreMenuOpen(!moreMenuOpen)}>
-                    <List size={18} /> Más <ChevronDown size={14} style={{marginLeft: -2}}/>
+                <button type="button" className="composer-tool-btn" onClick={() => setMoreMenuOpen(!moreMenuOpen)} aria-label="Más opciones">
+                    <List size={18} /> <ChevronDown size={14} style={{marginLeft: -2}}/>
                 </button>
                 {moreMenuOpen && (
                     <div className="composer-more-menu">
