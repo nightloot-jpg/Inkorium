@@ -609,10 +609,11 @@ export function Composer({
                     <div className="composer-more-menu">
                         <button type="button" onClick={() => { handleModeChange("text"); }}>📅 Evento <span className="soon-badge">Próximamente</span></button>
                         <button type="button" onClick={() => { handleModeChange("text"); }}>📍 Lugar <span className="soon-badge">Próximamente</span></button>
-                        <button type="button" onClick={() => { handleModeChange("poll"); }}>💭 Pregunta</button>
+                        <button type="button" onClick={() => { handleModeChange("poll"); }}>❓ Pregunta</button>
                         <button type="button" onClick={() => { handleModeChange("news"); }}>🔗 Enlace</button>
-                        <button type="button" onClick={() => { handleModeChange("text"); }}>📝 Artículo <span className="soon-badge">Próximamente</span></button>
-                        <button type="button" onClick={() => { handleModeChange("text"); }}>🎁 Recomendación <span className="soon-badge">Próximamente</span></button>
+                        <button type="button" onClick={() => { handleModeChange("text"); }}>📝 Nota <span className="soon-badge">Próximamente</span></button>
+                        <button type="button" onClick={() => { handleModeChange("text"); }}>👥 Mencionar personas <span className="soon-badge">Próximamente</span></button>
+                        <button type="button" onClick={() => { handleModeChange("text"); }}>🎨 Fondo / estilo <span className="soon-badge">Próximamente</span></button>
                     </div>
                 )}
             </div>
