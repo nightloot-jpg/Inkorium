@@ -49,13 +49,13 @@ export function PhotoUploader({ session, onClose, onSuccess }: Props) {
       const path = `photos/${session.user.id}/${Date.now()}.${ext}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('post-media')
+        .from('photos')
         .upload(path, file);
 
       if (uploadError) throw uploadError;
 
       const { data: publicUrlData } = supabase.storage
-        .from('post-media')
+        .from('photos')
         .getPublicUrl(path);
 
       const { error: dbError } = await supabase
