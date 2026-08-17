@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { 
   Image as ImageIcon, Video, Music, BarChart3, Newspaper, List, Search,
-  X, ChevronDown, Globe, Users, Lock, ChevronUp, Loader2
+  X, ChevronDown, Globe, Users, Lock, ChevronUp, Loader2, Calendar, MapPin, Palette, AtSign
 } from 'lucide-react';
 import { ProfileData } from '../main';
 import { getDisplayName } from '../utils';
@@ -27,7 +27,7 @@ export function Composer({
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
   
-  const [mode, setMode] = useState<"text" | "photo" | "video" | "music" | "poll" | "news" | "more">("text");
+  const [mode, setMode] = useState<"text" | "photo" | "video" | "music" | "poll" | "news" | "event" | "location" | "background" | "more">("text");
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   
   // Privacy
@@ -59,6 +59,33 @@ export function Composer({
   const [newsUrl, setNewsUrl] = useState("");
   const [newsTitle, setNewsTitle] = useState("");
 
+  // Event
+  const [eventDate, setEventDate] = useState("");
+  const [eventTime, setEventTime] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
+
+  // Location
+  const [locationName, setLocationName] = useState("");
+
+  // Background / Nota
+  const BACKGROUND_STYLES: { id: string; label: string; css: string }[] = [
+    { id: 'note', label: 'Nota', css: 'linear-gradient(135deg, #fef9c3, #fde68a)' },
+    { id: 'ocean', label: 'Océano', css: 'linear-gradient(135deg, #38bdf8, #0ea5e9)' },
+    { id: 'sunset', label: 'Atardecer', css: 'linear-gradient(135deg, #fb923c, #ef4444)' },
+    { id: 'purple', label: 'Violeta', css: 'linear-gradient(135deg, #a78bfa, #7c3aed)' },
+    { id: 'forest', label: 'Bosque', css: 'linear-gradient(135deg, #34d399, #059669)' },
+    { id: 'slate', label: 'Pizarra', css: 'linear-gradient(135deg, #64748b, #1e293b)' },
+  ];
+  const [bgChoice, setBgChoice] = useState<string>('note');
+
+  // Mencionar personas
+  const [mentionPickerOpen, setMentionPickerOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionResults, setMentionResults] = useState<any[]>([]);
+  const [mentionSearching, setMentionSearching] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const mentionPickerRef = useRef<HTMLDivElement>(null);
+
   const username = getDisplayName(profile, session.user.email);
   const initials = username.slice(0, 2).toUpperCase();
   const avatarUrl = profile?.avatar_url;
@@ -83,10 +110,58 @@ export function Composer({
       if (privacyMenuRef.current && !privacyMenuRef.current.contains(event.target as Node)) {
         setPrivacyMenuOpen(false);
       }
+      if (mentionPickerRef.current && !mentionPickerRef.current.contains(event.target as Node)) {
+        setMentionPickerOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!mentionPickerOpen) return;
+    const term = mentionQuery.trim();
+    if (!term) {
+      setMentionResults([]);
+      return;
+    }
+    let cancelled = false;
+    setMentionSearching(true);
+    const timer = window.setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, avatar_url")
+        .ilike("username", `%${term}%`)
+        .neq("id", session.user.id)
+        .limit(6);
+      if (!cancelled) {
+        setMentionResults(data || []);
+        setMentionSearching(false);
+      }
+    }, 250);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [mentionQuery, mentionPickerOpen, session.user.id]);
+
+  function insertMention(user: any) {
+    const handle = `@${user.username || getDisplayName(user, "")} `;
+    const ta = textareaRef.current;
+    if (ta) {
+      const start = ta.selectionStart ?? draft.length;
+      const end = ta.selectionEnd ?? draft.length;
+      const newDraft = draft.slice(0, start) + handle + draft.slice(end);
+      setDraft(newDraft);
+      requestAnimationFrame(() => {
+        ta.focus();
+        const pos = start + handle.length;
+        ta.setSelectionRange(pos, pos);
+      });
+    } else {
+      setDraft(draft + handle);
+    }
+    setMentionPickerOpen(false);
+    setMentionQuery("");
+    setMentionResults([]);
+  }
 
   async function searchYoutube(e: React.FormEvent) {
     e.preventDefault();
@@ -190,6 +265,32 @@ export function Composer({
         };
     } else if (mode === "news" && newsUrl) {
         media_data = { type: "news", url: newsUrl, title: newsTitle };
+    } else if (mode === "event") {
+        if (!contentText) {
+            setError("Escribe un título para el evento.");
+            setPublishing(false);
+            return;
+        }
+        if (!eventDate) {
+            setError("Selecciona una fecha para el evento.");
+            setPublishing(false);
+            return;
+        }
+        media_data = { type: "event", date: eventDate, time: eventTime || null, location: eventLocation.trim() || null };
+    } else if (mode === "location") {
+        if (!locationName.trim()) {
+            setError("Escribe el nombre del lugar.");
+            setPublishing(false);
+            return;
+        }
+        media_data = { type: "location", name: locationName.trim() };
+    } else if (mode === "background") {
+        if (!contentText) {
+            setError("Escribe algo de texto para tu nota.");
+            setPublishing(false);
+            return;
+        }
+        media_data = { type: "background", style: bgChoice };
     } else if (mode === "poll") {
         const validOptions = pollOptions.filter(o => o.trim().length > 0);
         if (validOptions.length < 2) {
@@ -275,6 +376,11 @@ export function Composer({
       setPollOptions(["", ""]);
       setNewsUrl("");
       setNewsTitle("");
+      setEventDate("");
+      setEventTime("");
+      setEventLocation("");
+      setLocationName("");
+      setBgChoice('note');
       const ta = document.querySelector(".composer-input") as HTMLTextAreaElement;
       if (ta) ta.style.height = "auto";
     }
@@ -369,13 +475,41 @@ export function Composer({
           {avatarUrl ? <img src={avatarUrl} alt={username} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : initials}
         </div>
         <textarea
+          ref={textareaRef}
           className="composer-input"
           value={draft}
           onChange={handleInput}
-          placeholder={mode === "poll" ? "Haz una pregunta..." : placeholderText}
+          placeholder={mode === "poll" ? "Haz una pregunta..." : mode === "event" ? "Título del evento..." : placeholderText}
           rows={1}
         />
       </div>
+
+      {mentionPickerOpen && (
+          <div className="mention-picker" ref={mentionPickerRef}>
+              <div className="mention-picker-search">
+                  <AtSign size={14} />
+                  <input
+                      type="text"
+                      autoFocus
+                      placeholder="Buscar personas..."
+                      value={mentionQuery}
+                      onChange={(e) => setMentionQuery(e.target.value)}
+                  />
+              </div>
+              {mentionSearching && <div className="mention-picker-empty">Buscando...</div>}
+              {!mentionSearching && mentionQuery.trim() && mentionResults.length === 0 && (
+                  <div className="mention-picker-empty">Sin resultados</div>
+              )}
+              {mentionResults.map((u) => (
+                  <button type="button" key={u.id} className="mention-picker-item" onClick={() => insertMention(u)}>
+                      <div className="avatar tiny" style={{ overflow: 'hidden' }}>
+                        {u.avatar_url ? <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (u.username || '?').slice(0,2).toUpperCase()}
+                      </div>
+                      <span>{getDisplayName(u, "")}</span>
+                  </button>
+              ))}
+          </div>
+      )}
       
       {mode === "photo" && (
           <div className="composer-extended photo-mode">
@@ -576,6 +710,66 @@ export function Composer({
           </div>
       )}
 
+      {mode === "event" && (
+          <div className="composer-extended event-mode">
+              <div className="event-mode-row">
+                  <label>
+                      <span>Fecha</span>
+                      <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+                  </label>
+                  <label>
+                      <span>Hora (opcional)</span>
+                      <input type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} />
+                  </label>
+              </div>
+              <input
+                  type="text"
+                  placeholder="Lugar (opcional)..."
+                  value={eventLocation}
+                  onChange={(e) => setEventLocation(e.target.value)}
+                  style={{marginTop: 8}}
+              />
+          </div>
+      )}
+
+      {mode === "location" && (
+          <div className="composer-extended location-mode">
+              <div className="location-input-row">
+                  <MapPin size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                  <input
+                      type="text"
+                      placeholder="¿Dónde estás?"
+                      value={locationName}
+                      onChange={(e) => setLocationName(e.target.value)}
+                  />
+              </div>
+          </div>
+      )}
+
+      {mode === "background" && (
+          <div className="composer-extended background-mode">
+              <div
+                  className="background-preview"
+                  style={{ background: BACKGROUND_STYLES.find(s => s.id === bgChoice)?.css }}
+              >
+                  {draft.trim() || (bgChoice === 'note' ? 'Escribe tu nota...' : 'Escribe algo...')}
+              </div>
+              <div className="background-swatches">
+                  {BACKGROUND_STYLES.map(s => (
+                      <button
+                          type="button"
+                          key={s.id}
+                          className={`background-swatch ${bgChoice === s.id ? 'active' : ''}`}
+                          style={{ background: s.css }}
+                          title={s.label}
+                          aria-label={s.label}
+                          onClick={() => setBgChoice(s.id)}
+                      />
+                  ))}
+              </div>
+          </div>
+      )}
+
       {showPrivateSelector && renderPrivateSelector()}
 
       <div className="new-composer-divider"></div>
@@ -607,13 +801,13 @@ export function Composer({
                 </button>
                 {moreMenuOpen && (
                     <div className="composer-more-menu">
-                        <button type="button" onClick={() => { handleModeChange("text"); }}>📅 Evento <span className="soon-badge">Próximamente</span></button>
-                        <button type="button" onClick={() => { handleModeChange("text"); }}>📍 Lugar <span className="soon-badge">Próximamente</span></button>
+                        <button type="button" onClick={() => { handleModeChange("event"); }}>📅 Evento</button>
+                        <button type="button" onClick={() => { handleModeChange("location"); }}>📍 Lugar</button>
                         <button type="button" onClick={() => { handleModeChange("poll"); }}>❓ Pregunta</button>
                         <button type="button" onClick={() => { handleModeChange("news"); }}>🔗 Enlace</button>
-                        <button type="button" onClick={() => { handleModeChange("text"); }}>📝 Nota <span className="soon-badge">Próximamente</span></button>
-                        <button type="button" onClick={() => { handleModeChange("text"); }}>👥 Mencionar personas <span className="soon-badge">Próximamente</span></button>
-                        <button type="button" onClick={() => { handleModeChange("text"); }}>🎨 Fondo / estilo <span className="soon-badge">Próximamente</span></button>
+                        <button type="button" onClick={() => { handleModeChange("background"); setBgChoice('note'); }}>📝 Nota</button>
+                        <button type="button" onClick={() => { setMoreMenuOpen(false); setMentionPickerOpen(true); }}>👥 Mencionar personas</button>
+                        <button type="button" onClick={() => { handleModeChange("background"); }}>🎨 Fondo / estilo</button>
                     </div>
                 )}
             </div>

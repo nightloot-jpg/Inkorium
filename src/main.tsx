@@ -7,7 +7,7 @@ import { supabase } from "./lib/supabase";
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from "./lib/cropImage";
 import { getDisplayName, formatPostTime } from "./utils";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, MoreVertical, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, MoreVertical, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send, Calendar, MapPin } from "lucide-react";
 import "./styles.css";
 import { YoutubePlaylist } from './YoutubePlaylist';
 import { SingleSongPlayer } from './components/SingleSongPlayer';
@@ -151,7 +151,29 @@ function ShareMenu({ post, session, onClose }: { post: Post; session: Session; o
 
 
 
-function PostMedia({ media, pollId, session }: { media?: any, pollId?: string, session: Session }) {
+const BG_GRADIENTS: Record<string, string> = {
+    note: 'linear-gradient(135deg, #fef9c3, #fde68a)',
+    ocean: 'linear-gradient(135deg, #38bdf8, #0ea5e9)',
+    sunset: 'linear-gradient(135deg, #fb923c, #ef4444)',
+    purple: 'linear-gradient(135deg, #a78bfa, #7c3aed)',
+    forest: 'linear-gradient(135deg, #34d399, #059669)',
+    slate: 'linear-gradient(135deg, #64748b, #1e293b)',
+};
+
+function formatEventDate(date?: string, time?: string) {
+    if (!date) return '';
+    try {
+        const d = new Date(time ? `${date}T${time}` : `${date}T00:00`);
+        const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+        let out = d.toLocaleDateString('es-ES', opts);
+        if (time) out += ` · ${time}`;
+        return out;
+    } catch (e) {
+        return date;
+    }
+}
+
+function PostMedia({ media, pollId, session, text }: { media?: any, pollId?: string, session: Session, text?: string }) {
     if (!media && !pollId) return null;
 
     if (media?.type === "photo") {
@@ -178,6 +200,53 @@ function PostMedia({ media, pollId, session }: { media?: any, pollId?: string, s
                     <span style={{color: 'var(--primary)', fontSize: '0.9em'}}>{new URL(media.url).hostname}</span>
                 </div>
             </a>
+        );
+    }
+
+    if (media?.type === "event") {
+        return (
+            <div style={{border: '1px solid var(--border)', borderRadius: 8, marginTop: 12, overflow: 'hidden'}}>
+                <div style={{background: 'var(--primary)', color: '#fff', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8}}>
+                    <Calendar size={16} /> <strong>Evento</strong>
+                </div>
+                <div style={{padding: 16}}>
+                    {text && <div style={{fontWeight: 600, marginBottom: 6}}>{text}</div>}
+                    <div style={{fontSize: '0.9em', color: 'var(--text)'}}>{formatEventDate(media.date, media.time)}</div>
+                    {media.location && <div style={{fontSize: '0.85em', marginTop: 4, opacity: 0.8}}>📍 {media.location}</div>}
+                </div>
+            </div>
+        );
+    }
+
+    if (media?.type === "location") {
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(media.name)}`;
+        return (
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 8, textDecoration: 'none', color: 'inherit'}}>
+                <MapPin size={18} style={{color: 'var(--primary)'}} /> <span>{media.name}</span>
+            </a>
+        );
+    }
+
+    if (media?.type === "background") {
+        return (
+            <div style={{
+                minHeight: 160,
+                borderRadius: 10,
+                marginTop: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                padding: 24,
+                color: '#fff',
+                fontSize: '1.4em',
+                fontWeight: 700,
+                textShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                background: BG_GRADIENTS[media.style] || BG_GRADIENTS.note,
+                wordBreak: 'break-word'
+            }}>
+                {text}
+            </div>
         );
     }
 
@@ -430,7 +499,7 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
                Compartió una publicación de <strong>{post.originalPost.authorName}</strong>
              </div>
           )}
-          {post.text && <p className="post-text">{post.text}</p>}<PostMedia media={post.media_data} pollId={post.poll_id} session={session} />
+          {post.media_data?.type !== "background" && post.text && <p className="post-text">{post.text}</p>}<PostMedia media={post.media_data} pollId={post.poll_id} session={session} text={post.text} />
           {post.shared_post_id && post.originalPost && (
             <div className="shared-post-ref">
                <div className="post-head">
@@ -708,7 +777,7 @@ async function toggleLike(id: string) {
                Compartió una publicación de <strong>{post.originalPost.authorName}</strong>
              </div>
           )}
-          {post.text && <p className="post-text">{post.text}</p>}<PostMedia media={post.media_data} pollId={post.poll_id} session={session} />
+          {post.media_data?.type !== "background" && post.text && <p className="post-text">{post.text}</p>}<PostMedia media={post.media_data} pollId={post.poll_id} session={session} text={post.text} />
           {post.shared_post_id && post.originalPost && (
             <div className="shared-post-ref">
                <div className="post-head">
