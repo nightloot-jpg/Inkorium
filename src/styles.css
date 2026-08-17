@@ -3312,6 +3312,13 @@ button:disabled { cursor: wait; opacity: .65; }
   border-radius: 50%;
   box-shadow: 0 0 4px rgba(0,0,0,0.5);
   margin-bottom: 4px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.photo-tag-marker:hover .photo-tag-dot,
+.photo-tag-marker.active .photo-tag-dot {
+  transform: scale(1.15);
 }
 
 .photo-tag-label {
@@ -3326,6 +3333,18 @@ button:disabled { cursor: wait; opacity: .65; }
   align-items: center;
   gap: 6px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  /* Oculta por defecto: solo se revela al pasar el ratón o al pulsar (táctil) */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.photo-tag-marker:hover .photo-tag-label,
+.photo-tag-marker.active .photo-tag-label {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .photo-tag-delete {
