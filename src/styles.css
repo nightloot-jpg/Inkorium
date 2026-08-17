@@ -1812,7 +1812,7 @@ button:disabled { cursor: wait; opacity: .65; }
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     margin-bottom: 20px;
     position: relative;
-    z-index: 10;
+    z-index: 30;
 }
 
 .composer-top {
