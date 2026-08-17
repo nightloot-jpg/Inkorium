@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from "react-dom";
 import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { 
@@ -9,6 +10,105 @@ import { ProfileData } from '../main';
 import { getDisplayName } from '../utils';
 
 type Post = any; // We'll refine this if needed
+
+
+function ComposerMenuPortal({
+  isOpen,
+  onClose,
+  triggerRef,
+  onSelect
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  triggerRef: React.RefObject<HTMLElement | null>;
+  onSelect: (action: string) => void;
+}) {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      // Position below the button
+      setPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+      });
+    }
+  }, [isOpen, triggerRef]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target as Node)
+      ) {
+        onClose();
+      }
+    }
+
+    function handleScroll() {
+       onClose();
+    }
+
+    function handleResize() {
+        onClose();
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true); // true to catch scroll in scrollable containers
+      window.addEventListener('resize', handleResize);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isOpen, onClose, triggerRef]);
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div
+      ref={menuRef}
+      className="composer-more-menu"
+      style={{
+        position: 'absolute',
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        zIndex: 9999,
+      }}
+    >
+      <button type="button" className="disabled" disabled>
+        <span>📅 Evento</span>
+        <span className="soon-badge">Próximamente</span>
+      </button>
+      <button type="button" className="disabled" disabled>
+        <span>📍 Lugar</span>
+        <span className="soon-badge">Próximamente</span>
+      </button>
+      <button type="button" onClick={() => { onSelect("poll"); }}>
+        <span>❓ Pregunta</span>
+      </button>
+      <button type="button" onClick={() => { onSelect("news"); }}>
+        <span>🔗 Enlace</span>
+      </button>
+      <button type="button" onClick={() => { onSelect("note"); }}>
+        <span>📝 Nota</span>
+      </button>
+      <button type="button" onClick={() => { onSelect("mention"); }}>
+        <span>👥 Mencionar personas</span>
+      </button>
+      <button type="button" onClick={() => { onSelect("background"); }}>
+        <span>🎨 Fondo / estilo</span>
+      </button>
+    </div>,
+    document.body
+  );
+}
 
 export function Composer({
   session,
@@ -99,7 +199,7 @@ export function Composer({
   const buttonText = targetProfileId && !isOwnProfile ? "Firmar" : "Publicar";
 
   // Refs for clicking outside
-  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLButtonElement>(null);
   const privacyMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -471,8 +571,8 @@ export function Composer({
   return (
     <section className="composer-container panel">
       <div className="composer-top">
-        <div className="avatar composer-avatar" style={{ overflow: 'hidden' }}>
-          {avatarUrl ? <img src={avatarUrl} alt={username} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : initials}
+        <div className="composer-avatar">
+          {avatarUrl ? <img src={avatarUrl} alt={username} /> : <div className="initials">{initials}</div>}
         </div>
         <textarea
           ref={textareaRef}
@@ -777,39 +877,47 @@ export function Composer({
       <div className="composer-toolbar-container">
           <div className="new-composer-tools">
             <button type="button" className={`composer-tool-btn ${mode === "text" ? 'active' : ''}`} onClick={() => handleModeChange("text")}>
-                <Search size={18} /> Estado
+                <Search size={16} /> <span>Estado</span>
             </button>
             <button type="button" className={`composer-tool-btn ${mode === "photo" ? 'active' : ''}`} onClick={() => handleModeChange("photo")}>
-                <ImageIcon size={18} /> Foto
+                <ImageIcon size={16} /> <span>Foto</span>
             </button>
             <button type="button" className={`composer-tool-btn ${mode === "video" ? 'active' : ''}`} onClick={() => handleModeChange("video")}>
-                <Video size={18} /> Vídeo
+                <Video size={16} /> <span>Vídeo</span>
             </button>
             <button type="button" className={`composer-tool-btn ${mode === "music" ? 'active' : ''}`} onClick={() => handleModeChange("music")}>
-                <Music size={18} /> Música
+                <Music size={16} /> <span>Música</span>
             </button>
             <button type="button" className={`composer-tool-btn ${mode === "poll" ? 'active' : ''}`} onClick={() => handleModeChange("poll")}>
-                <BarChart3 size={18} /> Encuesta
+                <BarChart3 size={16} /> <span>Encuesta</span>
             </button>
             <button type="button" className={`composer-tool-btn ${mode === "news" ? 'active' : ''}`} onClick={() => handleModeChange("news")}>
-                <Newspaper size={18} /> Noticia
+                <Newspaper size={16} /> <span>Noticia</span>
             </button>
             
-            <div className="composer-more-wrapper" ref={moreMenuRef}>
-                <button type="button" className="composer-tool-btn" onClick={() => setMoreMenuOpen(!moreMenuOpen)} aria-label="Más opciones">
-                    <List size={18} /> <ChevronDown size={14} style={{marginLeft: -2}}/>
+            <div className="composer-more-wrapper">
+                <button
+                  type="button"
+                  ref={moreMenuRef}
+                  className={`composer-tool-btn ${moreMenuOpen ? 'active' : ''}`}
+                  onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+                  aria-label="Más opciones"
+                >
+                    <List size={16} /> <span>Más</span> <ChevronDown size={14} style={{marginLeft: -2}}/>
                 </button>
-                {moreMenuOpen && (
-                    <div className="composer-more-menu">
-                        <button type="button" onClick={() => { handleModeChange("event"); }}>📅 Evento</button>
-                        <button type="button" onClick={() => { handleModeChange("location"); }}>📍 Lugar</button>
-                        <button type="button" onClick={() => { handleModeChange("poll"); }}>❓ Pregunta</button>
-                        <button type="button" onClick={() => { handleModeChange("news"); }}>🔗 Enlace</button>
-                        <button type="button" onClick={() => { handleModeChange("background"); setBgChoice('note'); }}>📝 Nota</button>
-                        <button type="button" onClick={() => { setMoreMenuOpen(false); setMentionPickerOpen(true); }}>👥 Mencionar personas</button>
-                        <button type="button" onClick={() => { handleModeChange("background"); }}>🎨 Fondo / estilo</button>
-                    </div>
-                )}
+                <ComposerMenuPortal
+                   isOpen={moreMenuOpen}
+                   onClose={() => setMoreMenuOpen(false)}
+                   triggerRef={moreMenuRef}
+                   onSelect={(action) => {
+                     setMoreMenuOpen(false);
+                     if (action === "poll") handleModeChange("poll");
+                     if (action === "news") handleModeChange("news");
+                     if (action === "note") { handleModeChange("background"); setBgChoice('note'); }
+                     if (action === "mention") setMentionPickerOpen(true);
+                     if (action === "background") handleModeChange("background");
+                   }}
+                />
             </div>
           </div>
       </div>
