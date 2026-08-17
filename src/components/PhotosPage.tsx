@@ -56,33 +56,58 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
         
         {/* LEFT COLUMN: NAVIGATION */}
         <aside className="photos-sidebar">
-          <div className="panel" style={{ padding: 16 }}>
-            <h3 style={{ margin: "0 0 16px", fontSize: "1em", color: "var(--text-light)" }}>Fotos</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <button className="text-button" style={{ justifyContent: "flex-start", padding: 8, background: activeTab === 'all' ? 'var(--bg-color)' : 'transparent', borderRadius: 8 }} onClick={() => setActiveTab('all')}>
-                <ImageIcon size={18} /> Mis fotos
+          <div className="photos-profile-card">
+            <div className="photos-avatar">{session.user.user_metadata?.username?.[0]?.toUpperCase() || 'U'}</div>
+            <div className="photos-profile-info">
+              <strong>{session.user.user_metadata?.username || 'Usuario'}</strong>
+              <em className="photos-online-status">● En línea</em>
+              <button className="photos-link-button" onClick={() => navigate('perfil')}>Ver mi perfil »</button>
+            </div>
+          </div>
+          <div className="photos-menu">
+            <h3 className="photos-menu-title">FOTOS</h3>
+            <div className="photos-menu-list">
+              <button className="photos-menu-item" onClick={() => setActiveTab('all')}>
+                <span>⌂</span> Novedades
               </button>
-              <button className="text-button" style={{ justifyContent: "flex-start", padding: 8, background: activeTab === 'albums' ? 'var(--bg-color)' : 'transparent', borderRadius: 8 }} onClick={() => setActiveTab('albums')}>
-                <Folders size={18} /> Álbumes
+              <button className={`photos-menu-item ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>
+                <span>▣</span> Fotos
               </button>
-              <button className="text-button" style={{ justifyContent: "flex-start", padding: 8, background: activeTab === 'favorites' ? 'var(--bg-color)' : 'transparent', borderRadius: 8 }} onClick={() => setActiveTab('favorites')}>
-                <Heart size={18} /> Favoritas
+              <button className={`photos-menu-item ${activeTab === 'albums' ? 'active' : ''}`} onClick={() => setActiveTab('albums')}>
+                <span>▣</span> Álbumes
               </button>
-              <button className="text-button" style={{ justifyContent: "flex-start", padding: 8 }}>
-                <Tag size={18} /> Etiquetas
+              <button className="photos-menu-item" onClick={() => setActiveTab('all')}>
+                <span>▣</span> Mis fotos
+              </button>
+              <button className={`photos-menu-item ${activeTab === 'favorites' ? 'active' : ''}`} onClick={() => setActiveTab('favorites')}>
+                <span>★</span> Favoritas
+              </button>
+              <button className="photos-menu-item">
+                <span>◇</span> Etiquetas
+              </button>
+              <button className="photos-menu-item">
+                <span>▣</span> Comentarios
               </button>
             </div>
+          </div>
+          <div className="photos-storage">
+            <h3 className="photos-menu-title">ALMACENAMIENTO</h3>
+            <div className="photos-storage-bar-container">
+              <div className="photos-storage-bar" style={{ width: '0%' }}></div>
+            </div>
+            <p className="photos-storage-text">0 MB de 5 GB utilizado</p>
           </div>
         </aside>
 
         {/* CENTER COLUMN: MAIN CONTENT */}
         <main className="photos-main">
           <header className="photos-header">
-            <div>
-              <h1>{isOwnProfile ? "Mis fotos" : "Fotos"}</h1>
+            <div className="photos-header-left">
+              <h1><span className="photos-header-icon">📷</span> {isOwnProfile ? "Mis fotos" : "Fotos"}</h1>
+              <p className="photos-header-subtitle">Aquí puedes ver y gestionar todas tus fotos.</p>
             </div>
             {isOwnProfile && (
-              <button className="primary-button" onClick={() => setShowUploader(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px' }}>
+              <button className="photos-primary-button" onClick={() => setShowUploader(true)}>
                 <Plus size={18} /> Subir fotos
               </button>
             )}
@@ -100,9 +125,14 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
               {activeTab === 'all' && (
                 photos.length === 0 ? (
                   <div className="photos-empty-state">
-                    <ImageIcon size={48} style={{ opacity: 0.5, marginBottom: 16 }} />
-                    <h2>Aún no hay fotos</h2>
-                    <p>Sube tus primeras imágenes para crear tu galería.</p>
+                    <span className="photos-empty-icon">📷</span>
+                    <h2 className="photos-empty-title">Aún no hay fotos</h2>
+                    <p className="photos-empty-desc">Sube tus primeras imágenes<br/>para crear tu galería.</p>
+                    {isOwnProfile && (
+                      <button className="photos-primary-button" onClick={() => setShowUploader(true)}>
+                        <Plus size={18} /> Subir fotos
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="photos-gallery">
@@ -139,9 +169,9 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
         </main>
 
         {/* RIGHT COLUMN: STATS */}
-        <aside className="photos-stats-sidebar">
-          <div className="photos-stats">
-            <h3>Estadísticas</h3>
+        <aside className="photos-rightbar">
+          <div className="photos-panel photos-statistics">
+            <h3 className="photos-panel-title">Estadísticas</h3>
             <div className="photos-stat-row">
               <span className="photos-stat-label">Fotos subidas</span>
               <span className="photos-stat-value">{stats.photos}</span>
@@ -151,9 +181,8 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
               <span className="photos-stat-value">{stats.albums}</span>
             </div>
           </div>
-          
-          <div className="panel" style={{ padding: 16 }}>
-            <h3 style={{ margin: "0 0 12px", fontSize: "1em", color: "var(--text-color)" }}>Mis álbumes</h3>
+          <div className="photos-panel photos-popular">
+            <h3 className="photos-panel-title">Mis álbumes</h3>
             <div className="photos-albums" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
                {albums.slice(0, 4).map(album => (
                   <div key={album.id} className="photos-album-card">
@@ -164,7 +193,7 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
                   </div>
                 ))}
             </div>
-            {albums.length === 0 && <p style={{ fontSize: '0.85em', color: 'var(--text-light)', margin: 0 }}>Sin álbumes</p>}
+            {albums.length === 0 && <p className="photos-empty-text">Sin álbumes</p>}
           </div>
         </aside>
 
