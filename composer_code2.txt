@@ -1,0 +1,401 @@
+27:function Composer({
+28-  session,
+29-  profile,
+30-  onPublish,
+31-  targetProfileId,
+32-  targetName
+33-}: {
+34-  session: Session;
+35-  profile: ProfileData | null;
+36-  onPublish: (post: Post) => void;
+37-  targetProfileId?: string;
+38-  targetName?: string
+39-}) {
+40-  const [draft, setDraft] = useState("");
+41-  const [publishing, setPublishing] = useState(false);
+42-  const [error, setError] = useState("");
+43-
+44-  const [mode, setMode] = useState<"text" | "photo" | "video" | "music" | "poll" | "news">("text");
+45-  const [photoFile, setPhotoFile] = useState<File | null>(null);
+46-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+47-
+48-  const [videoUrl, setVideoUrl] = useState("");
+49-  const [videoFile, setVideoFile] = useState<File | null>(null);
+50-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+51-
+52-  const [musicTab, setMusicTab] = useState<'canciones' | 'playlists'>('canciones');
+53-  const [youtubeSearch, setYoutubeSearch] = useState("");
+54-  const [youtubeResults, setYoutubeResults] = useState<any[]>([]);
+55-  const [youtubeSearching, setYoutubeSearching] = useState(false);
+56-  const [youtubeSelected, setYoutubeSelected] = useState<any | null>(null);
+57-  const [youtubeHasKey, setYoutubeHasKey] = useState(!!import.meta.env.VITE_YOUTUBE_API_KEY);
+58-
+59-  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+60-
+61-  const [newsUrl, setNewsUrl] = useState("");
+62-  const [newsTitle, setNewsTitle] = useState("");
+63-
+64-  const username = getDisplayName(profile, session.user.email);
+65-  const initials = username.slice(0, 2).toUpperCase();
+66-  const avatarUrl = profile?.avatar_url;
+67-
+68-  const isOwnProfile = !targetProfileId || targetProfileId === session.user.id;
+69-
+70-  const placeholderText = targetProfileId && !isOwnProfile && targetName
+71-    ? `¿Qué estás pensando, ${targetName}?`
+72-    : `¿Qué estás pensando, ${username}?`;
+73-
+74-  const buttonText = targetProfileId && !isOwnProfile ? "Firmar" : "Publicar";
+75-
+76-  async function searchYoutube(e: React.FormEvent) {
+77-    e.preventDefault();
+78-    if (!youtubeSearch.trim() || !youtubeHasKey) return;
+79-    setYoutubeSearching(true);
+80-    setError("");
+81-    try {
+82-      const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+83-      // Search for both videos and playlists
+84-      const ytType = musicTab === 'canciones' ? 'video' : 'playlist';
+85-      const category = musicTab === 'canciones' ? '&videoCategoryId=10' : '';
+86-      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(youtubeSearch)}&type=${ytType}${category}&key=${apiKey}`);
+87-      const data = await res.json();
+88-      if (data.error) throw new Error(data.error.message);
+89-      setYoutubeResults(data.items || []);
+90-    } catch (err: any) {
+91-      setError("Error al buscar en YouTube: " + err.message);
+92-    }
+93-    setYoutubeSearching(false);
+94-  }
+95-
+96-  async function handlePhotoSelect(e: ChangeEvent<HTMLInputElement>) {
+97-    const file = e.target.files?.[0];
+98-    if (!file) return;
+99-    if (!file.type.startsWith("image/")) { setError("Selecciona una imagen válida."); return; }
+100-    if (file.size > 5 * 1024 * 1024) { setError("La imagen no puede superar los 5 MB."); return; }
+101-    setPhotoFile(file);
+102-    const url = URL.createObjectURL(file);
+103-    setPhotoPreview(url);
+104-    setError("");
+105-  }
+106-
+107-
+108-  async function handleVideoSelect(e: ChangeEvent<HTMLInputElement>) {
+109-    const file = e.target.files?.[0];
+110-    if (!file) return;
+111-    if (!file.type.startsWith("video/")) { setError("Selecciona un vídeo válido."); return; }
+112-    if (file.size > 50 * 1024 * 1024) { setError("El vídeo no puede superar los 50 MB."); return; }
+113-    setVideoFile(file);
+114-    const url = URL.createObjectURL(file);
+115-    setVideoPreview(url);
+116-    setError("");
+117-  }
+118-
+119-  async function publish(event: FormEvent) {
+120-    event.preventDefault();
+121-    const contentText = draft.trim();
+122-    if ((!contentText && mode === "text") || publishing) return;
+123-    setPublishing(true);
+124-    setError("");
+125-
+126-    let media_data: any = null;
+127-    let poll_id: string | undefined = undefined;
+128-
+129-    if (mode === "photo" && photoFile) {
+130-        const extension = photoFile.name.split(".").pop()?.toLowerCase() || "jpg";
+131-        const path = `${session.user.id}/post-${Date.now()}.${extension}`;
+132-        const { error: uploadError } = await supabase.storage.from("post-media").upload(path, photoFile, { cacheControl: "3600", upsert: true, contentType: photoFile.type });
+133-        if (uploadError) {
+134-          setError("Error al subir foto (¿existe el bucket 'post-media'?): " + uploadError.message);
+135-          setPublishing(false);
+136-          return;
+137-        }
+138-        const { data: publicData } = supabase.storage.from("post-media").getPublicUrl(path);
+139-        media_data = { type: "photo", url: publicData.publicUrl };
+140-    } else if (mode === "video") {
+141-        if (videoFile) {
+142-            const extension = videoFile.name.split(".").pop()?.toLowerCase() || "mp4";
+143-            const path = `${session.user.id}/video-${Date.now()}.${extension}`;
+144-            const { error: uploadError } = await supabase.storage.from("post-media").upload(path, videoFile, { cacheControl: "3600", upsert: true, contentType: videoFile.type });
+145-            if (uploadError) {
+146-              setError("Error al subir vídeo: " + uploadError.message);
+147-              setPublishing(false);
+148-              return;
+149-            }
+150-            const { data: publicData } = supabase.storage.from("post-media").getPublicUrl(path);
+151-            media_data = { type: "video", url: publicData.publicUrl };
+152-        } else if (videoUrl) {
+153-            media_data = { type: "video", url: videoUrl };
+154-        }
+155-
+156-    } else if (mode === "music" && youtubeSelected) {
+157-        const isPlaylist = youtubeSelected.id.kind === 'youtube#playlist';
+158-        media_data = {
+159-            type: isPlaylist ? "youtube_playlist" : "youtube_song",
+160-            youtube_id: isPlaylist ? youtubeSelected.id.playlistId : youtubeSelected.id.videoId,
+161-            title: youtubeSelected.snippet.title,
+162-            thumbnail: youtubeSelected.snippet.thumbnails?.high?.url || youtubeSelected.snippet.thumbnails?.default?.url
+163-        };
+164-    } else if (mode === "news" && newsUrl) {
+165-        media_data = { type: "news", url: newsUrl, title: newsTitle };
+166-    } else if (mode === "poll") {
+167-        const validOptions = pollOptions.filter(o => o.trim().length > 0);
+168-        if (validOptions.length < 2) {
+169-            setError("Una encuesta necesita al menos 2 opciones.");
+170-            setPublishing(false);
+171-            return;
+172-        }
+173-        if (!contentText) {
+174-            setError("Debes escribir una pregunta en el estado.");
+175-            setPublishing(false);
+176-            return;
+177-        }
+178-        // Insert poll
+179-        const { data: pollData, error: pollError } = await supabase.from("polls").insert({
+180-            question: contentText,
+181-            author_id: session.user.id
+182-        }).select("id").single();
+183-
+184-        if (pollError) {
+185-            setError("Error al crear encuesta: " + pollError.message);
+186-            setPublishing(false);
+187-            return;
+188-        }
+189-        poll_id = pollData.id;
+190-
+191-        // Insert options
+192-        const optionsToInsert = validOptions.map((opt, i) => ({
+193-            poll_id: pollData.id,
+194-            text: opt.trim(),
+195-            order_index: i
+196-        }));
+197-        await supabase.from("poll_options").insert(optionsToInsert);
+198-    }
+199-
+200-    const { data, error: submitError } = await supabase.from("posts").insert({
+201-      author_id: session.user.id,
+202-      content: contentText,
+203-      visibility: "public",
+204-      target_profile_id: targetProfileId ? targetProfileId : null,
+205-      media_data,
+206-      poll_id
+207-    }).select("id, content, created_at, media_data, poll_id").single();
+208-
+209-    if (submitError) {
+210-      console.error("Error al publicar:", submitError);
+211-      setError(submitError.message || "Error al publicar");
+212-    } else if (data) {
+213-      onPublish({
+214-        id: data.id,
+215-        text: data.content ?? contentText,
+216-        time: "ahora",
+217-        likes: 0,
+218-        authorName: username,
+219-        author_id: session.user.id,
+220-        target_profile_id: targetProfileId ? targetProfileId : null, shared_post_id: null,
+221-        targetName: targetName,
+222-        media_data: data.media_data,
+223-        poll_id: data.poll_id
+224-      });
+225-      setDraft("");
+226-      setMode("text");
+227-      setPhotoFile(null);
+228-      setPhotoPreview(null);
+229-      setVideoUrl("");
+230-      setVideoFile(null);
+231-      setVideoPreview(null);
+232-      setYoutubeSelected(null);
+233-      setNewsUrl("");
+234-      setNewsTitle("");
+235-      setPollOptions(["", ""]);
+236-    }
+237-    setPublishing(false);
+238-  }
+239-
+240-  const handleInput = (e: ChangeEvent<HTMLTextAreaElement>) => {
+241-    setDraft(e.target.value);
+242-    e.target.style.height = 'auto';
+243-    e.target.style.height = `${e.target.scrollHeight}px`;
+244-  };
+245-
+246-  return (
+247-    <section className="new-composer panel">
+248-      <div className="new-composer-row">
+249-        <div className="new-composer-avatar">
+250-          {avatarUrl ? <img src={avatarUrl} alt={username} /> : initials}
+251-        </div>
+252-        <textarea
+253-          className="new-composer-input"
+254-          value={draft}
+255-          onChange={handleInput}
+256-          placeholder={mode === "poll" ? "Haz una pregunta..." : placeholderText}
+257-          rows={1}
+258-        />
+259-      </div>
+260-
+261-      {mode === "photo" && (
+262-          <div style={{padding: '0 16px', marginBottom: 16}}>
+263-              {!photoPreview ? (
+264-                  <div style={{border: '2px dashed var(--border)', padding: 32, textAlign: 'center', borderRadius: 8}}>
+265-                      <label style={{cursor: 'pointer', color: 'var(--primary)'}}>
+266-                          <input type="file" accept="image/*" style={{display: 'none'}} onChange={handlePhotoSelect} />
+267-                          Seleccionar una imagen desde el dispositivo
+268-                      </label>
+269-                  </div>
+270-              ) : (
+271-                  <div style={{position: 'relative'}}>
+272-                      <img src={photoPreview} style={{width: '100%', maxHeight: 400, objectFit: 'contain', borderRadius: 8}} />
+273-                      <button type="button" onClick={() => { setPhotoPreview(null); setPhotoFile(null); }} style={{position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'}}>
+274-                          <X size={16} />
+275-                      </button>
+276-                  </div>
+277-              )}
+278-          </div>
+279-      )}
+280-
+281-      {mode === "video" && (
+282-          <div style={{padding: '0 16px', marginBottom: 16}}>
+283-              <div style={{display: 'flex', gap: 8, marginBottom: 8}}>
+284-                  <input type="url" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} disabled={!!videoFile} placeholder="URL del vídeo... (ej. .mp4)" className="primary-input" style={{flex: 1}} />
+285-                  <label className="primary-button" style={{cursor: 'pointer', whiteSpace: 'nowrap'}}>
+286-                      <input type="file" accept="video/*" style={{display: 'none'}} onChange={handleVideoSelect} disabled={!!videoUrl} />
+287-                      Subir desde dispositivo
+288-                  </label>
+289-              </div>
+290-              {(videoUrl || videoPreview) && (
+291-                  <div style={{position: 'relative'}}>
+292-                      <video src={videoPreview || videoUrl} controls style={{width: '100%', marginTop: 8, borderRadius: 8, maxHeight: 300, background: '#000'}} />
+293-                      <button type="button" onClick={() => { setVideoPreview(null); setVideoFile(null); setVideoUrl(""); }} style={{position: 'absolute', top: 16, right: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'}}>
+294-                          <X size={16} />
+295-                      </button>
+296-                  </div>
+297-              )}
+298-          </div>
+299-      )}
+300-
+301-      {mode === "news" && (
+302-          <div style={{padding: '0 16px', marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 12}}>
+303-              <input type="text" value={newsTitle} onChange={e => setNewsTitle(e.target.value)} placeholder="Titular de la noticia" className="primary-input" style={{width: '100%'}} />
+304-              <input type="url" value={newsUrl} onChange={e => setNewsUrl(e.target.value)} placeholder="Enlace a la noticia (URL)" className="primary-input" style={{width: '100%'}} />
+305-          </div>
+306-      )}
+307-
+308-      {mode === "poll" && (
+309-          <div style={{padding: '0 16px', marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 8}}>
+310-              {pollOptions.map((opt, i) => (
+311-                  <div key={i} style={{display: 'flex', gap: 8}}>
+312-                      <input type="text" value={opt} onChange={e => {
+313-                          const newOpts = [...pollOptions];
+314-                          newOpts[i] = e.target.value;
+315-                          setPollOptions(newOpts);
+316-                      }} placeholder={`Opción ${i + 1}`} className="primary-input" style={{flex: 1}} />
+317-                      {pollOptions.length > 2 && (
+318-                          <button type="button" className="icon-button" onClick={() => {
+319-                              setPollOptions(pollOptions.filter((_, idx) => idx !== i));
+320-                          }}><X size={18}/></button>
+321-                      )}
+322-                  </div>
+323-              ))}
+324-              {pollOptions.length < 10 && (
+325-                  <button type="button" className="text-button" onClick={() => setPollOptions([...pollOptions, ""])} style={{alignSelf: 'flex-start'}}>+ Añadir otra opción</button>
+326-              )}
+327-          </div>
+328-      )}
+329-
+330-      {mode === "music" && (
+331-          <div className="composer-music-popover panel">
+332-              <div className="composer-music-header">
+333-                 <span>🎵 Música</span>
+334-                 <button onClick={() => setMode("text")}><X size={16}/></button>
+335-              </div>
+336-              {!youtubeHasKey ? (
+337-                  <div className="message" style={{textAlign: 'left', padding: 16, background: 'rgba(255,0,0,0.1)', color: 'var(--text)', borderRadius: 8}}>
+338-                      <h4 style={{marginTop: 0}}>Falta configurar YouTube Data API v3</h4>
+339-                      <p>Para buscar música real en YouTube, necesitas configurar una API Key en COOLIFY.</p>
+340-                      <ol style={{margin: '8px 0', paddingLeft: 24, fontSize: '0.9em', lineHeight: 1.5}}>
+341-                          <li>Entra en <strong>Google Cloud Console</strong> (console.cloud.google.com).</li>
+342-                          <li>Crea o selecciona tu proyecto.</li>
+343-                          <li>Busca y activa <strong>YouTube Data API v3</strong>.</li>
+344-                          <li>Ve a Credenciales y crea una nueva <strong>API Key</strong>.</li>
+345-                          <li>Entra en tu entorno de <strong>COOLIFY</strong>.</li>
+346-                          <li>Ve a las variables de entorno (Environment Variables) del proyecto de frontend.</li>
+347-                          <li>Añade: <code>VITE_YOUTUBE_API_KEY=tu_clave_aqui</code></li>
+348-                          <li>Haz <strong>Redeploy</strong> de la aplicación en Coolify.</li>
+349-                      </ol>
+350-                  </div>
+351-              ) : !youtubeSelected ? (
+352-                  <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+353-                      <div style={{display: 'flex', gap: 8, marginBottom: 8}}>
+354-                          <button type="button" className={`text-button ${musicTab === 'canciones' ? 'active' : ''}`} style={{fontWeight: musicTab === 'canciones' ? 'bold' : 'normal'}} onClick={() => { setMusicTab('canciones'); setYoutubeResults([]); setYoutubeSelected(null); setYoutubeSearch(''); }}>Canciones</button>
+355-                          <button type="button" className={`text-button ${musicTab === 'playlists' ? 'active' : ''}`} style={{fontWeight: musicTab === 'playlists' ? 'bold' : 'normal'}} onClick={() => { setMusicTab('playlists'); setYoutubeResults([]); setYoutubeSelected(null); setYoutubeSearch(''); }}>Playlists</button>
+356-                      </div>
+357-                      <form onSubmit={searchYoutube} style={{display: 'flex', gap: 8}}>
+358-                          <input type="text" value={youtubeSearch} onChange={e => setYoutubeSearch(e.target.value)} placeholder={musicTab === 'canciones' ? "Buscar canciones o artistas..." : "Buscar playlists..."} className="primary-input" style={{flex: 1}} />
+359-                          <button type="submit" className="primary-button" disabled={youtubeSearching}>{youtubeSearching ? "Buscando..." : "Buscar"}</button>
+360-                      </form>
+361-                      {youtubeResults.length > 0 && (
+362-                          <div style={{maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, border: '1px solid var(--border)', borderRadius: 8, padding: 8}}>
+363-                              {youtubeResults.map((item, i) => {
+364-                                  const isPlaylist = item.id.kind === 'youtube#playlist';
+365-                                  return (
+366-                                      <div key={i} style={{display: 'flex', gap: 12, padding: 8, cursor: 'pointer', borderRadius: 6, transition: 'background 0.2s'}} className="hover-bg" onClick={() => setYoutubeSelected(item)}>
+367-                                          <img src={item.snippet.thumbnails?.default?.url} alt="" style={{width: 120, height: 90, objectFit: 'cover', borderRadius: 4}} />
+368-                                          <div style={{flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+369-                                              <strong style={{fontSize: '0.9em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>{item.snippet.title}</strong>
+370-                                              <small style={{opacity: 0.6}}>{item.snippet.channelTitle}</small>
+371-                                              <small style={{display: 'inline-block', marginTop: 4, padding: '2px 6px', background: 'var(--border)', borderRadius: 4, fontSize: '0.7em', width: 'fit-content'}}>
+372-                                                  {isPlaylist ? "Playlist" : "Vídeo"}
+373-                                              </small>
+374-                                          </div>
+375-                                      </div>
+376-                                  );
+377-                              })}
+378-                          </div>
+379-                      )}
+380-                  </div>
+381-              ) : (
+382-                  <div style={{position: 'relative', border: '1px solid var(--border)', borderRadius: 8, padding: 12, display: 'flex', gap: 16}}>
+383-                      <img src={youtubeSelected.snippet.thumbnails?.high?.url || youtubeSelected.snippet.thumbnails?.default?.url} style={{width: 160, borderRadius: 8, objectFit: 'cover'}} />
+384-                      <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+385-                          <strong>{youtubeSelected.snippet.title}</strong>
+386-                          <span style={{opacity: 0.7}}>{youtubeSelected.snippet.channelTitle}</span>
+387-                      </div>
+388-                      <button type="button" onClick={() => setYoutubeSelected(null)} style={{position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'}}>
+389-                          <X size={16} />
+390-                      </button>
+391-                  </div>
+392-              )}
+393-          </div>
+394-      )}
+395-
+396-      <div className="new-composer-tools">
+397-        <button type="button" className={`composer-tool-btn ${mode === "text" ? 'active' : ''}`} onClick={() => setMode("text")}><Search size={18} /> Estado</button>
+398-        <button type="button" className={`composer-tool-btn ${mode === "photo" ? 'active' : ''}`} onClick={() => setMode("photo")}><Image size={18} /> Foto</button>
+399-        <button type="button" className={`composer-tool-btn ${mode === "video" ? 'active' : ''}`} onClick={() => setMode("video")}><Video size={18} /> Vídeo</button>
+400-        <button type="button" className={`composer-tool-btn ${mode === "music" ? 'active' : ''}`} onClick={() => setMode("music")}><Music size={18} /> Música</button>
+401-        <button type="button" className={`composer-tool-btn ${mode === "poll" ? 'active' : ''}`} onClick={() => setMode("poll")}><BarChart3 size={18} /> Encuesta</button>
+402-        <button type="button" className={`composer-tool-btn ${mode === "news" ? 'active' : ''}`} onClick={() => setMode("news")}><Newspaper size={18} /> Noticia</button>
+403-        <button type="button" className="composer-tool-btn"><List size={18} /> Más <ChevronDown size={14} style={{marginLeft: -2}}/></button>
+404-      </div>
+405-      <div className="new-composer-divider"></div>
+406-      <div className="new-composer-footer">
+407-        <div className="new-composer-privacy">
+408-          <Globe size={16} /> Público <ChevronDown size={14} />
+409-        </div>
+410-        <button className="new-composer-publish" onClick={publish} disabled={publishing}>
+411-          {publishing ? "Guardando..." : buttonText}
+412-        </button>
+413-      </div>
+414-      {error && <p className="message">{error}</p>}
+415-    </section>
+416-  );
+417-}function CommentsSection({ postId, session, navigate }: { postId: string; session: Session; navigate: any }) {
+418-  const [comments, setComments] = useState<any[]>([]);
+419-  const [newComment, setNewComment] = useState("");
+420-  const [loading, setLoading] = useState(true);
+421-
+422-  useEffect(() => {
+423-    let cancelled = false;
+424-    async function loadComments() {
+425-      const { data, error } = await supabase
+426-        .from("comments")
+427-        .select("id, content, created_at, author_id, profiles!comments_author_id_fkey(username, full_name, avatar_url)")

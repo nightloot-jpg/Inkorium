@@ -1,0 +1,24 @@
+¡Hola! Estoy listo para empezar a planificar la reconstrucción del Composer principal para Inkorium.
+
+Antes de crear un plan de ejecución y empezar a codificar, quiero asegurarme de que entiendo al 100% tus requisitos, en especial respecto al modelo de datos en Supabase y la funcionalidad actual. He estado revisando el código base (`src/main.tsx`, `supabase/migrations/`, etc.) y veo que ya hay una estructura base de encuestas y media, pero necesito clarificar algunas cosas:
+
+**1. Amistades y Privacidad "Amigos":**
+He revisado la base de datos y los archivos del proyecto, pero no veo claramente cómo está implementada la tabla de amistades actualmente en Supabase (ej. `friendships`). Veo que en la UI se muestran "AMIGOS CONECTADOS", pero ¿puedes confirmarme si ya existe una tabla en Supabase que gestione las amistades? ¿Cómo se llama esa tabla y cuáles son sus columnas principales (`user_id_1`, `user_id_2`, `status`)? Esto es vital para las políticas RLS de privacidad "Amigos" y la consulta del feed.
+
+**2. Privacidad "Privado" (Selector de personas):**
+Cuando un post es "Privado" y se seleccionan usuarios específicos, necesitamos guardar quiénes tienen acceso. ¿Prefieres que cree una nueva tabla de relación (por ejemplo, `post_visibility_users` con `post_id` y `user_id`) para esto, o prefieres un array de UUIDs en la propia tabla `posts`? La opción de la tabla separada es más limpia y fácil de gestionar con las políticas RLS.
+
+**3. Campo `media_data` para Noticia y Vídeo:**
+Veo que en la actualidad se guarda información como JSON en `media_data`.
+- Para **Noticia**, ¿te parece bien que guardemos `{ "type": "news", "url": "...", "title": "..." }` dentro de `media_data`?
+- Para **Vídeo**, al subir un archivo (ya que no quieres pedir URL a menos que sea estrictamente necesario), guardaríamos `{ "type": "video", "url": "..." }` una vez subido a Supabase Storage.
+¿Confirmas que esto es lo esperado?
+
+**4. Menú "Más":**
+Me pides que prepare opciones como "Evento", "Lugar", "Pregunta", etc., pero sin implementar funciones falsas si no existen. Si un usuario hace clic en una de estas opciones y la funcionalidad aún no está desarrollada en Inkorium, ¿qué debería ocurrir exactamente? ¿Mostramos un discreto aviso de "Próximamente", simplemente no hace nada, o prefieres que deje la estructura HTML/CSS preparada pero los botones ocultos o deshabilitados?
+
+**5. Música - Experiencia:**
+Mencionas que quieres separar visualmente "Canciones | Playlists" sin encabezados enormes. Al seleccionar una, ¿está bien que se muestre un cuadro compacto con el thumbnail, título, autor y un botón de "X" para deseleccionar, manteniendo la coherencia con el diseño "Tuenti + Inkorium"?
+
+**6. Separación del código:**
+Actualmente el `Composer` (y casi toda la app) está dentro de `src/main.tsx`. Para que quede mucho más limpio y no rompamos el monolito, ¿quieres que mantenga el Composer ahí dentro, o aprovecho esta mejora para separarlo a un nuevo archivo (ej. `src/components/Composer.tsx`) y lo importo en `main.tsx`?
