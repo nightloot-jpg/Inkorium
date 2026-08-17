@@ -1846,6 +1846,7 @@ button:disabled { cursor: wait; opacity: .65; }
 
 .composer-toolbar-container {
     overflow-x: auto;
+    overflow-y: visible;
     margin: 0 -16px;
     padding: 0 16px;
 }
