@@ -2334,3 +2334,49 @@ button:disabled { cursor: wait; opacity: .65; }
     }
 }
 
+
+
+/* --- COMPOSER MEDIA PREVIEW ISOLATION --- */
+/* Added to ensure absolute containment regardless of inline styles being overridden */
+.composer-photo-preview,
+.composer-video-preview {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+    background: #000;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.composer-photo-preview-image,
+.composer-video-preview-media {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    position: static !important;
+}
+
+/* Make sure the remove button stays inside */
+.composer-photo-preview-remove,
+.composer-video-preview-remove {
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+    z-index: 10 !important;
+}
+
+@media (max-width: 768px) {
+    .composer-photo-preview,
+    .composer-video-preview {
+        height: 250px !important;
+        max-height: 250px !important;
+    }
+}
