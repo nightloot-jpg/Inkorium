@@ -1896,7 +1896,7 @@ button:disabled { cursor: wait; opacity: .65; }
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     padding: 8px 0;
-    min-width: 180px;
+    min-width: 220px;
     z-index: 100;
 }
 
