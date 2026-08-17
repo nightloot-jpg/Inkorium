@@ -21,21 +21,22 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
 
   // Tagging State
   const [tags, setTags] = useState<any[]>([]);
-  const [showTags, setShowTags] = useState(false);
   const [isTaggingMode, setIsTaggingMode] = useState(false);
   const [pendingTag, setPendingTag] = useState<{x: number, y: number} | null>(null);
   const [tagSearchQuery, setTagSearchQuery] = useState("");
   const [tagSearchResults, setTagSearchResults] = useState<any[]>([]);
-
+  // Etiqueta "activa": en pantallas táctiles no existe :hover, así que un toque
+  // sobre el punto revela su nombre (y un segundo toque lo oculta de nuevo).
+  const [activeTagId, setActiveTagId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    
+
     async function fetchDetails() {
       // Likes
       const { count } = await supabase.from('photo_likes').select('*', { count: 'exact', head: true }).eq('photo_id', photo.id);
       const { data: myLike } = await supabase.from('photo_likes').select('id').eq('photo_id', photo.id).eq('user_id', session.user.id).maybeSingle();
-      
+
       // Tags
       const { data: tagsData } = await supabase
         .from('photo_tags')
@@ -56,59 +57,9 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
         setTags(tagsData || []);
       }
     }
-    
+
     fetchDetails();
-    function handleImageClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (!isTaggingMode) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    setPendingTag({ x, y });
-    setTagSearchQuery("");
-    setTagSearchResults([]);
-  }
-
-  async function handleAddTag(user: any) {
-    if (!pendingTag) return;
-    console.log("[PHOTO TAG] user selected", user);
-    console.log("[PHOTO TAG] inserting at", pendingTag);
-
-    const { data, error } = await supabase
-      .from('photo_tags')
-      .insert({
-        photo_id: photo.id,
-        user_id: user.id,
-        tagged_by: session.user.id,
-        x: pendingTag.x,
-        y: pendingTag.y
-      })
-      .select('*, profiles!user_id(id, username, full_name, avatar_url)')
-      .single();
-
-    if (!error && data) {
-      console.log("[PHOTO TAG] inserted", data);
-      setTags(prev => [...prev, data]);
-      setPendingTag(null);
-      setShowTags(true);
-      console.log("[PHOTO TAG] state updated");
-    } else {
-      console.error("[PHOTO TAG] Error adding tag", error);
-      alert("No tienes permiso para etiquetar en esta foto o ocurrió un error.");
-    }
-  }
-
-  async function handleDeleteTag(tagId: string) {
-    const { error } = await supabase.from('photo_tags').delete().eq('id', tagId);
-    if (!error) {
-      setTags(prev => prev.filter(t => t.id !== tagId));
-    }
-  }
-
-  const canManageTags = photo.user_id === session.user.id;
-
-  return () => { cancelled = true; };
+    return () => { cancelled = true; };
   }, [photo.id, session.user.id]);
 
   // Debounced search for tagging
@@ -128,57 +79,7 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
       setTagSearchResults(data || []);
     }, 300);
 
-    function handleImageClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (!isTaggingMode) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    setPendingTag({ x, y });
-    setTagSearchQuery("");
-    setTagSearchResults([]);
-  }
-
-  async function handleAddTag(user: any) {
-    if (!pendingTag) return;
-    console.log("[PHOTO TAG] user selected", user);
-    console.log("[PHOTO TAG] inserting at", pendingTag);
-
-    const { data, error } = await supabase
-      .from('photo_tags')
-      .insert({
-        photo_id: photo.id,
-        user_id: user.id,
-        tagged_by: session.user.id,
-        x: pendingTag.x,
-        y: pendingTag.y
-      })
-      .select('*, profiles!user_id(id, username, full_name, avatar_url)')
-      .single();
-
-    if (!error && data) {
-      console.log("[PHOTO TAG] inserted", data);
-      setTags(prev => [...prev, data]);
-      setPendingTag(null);
-      setShowTags(true);
-      console.log("[PHOTO TAG] state updated");
-    } else {
-      console.error("[PHOTO TAG] Error adding tag", error);
-      alert("No tienes permiso para etiquetar en esta foto o ocurrió un error.");
-    }
-  }
-
-  async function handleDeleteTag(tagId: string) {
-    const { error } = await supabase.from('photo_tags').delete().eq('id', tagId);
-    if (!error) {
-      setTags(prev => prev.filter(t => t.id !== tagId));
-    }
-  }
-
-  const canManageTags = photo.user_id === session.user.id;
-
-  return () => clearTimeout(timeout);
+    return () => clearTimeout(timeout);
   }, [tagSearchQuery, pendingTag]);
 
   async function toggleLike() {
@@ -225,8 +126,6 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
 
   async function handleAddTag(user: any) {
     if (!pendingTag) return;
-    console.log("[PHOTO TAG] user selected", user);
-    console.log("[PHOTO TAG] inserting at", pendingTag);
 
     const { data, error } = await supabase
       .from('photo_tags')
@@ -241,11 +140,8 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
       .single();
 
     if (!error && data) {
-      console.log("[PHOTO TAG] inserted", data);
       setTags(prev => [...prev, data]);
       setPendingTag(null);
-      setShowTags(true);
-      console.log("[PHOTO TAG] state updated");
     } else {
       console.error("[PHOTO TAG] Error adding tag", error);
       alert("No tienes permiso para etiquetar en esta foto o ocurrió un error.");
@@ -256,7 +152,13 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
     const { error } = await supabase.from('photo_tags').delete().eq('id', tagId);
     if (!error) {
       setTags(prev => prev.filter(t => t.id !== tagId));
+      setActiveTagId(prev => (prev === tagId ? null : prev));
     }
+  }
+
+  function handleTagMarkerClick(e: React.MouseEvent, tagId: string) {
+    e.stopPropagation();
+    setActiveTagId(prev => (prev === tagId ? null : tagId));
   }
 
   const canManageTags = photo.user_id === session.user.id;
@@ -264,13 +166,13 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
   return (
     <div className="photos-viewer-overlay">
       <button className="photos-viewer-close" onClick={onClose}><X size={24} /></button>
-      
+
       {currentIndex > 0 && (
         <button className="photos-viewer-nav prev" onClick={() => onNavigate(photos[currentIndex - 1])}>
           <ChevronLeft size={32} />
         </button>
       )}
-      
+
       {currentIndex < photos.length - 1 && (
         <button className="photos-viewer-nav next" onClick={() => onNavigate(photos[currentIndex + 1])}>
           <ChevronRight size={32} />
@@ -282,12 +184,14 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
           <div className="photos-viewer-image-container" onClick={handleImageClick} style={{ position: 'relative', display: 'inline-block', maxWidth: '100%', maxHeight: '100%' }}>
             <img src={photo.url} alt={photo.caption || "Fotografía"} style={{ display: 'block', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
 
-            {/* Render existing tags */}
-            {showTags && tags.map(tag => (
+            {/* Los puntos de etiqueta siempre están sobre la foto; el nombre solo
+                aparece al pasar el ratón por encima (o al tocar, en táctil). */}
+            {tags.map(tag => (
               <div
                 key={tag.id}
-                className="photo-tag-marker"
+                className={`photo-tag-marker ${activeTagId === tag.id ? 'active' : ''}`}
                 style={{ left: `${tag.x}%`, top: `${tag.y}%` }}
+                onClick={(e) => handleTagMarkerClick(e, tag.id)}
               >
                 <div className="photo-tag-dot"></div>
                 <div className="photo-tag-label">
@@ -340,15 +244,9 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
           <div className="photos-viewer-top-controls">
             <button
               className={`photos-viewer-control-btn ${isTaggingMode ? 'active' : ''}`}
-              onClick={() => { setIsTaggingMode(!isTaggingMode); if(!isTaggingMode) setShowTags(true); setPendingTag(null); }}
+              onClick={() => { setIsTaggingMode(!isTaggingMode); setPendingTag(null); }}
             >
               <TagIcon size={16} /> {isTaggingMode ? "Cancelar etiquetado" : "Etiquetar personas"}
-            </button>
-            <button
-              className="photos-viewer-control-btn"
-              onClick={() => setShowTags(!showTags)}
-            >
-              <TagIcon size={16} /> {showTags ? "Ocultar etiquetas" : "Mostrar etiquetas"}
             </button>
           </div>
 
@@ -358,7 +256,7 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
              </div>
           )}
         </div>
-        
+
         <div className="photos-viewer-sidebar">
           <div className="photos-viewer-header">
             <div className="avatar tiny" style={{ width: 32, height: 32 }}>
@@ -369,7 +267,7 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
               <small style={{ color: 'var(--text-light)' }}>{formatPostTime(photo.created_at)}</small>
             </div>
           </div>
-          
+
           <div className="photos-viewer-details">
             {photo.caption && <p className="photos-viewer-caption">{photo.caption}</p>}
           </div>
@@ -428,11 +326,11 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
               </div>
             ))}
           </div>
-          
+
           <form onSubmit={postComment} style={{ padding: 16, borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
-            <input 
-              type="text" 
-              placeholder="Añadir comentario..." 
+            <input
+              type="text"
+              placeholder="Añadir comentario..."
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
               style={{ flex: 1, padding: '8px 12px', borderRadius: 20, border: '1px solid var(--border)', background: 'var(--bg-color)' }}
