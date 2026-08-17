@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { PhotoUploader } from "./PhotoUploader";
 import { PhotoViewer } from "./PhotoViewer";
 import { PhotoCard } from "./PhotoCard";
+import { CreateAlbumModal, EditAlbumModal, AddPhotosModal } from "./AlbumModals";
 
 type Props = {
   session: Session;
@@ -17,6 +18,9 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
   const [albums, setAlbums] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUploader, setShowUploader] = useState(false);
+  const [showCreateAlbum, setShowCreateAlbum] = useState(false);
+  const [showEditAlbum, setShowEditAlbum] = useState(false);
+  const [showAddPhotos, setShowAddPhotos] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<any | null>(null);
 
   // Tabs: 'photos', 'albums', 'favorites', 'tags'
@@ -81,12 +85,28 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
           setPhotos(data || []);
         } else {
           // Load albums list
-          const { data } = await supabase
+          const { data: albumsData } = await supabase
             .from('photo_albums')
             .select('*')
             .eq('user_id', targetUserId)
             .order('created_at', { ascending: false });
-          setAlbums(data || []);
+
+          if (albumsData) {
+             // For each album, fetch its photo count and latest photo as cover
+             const enrichedAlbums = await Promise.all(albumsData.map(async (album) => {
+                const { count } = await supabase.from('photos').select('*', { count: 'exact', head: true }).eq('album_id', album.id);
+                const { data: latestPhoto } = await supabase.from('photos').select('url').eq('album_id', album.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+
+                return {
+                   ...album,
+                   photoCount: count || 0,
+                   coverPhotoUrl: latestPhoto?.url || null
+                };
+             }));
+             setAlbums(enrichedAlbums);
+          } else {
+             setAlbums([]);
+          }
         }
       } else if (activeTab === 'favorites') {
         // Load photos liked by the target user
@@ -196,10 +216,57 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
                 <Plus size={18} /> Subir fotos
               </button>
             )}
-            {selectedAlbum && (
-              <button className="photos-secondary-button" onClick={() => setSelectedAlbum(null)}>
-                Volver a álbumes
+            {isOwnProfile && activeTab === 'albums' && !selectedAlbum && (
+              <button
+                onClick={() => setShowCreateAlbum(true)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "6px",
+                  background: "#0750A7", color: "white", padding: "8px 16px",
+                  borderRadius: "6px", border: "none", cursor: "pointer",
+                  fontWeight: 600, fontSize: "14px"
+                }}
+              >
+                <Plus size={18} /> Crear álbum
               </button>
+            )}
+            {selectedAlbum && (
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  onClick={() => setSelectedAlbum(null)}
+                  style={{
+                    padding: "8px 16px", background: "transparent",
+                    border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer",
+                    fontWeight: 500
+                  }}
+                >
+                  ← Volver a álbumes
+                </button>
+                {isOwnProfile && (
+                  <>
+                    <button
+                      onClick={() => setShowEditAlbum(true)}
+                      style={{
+                        padding: "8px 16px", background: "transparent",
+                        border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer",
+                        fontWeight: 500
+                      }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => setShowAddPhotos(true)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "6px",
+                        background: "#0750A7", color: "white", padding: "8px 16px",
+                        borderRadius: "6px", border: "none", cursor: "pointer",
+                        fontWeight: 600, fontSize: "14px"
+                      }}
+                    >
+                      <Plus size={18} /> Añadir fotos
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </header>
 
@@ -217,6 +284,7 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
                       {activeTab === 'favorites' && "No tienes fotos favoritas."}
                       {activeTab === 'tags' && "No apareces etiquetado en ninguna foto."}
                     </h2>
+
                     {activeTab === 'photos' && isOwnProfile && (
                       <>
                         <p className="photos-empty-desc">Sube tus primeras imágenes para crear tu galería.</p>
@@ -233,11 +301,63 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
                         </button>
                       </>
                     )}
+
+                    {activeTab === 'albums' && isOwnProfile && (
+                      <button
+                        onClick={() => setShowAddPhotos(true)}
+                        style={{
+                          display: "flex", alignItems: "center", gap: "6px",
+                          background: "#0750A7", color: "white", padding: "10px 20px",
+                          borderRadius: "6px", border: "none", cursor: "pointer",
+                          fontWeight: 600, fontSize: "15px", marginTop: "16px"
+                        }}
+                      >
+                        <Plus size={18} /> Añadir fotos
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="photos-gallery">
+                    {activeTab === 'albums' && isOwnProfile && (
+                       <div style={{gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", marginBottom: "16px"}}>
+                         <button
+                            onClick={async () => {
+                              if(window.confirm("¿Seguro que quieres eliminar este álbum?")) {
+                                 await supabase.from('photo_albums').delete().eq('id', selectedAlbum.id);
+                                 setSelectedAlbum(null);
+                                 loadData();
+                              }
+                            }}
+                            style={{
+                              padding: "6px 12px", background: "transparent", color: "#e53e3e",
+                              border: "1px solid #e53e3e", borderRadius: "6px", cursor: "pointer",
+                              fontWeight: 500, fontSize: "12px"
+                            }}
+                          >
+                            Eliminar álbum
+                          </button>
+                       </div>
+                    )}
                     {photos.map(photo => (
-                      <PhotoCard key={photo.id} photo={photo} session={session} onClick={() => setSelectedPhoto(photo)} />
+                      <div key={photo.id} style={{ position: "relative" }}>
+                        <PhotoCard photo={photo} session={session} onClick={() => setSelectedPhoto(photo)} />
+                        {activeTab === 'albums' && isOwnProfile && (
+                           <button
+                             onClick={async (e) => {
+                               e.stopPropagation();
+                               await supabase.from('photos').update({ album_id: null }).eq('id', photo.id);
+                               loadData();
+                             }}
+                             style={{
+                               position: "absolute", top: "8px", left: "8px", zIndex: 10,
+                               background: "rgba(0,0,0,0.6)", color: "white", padding: "4px 8px",
+                               borderRadius: "4px", border: "none", cursor: "pointer", fontSize: "11px"
+                             }}
+                           >
+                             Quitar del álbum
+                           </button>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )
@@ -247,17 +367,36 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
                 albums.length === 0 ? (
                   <div className="photos-empty-state">
                     <Folders size={48} style={{ opacity: 0.5, marginBottom: 16 }} />
-                    <h2 className="photos-empty-title">No hay álbumes</h2>
-                    <p className="photos-empty-desc">No tienes álbumes todavía.</p>
+                    <h2 className="photos-empty-title">No tienes álbumes todavía.</h2>
+                    <p className="photos-empty-desc">Crea tu primer álbum para organizar tus fotos.</p>
+                    {isOwnProfile && (
+                      <button
+                        onClick={() => setShowCreateAlbum(true)}
+                        style={{
+                          display: "flex", alignItems: "center", gap: "6px",
+                          background: "#0750A7", color: "white", padding: "10px 20px",
+                          borderRadius: "6px", border: "none", cursor: "pointer",
+                          fontWeight: 600, fontSize: "15px", marginTop: "16px"
+                        }}
+                      >
+                        <Plus size={18} /> Crear álbum
+                      </button>
+                    )}
                   </div>
                 ) : (
-                  <div className="photos-albums">
+                  <div className="photos-albums-list">
                     {albums.map(album => (
-                      <div key={album.id} className="photos-album-card" onClick={() => setSelectedAlbum(album)} style={{cursor: 'pointer'}}>
-                        <img src={album.cover_photo_url || "https://via.placeholder.com/150?text=Album"} alt={album.name} />
-                        <div className="photos-album-card-overlay">
-                          <strong>{album.name}</strong>
-                          <small>Álbum</small>
+                      <div key={album.id} className="photos-album-card-new" onClick={() => setSelectedAlbum(album)}>
+                        <div className="photos-album-cover-container">
+                           {album.coverPhotoUrl ? (
+                              <img src={album.coverPhotoUrl} alt={album.name} />
+                           ) : (
+                              <span style={{fontSize: "2rem"}}>📷</span>
+                           )}
+                        </div>
+                        <div className="photos-album-info">
+                          <h3>{album.name}</h3>
+                          <p>{album.photoCount} foto{album.photoCount !== 1 ? 's' : ''}</p>
                         </div>
                       </div>
                     ))}
@@ -286,6 +425,14 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
       </div>
 
       {showUploader && <PhotoUploader session={session} onClose={() => setShowUploader(false)} onSuccess={loadData} />}
+      {showCreateAlbum && <CreateAlbumModal session={session} onClose={() => setShowCreateAlbum(false)} onSuccess={loadData} />}
+      {showEditAlbum && selectedAlbum && <EditAlbumModal session={session} album={selectedAlbum} onClose={() => setShowEditAlbum(false)} onSuccess={() => {
+        // Optimistically update selected album or just reload and let the user select it again
+        // For simplicity, just reload
+        loadData();
+        setSelectedAlbum(null);
+      }} />}
+      {showAddPhotos && selectedAlbum && <AddPhotosModal session={session} albumId={selectedAlbum.id} onClose={() => setShowAddPhotos(false)} onSuccess={loadData} />}
       {selectedPhoto && <PhotoViewer photo={selectedPhoto} photos={photos} session={session} onClose={() => setSelectedPhoto(null)} onNavigate={setSelectedPhoto} />}
     </div>
   );
