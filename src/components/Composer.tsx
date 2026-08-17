@@ -111,6 +111,7 @@ function ComposerMenuPortal({
 }
 
 export function Composer({
+
   session,
   profile,
   onPublish,
@@ -151,6 +152,66 @@ export function Composer({
   const [youtubeSearching, setYoutubeSearching] = useState(false);
   const [youtubeSelected, setYoutubeSelected] = useState<any | null>(null);
   const [youtubeHasKey, setYoutubeHasKey] = useState(!!import.meta.env.VITE_YOUTUBE_API_KEY);
+
+  useEffect(() => {
+    const handleVideoShare = (e: any) => {
+      const v = e.detail;
+      setMode("music");
+      setYoutubeSelected({
+        id: { videoId: v.youtube_id, kind: 'youtube#video' },
+        snippet: {
+          title: v.title,
+          description: v.description,
+          channelTitle: v.channel,
+          thumbnails: { high: { url: v.thumbnail }, default: { url: v.thumbnail } }
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('open-composer-video', handleVideoShare);
+    return () => window.removeEventListener('open-composer-video', handleVideoShare);
+  }, []);
+
+
+  useEffect(() => {
+    const handleVideoShare = (e: any) => {
+      const v = e.detail;
+      setMode("music");
+      setYoutubeSelected({
+        id: { videoId: v.youtube_id, kind: 'youtube#video' },
+        snippet: {
+          title: v.title,
+          description: v.description,
+          channelTitle: v.channel,
+          thumbnails: { high: { url: v.thumbnail }, default: { url: v.thumbnail } }
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('open-composer-video', handleVideoShare);
+    return () => window.removeEventListener('open-composer-video', handleVideoShare);
+  }, []);
+
+
+  useEffect(() => {
+    const handleVideoShare = (e: any) => {
+      const v = e.detail;
+      setMode("music");
+      setYoutubeSelected({
+        id: { videoId: v.youtube_id, kind: 'youtube#video' },
+        snippet: {
+          title: v.title,
+          description: v.description,
+          channelTitle: v.channel,
+          thumbnails: { high: { url: v.thumbnail }, default: { url: v.thumbnail } }
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('open-composer-video', handleVideoShare);
+    return () => window.removeEventListener('open-composer-video', handleVideoShare);
+  }, []);
+
   
   // Poll
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);

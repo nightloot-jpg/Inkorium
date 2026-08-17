@@ -8,7 +8,7 @@ import { supabase } from "./lib/supabase";
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from "./lib/cropImage";
 import { getDisplayName, formatPostTime } from "./utils";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, MoreVertical, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send, Calendar, MapPin } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, MoreVertical, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send, Calendar, MapPin, Loader2 } from "lucide-react";
 import "./styles.css";
 import { YoutubePlaylist } from './YoutubePlaylist';
 import { SingleSongPlayer } from './components/SingleSongPlayer';
@@ -17,7 +17,7 @@ import { Composer } from './components/Composer';
 import { PhotosPage } from './components/PhotosPage';
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
 type Post = { id: string; text: string; time: string; likes: number; authorName?: string; authorAvatarUrl?: string | null; author_id: string; target_profile_id?: string | null; targetName?: string; shared_post_id?: string | null; originalPost?: { text: string; authorName: string; authorAvatarUrl?: string | null; time: string; author_id: string; }; commentsCount?: number; media_data?: any; poll_id?: string; };
-type Page = "inicio" | "perfil" | "mensajes" | "personas" | "musica" | "buscar" | "fotos";
+type Page = "inicio" | "perfil" | "mensajes" | "personas" | "musica" | "buscar" | "fotos" | "videos";
 export type ProfileData = { id?: string; username: string | null; full_name: string | null; bio: string | null; city: string | null; avatar_url: string | null; banner_url: string | null };
 type NotificationData = { id: string; actor_id: string; type: string; entity_id: string; is_read: boolean; created_at: string; actor?: ProfileData };
  const songs = ["MHR, EFY & SNEZ! - Hola", "Inalcanzable", "Atardecer en Madrid", "Noches de verano"];
@@ -30,7 +30,7 @@ type NotificationData = { id: string; actor_id: string; type: string; entity_id:
 function CommentsSection({ postId, session, navigate }: { postId: string; session: Session; navigate: any }) {
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!import.meta.env.VITE_YOUTUBE_API_KEY);
 
   useEffect(() => {
     let cancelled = false;
@@ -493,7 +493,7 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
     {page === "fotos" ? (
       <PhotosPage session={session} profileId={currentRoute.params?.userId} navigate={navigate} />
     ) : (
-      <div className="feed-layout"><aside className="left-column"><section className="profile-card panel"><div className="avatar profile-avatar">{username[0].toUpperCase()}</div><div><strong>{username}</strong><span>Mas rapido</span><em>● En linea</em><button onClick={() => navigate("perfil")}>Ver mi perfil »</button></div></section><nav className="side-menu panel">{[["⌂", "Novedades", "inicio"], ["▧", "Fotos", "fotos"], ["▹", "Videos", "buscar"], ["♫", "Musica", "musica"], ["□", "Eventos", "buscar"], ["♧", "Grupos", "personas"], ["⚑", "Paginas", "personas"], ["▥", "Encuestas", "buscar"], ["▱", "Guardados", "buscar"], ["⚙", "Configuracion", "personas"]].map(([icon, label, id], index) => <button className={page === id && index === 0 ? "selected" : ""} onClick={() => navigate(id as Page)} key={label}><span>{icon}</span>{label}</button>)}</nav><section className="friends panel"><strong>AMIGOS CONECTADOS (1)</strong><div><span className="avatar tiny">B</span><button onClick={() => navigate("personas")}>bg9222361</button><i /></div><button className="see-all" onClick={() => navigate("personas")}>Ver todos »</button></section></aside>
+      <div className="feed-layout"><aside className="left-column"><section className="profile-card panel"><div className="avatar profile-avatar">{username[0].toUpperCase()}</div><div><strong>{username}</strong><span>Mas rapido</span><em>● En linea</em><button onClick={() => navigate("perfil")}>Ver mi perfil »</button></div></section><nav className="side-menu panel">{[["⌂", "Novedades", "inicio"], ["▧", "Fotos", "fotos"], ["▹", "Videos", "videos"], ["♫", "Musica", "musica"], ["□", "Eventos", "buscar"], ["♧", "Grupos", "personas"], ["⚑", "Paginas", "personas"], ["▥", "Encuestas", "buscar"], ["▱", "Guardados", "buscar"], ["⚙", "Configuracion", "personas"]].map(([icon, label, id], index) => <button className={page === id && index === 0 ? "selected" : ""} onClick={() => navigate(id as Page)} key={label}><span>{icon}</span>{label}</button>)}</nav><section className="friends panel"><strong>AMIGOS CONECTADOS (1)</strong><div><span className="avatar tiny">B</span><button onClick={() => navigate("personas")}>bg9222361</button><i /></div><button className="see-all" onClick={() => navigate("personas")}>Ver todos »</button></section></aside>
       <main className="stream">{page === "inicio" && <><Composer session={session} profile={profile} onPublish={(newPost) => setPosts(current => [newPost, ...current])} />{posts.length === 0 && !feedError && <p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><UserLink userId={post.author_id} name={post.authorName || username} avatarUrl={post.authorAvatarUrl} navigate={navigate} />
           <div>
             {post.target_profile_id && post.target_profile_id !== post.author_id ? (
@@ -522,7 +522,7 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
           {shareMenu === post.id && <ShareMenu post={post} session={session} onClose={() => setShareMenu(null)} />}
           </div>
           {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
-          </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => {}} />}</main>
+          </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => {}} />}{page === "videos" && <VideosView navigate={navigate} session={session} />}</main>
       <aside className="right-column"><section className="panel right-card"><strong>SOLICITUDES</strong><button>Ver todas</button><p>No tienes solicitudes pendientes.</p></section><section className="panel right-card"><strong>EVENTOS DESTACADOS</strong><button>Ver todos</button><div className="event"><div className="event-image">♫</div><div><b>Descubre Inkorium</b><p>Comparte tus momentos y musica.</p></div></div><button className="outline">Añadir a mi calendario</button></section><section className="panel calendar"><strong>CALENDARIO</strong><span>▣</span><h3>Agosto 2026</h3><div className="week">Lu　 Ma　 Mi　 Ju　 Vi　 Sa　 Do</div><div className="days">{Array.from({ length: 31 }, (_, index) => <i className={index === 12 ? "today" : ""} key={index}>{index + 1}</i>)}</div></section></aside></div>
     )}
     <button className="chat">▢ Chat (0)</button>
@@ -858,7 +858,7 @@ function PeopleView({ navigate }: { navigate: (page: Page, params?: Record<strin
 }
 function MusicView({ onPlay }: { onPlay: () => void }) { return <section className="content-view"><h1>Musica</h1><p className="view-subtitle">Escucha, descubre y comparte nuevos sonidos.</p><div className="music-list panel">{songs.map((song, index) => <div className="song-row" key={song}><span className="music-square">♫</span><div><strong>{song}</strong><small>Inkorium Music · pista {index + 1}</small></div><button onClick={onPlay}>▶ Escuchar</button></div>)}</div></section>; }
 
-function Login() { const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [mode, setMode] = useState<"login" | "signup">("login"); const [remember, setRemember] = useState(true); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); async function submit(event: FormEvent) { event.preventDefault(); setBusy(true); setMessage(""); const result = mode === "login" ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password }); setMessage(result.error ? result.error.message : mode === "login" ? "Sesion iniciada." : "Cuenta creada. Revisa tu correo si hace falta."); setBusy(false); } async function recoverPassword() { if (!email) { setMessage("Escribe tu email para recuperar la contraseña."); return; } setBusy(true); const result = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/` }); setMessage(result.error ? result.error.message : "Te hemos enviado un enlace para cambiar la contraseña."); setBusy(false); } return <main className="page"><Brand /><div className="card"><div className="card-heading"><h1>{mode === "login" ? "Iniciar sesión" : "Crear una cuenta"}</h1><p>{mode === "login" ? "Entra en tu espacio creativo." : "Empieza tu espacio creativo."}</p></div><form onSubmit={(event) => void submit(event)}><label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label>Contraseña<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required /></label><div className="form-options"><label className="remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>Recordarme en este equipo</span></label><button type="button" className="text-button" onClick={() => void recoverPassword()}>¿Contraseña olvidada?</button></div><button className="primary-button" disabled={busy}>{busy ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}</button></form>{message && <p className="message">{message}</p>}</div><div className="page-links"><button className="text-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>{mode === "login" ? "¿Quieres crear una cuenta?" : "¿Ya tienes una cuenta?"}</button><span>|</span><button className="text-button" onClick={() => void recoverPassword()}>Recordar contraseña</button></div></main>; }
+function Login() { const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [mode, setMode] = useState<"login" | "signup">("login"); const [remember, setRemember] = useState(!!import.meta.env.VITE_YOUTUBE_API_KEY); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); async function submit(event: FormEvent) { event.preventDefault(); setBusy(true); setMessage(""); const result = mode === "login" ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password }); setMessage(result.error ? result.error.message : mode === "login" ? "Sesion iniciada." : "Cuenta creada. Revisa tu correo si hace falta."); setBusy(false); } async function recoverPassword() { if (!email) { setMessage("Escribe tu email para recuperar la contraseña."); return; } setBusy(true); const result = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/` }); setMessage(result.error ? result.error.message : "Te hemos enviado un enlace para cambiar la contraseña."); setBusy(false); } return <main className="page"><Brand /><div className="card"><div className="card-heading"><h1>{mode === "login" ? "Iniciar sesión" : "Crear una cuenta"}</h1><p>{mode === "login" ? "Entra en tu espacio creativo." : "Empieza tu espacio creativo."}</p></div><form onSubmit={(event) => void submit(event)}><label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label>Contraseña<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required /></label><div className="form-options"><label className="remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>Recordarme en este equipo</span></label><button type="button" className="text-button" onClick={() => void recoverPassword()}>¿Contraseña olvidada?</button></div><button className="primary-button" disabled={busy}>{busy ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}</button></form>{message && <p className="message">{message}</p>}</div><div className="page-links"><button className="text-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>{mode === "login" ? "¿Quieres crear una cuenta?" : "¿Ya tienes una cuenta?"}</button><span>|</span><button className="text-button" onClick={() => void recoverPassword()}>Recordar contraseña</button></div></main>; }
 
 function UserLink({ userId, name, avatarUrl, navigate, onClick }: { userId: string; name: string; avatarUrl?: string | null; navigate: (page: Page, params?: Record<string, any>) => void; onClick?: () => void }) {
   return (
@@ -902,4 +902,137 @@ function App() {
 
   return session ? <Feed session={session} profile={profile} /> : <Login />;
 }
+
+
+export function VideosView({ navigate, session }: { navigate: (page: Page) => void; session: any }) {
+  const [youtubeSearch, setYoutubeSearch] = useState("");
+  const [youtubeResults, setYoutubeResults] = useState<any[]>([]);
+  const [youtubeSearching, setYoutubeSearching] = useState(false);
+  const [youtubeHasKey, setYoutubeHasKey] = useState(!!import.meta.env.VITE_YOUTUBE_API_KEY);
+  const playerState = usePlayerStore();
+
+  async function searchYoutube(e: React.FormEvent) {
+    e.preventDefault();
+    if (!youtubeSearch.trim() || !youtubeHasKey) return;
+    setYoutubeSearching(true);
+
+
+
+    try {
+      const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(youtubeSearch)}&type=video&maxResults=12&key=${apiKey}`);
+      if (!res.ok) throw new Error("Error en la API de YouTube");
+      const data = await res.json();
+      setYoutubeResults(data.items || []);
+    } catch (err) {
+      console.error(err);
+      setYoutubeResults([]);
+    } finally {
+      setYoutubeSearching(false);
+    }
+  }
+
+  return (
+    <section className="content-view videos-view">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1>Vídeos</h1>
+          <p className="view-subtitle">Busca y comparte vídeos con tus amigos.</p>
+        </div>
+        <button
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent('open-composer-modal', { detail: { mode: 'upload' } }));
+            setTimeout(() => window.dispatchEvent(new CustomEvent('open-composer-video', {})), 50);
+          }}
+          className="primary-button"
+          style={{ height: '36px', padding: '0 16px', borderRadius: '4px' }}
+        >
+          + Subir vídeo
+        </button>
+      </div>
+
+      <div className="panel" style={{ padding: '20px', marginTop: '16px' }}>
+        <h2 style={{ fontSize: '15px', color: '#60758b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🎬 Buscar en YouTube
+        </h2>
+
+        <form onSubmit={searchYoutube} className="youtube-search-form" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: '#a0b0c0' }} />
+            <input
+              value={youtubeSearch}
+              onChange={(e) => setYoutubeSearch(e.target.value)}
+              placeholder="Buscar vídeos en YouTube..."
+              style={{ width: '100%', height: '40px', padding: '0 14px 0 36px', border: '1px solid #d5dce5', borderRadius: '4px' }}
+            />
+          </div>
+          <button type="submit" disabled={!youtubeSearch.trim() || youtubeSearching} style={{ height: '40px', padding: '0 20px', background: '#0750A7', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>
+            {youtubeSearching ? <Loader2 size={16} className="spin" /> : "Buscar"}
+          </button>
+        </form>
+
+        {!youtubeHasKey && (
+          <div style={{ padding: '16px', background: '#ffebee', color: '#c62828', borderRadius: '4px', marginBottom: '20px' }}>
+            La API Key de YouTube no está configurada. La búsqueda no funcionará.
+          </div>
+        )}
+
+        {youtubeResults.length === 0 && !youtubeSearching && (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: '#8191a2' }}>
+            Busca un vídeo en YouTube para empezar.
+          </div>
+        )}
+
+        {youtubeResults.length > 0 && (
+          <div className="youtube-results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+            {youtubeResults.map((item) => (
+              <div key={item.id.videoId} className="youtube-result-card" style={{ border: '1px solid #e0e6ed', borderRadius: '4px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+                  <img src={item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url} alt="" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <strong style={{ fontSize: '13px', color: '#243a51', marginBottom: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.snippet.title}</strong>
+                  <span style={{ fontSize: '11px', color: '#708196', marginBottom: '12px' }}>{item.snippet.channelTitle} · {new Date(item.snippet.publishedAt).toLocaleDateString()}</span>
+
+                  <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
+                    <button
+                      onClick={() => {
+                        playerState.playSong({
+                          video_id: item.id.videoId,
+                          title: item.snippet.title,
+                          thumbnail: item.snippet.thumbnails?.high?.url
+                        });
+                      }}
+                      style={{ flex: 1, padding: '6px', background: '#f0f4f8', color: '#1760b0', border: '1px solid #d4dfeb', borderRadius: '3px', fontSize: '12px', cursor: 'pointer' }}
+                    >
+                      Ver
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('open-composer-modal', { detail: { mode: 'youtube' } }));
+                        setTimeout(() => window.dispatchEvent(new CustomEvent('open-composer-video', {
+                          detail: {
+                            youtube_id: item.id.videoId,
+                            title: item.snippet.title,
+                            thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
+                            description: item.snippet.description,
+                            channel: item.snippet.channelTitle
+                          }
+                        })), 50);
+                      }}
+                      style={{ flex: 1, padding: '6px', background: '#0750A7', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '12px', cursor: 'pointer' }}
+                    >
+                      Compartir
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
