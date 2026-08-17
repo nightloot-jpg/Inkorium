@@ -184,7 +184,15 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
               </p>
             </div>
             {isOwnProfile && activeTab === 'photos' && (
-              <button className="photos-primary-button" onClick={() => setShowUploader(true)}>
+              <button
+                onClick={() => setShowUploader(true)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "6px",
+                  background: "#0750A7", color: "white", padding: "8px 16px",
+                  borderRadius: "6px", border: "none", cursor: "pointer",
+                  fontWeight: 600, fontSize: "14px"
+                }}
+              >
                 <Plus size={18} /> Subir fotos
               </button>
             )}
@@ -210,7 +218,20 @@ export function PhotosPage({ session, profileId, navigate }: Props) {
                       {activeTab === 'tags' && "No apareces etiquetado en ninguna foto."}
                     </h2>
                     {activeTab === 'photos' && isOwnProfile && (
-                       <p className="photos-empty-desc">Sube tus primeras imágenes para crear tu galería.</p>
+                      <>
+                        <p className="photos-empty-desc">Sube tus primeras imágenes para crear tu galería.</p>
+                        <button
+                          onClick={() => setShowUploader(true)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "6px",
+                            background: "#0750A7", color: "white", padding: "10px 20px",
+                            borderRadius: "6px", border: "none", cursor: "pointer",
+                            fontWeight: 600, fontSize: "15px", marginTop: "16px"
+                          }}
+                        >
+                          <Plus size={18} /> Subir fotos
+                        </button>
+                      </>
                     )}
                   </div>
                 ) : (

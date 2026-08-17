@@ -39,20 +39,35 @@ export function PhotoUploader({ session, onClose, onSuccess }: Props) {
     setPreview(URL.createObjectURL(selected));
   }
 
+
   async function handleUpload() {
     if (!file) return;
+
+    // Auth Check
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      setError("Debes iniciar sesión para subir fotos.");
+      return;
+    }
+
     setUploading(true);
     setError("");
+    let uploadedPath = "";
 
     try {
       const ext = file.name.split('.').pop();
-      const path = `photos/${session.user.id}/${Date.now()}.${ext}`;
+      // Use user.id as requested to ensure ownership matches storage structure
+      const path = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+      uploadedPath = path;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('photos')
         .upload(path, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("[PHOTO_UPLOAD] STORAGE", uploadError);
+        throw new Error("No se ha podido subir la imagen.");
+      }
 
       const { data: publicUrlData } = supabase.storage
         .from('photos')
@@ -61,23 +76,37 @@ export function PhotoUploader({ session, onClose, onSuccess }: Props) {
       const { error: dbError } = await supabase
         .from('photos')
         .insert({
-          user_id: session.user.id,
+          user_id: user.id, // specifically use user.id
           storage_path: path,
           url: publicUrlData.publicUrl,
           caption: caption.trim(),
           visibility: visibility
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("[PHOTO_UPLOAD] PHOTOS_INSERT", dbError);
+        // Avoid throwing raw RLS errors
+        throw new Error("No se ha podido guardar la fotografía.");
+      }
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || "Error al subir la foto.");
+      setError(err.message || "Error al publicar la foto.");
+
+      // Cleanup orphaned file if DB insert failed but storage succeeded
+      if (uploadedPath && err.message === "No se ha podido guardar la fotografía.") {
+        try {
+           await supabase.storage.from('photos').remove([uploadedPath]);
+           console.log("[PHOTO_UPLOAD] Limpieza de archivo huérfano completada.");
+        } catch (cleanupErr) {
+           console.error("[PHOTO_UPLOAD] Error al limpiar archivo huérfano:", cleanupErr);
+        }
+      }
+    } finally {
       setUploading(false);
     }
   }
-
   return (
     <div className="photos-uploader-modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="photos-uploader-content">
