@@ -1,7 +1,8 @@
-import { StrictMode, useEffect, useState, useCallback, type ChangeEvent, type FormEvent } from "react";
+import { StrictMode, useEffect, useState, useCallback, useRef, type ChangeEvent, type FormEvent } from "react";
 import { useAuthStore, usePlayerStore, type ProfileData as StoreProfileData, type PlayerItem } from "./lib/store";
 import { FloatingMusicPlayer, formatTime } from "./components_player";
 import { createRoot } from "react-dom/client";
+import { NotificationsPortal } from "./components/NotificationsPortal";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 import Cropper from 'react-easy-crop';
@@ -351,7 +352,8 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
       sessionStorage.setItem("inkorium-page", next[next.length - 1].page);
       return next;
     });
-  }; const [draft, setDraft] = useState(""); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [feedError, setFeedError] = useState(""); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [publishing, setPublishing] = useState(false); const [query, setQuery] = useState(""); const [notifications, setNotifications] = useState(false); const [unreadCount, setUnreadCount] = useState(0); const [userMenu, setUserMenu] = useState(false);
+  }; const [draft, setDraft] = useState(""); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [feedError, setFeedError] = useState(""); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [publishing, setPublishing] = useState(false); const [query, setQuery] = useState(""); const [notifications, setNotifications] = useState(false); const [unreadCount, setUnreadCount] = useState(0);
+  const notificationsButtonRef = useRef<HTMLButtonElement>(null); const [userMenu, setUserMenu] = useState(false);
   const [notificationItems, setNotificationItems] = useState<NotificationData[]>([]);
   const playerState = usePlayerStore();
 
@@ -443,7 +445,7 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
   return <div className={`feed-app theme-${theme}`}>
     <FloatingMusicPlayer />
     <header className="topbar"><button className="brand-button" onClick={() => navigate("inicio")}><Brand /></button><nav className="top-nav">{([["inicio", "Inicio"], ["perfil", "Perfil"], ["mensajes", "Mensajes"], ["personas", "Personas"], ["musica", "Musica"]] as [Page, string][]).map(([id, label]) => <button className={page === id ? "active" : ""} onClick={() => navigate(id)} key={id}>{label}</button>)}</nav><form className="search-form" onSubmit={(event) => { event.preventDefault(); navigate("buscar"); }}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar personas, musica, videos..." /></form><div className="top-actions">
-  <button className="icon-button" onClick={() => setNotifications(!notifications)} aria-label="Notificaciones">
+  <button className="icon-button" ref={notificationsButtonRef} onClick={() => setNotifications(!notifications)} aria-label="Notificaciones">
     <div className="bell-container">
       <Bell size={20} strokeWidth={2.5} />
       {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
@@ -453,7 +455,8 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
   <button className="user-chip" onClick={() => setUserMenu(!userMenu)}>
     <span className="avatar small">{username[0].toUpperCase()}</span>{username}
   </button>
-</div>{notifications && <div className="popover notifications">
+</div><NotificationsPortal isOpen={notifications} onClose={() => setNotifications(false)} triggerRef={notificationsButtonRef}>
+  <div className="popover notifications" style={{ position: "static", boxShadow: "0 8px 24px #18375b35" }}>
   <strong>NOTIFICACIONES</strong>
   <div className="notifications-list">
     {notificationItems.length === 0 ? (
@@ -483,7 +486,9 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
     )}
   </div>
   {notificationItems.length > 0 && <button onClick={() => void markAllRead()}>Marcar todo como leído</button>}
-</div>}{userMenu && <div className="popover user-menu"><strong>{username}</strong><button onClick={() => navigate("perfil")}>Mi perfil</button><button onClick={() => navigate("mensajes")}>Mis mensajes</button><hr /><span>Color de la web</span><div className="themes"><button className="theme-dot blue" onClick={() => setTheme("blue")} /><button className="theme-dot violet" onClick={() => setTheme("violet")} /><button className="theme-dot green" onClick={() => setTheme("green")} /><button className="theme-dot sunset" onClick={() => setTheme("sunset")} /></div><button onClick={() => void supabase.auth.signOut()}>Cerrar sesion</button></div>}</header>
+</div>
+</NotificationsPortal>
+{userMenu && <div className="popover user-menu"><strong>{username}</strong><button onClick={() => navigate("perfil")}>Mi perfil</button><button onClick={() => navigate("mensajes")}>Mis mensajes</button><hr /><span>Color de la web</span><div className="themes"><button className="theme-dot blue" onClick={() => setTheme("blue")} /><button className="theme-dot violet" onClick={() => setTheme("violet")} /><button className="theme-dot green" onClick={() => setTheme("green")} /><button className="theme-dot sunset" onClick={() => setTheme("sunset")} /></div><button onClick={() => void supabase.auth.signOut()}>Cerrar sesion</button></div>}</header>
     <div className="feed-layout"><aside className="left-column"><section className="profile-card panel"><div className="avatar profile-avatar">{username[0].toUpperCase()}</div><div><strong>{username}</strong><span>Mas rapido</span><em>● En linea</em><button onClick={() => navigate("perfil")}>Ver mi perfil »</button></div></section><nav className="side-menu panel">{[["⌂", "Novedades", "inicio"], ["▧", "Fotos", "buscar"], ["▹", "Videos", "buscar"], ["♫", "Musica", "musica"], ["□", "Eventos", "buscar"], ["♧", "Grupos", "personas"], ["⚑", "Paginas", "personas"], ["▥", "Encuestas", "buscar"], ["▱", "Guardados", "buscar"], ["⚙", "Configuracion", "personas"]].map(([icon, label, id], index) => <button className={page === id && index === 0 ? "selected" : ""} onClick={() => navigate(id as Page)} key={label}><span>{icon}</span>{label}</button>)}</nav><section className="friends panel"><strong>AMIGOS CONECTADOS (1)</strong><div><span className="avatar tiny">B</span><button onClick={() => navigate("personas")}>bg9222361</button><i /></div><button className="see-all" onClick={() => navigate("personas")}>Ver todos »</button></section></aside>
       <main className="stream">{page === "inicio" && <><Composer session={session} profile={profile} onPublish={(newPost) => setPosts(current => [newPost, ...current])} />{posts.length === 0 && !feedError && <p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><UserLink userId={post.author_id} name={post.authorName || username} avatarUrl={post.authorAvatarUrl} navigate={navigate} />
           <div>
