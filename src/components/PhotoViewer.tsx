@@ -93,7 +93,7 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
 
       <div className="photos-viewer-content" onClick={(e) => e.stopPropagation()}>
         <div className="photos-viewer-image-section">
-          <img src={photo.url} alt={photo.caption} />
+          <img src={photo.url} alt={photo.caption || "Fotografía"} />
         </div>
         
         <div className="photos-viewer-sidebar">
