@@ -316,147 +316,6 @@ button:disabled { cursor: wait; opacity: .65; }
   color: var(--subtext);
 }
 
-/* --- REDESIGNED COMPOSER --- */
-.new-composer.panel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.new-composer-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.new-composer-avatar {
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #d4dfeb;
-  color: #344c62;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  overflow: hidden;
-}
-
-.new-composer-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.new-composer-input {
-  flex: 1;
-  min-width: 0;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  padding: 10px 14px;
-  font-family: inherit;
-  font-size: 14px;
-  color: #334155;
-  background: #ffffff;
-  resize: none;
-  overflow-y: hidden;
-  outline: none;
-  min-height: 40px;
-}
-
-.new-composer-input::placeholder {
-  color: #94a3b8;
-}
-
-.new-composer-tools {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.new-composer-tools::-webkit-scrollbar {
-  height: 0px;
-}
-
-.composer-tool-btn {
-  background: none;
-  border: none;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  padding: 4px 0;
-  white-space: nowrap;
-}
-
-.composer-tool-btn:hover {
-  color: #334155;
-}
-
-.new-composer-divider {
-  height: 1px;
-  background: #e2e8f0;
-  margin: 0;
-}
-
-.new-composer-footer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 16px;
-  padding-top: 4px;
-}
-
-.new-composer-privacy {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #334155;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.new-composer-publish {
-  background: #5b8ad4;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 18px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.new-composer-publish:hover:not(:disabled) {
-  background: #4a77bd;
-}
-
-.new-composer-publish:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-@media (max-width: 600px) {
-  .new-composer.panel {
-    padding: 12px;
-  }
-  .new-composer-tools {
-    gap: 12px;
-  }
-}
 /* Comment Section */
 .post-comments {
   margin: 12px 16px;
@@ -1804,223 +1663,6 @@ button:disabled { cursor: wait; opacity: .65; }
   }
 }
 
-/* COMPOSER STYLES */
-.composer-container {
-    padding: 16px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 30;
-}
-
-.composer-top {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-}
-
-.composer-input {
-    flex: 1;
-    border: none;
-    outline: none;
-    resize: none;
-    font-size: 15px;
-    padding: 8px 0;
-    min-height: 40px;
-    color: var(--text);
-    font-family: inherit;
-    background: transparent;
-}
-
-.composer-input::placeholder {
-    color: #8c9eb3;
-}
-
-.new-composer-divider {
-    height: 1px;
-    background: #eef2f6;
-    margin: 12px -16px;
-}
-
-.composer-toolbar-container {
-    overflow-x: auto;
-    overflow-y: visible;
-    margin: 0 -16px;
-    padding: 0 16px;
-}
-
-.new-composer-tools {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    white-space: nowrap;
-}
-
-.composer-tool-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 20px;
-    color: #68788c;
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.composer-tool-btn:hover {
-    background: #f4f7fb;
-    color: #344457;
-}
-
-.composer-tool-btn.active {
-    color: #075bb3;
-    background: #edf2f8;
-}
-
-.composer-more-wrapper {
-    position: relative;
-}
-
-.composer-more-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background: #fff;
-    border: 1px solid #eef2f6;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    padding: 8px 0;
-    min-width: 220px;
-    z-index: 100;
-}
-
-.composer-more-menu button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 10px 16px;
-    background: transparent;
-    border: none;
-    text-align: left;
-    color: #344457;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.composer-more-menu button:hover {
-    background: #f4f7fb;
-}
-
-.soon-badge {
-    background: #eef2f6;
-    color: #68788c;
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    font-weight: 700;
-}
-
-.new-composer-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 4px;
-}
-
-.new-composer-privacy {
-    position: relative;
-}
-
-.privacy-trigger {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #68788c;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 6px 10px;
-    border-radius: 6px;
-    transition: background 0.2s;
-}
-
-.privacy-trigger:hover {
-    background: #f4f7fb;
-}
-
-.privacy-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background: #fff;
-    border: 1px solid #eef2f6;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    padding: 8px;
-    min-width: 220px;
-    z-index: 100;
-    margin-top: 4px;
-}
-
-.privacy-dropdown button {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    width: 100%;
-    padding: 8px;
-    background: transparent;
-    border: none;
-    text-align: left;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.privacy-dropdown button:hover {
-    background: #f4f7fb;
-}
-
-.privacy-dropdown button svg {
-    color: #075bb3;
-    margin-top: 2px;
-}
-
-.privacy-option-text strong {
-    display: block;
-    color: #1f2e40;
-    font-size: 14px;
-    margin-bottom: 2px;
-}
-
-.privacy-option-text small {
-    display: block;
-    color: #68788c;
-    font-size: 12px;
-}
-
-.new-composer-publish {
-    background: #075bb3;
-    color: #fff;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.new-composer-publish:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 /* Composer Extended Modes */
 .composer-extended {
     margin-top: 12px;
@@ -2513,4 +2155,201 @@ button:disabled { cursor: wait; opacity: .65; }
         height: 250px !important;
         max-height: 250px !important;
     }
+}
+
+/* ==========================================================================
+   COMPOSER (Tuenti 2026 + Inkorium)
+   ========================================================================== */
+
+.composer-container {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.composer-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.composer-avatar {
+    flex: 0 0 50px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #eef2f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: #0750A7;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.composer-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.composer-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 14px 0;
+    font-size: 15px;
+    line-height: 1.4;
+    color: #1e293b;
+    font-family: inherit;
+    background: transparent;
+    height: auto;
+    overflow-y: hidden; /* Prevent scrollbar before it grows */
+}
+
+.composer-input::placeholder {
+    color: #94a3b8;
+}
+
+.new-composer-divider {
+    height: 1px;
+    background: #eef2f6;
+    margin: 0;
+}
+
+.composer-toolbar-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 0 -16px;
+    padding: 0 16px;
+}
+
+.composer-toolbar-container::-webkit-scrollbar {
+    height: 0px;
+    background: transparent;
+}
+
+.new-composer-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    padding-bottom: 2px;
+}
+
+.composer-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+}
+
+.composer-tool-btn:hover {
+    color: #334155;
+    background: #f1f5f9;
+}
+
+.composer-tool-btn.active {
+    background: #e6f0fa;
+    color: #0750A7;
+}
+
+.composer-more-wrapper {
+    position: relative;
+}
+
+/* PORTAL MENU STYLES */
+.composer-more-menu {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 8px 0;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+}
+
+.composer-more-menu button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: #334155;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-align: left;
+}
+
+.composer-more-menu button:hover:not(:disabled) {
+    background: #f8fafc;
+}
+
+.composer-more-menu button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.soon-badge {
+    background: #e2e8f0;
+    color: #64748b;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.new-composer-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 4px;
+}
+
+.new-composer-privacy {
+    position: relative;
+}
+
+.new-composer-publish {
+    background: #0750A7;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.new-composer-publish:hover:not(:disabled) {
+    background: #064085;
+}
+
+.new-composer-publish:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
