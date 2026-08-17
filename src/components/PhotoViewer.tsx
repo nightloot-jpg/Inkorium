@@ -58,57 +58,8 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
     }
     
     fetchDetails();
-    function handleImageClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (!isTaggingMode) return;
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    setPendingTag({ x, y });
-    setTagSearchQuery("");
-    setTagSearchResults([]);
-  }
-
-  async function handleAddTag(user: any) {
-    if (!pendingTag) return;
-    console.log("[PHOTO TAG] user selected", user);
-    console.log("[PHOTO TAG] inserting at", pendingTag);
-
-    const { data, error } = await supabase
-      .from('photo_tags')
-      .insert({
-        photo_id: photo.id,
-        user_id: user.id,
-        tagged_by: session.user.id,
-        x: pendingTag.x,
-        y: pendingTag.y
-      })
-      .select('*, profiles!user_id(id, username, full_name, avatar_url)')
-      .single();
-
-    if (!error && data) {
-      console.log("[PHOTO TAG] inserted", data);
-      setTags(prev => [...prev, data]);
-      setPendingTag(null);
-      setShowTags(true);
-      console.log("[PHOTO TAG] state updated");
-    } else {
-      console.error("[PHOTO TAG] Error adding tag", error);
-      alert("No tienes permiso para etiquetar en esta foto o ocurrió un error.");
-    }
-  }
-
-  async function handleDeleteTag(tagId: string) {
-    const { error } = await supabase.from('photo_tags').delete().eq('id', tagId);
-    if (!error) {
-      setTags(prev => prev.filter(t => t.id !== tagId));
-    }
-  }
-
-  const canManageTags = photo.user_id === session.user.id;
-
-  return () => { cancelled = true; };
+    return () => { cancelled = true; };
   }, [photo.id, session.user.id]);
 
   // Debounced search for tagging
@@ -128,57 +79,7 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
       setTagSearchResults(data || []);
     }, 300);
 
-    function handleImageClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (!isTaggingMode) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    setPendingTag({ x, y });
-    setTagSearchQuery("");
-    setTagSearchResults([]);
-  }
-
-  async function handleAddTag(user: any) {
-    if (!pendingTag) return;
-    console.log("[PHOTO TAG] user selected", user);
-    console.log("[PHOTO TAG] inserting at", pendingTag);
-
-    const { data, error } = await supabase
-      .from('photo_tags')
-      .insert({
-        photo_id: photo.id,
-        user_id: user.id,
-        tagged_by: session.user.id,
-        x: pendingTag.x,
-        y: pendingTag.y
-      })
-      .select('*, profiles!user_id(id, username, full_name, avatar_url)')
-      .single();
-
-    if (!error && data) {
-      console.log("[PHOTO TAG] inserted", data);
-      setTags(prev => [...prev, data]);
-      setPendingTag(null);
-      setShowTags(true);
-      console.log("[PHOTO TAG] state updated");
-    } else {
-      console.error("[PHOTO TAG] Error adding tag", error);
-      alert("No tienes permiso para etiquetar en esta foto o ocurrió un error.");
-    }
-  }
-
-  async function handleDeleteTag(tagId: string) {
-    const { error } = await supabase.from('photo_tags').delete().eq('id', tagId);
-    if (!error) {
-      setTags(prev => prev.filter(t => t.id !== tagId));
-    }
-  }
-
-  const canManageTags = photo.user_id === session.user.id;
-
-  return () => clearTimeout(timeout);
+    return () => clearTimeout(timeout);
   }, [tagSearchQuery, pendingTag]);
 
   async function toggleLike() {
