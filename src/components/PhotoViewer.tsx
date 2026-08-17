@@ -39,7 +39,7 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
       // Tags
       const { data: tagsData } = await supabase
         .from('photo_tags')
-        .select('*, profiles!photo_tags_user_id_fkey(id, username, full_name, avatar_url)')
+        .select('*, profiles!user_id(id, username, full_name, avatar_url)')
         .eq('photo_id', photo.id);
 
       // Comments
@@ -72,6 +72,8 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
 
   async function handleAddTag(user: any) {
     if (!pendingTag) return;
+    console.log("[PHOTO TAG] user selected", user);
+    console.log("[PHOTO TAG] inserting at", pendingTag);
 
     const { data, error } = await supabase
       .from('photo_tags')
@@ -82,15 +84,18 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
         x: pendingTag.x,
         y: pendingTag.y
       })
-      .select('*, profiles!photo_tags_user_id_fkey(id, username, full_name, avatar_url)')
+      .select('*, profiles!user_id(id, username, full_name, avatar_url)')
       .single();
 
     if (!error && data) {
+      console.log("[PHOTO TAG] inserted", data);
       setTags(prev => [...prev, data]);
       setPendingTag(null);
       setShowTags(true);
+      console.log("[PHOTO TAG] state updated");
     } else {
-      console.error("Error adding tag", error);
+      console.error("[PHOTO TAG] Error adding tag", error);
+      alert("No tienes permiso para etiquetar en esta foto o ocurrió un error.");
     }
   }
 
@@ -137,6 +142,8 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
 
   async function handleAddTag(user: any) {
     if (!pendingTag) return;
+    console.log("[PHOTO TAG] user selected", user);
+    console.log("[PHOTO TAG] inserting at", pendingTag);
 
     const { data, error } = await supabase
       .from('photo_tags')
@@ -147,15 +154,18 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
         x: pendingTag.x,
         y: pendingTag.y
       })
-      .select('*, profiles!photo_tags_user_id_fkey(id, username, full_name, avatar_url)')
+      .select('*, profiles!user_id(id, username, full_name, avatar_url)')
       .single();
 
     if (!error && data) {
+      console.log("[PHOTO TAG] inserted", data);
       setTags(prev => [...prev, data]);
       setPendingTag(null);
       setShowTags(true);
+      console.log("[PHOTO TAG] state updated");
     } else {
-      console.error("Error adding tag", error);
+      console.error("[PHOTO TAG] Error adding tag", error);
+      alert("No tienes permiso para etiquetar en esta foto o ocurrió un error.");
     }
   }
 
@@ -215,6 +225,8 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
 
   async function handleAddTag(user: any) {
     if (!pendingTag) return;
+    console.log("[PHOTO TAG] user selected", user);
+    console.log("[PHOTO TAG] inserting at", pendingTag);
 
     const { data, error } = await supabase
       .from('photo_tags')
@@ -225,15 +237,18 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
         x: pendingTag.x,
         y: pendingTag.y
       })
-      .select('*, profiles!photo_tags_user_id_fkey(id, username, full_name, avatar_url)')
+      .select('*, profiles!user_id(id, username, full_name, avatar_url)')
       .single();
 
     if (!error && data) {
+      console.log("[PHOTO TAG] inserted", data);
       setTags(prev => [...prev, data]);
       setPendingTag(null);
       setShowTags(true);
+      console.log("[PHOTO TAG] state updated");
     } else {
-      console.error("Error adding tag", error);
+      console.error("[PHOTO TAG] Error adding tag", error);
+      alert("No tienes permiso para etiquetar en esta foto o ocurrió un error.");
     }
   }
 
@@ -308,7 +323,7 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
                 {tagSearchResults.length > 0 && (
                   <div className="photo-tag-popover-results">
                     {tagSearchResults.map(u => (
-                      <div key={u.id} className="photo-tag-popover-user" onClick={() => handleAddTag(u)}>
+                      <div key={u.id} className="photo-tag-popover-user" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); handleAddTag(u); }}>
                         <div className="avatar tiny" style={{ width: 24, height: 24, flexShrink: 0 }}>
                           {u.avatar_url ? <img src={u.avatar_url} /> : (u.username?.[0] || 'U').toUpperCase()}
                         </div>
