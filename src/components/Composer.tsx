@@ -388,9 +388,38 @@ export function Composer({
                       </label>
                   </div>
               ) : (
-                  <div className="composer-media-preview">
-                      <img src={photoPreview} alt="Preview" />
-                      <button type="button" className="remove-btn" onClick={removePhoto}><X size={16}/></button>
+                  <div
+                      className="composer-photo-preview"
+                      style={{
+                          width: '100%',
+                          maxWidth: '100%',
+                          height: '350px',
+                          maxHeight: '350px',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          boxSizing: 'border-box',
+                          background: '#000',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: '12px'
+                      }}
+                  >
+                      <img
+                          src={photoPreview}
+                          alt="Preview"
+                          className="composer-photo-preview-image"
+                          style={{
+                              display: 'block',
+                              width: '100%',
+                              height: '100%',
+                              maxWidth: '100%',
+                              maxHeight: '100%',
+                              objectFit: 'contain'
+                          }}
+                      />
+                      <button type="button" className="composer-photo-preview-remove remove-btn" onClick={removePhoto}><X size={16}/></button>
                   </div>
               )}
           </div>
@@ -407,13 +436,43 @@ export function Composer({
                       </label>
                   </div>
               ) : (
-                  <div className="composer-media-preview video-preview-container">
-                      <video src={videoPreview} controls />
+                  <div
+                      className="composer-video-preview"
+                      style={{
+                          width: '100%',
+                          maxWidth: '100%',
+                          height: '350px',
+                          maxHeight: '350px',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          boxSizing: 'border-box',
+                          background: '#000',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: '12px'
+                      }}
+                  >
+                      <video
+                          src={videoPreview}
+                          controls
+                          className="composer-video-preview-media"
+                          style={{
+                              display: 'block',
+                              width: '100%',
+                              height: '100%',
+                              maxWidth: '100%',
+                              maxHeight: '100%',
+                              objectFit: 'contain'
+                          }}
+                      />
                       <div className="video-info">
                           <span>{videoFile?.name}</span>
                           <span style={{opacity: 0.7}}>{((videoFile?.size || 0) / (1024*1024)).toFixed(2)} MB</span>
                       </div>
-                      <button type="button" className="remove-btn" onClick={removeVideo}><X size={16}/></button>
+                      <button type="button" className="composer-video-preview-remove remove-btn" onClick={removeVideo}><X size={16}/></button>
                   </div>
               )}
           </div>
