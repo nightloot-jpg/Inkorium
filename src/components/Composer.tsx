@@ -365,8 +365,8 @@ export function Composer({
   return (
     <section className="composer-container panel">
       <div className="composer-top">
-        <div className="avatar composer-avatar">
-          {avatarUrl ? <img src={avatarUrl} alt={username} /> : initials}
+        <div className="avatar composer-avatar" style={{ overflow: 'hidden' }}>
+          {avatarUrl ? <img src={avatarUrl} alt={username} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : initials}
         </div>
         <textarea
           className="composer-input"
