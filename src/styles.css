@@ -3243,3 +3243,192 @@ button:disabled { cursor: wait; opacity: .65; }
   gap: 12px;
   flex-wrap: wrap;
 }
+
+
+/* PHOTO TAGGING CSS (Tuenti 2009 style evolved) */
+.photos-viewer-top-controls {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 20;
+}
+
+.photos-viewer-control-btn {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.photos-viewer-control-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.photos-viewer-control-btn.active {
+  background: #0750A7;
+  border-color: #0750A7;
+}
+
+.photos-viewer-tagging-hint {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.photo-tag-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.photo-tag-dot {
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid #0750A7;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  margin-bottom: 4px;
+}
+
+.photo-tag-label {
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.photo-tag-delete {
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-tag-delete:hover {
+  color: #ff4d4d;
+}
+
+.photo-tag-popover {
+  position: absolute;
+  transform: translate(-50%, 15px);
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  width: 240px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.photo-tag-popover::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: white;
+  z-index: -1;
+}
+
+.photo-tag-popover-header {
+  background: #f5f7fa;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eaeaea;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+
+.photo-tag-popover-header button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+}
+
+.photo-tag-popover-search {
+  padding: 8px 12px;
+  border-bottom: 1px solid #eaeaea;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.photo-tag-popover-search input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 13px;
+}
+
+.photo-tag-popover-results {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.photo-tag-popover-user {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.photo-tag-popover-user:hover {
+  background: #f0f4f8;
+}
+
+.photo-tag-popover-user span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.photos-viewer-sidebar-tags {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: #f9fbfc;
+}

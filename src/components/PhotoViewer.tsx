@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, ChevronLeft, ChevronRight, Heart, Share2 } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Heart, Share2, Tag as TagIcon, Search, Trash2 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import { formatPostTime } from "../utils";
@@ -19,6 +19,15 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
 
+  // Tagging State
+  const [tags, setTags] = useState<any[]>([]);
+  const [showTags, setShowTags] = useState(false);
+  const [isTaggingMode, setIsTaggingMode] = useState(false);
+  const [pendingTag, setPendingTag] = useState<{x: number, y: number} | null>(null);
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
+  const [tagSearchResults, setTagSearchResults] = useState<any[]>([]);
+
+
   useEffect(() => {
     let cancelled = false;
     
@@ -27,6 +36,12 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
       const { count } = await supabase.from('photo_likes').select('*', { count: 'exact', head: true }).eq('photo_id', photo.id);
       const { data: myLike } = await supabase.from('photo_likes').select('id').eq('photo_id', photo.id).eq('user_id', session.user.id).maybeSingle();
       
+      // Tags
+      const { data: tagsData } = await supabase
+        .from('photo_tags')
+        .select('*, profiles!photo_tags_user_id_fkey(id, username, full_name, avatar_url)')
+        .eq('photo_id', photo.id);
+
       // Comments
       const { data: commentsData } = await supabase
         .from('photo_comments')
@@ -38,12 +53,123 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
         setLikes(count || 0);
         setHasLiked(!!myLike);
         setComments(commentsData || []);
+        setTags(tagsData || []);
       }
     }
     
     fetchDetails();
-    return () => { cancelled = true; };
+    function handleImageClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!isTaggingMode) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    setPendingTag({ x, y });
+    setTagSearchQuery("");
+    setTagSearchResults([]);
+  }
+
+  async function handleAddTag(user: any) {
+    if (!pendingTag) return;
+
+    const { data, error } = await supabase
+      .from('photo_tags')
+      .insert({
+        photo_id: photo.id,
+        user_id: user.id,
+        tagged_by: session.user.id,
+        x: pendingTag.x,
+        y: pendingTag.y
+      })
+      .select('*, profiles!photo_tags_user_id_fkey(id, username, full_name, avatar_url)')
+      .single();
+
+    if (!error && data) {
+      setTags(prev => [...prev, data]);
+      setPendingTag(null);
+      setShowTags(true);
+    } else {
+      console.error("Error adding tag", error);
+    }
+  }
+
+  async function handleDeleteTag(tagId: string) {
+    const { error } = await supabase.from('photo_tags').delete().eq('id', tagId);
+    if (!error) {
+      setTags(prev => prev.filter(t => t.id !== tagId));
+    }
+  }
+
+  const canManageTags = photo.user_id === session.user.id;
+
+  return () => { cancelled = true; };
   }, [photo.id, session.user.id]);
+
+  // Debounced search for tagging
+  useEffect(() => {
+    if (!pendingTag || !tagSearchQuery.trim()) {
+      setTagSearchResults([]);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      const query = tagSearchQuery.trim();
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
+        .limit(10);
+      setTagSearchResults(data || []);
+    }, 300);
+
+    function handleImageClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!isTaggingMode) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    setPendingTag({ x, y });
+    setTagSearchQuery("");
+    setTagSearchResults([]);
+  }
+
+  async function handleAddTag(user: any) {
+    if (!pendingTag) return;
+
+    const { data, error } = await supabase
+      .from('photo_tags')
+      .insert({
+        photo_id: photo.id,
+        user_id: user.id,
+        tagged_by: session.user.id,
+        x: pendingTag.x,
+        y: pendingTag.y
+      })
+      .select('*, profiles!photo_tags_user_id_fkey(id, username, full_name, avatar_url)')
+      .single();
+
+    if (!error && data) {
+      setTags(prev => [...prev, data]);
+      setPendingTag(null);
+      setShowTags(true);
+    } else {
+      console.error("Error adding tag", error);
+    }
+  }
+
+  async function handleDeleteTag(tagId: string) {
+    const { error } = await supabase.from('photo_tags').delete().eq('id', tagId);
+    if (!error) {
+      setTags(prev => prev.filter(t => t.id !== tagId));
+    }
+  }
+
+  const canManageTags = photo.user_id === session.user.id;
+
+  return () => clearTimeout(timeout);
+  }, [tagSearchQuery, pendingTag]);
 
   async function toggleLike() {
     if (hasLiked) {
@@ -75,6 +201,51 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
     }
   }
 
+  function handleImageClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!isTaggingMode) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    setPendingTag({ x, y });
+    setTagSearchQuery("");
+    setTagSearchResults([]);
+  }
+
+  async function handleAddTag(user: any) {
+    if (!pendingTag) return;
+
+    const { data, error } = await supabase
+      .from('photo_tags')
+      .insert({
+        photo_id: photo.id,
+        user_id: user.id,
+        tagged_by: session.user.id,
+        x: pendingTag.x,
+        y: pendingTag.y
+      })
+      .select('*, profiles!photo_tags_user_id_fkey(id, username, full_name, avatar_url)')
+      .single();
+
+    if (!error && data) {
+      setTags(prev => [...prev, data]);
+      setPendingTag(null);
+      setShowTags(true);
+    } else {
+      console.error("Error adding tag", error);
+    }
+  }
+
+  async function handleDeleteTag(tagId: string) {
+    const { error } = await supabase.from('photo_tags').delete().eq('id', tagId);
+    if (!error) {
+      setTags(prev => prev.filter(t => t.id !== tagId));
+    }
+  }
+
+  const canManageTags = photo.user_id === session.user.id;
+
   return (
     <div className="photos-viewer-overlay">
       <button className="photos-viewer-close" onClick={onClose}><X size={24} /></button>
@@ -93,7 +264,84 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
 
       <div className="photos-viewer-content" onClick={(e) => e.stopPropagation()}>
         <div className="photos-viewer-image-section">
-          <img src={photo.url} alt={photo.caption || "Fotografía"} />
+          <div className="photos-viewer-image-container" onClick={handleImageClick} style={{ position: 'relative', display: 'inline-block', maxWidth: '100%', maxHeight: '100%' }}>
+            <img src={photo.url} alt={photo.caption || "Fotografía"} style={{ display: 'block', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+
+            {/* Render existing tags */}
+            {showTags && tags.map(tag => (
+              <div
+                key={tag.id}
+                className="photo-tag-marker"
+                style={{ left: `${tag.x}%`, top: `${tag.y}%` }}
+              >
+                <div className="photo-tag-dot"></div>
+                <div className="photo-tag-label">
+                  {tag.profiles?.full_name || tag.profiles?.username}
+                  {(canManageTags || tag.user_id === session.user.id) && (
+                    <button className="photo-tag-delete" onClick={(e) => { e.stopPropagation(); handleDeleteTag(tag.id); }}><X size={12}/></button>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Render pending tag popover */}
+            {pendingTag && (
+              <div
+                className="photo-tag-popover"
+                style={{ left: `${pendingTag.x}%`, top: `${pendingTag.y}%` }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="photo-tag-popover-header">
+                  <span>¿A quién quieres etiquetar?</span>
+                  <button onClick={() => setPendingTag(null)}><X size={14}/></button>
+                </div>
+                <div className="photo-tag-popover-search">
+                  <Search size={14} />
+                  <input
+                    type="text"
+                    placeholder="Buscar personas..."
+                    value={tagSearchQuery}
+                    onChange={e => setTagSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                {tagSearchResults.length > 0 && (
+                  <div className="photo-tag-popover-results">
+                    {tagSearchResults.map(u => (
+                      <div key={u.id} className="photo-tag-popover-user" onClick={() => handleAddTag(u)}>
+                        <div className="avatar tiny" style={{ width: 24, height: 24, flexShrink: 0 }}>
+                          {u.avatar_url ? <img src={u.avatar_url} /> : (u.username?.[0] || 'U').toUpperCase()}
+                        </div>
+                        <span>{u.full_name || u.username}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Top floating controls */}
+          <div className="photos-viewer-top-controls">
+            <button
+              className={`photos-viewer-control-btn ${isTaggingMode ? 'active' : ''}`}
+              onClick={() => { setIsTaggingMode(!isTaggingMode); if(!isTaggingMode) setShowTags(true); setPendingTag(null); }}
+            >
+              <TagIcon size={16} /> {isTaggingMode ? "Cancelar etiquetado" : "Etiquetar personas"}
+            </button>
+            <button
+              className="photos-viewer-control-btn"
+              onClick={() => setShowTags(!showTags)}
+            >
+              <TagIcon size={16} /> {showTags ? "Ocultar etiquetas" : "Mostrar etiquetas"}
+            </button>
+          </div>
+
+          {isTaggingMode && !pendingTag && (
+             <div className="photos-viewer-tagging-hint">
+               Pulsa sobre la foto para etiquetar a alguien
+             </div>
+          )}
         </div>
         
         <div className="photos-viewer-sidebar">
@@ -120,6 +368,37 @@ export function PhotoViewer({ photo, photos, session, onClose, onNavigate }: Pro
               <Share2 size={20} />
             </button>
           </div>
+
+
+          {tags.length > 0 && (
+            <div className="photos-viewer-sidebar-tags">
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '12px', color: '#666', textTransform: 'uppercase' }}>
+                <TagIcon size={12} style={{marginRight: '4px', verticalAlign: 'middle'}}/> Etiquetas en esta foto
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {tags.map(tag => (
+                  <div key={tag.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <div className="avatar tiny" style={{ width: 24, height: 24, flexShrink: 0 }}>
+                        {tag.profiles?.avatar_url ? <img src={tag.profiles.avatar_url} /> : (tag.profiles?.username?.[0] || 'U').toUpperCase()}
+                      </div>
+                      <span style={{ fontSize: '13px', fontWeight: 500, color: '#333' }}>
+                        {tag.profiles?.full_name || tag.profiles?.username}
+                      </span>
+                    </div>
+                    {(canManageTags || tag.user_id === session.user.id) && (
+                      <button
+                        onClick={() => handleDeleteTag(tag.id)}
+                        style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="photos-viewer-comments">
             {comments.map(c => (
