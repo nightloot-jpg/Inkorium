@@ -704,6 +704,20 @@ function ProfileViewLegacy({ session, visitedUserId, goBack, navigate }: { sessi
   const isOwnProfile = !visitedUserId || visitedUserId === session.user.id;
   const targetUserId = isOwnProfile ? session.user.id : visitedUserId;
   const [viewCount, setViewCount] = useState<number | null>(null);
+
+  const playerState = usePlayerStore();
+  const [songOfDay, setSongOfDay] = useState<any>(null);
+  const [publicPlaylists, setPublicPlaylists] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadMusicData() {
+      if (!targetUserId) return;
+      const { data: sod } = await supabase.from('profile_song_of_day').select('*, music_tracks(*)').eq('user_id', targetUserId).maybeSingle();
+      if (sod && sod.music_tracks) setSongOfDay(sod.music_tracks);
+    }
+    loadMusicData();
+  }, [targetUserId]);
+
   const profile = useAuthStore(state => state.profile);
   const setProfile = useAuthStore(state => state.setProfile); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [postMenu, setPostMenu] = useState<string | null>(null);
 
