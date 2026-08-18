@@ -1,21 +1,15 @@
 const fs = require('fs');
-const file = 'src/main.tsx';
-let content = fs.readFileSync(file, 'utf8');
+let code = fs.readFileSync('./src/main.tsx', 'utf8');
 
-content = content.replace(
-    /\{page === "buscar" && <SearchView query=\{query\} navigate=\{navigate\} goBack=\{history.length > 1 \? goBack : undefined\} \/>\}/,
-    '{page === "fotos" && <PhotosPage session={session} profileId={currentRoute.params?.userId} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}'
+// remove old MusicView component definition
+code = code.replace(
+  `function MusicView({ onPlay }: { onPlay: () => void }) { return <section className="content-view"><h1>Musica</h1><p className="view-subtitle">Escucha, descubre y comparte nuevos sonidos.</p><div className="music-list panel">{songs.map((song, index) => <div className="song-row" key={song}><span className="music-square">♫</span><div><strong>{song}</strong><small>Inkorium Music · pista {index + 1}</small></div><button onClick={onPlay}>▶ Escuchar</button></div>)}</div></section>; }`,
+  ""
 );
 
-content = content.replace(
-    /\["▧", "Fotos", "buscar"\]/,
-    '["▧", "Fotos", "fotos"]'
-);
+// update the app render
+const renderSearch = `{page === "musica" && <MusicView onPlay={() => {}} />}`;
+const renderReplace = `{page === "musica" && <MusicView session={session} navigate={navigate} />}`;
+code = code.replace(renderSearch, renderReplace);
 
-content = content.replace(
-    /\["musica", "Musica"\]/,
-    '["musica", "Musica"], ["fotos", "Fotos"]'
-);
-
-fs.writeFileSync(file, content);
-console.log("main.tsx render patched");
+fs.writeFileSync('./src/main.tsx', code);

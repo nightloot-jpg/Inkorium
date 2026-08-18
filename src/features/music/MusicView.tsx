@@ -1,0 +1,392 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '../../lib/supabase';
+import { usePlayerStore } from '../../lib/store';
+import { Search, Heart, Share2, Plus, Music, Play, ListPlus, Loader2, UploadCloud, X } from 'lucide-react';
+import * as tus from "tus-js-client";
+import { v4 as uuidv4 } from "uuid";
+import { formatTime } from '../../components_player';
+
+export function MusicView({ session, navigate }: { session: any, navigate: any }) {
+  const [activeTab, setActiveTab] = useState<'descubrir' | 'buscar' | 'mi-musica' | 'playlists' | 'subir'>('descubrir');
+  
+  return (
+    <section className="content-view music-view" style={{backgroundColor: '#f5f7f9', minHeight: '100%', padding: '0'}}>
+      <div className="music-header" style={{backgroundColor: '#fff', padding: '20px', borderBottom: '1px solid #e0e5ea'}}>
+        <h1 style={{margin: '0 0 5px 0', fontSize: '1.5em', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: 8}}>
+          <Music size={24}/> Música
+        </h1>
+        <p style={{margin: 0, color: 'var(--text-light)'}}>Escucha, comparte y descubre música con tus amigos.</p>
+        
+        <nav className="music-nav" style={{marginTop: 20, display: 'flex', gap: 15, borderBottom: 'none'}}>
+          {[
+            ['descubrir', 'Descubrir'],
+            ['buscar', 'Buscar'],
+            ['mi-musica', 'Mi música'],
+            ['playlists', 'Playlists'],
+            ['subir', 'Subir canción']
+          ].map(([id, label]) => (
+            <button 
+              key={id}
+              onClick={() => setActiveTab(id as any)}
+              style={{
+                background: activeTab === id ? 'var(--primary-color)' : 'transparent',
+                color: activeTab === id ? '#fff' : 'var(--text-color)',
+                border: activeTab === id ? 'none' : '1px solid #ccc',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: activeTab === id ? 'bold' : 'normal',
+                fontSize: '0.9em'
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      <div className="music-body" style={{padding: '20px'}}>
+        {activeTab === 'buscar' && <MusicSearch />}
+        {activeTab === 'subir' && <MusicUpload session={session} onDone={() => setActiveTab('mi-musica')} />}
+        {activeTab === 'descubrir' && <MusicDiscover session={session} />}
+        {activeTab === 'mi-musica' && <MyMusic session={session} />}
+        {activeTab === 'playlists' && <PlaylistsTab session={session} />}
+      </div>
+    </section>
+  );
+}
+
+function MusicSearch() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const playerState = usePlayerStore();
+
+  async function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if(!query.trim()) return;
+    setSearching(true);
+    try {
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=15&key=${import.meta.env.VITE_YOUTUBE_API_KEY}`);
+      const data = await res.json();
+      setResults(data.items || []);
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  return (
+    <div className="panel" style={{padding: 20}}>
+      <form onSubmit={handleSearch} style={{display: 'flex', gap: 10, marginBottom: 20}}>
+        <input 
+          type="text" 
+          placeholder="Buscar canciones en YouTube..." 
+          value={query} 
+          onChange={e => setQuery(e.target.value)}
+          style={{flex: 1, padding: 8, border: '1px solid #ccc', borderRadius: 4}}
+        />
+        <button className="primary-button" type="submit" disabled={searching}>
+          {searching ? <Loader2 className="spin" size={16}/> : <Search size={16}/>} Buscar
+        </button>
+      </form>
+      
+      <div className="music-grid" style={{display: 'grid', gap: 10}}>
+        {results.map(item => (
+          <div key={item.id.videoId} style={{display: 'flex', alignItems: 'center', gap: 12, padding: 10, border: '1px solid #eee', borderRadius: 4, background: '#fafafa'}}>
+            <img src={item.snippet.thumbnails?.default?.url} style={{width: 60, height: 45, objectFit: 'cover', borderRadius: 2}} />
+            <div style={{flex: 1, overflow: 'hidden'}}>
+              <strong style={{display: 'block', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden'}}>{item.snippet.title}</strong>
+              <span style={{fontSize: '0.85em', color: '#666'}}>{item.snippet.channelTitle}</span>
+            </div>
+            <button className="icon-button" onClick={() => {
+              playerState.playSong({
+                source_type: 'youtube',
+                video_id: item.id.videoId,
+                title: item.snippet.title,
+                artist: item.snippet.channelTitle,
+                thumbnail: item.snippet.thumbnails?.default?.url
+              });
+            }}>
+              <Play size={18}/>
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MusicUpload({ session, onDone }: { session: any, onDone: () => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState("");
+
+  async function handleUpload(e: React.FormEvent) {
+    e.preventDefault();
+    if(!file || !title || !artist) return;
+    if(!file.type.startsWith('audio/')) {
+      setError("Solo se permiten archivos de audio.");
+      return;
+    }
+    if(file.size > 20 * 1024 * 1024) {
+      setError("El archivo es muy grande (máx 20MB).");
+      return;
+    }
+    
+    setUploading(true);
+    setError("");
+    const ext = file.name.split('.').pop();
+    const fileName = `${session.user.id}/${uuidv4()}.${ext}`;
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage.from('music-media').upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+    
+    if(uploadError) {
+      setError(uploadError.message);
+      setUploading(false);
+      return;
+    }
+    
+    const { data: publicUrlData } = supabase.storage.from('music-media').getPublicUrl(fileName);
+    
+    const { error: dbError } = await supabase.from('music_tracks').insert({
+      user_id: session.user.id,
+      title,
+      artist,
+      source_type: 'local',
+      audio_url: publicUrlData.publicUrl
+    });
+    
+    if(dbError) {
+      setError(dbError.message);
+      setUploading(false);
+      return;
+    }
+    
+    setUploading(false);
+    onDone();
+  }
+
+  return (
+    <div className="panel" style={{padding: 20, maxWidth: 500}}>
+      <h3 style={{marginTop: 0}}>Subir música</h3>
+      {error && <p style={{color: 'red', fontSize: '0.9em'}}>{error}</p>}
+      <form onSubmit={handleUpload} style={{display: 'flex', flexDirection: 'column', gap: 15}}>
+        <label style={{display: 'block'}}>
+          <span style={{display: 'block', marginBottom: 5, fontSize: '0.9em', fontWeight: 'bold'}}>Archivo de audio (MP3, WAV, M4A)</span>
+          <input type="file" accept="audio/*" onChange={e => setFile(e.target.files?.[0] || null)} disabled={uploading} required />
+        </label>
+        <label style={{display: 'block'}}>
+          <span style={{display: 'block', marginBottom: 5, fontSize: '0.9em', fontWeight: 'bold'}}>Título de la canción</span>
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)} disabled={uploading} style={{width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4}} required />
+        </label>
+        <label style={{display: 'block'}}>
+          <span style={{display: 'block', marginBottom: 5, fontSize: '0.9em', fontWeight: 'bold'}}>Artista</span>
+          <input type="text" value={artist} onChange={e => setArtist(e.target.value)} disabled={uploading} style={{width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4}} required />
+        </label>
+        <button type="submit" className="primary-button" disabled={uploading || !file || !title || !artist}>
+          {uploading ? `Subiendo...` : 'Subir'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function MusicDiscover({ session }: { session: any }) {
+  const [activity, setActivity] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const playerState = usePlayerStore();
+
+  useEffect(() => {
+    async function load() {
+      // In a real app this would join with profiles and friendships to show only friends activity
+      // For now we just fetch recent tracks added/shared globally to simulate "Discover"
+      const { data } = await supabase
+        .from('music_tracks')
+        .select('*, profiles(username, full_name, avatar_url)')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if(data) setActivity(data);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if(loading) return <div style={{textAlign: 'center', padding: 40}}><Loader2 className="spin" /></div>;
+
+  return (
+    <div>
+      <h3 style={{marginTop: 0, marginBottom: 15}}>Novedades musicales</h3>
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 15}}>
+        {activity.map(track => (
+          <div key={track.id} className="panel" style={{display: 'flex', gap: 12, padding: 12}}>
+            <div style={{width: 60, height: 60, flexShrink: 0, background: '#eee', borderRadius: 4, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+              {track.cover_url ? <img src={track.cover_url} style={{width: '100%', height: '100%', objectFit: 'cover'}}/> : <Music color="#999" size={24}/>}
+            </div>
+            <div style={{flex: 1, overflow: 'hidden'}}>
+              <strong style={{display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{track.title}</strong>
+              <span style={{display: 'block', fontSize: '0.85em', color: '#666'}}>{track.artist}</span>
+              <span style={{display: 'block', fontSize: '0.75em', color: '#999', marginTop: 4}}>Por {track.profiles?.full_name || track.profiles?.username || 'Usuario'}</span>
+            </div>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 5}}>
+              <button className="icon-button" style={{padding: 4}} onClick={() => {
+                playerState.playSong({
+                  id: track.id,
+                  source_type: track.source_type,
+                  video_id: track.youtube_id,
+                  audio_url: track.audio_url,
+                  title: track.title,
+                  artist: track.artist,
+                  thumbnail: track.cover_url
+                });
+              }}>
+                <Play size={18}/>
+              </button>
+            </div>
+          </div>
+        ))}
+        {activity.length === 0 && <p>No hay actividad reciente.</p>}
+      </div>
+    </div>
+  );
+}
+
+function MyMusic({ session }: { session: any }) {
+  const [tracks, setTracks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const playerState = usePlayerStore();
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from('music_tracks')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+      if(data) setTracks(data);
+      setLoading(false);
+    }
+    load();
+  }, [session.user.id]);
+
+  if(loading) return <div style={{textAlign: 'center', padding: 40}}><Loader2 className="spin" /></div>;
+
+  return (
+    <div className="panel" style={{padding: 20}}>
+      <h3 style={{marginTop: 0, marginBottom: 15}}>Mi música subida/guardada</h3>
+      {tracks.length === 0 ? (
+        <p style={{color: '#666'}}>No tienes canciones guardadas todavía.</p>
+      ) : (
+        <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+          {tracks.map(track => (
+            <div key={track.id} style={{display: 'flex', alignItems: 'center', gap: 10, padding: '8px', borderBottom: '1px solid #eee'}}>
+              <div style={{width: 40, height: 40, background: '#f0f0f0', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                {track.cover_url ? <img src={track.cover_url} style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4}}/> : <Music size={16} color="#888"/>}
+              </div>
+              <div style={{flex: 1}}>
+                <strong style={{display: 'block', fontSize: '0.95em'}}>{track.title}</strong>
+                <span style={{fontSize: '0.85em', color: '#666'}}>{track.artist}</span>
+              </div>
+              <button className="icon-button" onClick={() => {
+                playerState.playSong({
+                  id: track.id,
+                  source_type: track.source_type,
+                  video_id: track.youtube_id,
+                  audio_url: track.audio_url,
+                  title: track.title,
+                  artist: track.artist,
+                  thumbnail: track.cover_url
+                });
+              }}><Play size={16}/></button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlaylistsTab({ session }: { session: any }) {
+  const [playlists, setPlaylists] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+
+  async function load() {
+    const { data } = await supabase
+      .from('music_playlists')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false });
+    if(data) setPlaylists(data);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    load();
+  }, [session.user.id]);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if(!name.trim()) return;
+    setCreating(true);
+    await supabase.from('music_playlists').insert({
+      user_id: session.user.id,
+      name: name.trim(),
+      is_public: true
+    });
+    setName("");
+    setCreating(false);
+    load();
+  }
+
+  if(loading) return <div style={{textAlign: 'center', padding: 40}}><Loader2 className="spin" /></div>;
+
+  return (
+    <div className="panel" style={{padding: 20}}>
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20}}>
+        <h3 style={{marginTop: 0, marginBottom: 0}}>Mis Playlists</h3>
+      </div>
+      
+      <form onSubmit={handleCreate} style={{display: 'flex', gap: 10, marginBottom: 20}}>
+        <input 
+          type="text" 
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="Nombre de la nueva playlist..."
+          style={{flex: 1, padding: 8, border: '1px solid #ccc', borderRadius: 4}}
+        />
+        <button type="submit" className="primary-button" disabled={creating || !name.trim()}>
+          {creating ? 'Creando...' : 'Crear'}
+        </button>
+      </form>
+
+      {playlists.length === 0 ? (
+        <p style={{color: '#666'}}>No tienes playlists creadas todavía.</p>
+      ) : (
+        <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
+          {playlists.map(pl => (
+            <div key={pl.id} style={{display: 'flex', alignItems: 'center', gap: 15, padding: 10, border: '1px solid #eee', borderRadius: 4, cursor: 'pointer'}} onClick={() => {
+              // TODO: Navigate to playlist details
+            }}>
+              <div style={{width: 50, height: 50, background: '#e0e0e0', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                {pl.cover_url ? <img src={pl.cover_url} style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: 4}}/> : <ListPlus size={20} color="#666"/>}
+              </div>
+              <div style={{flex: 1}}>
+                <strong style={{display: 'block'}}>{pl.name}</strong>
+                <span style={{fontSize: '0.85em', color: '#666'}}>{pl.is_public ? 'Pública' : 'Privada'}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,300 +1,247 @@
 const fs = require('fs');
+let code = fs.readFileSync('./src/components_player.tsx', 'utf8');
 
-let content = fs.readFileSync('src/components_player.tsx', 'utf8');
+// We need to add an audio ref and audio state
+code = code.replace(
+  "  const containerRef = useRef<HTMLDivElement>(null);",
+  "  const containerRef = useRef<HTMLDivElement>(null);\n  const audioRef = useRef<HTMLAudioElement>(null);"
+);
 
-// Ensure correct imports
-if (!content.includes('GripVertical')) {
-    content = content.replace('ListMusic } from', 'ListMusic, GripVertical, Music } from');
-}
-
-// Find the start of the return statement
-const returnStartStr = "  // Create a persistent container for the YouTube iframe that doesn't get unmounted";
-const returnIdx = content.indexOf(returnStartStr);
-
-if (returnIdx === -1) {
-    console.error("Could not find return statement start");
-    process.exit(1);
-}
-
-const beforeReturn = content.substring(0, returnIdx);
-
-const newReturn = `  // Create a persistent container for the YouTube iframe that doesn't get unmounted
-  // when the player expands or minimizes.
-  return (
-    <>
-      <div id="youtube-player-container" style={{ position: 'fixed', left: '-9999px', top: '-9999px', width: '1px', height: '1px' }}></div>
-
-      {playerState.isOpen && (
-        <DraggablePlayerContainer isExpanded={playerState.isExpanded}>
-          {!playerState.currentSong ? (
-             <div className="player-empty-state">
-                <div className="drag-handle"><GripVertical size={16} /></div>
-                <div className="empty-content no-drag">
-                  <Music size={24} style={{ opacity: 0.5, marginBottom: 8 }} />
-                  <span>No hay ninguna canción</span>
-                  <small>Selecciona una canción</small>
-                </div>
-                <button onClick={() => playerState.closePlayer()} className="icon-btn no-drag close-btn" aria-label="Cerrar">
-                  <X size={20} />
-                </button>
-             </div>
-          ) : playerState.isExpanded ? (
-            <div className="music-player-expanded">
-              <div className="drag-handle-expanded">
-                <GripVertical size={20} />
-              </div>
-              <div className="player-expanded-header">
-                <button onClick={() => playerState.minimizePlayer()} className="icon-btn no-drag" aria-label="Minimizar">
-                  <Minimize2 size={24} />
-                </button>
-                <div className="tabs no-drag">
-                    <button className={!showQueue ? "active" : ""} onClick={() => setShowQueue(false)}>Reproduciendo</button>
-                    {playerState.queue.length > 1 && <button className={showQueue ? "active" : ""} onClick={() => setShowQueue(true)}>Cola ({playerState.queue.length})</button>}
-                </div>
-                <button onClick={() => playerState.closePlayer()} className="icon-btn no-drag" aria-label="Cerrar">
-                  <X size={24} />
-                </button>
-              </div>
-
-              {!showQueue ? (
-                <div className="player-expanded-content">
-                  <img src={playerState.currentSong.thumbnail || 'https://placehold.co/400x400/233B5D/FFF?text=Music'} alt={playerState.currentSong.title} className="cover-large" />
-
-                  <div className="info-large">
-                    <h2>{playerState.currentSong.title}</h2>
-                    <p>{playerState.currentSong.channel_title}</p>
-                    {playerState.currentPlaylist && <span className="playlist-badge">De: {playerState.currentPlaylist.title}</span>}
-                  </div>
-
-                  <div className="progress-container no-drag">
-                    <input
-                      type="range"
-                      min="0"
-                      max={playerState.duration || 100}
-                      value={playerState.currentTime || 0}
-                      onChange={(e) => {
-                        const t = parseFloat(e.target.value);
-                        playerState.seek(t);
-                      }}
-                    />
-                    <div className="time-labels">
-                      <span>{formatTime(playerState.currentTime)}</span>
-                      <span>{formatTime(playerState.duration)}</span>
-                    </div>
-                  </div>
-
-                  <div className="controls-large no-drag">
-                    <button onClick={() => playerState.previous()} disabled={playerState.currentIndex === 0} className="icon-btn">
-                      <SkipBack size={32} />
-                    </button>
-                    <button onClick={() => playerState.isPlaying ? playerState.pause() : playerState.resume()} className="play-btn-large">
-                      {playerState.isPlaying ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" />}
-                    </button>
-                    <button onClick={() => playerState.next()} disabled={playerState.currentIndex >= playerState.queue.length - 1} className="icon-btn">
-                      <SkipForward size={32} />
-                    </button>
-                  </div>
-
-                  <div className="volume-control no-drag">
-                     <button onClick={() => playerState.toggleMute()} className="icon-btn-vol" style={{background:'none', border:'none', color:'inherit', cursor:'pointer'}}>
-                       {playerState.isMuted || playerState.volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                     </button>
-                     <input
-                       type="range"
-                       min="0" max="100"
-                       value={playerState.volume}
-                       onChange={(e) => playerState.setVolume(parseInt(e.target.value))}
-                     />
-                  </div>
-                </div>
-              ) : (
-                <div className="player-expanded-queue no-drag">
-                   {playerState.queue.map((item, idx) => (
-                      <div key={idx} className={\`queue-item \${idx === playerState.currentIndex ? 'active' : ''}\`} onClick={() => {
-                         playerState.playPlaylist(playerState.currentPlaylist!, playerState.queue, idx);
-                      }}>
-                         <span className="queue-idx">{idx + 1}</span>
-                         <div className="queue-info">
-                            <span className="title">{item.title}</span>
-                            <span className="artist">{item.channel_title}</span>
-                         </div>
-                         {idx === playerState.currentIndex && playerState.isPlaying && <span className="playing-icon"><Play size={16} fill="currentColor" /></span>}
-                      </div>
-                   ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="floating-music-player">
-              <div className="drag-handle"><GripVertical size={16} /></div>
-
-              <div className="player-left no-drag" onClick={() => playerState.expandPlayer()}>
-                <img src={playerState.currentSong.thumbnail || 'https://placehold.co/100x100/233B5D/FFF?text=Music'} alt={playerState.currentSong.title} className="cover-small" />
-                <div className="info-small">
-                  <strong>{playerState.currentSong.title}</strong>
-                  <span>{playerState.currentSong.channel_title} {playerState.currentPlaylist ? \`· \${playerState.currentPlaylist.title}\` : ''}</span>
-                </div>
-              </div>
-
-              <div className="player-center no-drag">
-                <div className="controls-small">
-                  <button onClick={() => playerState.previous()} disabled={playerState.currentIndex === 0} className="icon-btn">
-                    <SkipBack size={20} />
-                  </button>
-                  <button onClick={() => playerState.isPlaying ? playerState.pause() : playerState.resume()} className="play-btn-small">
-                    {playerState.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
-                  </button>
-                  <button onClick={() => playerState.next()} disabled={playerState.currentIndex >= playerState.queue.length - 1} className="icon-btn">
-                    <SkipForward size={20} />
-                  </button>
-                </div>
-                <div className="progress-small">
-                   <span>{formatTime(playerState.currentTime)}</span>
-                   <input
-                      type="range"
-                      min="0"
-                      max={playerState.duration || 100}
-                      value={playerState.currentTime || 0}
-                      onChange={(e) => {
-                        const t = parseFloat(e.target.value);
-                        playerState.seek(t);
-                      }}
-                    />
-                    <span>{formatTime(playerState.duration)}</span>
-                </div>
-              </div>
-
-              <div className="player-right no-drag">
-                <div className="volume-control-small">
-                   <button onClick={() => playerState.toggleMute()} className="icon-btn-vol" style={{background:'none', border:'none', color:'inherit', cursor:'pointer'}}>
-                     {playerState.isMuted || playerState.volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                   </button>
-                   <input
-                     type="range"
-                     min="0" max="100"
-                     value={playerState.volume}
-                     onChange={(e) => playerState.setVolume(parseInt(e.target.value))}
-                   />
-                </div>
-                <button onClick={() => playerState.expandPlayer()} className="icon-btn no-drag" aria-label="Expandir">
-                  <Maximize2 size={20} />
-                </button>
-                <button onClick={() => playerState.closePlayer()} className="icon-btn no-drag" aria-label="Cerrar">
-                  <X size={20} />
-                </button>
-              </div>
-            </div>
-          )}
-        </DraggablePlayerContainer>
-      )}
-    </>
-  );
-}
-
-function DraggablePlayerContainer({ children, isExpanded }: { children: React.ReactNode, isExpanded: boolean }) {
-  const [pos, setPos] = useState({ x: -1, y: -1 });
-  const containerRef = useRef<HTMLDivElement>(null);
-  const draggingRef = useRef<{ startX: number, startY: number, startPosX: number, startPosY: number } | null>(null);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('inkorium-floating-player-position');
-      if (stored) {
-        const p = JSON.parse(stored);
-        setPos(p);
-      } else {
-        // Default: bottom right. Will be adjusted by resize handler to exact pixels
-        setPos({ x: window.innerWidth - 400 - 24, y: window.innerHeight - 100 - 24 });
+// In play effect
+const playEffectSearch = `          events: {
+            onReady: () => {
+              console.log('[MusicPlayer] Player ready');
+              setIsReady(true);
+              if (usePlayerStore.getState().volume !== undefined) {
+                playerRef.current.setVolume(usePlayerStore.getState().volume);
+              }
+              // Check if there was a pending play before ready
+              if (usePlayerStore.getState().pendingPlay && usePlayerStore.getState().currentSong) {
+                const vid = usePlayerStore.getState().currentSong?.video_id;
+                if (vid) playerRef.current.loadVideoById(vid);
+              }
+            },
+            onStateChange: (event: any) => {
+              if (event.data === window.YT.PlayerState.PLAYING) {
+                usePlayerStore.getState().setIsPlaying(true);
+                usePlayerStore.getState().setPendingPlay(false);
+              } else if (event.data === window.YT.PlayerState.PAUSED) {
+                // If we get PAUSED but are supposed to be playing, we might update UI
+                // For now, let the interval handle progress
+                usePlayerStore.getState().setIsPlaying(false);
+              } else if (event.data === window.YT.PlayerState.ENDED) {
+                usePlayerStore.getState().next();
+              }
+            }
+          }
+        });
       }
-    } catch(e) {
-      setPos({ x: window.innerWidth - 400 - 24, y: window.innerHeight - 100 - 24 });
+    };`;
+
+const playEffectReplace = `          events: {
+            onReady: () => {
+              console.log('[MusicPlayer] Player ready');
+              setIsReady(true);
+              if (usePlayerStore.getState().volume !== undefined) {
+                playerRef.current.setVolume(usePlayerStore.getState().volume);
+              }
+              // Check if there was a pending play before ready
+              if (usePlayerStore.getState().pendingPlay && usePlayerStore.getState().currentSong && usePlayerStore.getState().currentSong?.source_type !== 'local') {
+                const vid = usePlayerStore.getState().currentSong?.video_id;
+                if (vid) playerRef.current.loadVideoById(vid);
+              }
+            },
+            onStateChange: (event: any) => {
+              if (usePlayerStore.getState().currentSong?.source_type === 'local') return;
+              if (event.data === window.YT.PlayerState.PLAYING) {
+                usePlayerStore.getState().setIsPlaying(true);
+                usePlayerStore.getState().setPendingPlay(false);
+              } else if (event.data === window.YT.PlayerState.PAUSED) {
+                usePlayerStore.getState().setIsPlaying(false);
+              } else if (event.data === window.YT.PlayerState.ENDED) {
+                usePlayerStore.getState().next();
+              }
+            }
+          }
+        });
+      }
+    };`;
+
+code = code.replace(playEffectSearch, playEffectReplace);
+
+// Interval effect for YT and Audio
+const intervalSearch = `  useEffect(() => {
+    let interval: any;
+    if (playerState.isPlaying && isReady) {
+      interval = setInterval(() => {
+        if (playerRef.current && playerRef.current.getCurrentTime && playerRef.current.getDuration) {
+           const currentTime = playerRef.current.getCurrentTime();
+           const duration = playerRef.current.getDuration();
+           if (currentTime !== undefined && duration !== undefined) {
+              usePlayerStore.getState().updateProgress(currentTime, duration);
+           }
+        }
+      }, 1000);
     }
-  }, []);
+    return () => clearInterval(interval);
+  }, [playerState.isPlaying, isReady]);`;
 
-  const enforceBounds = (x: number, y: number) => {
-    if (!containerRef.current) return { x, y };
-    const rect = containerRef.current.getBoundingClientRect();
-    const maxX = window.innerWidth - rect.width;
-    const maxY = window.innerHeight - rect.height;
-
-    let newX = Math.max(0, Math.min(x, maxX));
-    let newY = Math.max(0, Math.min(y, maxY));
-
-    return { x: newX, y: newY };
-  };
-
-  useEffect(() => {
-    if (pos.x === -1) return;
-    const handleResize = () => {
-      setPos(p => enforceBounds(p.x, p.y));
-    };
-    window.addEventListener('resize', handleResize);
-    // Enforce bounds right away in case content changed size
-    handleResize();
-    return () => window.removeEventListener('resize', handleResize);
-  }, [pos.x, isExpanded]);
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('button, input, .no-drag')) return;
-
-    target.setPointerCapture(e.pointerId);
-    draggingRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      startPosX: pos.x,
-      startPosY: pos.y
-    };
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!draggingRef.current) return;
-
-    const dx = e.clientX - draggingRef.current.startX;
-    const dy = e.clientY - draggingRef.current.startY;
-
-    let newX = draggingRef.current.startPosX + dx;
-    let newY = draggingRef.current.startPosY + dy;
-
-    const bounded = enforceBounds(newX, newY);
-
-    setPos(bounded);
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!draggingRef.current) return;
-    const target = e.target as HTMLElement;
-    if (target.hasPointerCapture(e.pointerId)) {
-        target.releasePointerCapture(e.pointerId);
+const intervalReplace = `  useEffect(() => {
+    let interval: any;
+    if (playerState.isPlaying) {
+      interval = setInterval(() => {
+        if (playerState.currentSong?.source_type === 'local') {
+          if (audioRef.current) {
+            usePlayerStore.getState().updateProgress(audioRef.current.currentTime, audioRef.current.duration || 0);
+          }
+        } else if (isReady) {
+          if (playerRef.current && playerRef.current.getCurrentTime && playerRef.current.getDuration) {
+             const currentTime = playerRef.current.getCurrentTime();
+             const duration = playerRef.current.getDuration();
+             if (currentTime !== undefined && duration !== undefined) {
+                usePlayerStore.getState().updateProgress(currentTime, duration);
+             }
+          }
+        }
+      }, 1000);
     }
-    draggingRef.current = null;
-    localStorage.setItem('inkorium-floating-player-position', JSON.stringify(pos));
-  };
+    return () => clearInterval(interval);
+  }, [playerState.isPlaying, isReady, playerState.currentSong]);`;
 
-  if (pos.x === -1) return <div ref={containerRef} style={{opacity: 0, position: 'fixed'}}>{children}</div>;
+code = code.replace(intervalSearch, intervalReplace);
 
-  return (
-    <div
-      ref={containerRef}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-      className={\`floating-player-wrapper \${isExpanded ? 'expanded' : 'mini'}\`}
-      style={{
-        position: 'fixed',
-        left: pos.x,
-        top: pos.y,
-        touchAction: 'none',
-        zIndex: 9000,
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-`;
+// Setup effect
+const setupSearch = `  useEffect(() => {
+    if (playerState.pendingPlay && playerState.currentSong && isReady) {
+      if (playerRef.current && playerRef.current.loadVideoById) {
+        playerRef.current.loadVideoById(playerState.currentSong.video_id);
+      }
+    }
+  }, [playerState.currentSong, playerState.pendingPlay, isReady]);`;
 
-fs.writeFileSync('src/components_player.tsx', beforeReturn + newReturn);
+const setupReplace = `  useEffect(() => {
+    if (playerState.pendingPlay && playerState.currentSong) {
+      if (playerState.currentSong.source_type === 'local') {
+        if (isReady && playerRef.current && playerRef.current.pauseVideo) {
+          playerRef.current.pauseVideo();
+        }
+        if (audioRef.current && playerState.currentSong.audio_url) {
+          audioRef.current.src = playerState.currentSong.audio_url;
+          audioRef.current.play().then(() => {
+            playerState.setIsPlaying(true);
+            playerState.setPendingPlay(false);
+          }).catch(console.error);
+        }
+      } else {
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        if (isReady && playerRef.current && playerRef.current.loadVideoById) {
+          playerRef.current.loadVideoById(playerState.currentSong.video_id);
+        }
+      }
+    }
+  }, [playerState.currentSong, playerState.pendingPlay, isReady]);`;
+
+code = code.replace(setupSearch, setupReplace);
+
+// Play/Pause effect
+const ppSearch = `  useEffect(() => {
+    if (!playerState.pendingPlay && isReady && playerRef.current) {
+      if (playerState.isPlaying && playerRef.current.playVideo) {
+        playerRef.current.playVideo();
+      } else if (!playerState.isPlaying && playerRef.current.pauseVideo) {
+        playerRef.current.pauseVideo();
+      }
+    }
+  }, [playerState.isPlaying, playerState.pendingPlay, isReady]);`;
+
+const ppReplace = `  useEffect(() => {
+    if (!playerState.pendingPlay) {
+      if (playerState.currentSong?.source_type === 'local') {
+        if (audioRef.current) {
+          if (playerState.isPlaying) {
+             audioRef.current.play().catch(console.error);
+          } else {
+             audioRef.current.pause();
+          }
+        }
+      } else if (isReady && playerRef.current) {
+        if (playerState.isPlaying && playerRef.current.playVideo) {
+          playerRef.current.playVideo();
+        } else if (!playerState.isPlaying && playerRef.current.pauseVideo) {
+          playerRef.current.pauseVideo();
+        }
+      }
+    }
+  }, [playerState.isPlaying, playerState.pendingPlay, isReady, playerState.currentSong]);`;
+
+code = code.replace(ppSearch, ppReplace);
+
+// Seek effect
+const seekSearch = `  useEffect(() => {
+    if (playerState.seekRequest !== null && isReady && playerRef.current) {
+      if (playerRef.current.seekTo) {
+        playerRef.current.seekTo(playerState.seekRequest, true);
+        playerState.clearSeekRequest();
+      }
+    }
+  }, [playerState.seekRequest, isReady]);`;
+
+const seekReplace = `  useEffect(() => {
+    if (playerState.seekRequest !== null) {
+      if (playerState.currentSong?.source_type === 'local') {
+         if (audioRef.current) {
+           audioRef.current.currentTime = playerState.seekRequest;
+           playerState.clearSeekRequest();
+         }
+      } else if (isReady && playerRef.current) {
+        if (playerRef.current.seekTo) {
+          playerRef.current.seekTo(playerState.seekRequest, true);
+          playerState.clearSeekRequest();
+        }
+      }
+    }
+  }, [playerState.seekRequest, isReady, playerState.currentSong]);`;
+
+code = code.replace(seekSearch, seekReplace);
+
+// Volume effect
+const volSearch = `  useEffect(() => {
+    if (isReady && playerRef.current && playerRef.current.setVolume) {
+      playerRef.current.setVolume(playerState.isMuted ? 0 : playerState.volume);
+    }
+  }, [playerState.volume, playerState.isMuted, isReady]);`;
+
+const volReplace = `  useEffect(() => {
+    const targetVol = playerState.isMuted ? 0 : playerState.volume;
+    if (audioRef.current) {
+      audioRef.current.volume = targetVol / 100;
+    }
+    if (isReady && playerRef.current && playerRef.current.setVolume) {
+      playerRef.current.setVolume(targetVol);
+    }
+  }, [playerState.volume, playerState.isMuted, isReady]);`;
+
+code = code.replace(volSearch, volReplace);
+
+// Add audio tag in JSX
+const audioSearch = `<div id="youtube-player-container" style={{ display: 'none' }} />`;
+const audioReplace = `<div id="youtube-player-container" style={{ display: 'none' }} />
+      <audio 
+         ref={audioRef} 
+         onEnded={() => playerState.next()} 
+         onPlay={() => playerState.setIsPlaying(true)} 
+         onPause={() => playerState.setIsPlaying(false)} 
+         style={{ display: 'none' }} 
+      />`;
+
+code = code.replace(audioSearch, audioReplace);
+
+// Render info
+const infoSearch = `const artist = playerState.currentSong?.channel_title || "Unknown";`;
+const infoReplace = `const artist = playerState.currentSong?.artist || playerState.currentSong?.channel_title || "Unknown";`;
+code = code.replace(infoSearch, infoReplace);
+
+fs.writeFileSync('./src/components_player.tsx', code);
+console.log('components_player.tsx updated successfully');

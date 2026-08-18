@@ -1,9 +1,13 @@
 const fs = require('fs');
-const file = 'src/main.tsx';
-let content = fs.readFileSync(file, 'utf8');
-
-if (!content.includes('import { PhotosPage }')) {
-    content = content.replace('import { Composer } from \'./components/Composer\';', 'import { Composer } from \'./components/Composer\';\nimport { PhotosPage } from \'./components/PhotosPage\';');
-    fs.writeFileSync(file, content);
+let code = fs.readFileSync('./src/main.tsx', 'utf8');
+const search = `import { formatTime } from "./components_player";`;
+const replace = `import { formatTime } from "./components_player";\nimport { MusicView } from "./features/music/MusicView";`;
+if(code.includes(search)) {
+  code = code.replace(search, replace);
+} else {
+  code = code.replace(
+    `import { FloatingMusicPlayer, formatTime } from "./components_player";`,
+    `import { FloatingMusicPlayer, formatTime } from "./components_player";\nimport { MusicView } from "./features/music/MusicView";`
+  );
 }
-console.log("main.tsx import patched");
+fs.writeFileSync('./src/main.tsx', code);

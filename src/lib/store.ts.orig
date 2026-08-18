@@ -34,15 +34,11 @@ export type PlayerItem = {
 };
 
 export type QueueItem = {
-  source_type?: 'youtube' | 'local';
-  video_id?: string;
-  audio_url?: string;
+  video_id: string;
   title: string;
   channel_title?: string;
   thumbnail?: string;
   duration?: string;
-  artist?: string;
-  id?: string; // database track id
 };
 
 interface PlayerStore {

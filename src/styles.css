@@ -3451,3 +3451,30 @@ button:disabled { cursor: wait; opacity: .65; }
   border-bottom: 1px solid var(--border);
   background: #f9fbfc;
 }
+
+/* ====== MUSIC SYSTEM STYLES (Tuenti 2026 / MySpace vibes) ====== */
+.music-view {
+  display: flex;
+  flex-direction: column;
+}
+.music-header {
+  background: white;
+  border-bottom: 1px solid var(--border-color);
+}
+.music-nav button {
+  transition: all 0.2s ease;
+}
+.music-nav button:hover:not([style*="var(--primary-color)"]) {
+  background: #f0f4f8 !important;
+}
+.music-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.music-post-card {
+  transition: transform 0.1s ease;
+}
+.music-post-card:hover {
+  border-color: #c0ceda !important;
+}

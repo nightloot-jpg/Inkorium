@@ -2,6 +2,7 @@ import { useDebounce } from "react-use";
 import React, { StrictMode, useEffect, useState, useCallback, useRef, type ChangeEvent, type FormEvent } from "react";
 import { useAuthStore, usePlayerStore, type ProfileData as StoreProfileData, type PlayerItem } from "./lib/store";
 import { FloatingMusicPlayer, formatTime } from "./components_player";
+import { MusicView } from "./features/music/MusicView";
 import { createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
 import { NotificationsPortal } from "./components/NotificationsPortal";
@@ -542,7 +543,7 @@ async function toggleLike(id: string) {
           {shareMenu === post.id && <ShareMenu post={post} session={session} onClose={() => setShareMenu(null)} />}
           </div>
           {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
-          </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} shareVideo={currentRoute.params?.shareVideo} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => {}} />}{page === "videos" && <VideosView navigate={navigate} session={session} />}
+          </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} shareVideo={currentRoute.params?.shareVideo} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView session={session} navigate={navigate} />}{page === "videos" && <VideosView navigate={navigate} session={session} />}
         {videoToShare && <VideoShareModal video={videoToShare} onClose={() => setVideoToShare(null)} navigate={navigate} />}</main>
       <aside className="right-column"><section className="panel right-card"><strong>SOLICITUDES</strong><button>Ver todas</button><p>No tienes solicitudes pendientes.</p></section><section className="panel right-card"><strong>EVENTOS DESTACADOS</strong><button>Ver todos</button><div className="event"><div className="event-image">♫</div><div><b>Descubre Inkorium</b><p>Comparte tus momentos y musica.</p></div></div><button className="outline">Añadir a mi calendario</button></section><section className="panel calendar"><strong>CALENDARIO</strong><span>▣</span><h3>Agosto 2026</h3><div className="week">Lu　 Ma　 Mi　 Ju　 Vi　 Sa　 Do</div><div className="days">{Array.from({ length: 31 }, (_, index) => <i className={index === 12 ? "today" : ""} key={index}>{index + 1}</i>)}</div></section></aside></div>
     )}
@@ -703,6 +704,20 @@ function ProfileViewLegacy({ session, visitedUserId, goBack, navigate }: { sessi
   const isOwnProfile = !visitedUserId || visitedUserId === session.user.id;
   const targetUserId = isOwnProfile ? session.user.id : visitedUserId;
   const [viewCount, setViewCount] = useState<number | null>(null);
+
+  const playerState = usePlayerStore();
+  const [songOfDay, setSongOfDay] = useState<any>(null);
+  const [publicPlaylists, setPublicPlaylists] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadMusicData() {
+      if (!targetUserId) return;
+      const { data: sod } = await supabase.from('profile_song_of_day').select('*, music_tracks(*)').eq('user_id', targetUserId).maybeSingle();
+      if (sod && sod.music_tracks) setSongOfDay(sod.music_tracks);
+    }
+    loadMusicData();
+  }, [targetUserId]);
+
   const profile = useAuthStore(state => state.profile);
   const setProfile = useAuthStore(state => state.setProfile); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [postMenu, setPostMenu] = useState<string | null>(null);
 
@@ -795,7 +810,31 @@ async function toggleLike(id: string) {
     )}
     </div>
     {goBack && <button onClick={goBack} className="profile-edit" style={{marginRight: 8}}>Atrás</button>}
-    {isOwnProfile && <button className="profile-edit">Editar perfil</button>}<button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Amigos</button></nav></section>
+    {isOwnProfile && <button className="profile-edit">Editar perfil</button>}<button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Música</button><button>Amigos</button></nav></section>
+      {songOfDay && (
+        <section className="panel profile-music-highlight" style={{marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12}}>
+          <div style={{width: 60, height: 60, flexShrink: 0, borderRadius: 4, overflow: 'hidden', backgroundColor: '#eee'}}>
+            {songOfDay.cover_url || songOfDay.thumbnail ? (
+              <img src={songOfDay.cover_url || songOfDay.thumbnail} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+            ) : <div style={{width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}><Music size={24} color="#888"/></div>}
+          </div>
+          <div style={{flex: 1}}>
+            <strong style={{display: 'block', fontSize: '0.9em', color: 'var(--primary-color)', textTransform: 'uppercase', marginBottom: 2}}>🎵 Canción del día</strong>
+            <div style={{fontWeight: 600}}>{songOfDay.title}</div>
+            <div style={{fontSize: '0.9em', color: 'var(--text-light)'}}>{songOfDay.artist}</div>
+          </div>
+          <button className="primary-button" style={{padding: '6px 12px', fontSize: '0.9em'}} onClick={() => {
+            playerState.playSong({
+              source_type: songOfDay.source_type,
+              video_id: songOfDay.youtube_id,
+              audio_url: songOfDay.audio_url,
+              title: songOfDay.title,
+              artist: songOfDay.artist,
+              thumbnail: songOfDay.cover_url
+            });
+          }}>▶ Escuchar</button>
+        </section>
+      )}
       {isOwnProfile ? (
         <Composer session={session} profile={profile} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} targetProfileId={session.user.id} />
       ) : (
@@ -917,7 +956,7 @@ function PeopleView({ navigate }: { navigate: (page: Page, params?: Record<strin
     ))}
   </div></section>;
 }
-function MusicView({ onPlay }: { onPlay: () => void }) { return <section className="content-view"><h1>Musica</h1><p className="view-subtitle">Escucha, descubre y comparte nuevos sonidos.</p><div className="music-list panel">{songs.map((song, index) => <div className="song-row" key={song}><span className="music-square">♫</span><div><strong>{song}</strong><small>Inkorium Music · pista {index + 1}</small></div><button onClick={onPlay}>▶ Escuchar</button></div>)}</div></section>; }
+
 
 function Login() { const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [mode, setMode] = useState<"login" | "signup">("login"); const [remember, setRemember] = useState(!!import.meta.env.VITE_YOUTUBE_API_KEY); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); async function submit(event: FormEvent) { event.preventDefault(); setBusy(true); setMessage(""); const result = mode === "login" ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password }); setMessage(result.error ? result.error.message : mode === "login" ? "Sesion iniciada." : "Cuenta creada. Revisa tu correo si hace falta."); setBusy(false); } async function recoverPassword() { if (!email) { setMessage("Escribe tu email para recuperar la contraseña."); return; } setBusy(true); const result = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/` }); setMessage(result.error ? result.error.message : "Te hemos enviado un enlace para cambiar la contraseña."); setBusy(false); } return <main className="page"><Brand /><div className="card"><div className="card-heading"><h1>{mode === "login" ? "Iniciar sesión" : "Crear una cuenta"}</h1><p>{mode === "login" ? "Entra en tu espacio creativo." : "Empieza tu espacio creativo."}</p></div><form onSubmit={(event) => void submit(event)}><label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label>Contraseña<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required /></label><div className="form-options"><label className="remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>Recordarme en este equipo</span></label><button type="button" className="text-button" onClick={() => void recoverPassword()}>¿Contraseña olvidada?</button></div><button className="primary-button" disabled={busy}>{busy ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}</button></form>{message && <p className="message">{message}</p>}</div><div className="page-links"><button className="text-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>{mode === "login" ? "¿Quieres crear una cuenta?" : "¿Ya tienes una cuenta?"}</button><span>|</span><button className="text-button" onClick={() => void recoverPassword()}>Recordar contraseña</button></div></main>; }
 

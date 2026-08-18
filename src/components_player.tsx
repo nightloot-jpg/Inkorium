@@ -20,6 +20,7 @@ export function FloatingMusicPlayer() {
   const playerState = usePlayerStore();
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const [isReady, setIsReady] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
