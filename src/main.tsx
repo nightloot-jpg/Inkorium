@@ -353,7 +353,7 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
       sessionStorage.setItem("inkorium-page", next[next.length - 1].page);
       return next;
     });
-  }; const [draft, setDraft] = useState(""); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [feedError, setFeedError] = useState(""); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [publishing, setPublishing] = useState(false); const [query, setQuery] = useState(""); const [notifications, setNotifications] = useState(false); const [unreadCount, setUnreadCount] = useState(0);
+  }; const [draft, setDraft] = useState(""); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [feedError, setFeedError] = useState(""); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [postMenu, setPostMenu] = useState<string | null>(null); const [publishing, setPublishing] = useState(false); const [query, setQuery] = useState(""); const [notifications, setNotifications] = useState(false); const [unreadCount, setUnreadCount] = useState(0);
   const notificationsButtonRef = useRef<HTMLButtonElement>(null); const [userMenu, setUserMenu] = useState(false);
   const [notificationItems, setNotificationItems] = useState<NotificationData[]>([]);
   const playerState = usePlayerStore();
@@ -431,7 +431,34 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
     })));
     setLiked((likesData ?? []).map(l => l.post_id)); } void loadPosts(); return () => { cancelled = true; }; }, [session.user.id, username]);
 
-  async function toggleLike(id: string) {
+
+  const deletePost = async (id: string, mediaData: any) => {
+    if (!window.confirm("¿Eliminar publicación?\n\nEsta acción no se puede deshacer.")) return;
+
+    // First, try to delete the media from storage if it exists
+    if (mediaData && mediaData.url) {
+      try {
+        const urlObj = new URL(mediaData.url);
+        const pathParts = urlObj.pathname.split('/');
+        const fileKey = pathParts.slice(pathParts.indexOf('post-media') + 1).join('/');
+
+        if (fileKey) {
+            await supabase.storage.from('post-media').remove([fileKey]);
+        }
+      } catch (e) {
+        console.error("Failed to delete media from storage", e);
+      }
+    }
+
+    const { error } = await supabase.from('posts').delete().eq('id', id);
+    if (!error) {
+      setPosts(posts => posts.filter(p => p.id !== id));
+    } else {
+      alert("Error al eliminar la publicación: " + error.message);
+    }
+    setPostMenu(null);
+  };
+async function toggleLike(id: string) {
     const active = liked.includes(id);
     setLiked(active ? liked.filter((item) => item !== id) : [...liked, id]);
     setPosts(posts.map((post) => post.id === id ? { ...post, likes: post.likes + (active ? -1 : 1) } : post));
@@ -494,7 +521,7 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
       <PhotosPage session={session} profileId={currentRoute.params?.userId} navigate={navigate} />
     ) : (
       <div className="feed-layout"><aside className="left-column"><section className="profile-card panel"><div className="avatar profile-avatar">{username[0].toUpperCase()}</div><div><strong>{username}</strong><span>Mas rapido</span><em>● En linea</em><button onClick={() => navigate("perfil")}>Ver mi perfil »</button></div></section><nav className="side-menu panel">{[["⌂", "Novedades", "inicio"], ["▧", "Fotos", "fotos"], ["▹", "Videos", "videos"], ["♫", "Musica", "musica"], ["□", "Eventos", "buscar"], ["♧", "Grupos", "personas"], ["⚑", "Paginas", "personas"], ["▥", "Encuestas", "buscar"], ["▱", "Guardados", "buscar"], ["⚙", "Configuracion", "personas"]].map(([icon, label, id], index) => <button className={page === id && index === 0 ? "selected" : ""} onClick={() => navigate(id as Page)} key={label}><span>{icon}</span>{label}</button>)}</nav><section className="friends panel"><strong>AMIGOS CONECTADOS (1)</strong><div><span className="avatar tiny">B</span><button onClick={() => navigate("personas")}>bg9222361</button><i /></div><button className="see-all" onClick={() => navigate("personas")}>Ver todos »</button></section></aside>
-      <main className="stream">{page === "inicio" && <><Composer session={session} profile={profile} onPublish={(newPost) => setPosts(current => [newPost, ...current])} />{posts.length === 0 && !feedError && <p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><UserLink userId={post.author_id} name={post.authorName || username} avatarUrl={post.authorAvatarUrl} navigate={navigate} />
+      <main className="stream">{page === "inicio" && <><Composer session={session} profile={profile} onPublish={(newPost) => setPosts(current => [newPost, ...current])} />{posts.length === 0 && !feedError && <p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map((post) => <article className="post panel" key={post.id}><div className="post-head">          <div style={{ position: "absolute", top: 12, right: 12 }}>            {post.author_id === session.user.id && (              <button className="icon-button" onClick={() => setPostMenu(postMenu === post.id ? null : post.id)}>                <MoreHorizontal size={16} />              </button>            )}            {postMenu === post.id && post.author_id === session.user.id && (              <div className="popover" style={{ top: 24, right: 0, minWidth: 150, zIndex: 10 }}>                <button onClick={() => deletePost(post.id, post.media_data)} style={{ color: "var(--error-color, #d32f2f)", textAlign: "left", width: "100%" }}>                  🗑 Eliminar publicación                </button>              </div>            )}          </div><UserLink userId={post.author_id} name={post.authorName || username} avatarUrl={post.authorAvatarUrl} navigate={navigate} />
           <div>
             {post.target_profile_id && post.target_profile_id !== post.author_id ? (
               <span className="signature-meta" style={{display: "block", fontSize: "0.85em", color: "var(--text-light)"}}>
@@ -683,8 +710,35 @@ function ProfileViewLegacy({ session, visitedUserId, goBack, navigate }: { sessi
   const targetUserId = isOwnProfile ? session.user.id : visitedUserId;
   const [viewCount, setViewCount] = useState<number | null>(null);
   const profile = useAuthStore(state => state.profile);
-  const setProfile = useAuthStore(state => state.setProfile); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null);
+  const setProfile = useAuthStore(state => state.setProfile); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [postMenu, setPostMenu] = useState<string | null>(null);
 
+
+  const deletePost = async (id: string, mediaData: any) => {
+    if (!window.confirm("¿Eliminar publicación?\n\nEsta acción no se puede deshacer.")) return;
+
+    // First, try to delete the media from storage if it exists
+    if (mediaData && mediaData.url) {
+      try {
+        const urlObj = new URL(mediaData.url);
+        const pathParts = urlObj.pathname.split('/');
+        const fileKey = pathParts.slice(pathParts.indexOf('post-media') + 1).join('/');
+
+        if (fileKey) {
+            await supabase.storage.from('post-media').remove([fileKey]);
+        }
+      } catch (e) {
+        console.error("Failed to delete media from storage", e);
+      }
+    }
+
+    const { error } = await supabase.from('posts').delete().eq('id', id);
+    if (!error) {
+      setPosts(posts => posts.filter(p => p.id !== id));
+    } else {
+      alert("Error al eliminar la publicación: " + error.message);
+    }
+    setPostMenu(null);
+  };
 async function toggleLike(id: string) {
     const active = liked.includes(id);
     setLiked(active ? liked.filter((item) => item !== id) : [...liked, id]);
@@ -772,7 +826,7 @@ async function toggleLike(id: string) {
       ) : (
         <Composer session={session} profile={profile} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} targetProfileId={targetUserId!} targetName={name} />
       )}
-{error && <p className="message">{error}</p>}{posts.length ? posts.map((post) => <article className="post panel" key={post.id}><div className="post-head"><div className="avatar">{profile?.avatar_url ? <img src={profile.avatar_url} style={{width:"100%", height:"100%", borderRadius:"50%", objectFit:"cover"}}/> : initials}</div>
+{error && <p className="message">{error}</p>}{posts.length ? posts.map((post) => <article className="post panel" key={post.id}><div className="post-head">          <div style={{ position: "absolute", top: 12, right: 12 }}>            {post.author_id === session.user.id && (              <button className="icon-button" onClick={() => setPostMenu(postMenu === post.id ? null : post.id)}>                <MoreHorizontal size={16} />              </button>            )}            {postMenu === post.id && post.author_id === session.user.id && (              <div className="popover" style={{ top: 24, right: 0, minWidth: 150, zIndex: 10 }}>                <button onClick={() => deletePost(post.id, post.media_data)} style={{ color: "var(--error-color, #d32f2f)", textAlign: "left", width: "100%" }}>                  🗑 Eliminar publicación                </button>              </div>            )}          </div><div className="avatar">{profile?.avatar_url ? <img src={profile.avatar_url} style={{width:"100%", height:"100%", borderRadius:"50%", objectFit:"cover"}}/> : initials}</div>
           <div>
             <strong>{post.authorName || (post as any).name || "Usuario"}</strong>
             {post.target_profile_id && post.target_profile_id !== post.author_id ? (
