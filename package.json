@@ -16,12 +16,16 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-easy-crop": "^6.2.3",
+    "react-use": "^17.6.1",
     "tslib": "^2.8.1",
+    "tus-js-client": "^4.3.1",
+    "uuid": "^14.0.1",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@types/react": "^19.2.4",
     "@types/react-dom": "^19.2.4",
+    "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.2.0",
     "typescript": "^5.9.3",
     "vite": "^8.2.1"
