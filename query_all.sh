@@ -1,4 +1,3 @@
 #!/bin/bash
-source .env
-
-psql -U postgres -h aws-0-us-west-1.pooler.supabase.com -p 6543 -d postgres -c "\dt public.*"
+PROJECT_ID="zllwzmfsfzfedorljgtg"
+echo "I can execute raw sql with the supabase tool."
