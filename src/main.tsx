@@ -358,6 +358,8 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
   const [notificationItems, setNotificationItems] = useState<NotificationData[]>([]);
   const playerState = usePlayerStore();
 
+
+
   useEffect(() => {
     let cancelled = false;
     async function loadNotifications() {
@@ -433,28 +435,9 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
 
 
   const deletePost = async (id: string, mediaData: any) => {
-    if (!window.confirm("¿Eliminar publicación?\n\nEsta acción no se puede deshacer.")) return;
-
-    // First, try to delete the media from storage if it exists
-    if (mediaData && mediaData.url) {
-      try {
-        const urlObj = new URL(mediaData.url);
-        const pathParts = urlObj.pathname.split('/');
-        const fileKey = pathParts.slice(pathParts.indexOf('post-media') + 1).join('/');
-
-        if (fileKey) {
-            await supabase.storage.from('post-media').remove([fileKey]);
-        }
-      } catch (e) {
-        console.error("Failed to delete media from storage", e);
-      }
-    }
-
-    const { error } = await supabase.from('posts').delete().eq('id', id);
-    if (!error) {
+    const success = await deletePostHelper(id, mediaData, supabase);
+    if (success) {
       setPosts(posts => posts.filter(p => p.id !== id));
-    } else {
-      alert("Error al eliminar la publicación: " + error.message);
     }
     setPostMenu(null);
   };
@@ -714,28 +697,9 @@ function ProfileViewLegacy({ session, visitedUserId, goBack, navigate }: { sessi
 
 
   const deletePost = async (id: string, mediaData: any) => {
-    if (!window.confirm("¿Eliminar publicación?\n\nEsta acción no se puede deshacer.")) return;
-
-    // First, try to delete the media from storage if it exists
-    if (mediaData && mediaData.url) {
-      try {
-        const urlObj = new URL(mediaData.url);
-        const pathParts = urlObj.pathname.split('/');
-        const fileKey = pathParts.slice(pathParts.indexOf('post-media') + 1).join('/');
-
-        if (fileKey) {
-            await supabase.storage.from('post-media').remove([fileKey]);
-        }
-      } catch (e) {
-        console.error("Failed to delete media from storage", e);
-      }
-    }
-
-    const { error } = await supabase.from('posts').delete().eq('id', id);
-    if (!error) {
+    const success = await deletePostHelper(id, mediaData, supabase);
+    if (success) {
       setPosts(posts => posts.filter(p => p.id !== id));
-    } else {
-      alert("Error al eliminar la publicación: " + error.message);
     }
     setPostMenu(null);
   };
@@ -933,6 +897,34 @@ function UserLink({ userId, name, avatarUrl, navigate, onClick }: { userId: stri
       <strong style={{ fontSize: "0.95em" }}>{name}</strong>
     </div>
   );
+}
+
+
+async function deletePostHelper(id: string, mediaData: any, supabaseClient: any): Promise<boolean> {
+  if (!window.confirm("¿Eliminar publicación?\n\nEsta acción no se puede deshacer.")) return false;
+
+  // First, try to delete the media from storage if it exists
+  if (mediaData && mediaData.url) {
+    try {
+      const urlObj = new URL(mediaData.url);
+      const pathParts = urlObj.pathname.split('/');
+      const fileKey = pathParts.slice(pathParts.indexOf('post-media') + 1).join('/');
+
+      if (fileKey) {
+          await supabaseClient.storage.from('post-media').remove([fileKey]);
+      }
+    } catch (e) {
+      console.error("Failed to delete media from storage", e);
+    }
+  }
+
+  const { error } = await supabaseClient.from('posts').delete().eq('id', id);
+  if (!error) {
+    return true;
+  } else {
+    alert("Error al eliminar la publicación: " + error.message);
+    return false;
+  }
 }
 
 function App() {
