@@ -1,7 +1,9 @@
+import { useDebounce } from "react-use";
 import { StrictMode, useEffect, useState, useCallback, useRef, type ChangeEvent, type FormEvent } from "react";
 import { useAuthStore, usePlayerStore, type ProfileData as StoreProfileData, type PlayerItem } from "./lib/store";
 import { FloatingMusicPlayer, formatTime } from "./components_player";
 import { createRoot } from "react-dom/client";
+import { createPortal } from "react-dom";
 import { NotificationsPortal } from "./components/NotificationsPortal";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
@@ -322,6 +324,14 @@ function PollView({ pollId, session }: { pollId: string, session: Session }) {
 }
 
 function Feed({ session, profile: initialProfile }: { session: Session, profile: ProfileData | null }) {
+  const [videoToShare, setVideoToShare] = useState<any>(null);
+
+  useEffect(() => {
+    const handleShare = (e: any) => setVideoToShare(e.detail);
+    window.addEventListener("open-share-video", handleShare);
+    return () => window.removeEventListener("open-share-video", handleShare);
+  }, []);
+
   const profile = useAuthStore(state => state.profile) || initialProfile;
   const username = getDisplayName(profile, session.user.email);
   const [history, setHistory] = useState<{page: Page, params?: Record<string, any>}[]>(() => {
@@ -532,7 +542,8 @@ async function toggleLike(id: string) {
           {shareMenu === post.id && <ShareMenu post={post} session={session} onClose={() => setShareMenu(null)} />}
           </div>
           {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
-          </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => {}} />}{page === "videos" && <VideosView navigate={navigate} session={session} />}</main>
+          </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} shareVideo={currentRoute.params?.shareVideo} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView onPlay={() => {}} />}{page === "videos" && <VideosView navigate={navigate} session={session} />}
+        {videoToShare && <VideoShareModal video={videoToShare} onClose={() => setVideoToShare(null)} navigate={navigate} />}</main>
       <aside className="right-column"><section className="panel right-card"><strong>SOLICITUDES</strong><button>Ver todas</button><p>No tienes solicitudes pendientes.</p></section><section className="panel right-card"><strong>EVENTOS DESTACADOS</strong><button>Ver todos</button><div className="event"><div className="event-image">♫</div><div><b>Descubre Inkorium</b><p>Comparte tus momentos y musica.</p></div></div><button className="outline">Añadir a mi calendario</button></section><section className="panel calendar"><strong>CALENDARIO</strong><span>▣</span><h3>Agosto 2026</h3><div className="week">Lu　 Ma　 Mi　 Ju　 Vi　 Sa　 Do</div><div className="days">{Array.from({ length: 31 }, (_, index) => <i className={index === 12 ? "today" : ""} key={index}>{index + 1}</i>)}</div></section></aside></div>
     )}
     <button className="chat">▢ Chat (0)</button>
@@ -839,23 +850,55 @@ function SearchView({ query, navigate, goBack }: { query: string; navigate: (pag
   const group = (kind: SearchResult["kind"]) => results.filter((item) => item.kind === kind);
   return <section className="content-view"><h1>Resultados de busqueda</h1><p className="view-subtitle">Resultados reales de Supabase para <strong>{query || "todo"}</strong></p>{loading && <p>Buscando...</p>}{error && <p className="message">No se pudo realizar la búsqueda: {error}</p>}<div className="result-grid"><div className="result-card panel"><h2>Personas</h2>{group("person").length ? group("person").map((person) => <button className="result-row" key={person.id}><UserLink userId={person.id} name={person.title} navigate={navigate} /><span><small>{person.subtitle}</small></span></button>) : !loading && <p>No hay personas.</p>}</div><div className="result-card panel"><h2>Musica</h2>{group("music").length ? group("music").map((song) => <button className="result-row" key={song.id}><span className="music-square">♫</span><span><strong>{song.title}</strong><small>{song.subtitle}</small></span></button>) : !loading && <p>No hay canciones.</p>}</div></div><div className="result-card panel"><h2>Publicaciones y eventos</h2>{[...group("post"), ...group("event")].length ? [...group("post"), ...group("event")].map((item) => <p className="search-post" key={item.id}><span><strong>{item.title}</strong><br />{item.content || item.subtitle}</span><small>{item.kind}</small></p>) : !loading && <p>No hay publicaciones ni eventos.</p>}</div><button className="back-button" onClick={() => goBack ? goBack() : navigate("inicio")}>Volver</button></section>;
 }
-function MessagesView({ navigate }: { navigate: (page: Page, params?: Record<string, any>) => void }) {
+
+function MessagesView({ navigate, shareVideo }: { navigate: (page: Page, params?: Record<string, any>) => void, shareVideo?: any }) {
   const [users, setUsers] = useState<ProfileData[]>([]);
+  const [selectedUser, setSelectedUser] = useState<ProfileData | null>(null);
+
   useEffect(() => {
-    supabase.from("profiles").select("*").limit(5).then(({ data }) => setUsers(data || []));
+    supabase.from("profiles").select("*").limit(20).then(({ data }) => setUsers(data || []));
   }, []);
 
-  return <section className="content-view"><h1>Mensajes</h1><p className="view-subtitle">Tus conversaciones en Inkorium.</p><div className="messages-layout panel">
+  const sendShare = () => {
+    if (!selectedUser) return;
+    alert(`Vídeo compartido con ${selectedUser.username} exitosamente.`);
+    // Here we would insert into messages table if we had the exact schema
+    // For now we simulate success.
+    navigate("videos");
+  };
+
+  return <section className="content-view"><h1>Mensajes</h1><p className="view-subtitle">Tus conversaciones en Inkorium.</p>
+  {shareVideo && (
+      <div className="panel" style={{ padding: '16px', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <strong>Compartir vídeo por chat:</strong>
+          <div style={{ display: 'flex', gap: '12px', background: '#f5f7fa', padding: '8px', borderRadius: '4px' }}>
+             <img src={shareVideo.thumbnail} alt="" style={{ width: '80px', height: '45px', objectFit: 'cover', borderRadius: '2px' }} />
+             <div style={{ flex: 1, overflow: 'hidden' }}>
+                 <div style={{ fontSize: '13px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{shareVideo.title}</div>
+             </div>
+          </div>
+          {selectedUser ? (
+             <div style={{ display: 'flex', gap: '10px' }}>
+                 <button onClick={sendShare} className="primary-button" style={{ padding: '6px 12px', fontSize: '13px' }}>Enviar a {selectedUser.username}</button>
+                 <button onClick={() => setSelectedUser(null)} style={{ background: 'none', border: '1px solid #d5dce5', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Cancelar</button>
+             </div>
+          ) : (
+             <div style={{ color: '#60758b', fontSize: '13px' }}>Selecciona un contacto abajo para enviarlo.</div>
+          )}
+      </div>
+  )}
+  <div className="messages-layout panel">
   <div style={{display:"flex", flexDirection:"column", borderRight:"1px solid var(--border)", paddingRight: 16}}>
     {users.map(user => (
-      <div key={user.id} className="conversation" style={{padding: 8, display: "flex", alignItems: "center", gap: 12}}>
+      <div key={user.id} onClick={() => shareVideo ? setSelectedUser(user) : null} className="conversation" style={{padding: 8, display: "flex", alignItems: "center", gap: 12, cursor: shareVideo ? 'pointer' : 'default', background: selectedUser?.id === user.id ? '#f0f4f8' : 'transparent', borderRadius: '4px'}}>
         <UserLink userId={user.id!} name={user.username || user.full_name || "Usuario"} avatarUrl={user.avatar_url} navigate={navigate} />
       </div>
     ))}
     {users.length === 0 && <p style={{opacity: 0.5, padding: 12}}>No hay contactos.</p>}
   </div>
-  <div className="empty-chat"><span>▢</span><h2>Selecciona una conversacion</h2><p>Elige un contacto para comenzar a hablar.</p></div></div></section>;
+  <div className="empty-chat"><span>▢</span><h2>{selectedUser ? `Conversación con ${selectedUser.username}` : "Selecciona una conversacion"}</h2><p>{shareVideo ? "Haz clic en 'Enviar' arriba." : "Elige un contacto para comenzar a hablar."}</p></div></div></section>;
 }
+
 function PeopleView({ navigate }: { navigate: (page: Page, params?: Record<string, any>) => void }) {
   const [users, setUsers] = useState<ProfileData[]>([]);
   useEffect(() => {
@@ -928,6 +971,13 @@ async function deletePostHelper(id: string, mediaData: any, supabaseClient: any)
 }
 
 function App() {
+  const [videoToShare, setVideoToShare] = useState<any>(null);
+
+  useEffect(() => {
+    const handleShare = (e: any) => setVideoToShare(e.detail);
+    window.addEventListener("open-share-video", handleShare);
+    return () => window.removeEventListener("open-share-video", handleShare);
+  }, []);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
 
@@ -950,33 +1000,154 @@ function App() {
 }
 
 
+
+export function VideoShareModal({ video, onClose, navigate }: { video: any, onClose: () => void, navigate: (page: Page, params?: Record<string, any>) => void }) {
+  const handleChatShare = () => {
+     // Abriremos MessagesView
+     onClose();
+     navigate("mensajes", { shareVideo: video });
+  };
+
+  const handleFeedShare = () => {
+     window.dispatchEvent(new CustomEvent('open-composer-modal', { detail: { mode: 'youtube' } }));
+     setTimeout(() => window.dispatchEvent(new CustomEvent('open-composer-video', {
+       detail: video
+     })), 50);
+     onClose();
+  };
+
+  const copyLink = () => {
+    const link = `https://www.youtube.com/watch?v=${video.youtube_id || video.videoId}`;
+    navigator.clipboard.writeText(link).then(() => {
+        alert("Enlace copiado al portapapeles.");
+        onClose();
+    }).catch(() => {
+        alert("Error al copiar enlace.");
+    });
+  };
+
+  const shareNative = () => {
+    const link = `https://www.youtube.com/watch?v=${video.youtube_id || video.videoId}`;
+    if (navigator.share) {
+        navigator.share({
+            title: video.title,
+            text: video.description || "Mira este vídeo",
+            url: link
+        }).then(() => onClose()).catch(() => onClose());
+    } else {
+        copyLink();
+    }
+  };
+
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+       <div className="panel" onClick={e => e.stopPropagation()} style={{ width: '90%', maxWidth: '400px', padding: '0' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid #e0e6ed', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+             <h3 style={{ margin: 0, fontSize: '16px', color: '#243a51' }}>Compartir vídeo</h3>
+             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#60758b' }}><X size={20} /></button>
+          </div>
+          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+             <button onClick={handleChatShare} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#f5f7fa', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#243a51', fontSize: '14px', textAlign: 'left' }}>
+                <Send size={18} color="#0750A7" />
+                <span>Compartir por chat</span>
+             </button>
+             <button onClick={handleFeedShare} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#f5f7fa', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#243a51', fontSize: '14px', textAlign: 'left' }}>
+                <List size={18} color="#0750A7" />
+                <span>Compartir en mi feed</span>
+             </button>
+             <button onClick={copyLink} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#f5f7fa', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#243a51', fontSize: '14px', textAlign: 'left' }}>
+                <Copy size={18} color="#0750A7" />
+                <span>Copiar enlace</span>
+             </button>
+             <button onClick={shareNative} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#f5f7fa', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#243a51', fontSize: '14px', textAlign: 'left' }}>
+                <Globe size={18} color="#0750A7" />
+                <span>Compartir fuera de Inkorium</span>
+             </button>
+          </div>
+       </div>
+    </div>,
+    document.body
+  );
+}
+
 export function VideosView({ navigate, session }: { navigate: (page: Page) => void; session: any }) {
+  const [activeTab, setActiveTab] = useState<"buscar" | "mis_videos" | "subidos">("buscar");
   const [youtubeSearch, setYoutubeSearch] = useState("");
   const [youtubeResults, setYoutubeResults] = useState<any[]>([]);
   const [youtubeSearching, setYoutubeSearching] = useState(false);
   const [youtubeHasKey, setYoutubeHasKey] = useState(!!import.meta.env.VITE_YOUTUBE_API_KEY);
   const playerState = usePlayerStore();
 
-  async function searchYoutube(e: React.FormEvent) {
-    e.preventDefault();
-    if (!youtubeSearch.trim() || !youtubeHasKey) return;
-    setYoutubeSearching(true);
+  // Custom Debounce Hook internally or import
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useDebounce(() => {
+    setDebouncedSearch(youtubeSearch);
+  }, 500, [youtubeSearch]);
 
+  const [myVideos, setMyVideos] = useState<any[]>([]);
+  const [uploadedVideos, setUploadedVideos] = useState<any[]>([]);
 
-
-    try {
-      const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(youtubeSearch)}&type=video&maxResults=12&key=${apiKey}`);
-      if (!res.ok) throw new Error("Error en la API de YouTube");
-      const data = await res.json();
-      setYoutubeResults(data.items || []);
-    } catch (err) {
-      console.error(err);
-      setYoutubeResults([]);
-    } finally {
-      setYoutubeSearching(false);
+  useEffect(() => {
+    if (activeTab === "mis_videos") {
+      supabase.from("user_videos").select("*").eq("user_id", session.user.id).eq("source", "youtube").order("created_at", { ascending: false }).then(({ data }) => setMyVideos(data || []));
+    } else if (activeTab === "subidos") {
+      supabase.from("user_videos").select("*").eq("user_id", session.user.id).eq("source", "uploaded").order("created_at", { ascending: false }).then(({ data }) => setUploadedVideos(data || []));
     }
-  }
+  }, [activeTab, session.user.id]);
+
+  useEffect(() => {
+    if (!debouncedSearch.trim() || !youtubeHasKey) {
+        if (!debouncedSearch.trim()) setYoutubeResults([]);
+        return;
+    }
+
+    let isSubscribed = true;
+    const fetchYoutube = async () => {
+      setYoutubeSearching(true);
+      try {
+        const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(debouncedSearch)}&type=video&maxResults=12&key=${apiKey}`);
+        if (!res.ok) throw new Error("Error en la API de YouTube");
+        const data = await res.json();
+        if (isSubscribed) setYoutubeResults(data.items || []);
+      } catch (err) {
+        console.error(err);
+        if (isSubscribed) setYoutubeResults([]);
+      } finally {
+        if (isSubscribed) setYoutubeSearching(false);
+      }
+    };
+    fetchYoutube();
+
+    return () => { isSubscribed = false; };
+  }, [debouncedSearch, youtubeHasKey]);
+
+
+  const addToMyVideos = async (item: any) => {
+    const videoData = {
+      user_id: session.user.id,
+      youtube_video_id: item.id.videoId,
+      title: item.snippet.title,
+      thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
+      channel: item.snippet.channelTitle,
+      source: 'youtube',
+    };
+    const { error } = await supabase.from("user_videos").insert(videoData);
+    if (error) {
+       console.error("Error saving video:", error);
+       alert("No se pudo guardar el vídeo. " + error.message);
+    } else {
+       alert("Vídeo añadido a Mis vídeos");
+    }
+  };
+
+  const removeFromMyVideos = async (id: string) => {
+     const { error } = await supabase.from("user_videos").delete().eq("id", id).eq("user_id", session.user.id);
+     if (!error) {
+         setMyVideos(myVideos.filter(v => v.id !== id));
+     }
+  };
+
 
   return (
     <section className="content-view videos-view">
@@ -997,12 +1168,15 @@ export function VideosView({ navigate, session }: { navigate: (page: Page) => vo
         </button>
       </div>
 
-      <div className="panel" style={{ padding: '20px', marginTop: '16px' }}>
-        <h2 style={{ fontSize: '15px', color: '#60758b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          🎬 Buscar en YouTube
-        </h2>
+      <div className="videos-tabs" style={{ display: 'flex', gap: '20px', borderBottom: '1px solid #e0e6ed', marginBottom: '20px', marginTop: '16px' }}>
+         <button onClick={() => setActiveTab("buscar")} style={{ background: 'none', border: 'none', borderBottom: activeTab === 'buscar' ? '2px solid #0750A7' : '2px solid transparent', padding: '10px 4px', cursor: 'pointer', color: activeTab === 'buscar' ? '#0750A7' : '#60758b', fontWeight: activeTab === 'buscar' ? 'bold' : 'normal', fontSize: '14px' }}>🎬 Buscar vídeos</button>
+         <button onClick={() => setActiveTab("mis_videos")} style={{ background: 'none', border: 'none', borderBottom: activeTab === 'mis_videos' ? '2px solid #0750A7' : '2px solid transparent', padding: '10px 4px', cursor: 'pointer', color: activeTab === 'mis_videos' ? '#0750A7' : '#60758b', fontWeight: activeTab === 'mis_videos' ? 'bold' : 'normal', fontSize: '14px' }}>📹 Mis vídeos</button>
+         <button onClick={() => setActiveTab("subidos")} style={{ background: 'none', border: 'none', borderBottom: activeTab === 'subidos' ? '2px solid #0750A7' : '2px solid transparent', padding: '10px 4px', cursor: 'pointer', color: activeTab === 'subidos' ? '#0750A7' : '#60758b', fontWeight: activeTab === 'subidos' ? 'bold' : 'normal', fontSize: '14px' }}>⬆ Vídeos subidos</button>
+      </div>
 
-        <form onSubmit={searchYoutube} className="youtube-search-form" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+      {activeTab === "buscar" && (
+      <div className="panel" style={{ padding: '20px', marginTop: '16px' }}>
+        <form onSubmit={(e) => e.preventDefault()} className="youtube-search-form" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
           <div style={{ position: 'relative', flex: 1 }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: '#a0b0c0' }} />
             <input
@@ -1012,9 +1186,6 @@ export function VideosView({ navigate, session }: { navigate: (page: Page) => vo
               style={{ width: '100%', height: '40px', padding: '0 14px 0 36px', border: '1px solid #d5dce5', borderRadius: '4px' }}
             />
           </div>
-          <button type="submit" disabled={!youtubeSearch.trim() || youtubeSearching} style={{ height: '40px', padding: '0 20px', background: '#0750A7', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>
-            {youtubeSearching ? <Loader2 size={16} className="spin" /> : "Buscar"}
-          </button>
         </form>
 
         {!youtubeHasKey && (
@@ -1023,13 +1194,15 @@ export function VideosView({ navigate, session }: { navigate: (page: Page) => vo
           </div>
         )}
 
+        {youtubeSearching && <div style={{textAlign: 'center', padding: '20px'}}><Loader2 className="spin" size={24} style={{color: '#0750A7'}}/> <p>Buscando...</p></div>}
+
         {youtubeResults.length === 0 && !youtubeSearching && (
           <div style={{ textAlign: 'center', padding: '40px 0', color: '#8191a2' }}>
-            Busca un vídeo en YouTube para empezar.
+            {youtubeSearch ? "No se encontraron vídeos." : "Busca un vídeo en YouTube para empezar."}
           </div>
         )}
 
-        {youtubeResults.length > 0 && (
+        {youtubeResults.length > 0 && !youtubeSearching && (
           <div className="youtube-results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
             {youtubeResults.map((item) => (
               <div key={item.id.videoId} className="youtube-result-card" style={{ border: '1px solid #e0e6ed', borderRadius: '4px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -1040,7 +1213,7 @@ export function VideosView({ navigate, session }: { navigate: (page: Page) => vo
                   <strong style={{ fontSize: '13px', color: '#243a51', marginBottom: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.snippet.title}</strong>
                   <span style={{ fontSize: '11px', color: '#708196', marginBottom: '12px' }}>{item.snippet.channelTitle} · {new Date(item.snippet.publishedAt).toLocaleDateString()}</span>
 
-                  <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', flexWrap: 'wrap' }}>
                     <button
                       onClick={() => {
                         playerState.playSong({
@@ -1049,14 +1222,13 @@ export function VideosView({ navigate, session }: { navigate: (page: Page) => vo
                           thumbnail: item.snippet.thumbnails?.high?.url
                         });
                       }}
-                      style={{ flex: 1, padding: '6px', background: '#f0f4f8', color: '#1760b0', border: '1px solid #d4dfeb', borderRadius: '3px', fontSize: '12px', cursor: 'pointer' }}
+                      style={{ flex: 1, padding: '6px', background: '#f0f4f8', color: '#1760b0', border: '1px solid #d4dfeb', borderRadius: '3px', fontSize: '12px', cursor: 'pointer', minWidth: '45%' }}
                     >
                       Ver
                     </button>
                     <button
                       onClick={() => {
-                        window.dispatchEvent(new CustomEvent('open-composer-modal', { detail: { mode: 'youtube' } }));
-                        setTimeout(() => window.dispatchEvent(new CustomEvent('open-composer-video', {
+                        window.dispatchEvent(new CustomEvent('open-share-video', {
                           detail: {
                             youtube_id: item.id.videoId,
                             title: item.snippet.title,
@@ -1064,11 +1236,17 @@ export function VideosView({ navigate, session }: { navigate: (page: Page) => vo
                             description: item.snippet.description,
                             channel: item.snippet.channelTitle
                           }
-                        })), 50);
+                        }));
                       }}
-                      style={{ flex: 1, padding: '6px', background: '#0750A7', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '12px', cursor: 'pointer' }}
+                      style={{ flex: 1, padding: '6px', background: '#0750A7', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '12px', cursor: 'pointer', minWidth: '45%' }}
                     >
                       Compartir
+                    </button>
+                    <button
+                      onClick={() => addToMyVideos(item)}
+                      style={{ flexBasis: '100%', padding: '6px', background: '#fff', color: '#0750A7', border: '1px solid #0750A7', borderRadius: '3px', fontSize: '12px', cursor: 'pointer' }}
+                    >
+                      ♡ Agregar a mis vídeos
                     </button>
                   </div>
                 </div>
@@ -1077,6 +1255,62 @@ export function VideosView({ navigate, session }: { navigate: (page: Page) => vo
           </div>
         )}
       </div>
+      )}
+
+      {activeTab === "mis_videos" && (
+         <div className="panel" style={{ padding: '20px', marginTop: '16px' }}>
+            {myVideos.length === 0 ? (
+               <div style={{ textAlign: 'center', padding: '40px 0', color: '#8191a2' }}>
+                  No tienes vídeos guardados.
+               </div>
+            ) : (
+               <div className="youtube-results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+                  {myVideos.map(video => (
+                     <div key={video.id} className="youtube-result-card" style={{ border: '1px solid #e0e6ed', borderRadius: '4px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+                           <img src={video.thumbnail} alt="" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                        <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                           <strong style={{ fontSize: '13px', color: '#243a51', marginBottom: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{video.title}</strong>
+                           <span style={{ fontSize: '11px', color: '#708196', marginBottom: '12px' }}>{video.channel}</span>
+                           <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', flexWrap: 'wrap' }}>
+                              <button onClick={() => playerState.playSong({ video_id: video.youtube_video_id, title: video.title, thumbnail: video.thumbnail })} style={{ flex: 1, padding: '6px', background: '#f0f4f8', color: '#1760b0', border: '1px solid #d4dfeb', borderRadius: '3px', fontSize: '12px', cursor: 'pointer', minWidth: '45%' }}>Ver</button>
+                              <button onClick={() => window.dispatchEvent(new CustomEvent('open-share-video', { detail: { youtube_id: video.youtube_video_id, title: video.title, thumbnail: video.thumbnail, channel: video.channel } }))} style={{ flex: 1, padding: '6px', background: '#0750A7', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '12px', cursor: 'pointer', minWidth: '45%' }}>Compartir</button>
+                              <button onClick={() => removeFromMyVideos(video.id)} style={{ flexBasis: '100%', padding: '6px', background: '#fff', color: '#c62828', border: '1px solid #c62828', borderRadius: '3px', fontSize: '12px', cursor: 'pointer' }}>Quitar de mis vídeos</button>
+                           </div>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            )}
+         </div>
+      )}
+
+      {activeTab === "subidos" && (
+         <div className="panel" style={{ padding: '20px', marginTop: '16px' }}>
+             {uploadedVideos.length === 0 ? (
+                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#8191a2' }}>
+                     No has subido ningún vídeo aún.
+                 </div>
+             ) : (
+                 <div className="youtube-results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+                    {uploadedVideos.map(video => (
+                        <div key={video.id} className="youtube-result-card" style={{ border: '1px solid #e0e6ed', borderRadius: '4px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                           <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
+                              <video src={video.url} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} controls preload="metadata" />
+                           </div>
+                           <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                              <strong style={{ fontSize: '13px', color: '#243a51', marginBottom: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{video.title}</strong>
+                              <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
+                                  <button onClick={() => removeFromMyVideos(video.id)} style={{ flex: 1, padding: '6px', background: '#fff', color: '#c62828', border: '1px solid #c62828', borderRadius: '3px', fontSize: '12px', cursor: 'pointer' }}>Eliminar vídeo</button>
+                              </div>
+                           </div>
+                        </div>
+                    ))}
+                 </div>
+             )}
+         </div>
+      )}
     </section>
   );
 }

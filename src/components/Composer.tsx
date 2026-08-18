@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from "react-dom";
 import { supabase } from '../lib/supabase';
+import * as tus from "tus-js-client";
+import { v4 as uuidv4 } from "uuid";
 import { Session } from '@supabase/supabase-js';
 import { 
   Image as ImageIcon, Video, Music, BarChart3, Newspaper, List, Search,
@@ -127,6 +129,8 @@ export function Composer({
   const [draft, setDraft] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadState, setUploadState] = useState<tus.Upload | null>(null);
   
   const [mode, setMode] = useState<"text" | "photo" | "video" | "music" | "poll" | "news" | "event" | "location" | "background" | "more">("text");
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -406,16 +410,79 @@ export function Composer({
         const { data: publicData } = supabase.storage.from("post-media").getPublicUrl(path);
         media_data = { type: "photo", url: publicData.publicUrl };
     } else if (mode === "video" && videoFile) {
+        if (videoFile.size > 1024 * 1024 * 1024) { // 1GB
+            setError("El vídeo supera el límite máximo de 1 GB.");
+            setPublishing(false);
+            return;
+        }
+
         const extension = videoFile.name.split(".").pop()?.toLowerCase() || "mp4";
         const path = `${session.user.id}/video-${Date.now()}.${extension}`;
-        const { error: uploadError } = await supabase.storage.from("post-media").upload(path, videoFile, { cacheControl: "3600", upsert: true, contentType: videoFile.type });
-        if (uploadError) {
-          setError("Error al subir vídeo: " + uploadError.message);
-          setPublishing(false);
-          return;
+        const bucketName = "post-media";
+
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData.session?.access_token;
+
+            if (!token) throw new Error("No hay sesión activa");
+
+            const uploadUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/upload/resumable`;
+
+            await new Promise((resolve, reject) => {
+                const upload = new tus.Upload(videoFile, {
+                    endpoint: uploadUrl,
+                    retryDelays: [0, 3000, 5000, 10000, 20000],
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'x-upsert': 'true',
+                    },
+                    uploadDataDuringCreation: true,
+                    removeFingerprintOnSuccess: true,
+                    metadata: {
+                        bucketName: bucketName,
+                        objectName: path,
+                        contentType: videoFile.type,
+                        cacheControl: '3600',
+                    },
+                    chunkSize: 6 * 1024 * 1024, // 6MB chunks as recommended
+                    onError: (err) => {
+                        console.error('Failed because: ' + err);
+                        reject(err);
+                    },
+                    onProgress: (bytesUploaded, bytesTotal) => {
+                        const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
+                        setUploadProgress(parseFloat(percentage));
+                    },
+                    onSuccess: () => {
+                        resolve(null);
+                    }
+                });
+
+                setUploadState(upload);
+                upload.start();
+            });
+
+            const { data: publicData } = supabase.storage.from("post-media").getPublicUrl(path);
+            media_data = { type: "video", url: publicData.publicUrl };
+
+            // Add to user_videos
+            await supabase.from("user_videos").insert({
+                user_id: session.user.id,
+                title: contentText || videoFile.name,
+                url: publicData.publicUrl,
+                source: "uploaded"
+            });
+
+            setUploadProgress(null);
+            setUploadState(null);
+
+        } catch (uploadError: any) {
+            setError("Error al subir vídeo: " + uploadError.message);
+            setPublishing(false);
+            setUploadProgress(null);
+            setUploadState(null);
+            return;
         }
-        const { data: publicData } = supabase.storage.from("post-media").getPublicUrl(path);
-        media_data = { type: "video", url: publicData.publicUrl };
     } else if (mode === "music" && youtubeSelected) {
         const isPlaylist = youtubeSelected.id.kind === 'youtube#playlist';
         media_data = { 
