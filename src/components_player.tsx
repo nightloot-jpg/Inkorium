@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from './lib/store';
+import { supabase } from './lib/supabase';
+import { useAuthStore } from './lib/store';
 import { Play, Pause, SkipBack, SkipForward, X, Maximize2, Minimize2, Volume2, VolumeX, ListMusic, GripVertical, Music } from 'lucide-react';
 
 declare global {
@@ -23,7 +25,14 @@ export function FloatingMusicPlayer() {
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const [isReady, setIsReady] = useState(false);
+
   const [showQueue, setShowQueue] = useState(false);
+
+  // For recording music activity debouncing
+  const authStore = useAuthStore();
+  const lastRecordedTrackIdRef = useRef<string | null>(null);
+  const lastRecordedTimeRef = useRef<number>(0);
+
 
   useEffect(() => {
     if (!window.YT) {
@@ -119,6 +128,61 @@ export function FloatingMusicPlayer() {
     };
   }, [isReady]); // We deliberately don't want to re-run this on every state change
 
+
+  // Record listening activity
+  useEffect(() => {
+    const recordActivity = async () => {
+      if (!playerState.isPlaying || !playerState.currentSong || !authStore.profile) return;
+
+      const song = playerState.currentSong;
+      const now = Date.now();
+
+      // Debounce: don't record if it's the same song and it's been less than 5 minutes
+      if (
+        lastRecordedTrackIdRef.current === (song.id || song.video_id) &&
+        (now - lastRecordedTimeRef.current) < 5 * 60 * 1000
+      ) {
+        return;
+      }
+
+      let trackId = song.id;
+
+      if (!trackId && song.source_type === 'youtube' && song.video_id) {
+        // Ensure track exists in music_tracks first
+        const { data: trackData, error: trackError } = await supabase.from('music_tracks').select('id').eq('youtube_id', song.video_id).maybeSingle();
+        if (trackData) {
+            trackId = trackData.id;
+        } else {
+            const { data: newTrack, error: createError } = await supabase.from('music_tracks').insert({
+                user_id: authStore.profile.id,
+                title: song.title,
+                artist: song.channel_title || song.artist || 'Unknown',
+                duration: parseInt(song.duration || '0') || 0,
+                source_type: 'youtube',
+                youtube_id: song.video_id,
+                cover_url: song.thumbnail || null
+            }).select().single();
+            if (newTrack) trackId = newTrack.id;
+        }
+      }
+
+      if (!trackId || !trackId.includes('-')) return;
+
+      try {
+        await supabase.from('music_activity').insert({
+          user_id: authStore.profile.id,
+          track_id: trackId,
+          action: 'listened'
+        });
+        lastRecordedTrackIdRef.current = trackId || song.video_id || null;
+        lastRecordedTimeRef.current = now;
+      } catch (err) {
+        console.error("Failed to record listening activity", err);
+      }
+    };
+
+    recordActivity();
+  }, [playerState.isPlaying, playerState.currentSong, authStore.profile]);
 
   useEffect(() => {
     if (isReady && playerRef.current && playerState.currentSong) {
