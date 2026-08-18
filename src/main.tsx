@@ -802,7 +802,31 @@ async function toggleLike(id: string) {
             {viewCount === 1 ? "1 visita al perfil" : `${viewCount} visitas al perfil`}
         </span>
     )}
-    <p>{profile?.city || "Sin especificar"}</p>{isOwnProfile && <p>Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</p>}<p>0 amigos</p></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside><div className="profile-main"><section className="profile-hero panel"><div className="profile-cover" /><div className="profile-hero-body"><div className="profile-large-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><div className="profile-heading"><h1>{name}</h1><p>{profile?.bio || "Comparte tus ideas, música y momentos en Inkorium."}</p><span>● En línea</span>
+    <p>{profile?.city || "Sin especificar"}</p>{isOwnProfile && <p>Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</p>}<p>0 amigos</p></section>{songOfDay && (
+      <section className="panel profile-side-card">
+        <strong>CANCIÓN DEL DÍA</strong>
+        <div className="profile-music-card"
+             style={{cursor: 'pointer'}}
+             onClick={() => playerState.playSong({
+               source_type: songOfDay.source_type,
+               video_id: songOfDay.youtube_id,
+               title: songOfDay.title,
+               artist: songOfDay.artist,
+               thumbnail: songOfDay.cover_url,
+               id: songOfDay.id
+             })}>
+          {songOfDay.cover_url ? (
+            <img src={songOfDay.cover_url} style={{width: 32, height: 32, borderRadius: 2, objectFit: 'cover'}} />
+          ) : (
+            <span>♫</span>
+          )}
+          <div>
+            <b style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120, display: 'inline-block'}}>{songOfDay.title}</b>
+            <small style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120, display: 'inline-block'}}>{songOfDay.artist}</small>
+          </div>
+        </div>
+      </section>
+    )}</aside><div className="profile-main"><section className="profile-hero panel"><div className="profile-cover" /><div className="profile-hero-body"><div className="profile-large-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><div className="profile-heading"><h1>{name}</h1><p>{profile?.bio || "Comparte tus ideas, música y momentos en Inkorium."}</p><span>● En línea</span>
     {isOwnProfile && viewCount !== null && (
         <span className="profile-views" style={{display: 'block', fontSize: '0.85em', color: 'var(--text-light)', marginTop: '4px'}}>
             {viewCount === 1 ? "1 visita al perfil" : `${viewCount} visitas al perfil`}
@@ -869,7 +893,31 @@ async function toggleLike(id: string) {
           {shareMenu === post.id && <ShareMenu post={post} session={session} onClose={() => setShareMenu(null)} />}
           </div>
           {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
-          </article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p>{isOwnProfile && <p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p>}</section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section><section className="panel profile-side-card"><strong>ESCUCHANDO AHORA</strong><div className="profile-music-card"><span>♫</span><div><b>Inkorium Mix</b><small>Descubriendo sonidos...</small></div></div></section></aside></section>;
+          </article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p>{isOwnProfile && <p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p>}</section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section>{songOfDay && (
+      <section className="panel profile-side-card">
+        <strong>CANCIÓN DEL DÍA</strong>
+        <div className="profile-music-card"
+             style={{cursor: 'pointer'}}
+             onClick={() => playerState.playSong({
+               source_type: songOfDay.source_type,
+               video_id: songOfDay.youtube_id,
+               title: songOfDay.title,
+               artist: songOfDay.artist,
+               thumbnail: songOfDay.cover_url,
+               id: songOfDay.id
+             })}>
+          {songOfDay.cover_url ? (
+            <img src={songOfDay.cover_url} style={{width: 32, height: 32, borderRadius: 2, objectFit: 'cover'}} />
+          ) : (
+            <span>♫</span>
+          )}
+          <div>
+            <b style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120, display: 'inline-block'}}>{songOfDay.title}</b>
+            <small style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120, display: 'inline-block'}}>{songOfDay.artist}</small>
+          </div>
+        </div>
+      </section>
+    )}</aside></section>;
 }
 
 function ProfileMedia({ session }: { session: Session }) { const [media, setMedia] = useState<{ avatar_url: string | null; banner_url: string | null }>({ avatar_url: null, banner_url: null }); useEffect(() => { void supabase.from("profiles").select("avatar_url, banner_url").eq("id", session.user.id).maybeSingle().then(({ data }) => { if (data) setMedia(data); }); }, [session.user.id]); return <div className="profile-upload-media">{media.banner_url && <div className="uploaded-banner" style={{ backgroundImage: `url(${media.banner_url})` }} />}{media.avatar_url && <img className="uploaded-avatar" src={media.avatar_url} alt="Foto de perfil" />}</div>; }
