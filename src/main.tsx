@@ -11,7 +11,7 @@ import { supabase } from "./lib/supabase";
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from "./lib/cropImage";
 import { getDisplayName, formatPostTime } from "./utils";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, MoreVertical, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send, Calendar, MapPin, Loader2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, MoreVertical, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, ChevronLeft, ChevronRight, Users, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send, Calendar, MapPin, Loader2 } from "lucide-react";
 import "./styles.css";
 import { YoutubePlaylist } from './YoutubePlaylist';
 import { SingleSongPlayer } from './components/SingleSongPlayer';
@@ -545,7 +545,59 @@ async function toggleLike(id: string) {
           {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
           </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} shareVideo={currentRoute.params?.shareVideo} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView session={session} navigate={navigate} />}{page === "videos" && <VideosView navigate={navigate} session={session} />}
         {videoToShare && <VideoShareModal video={videoToShare} onClose={() => setVideoToShare(null)} navigate={navigate} />}</main>
-      <aside className="right-column"><section className="panel right-card"><strong>SOLICITUDES</strong><button>Ver todas</button><p>No tienes solicitudes pendientes.</p></section><section className="panel right-card"><strong>EVENTOS DESTACADOS</strong><button>Ver todos</button><div className="event"><div className="event-image">♫</div><div><b>Descubre Inkorium</b><p>Comparte tus momentos y musica.</p></div></div><button className="outline">Añadir a mi calendario</button></section><section className="panel calendar"><strong>CALENDARIO</strong><span>▣</span><h3>Agosto 2026</h3><div className="week">Lu　 Ma　 Mi　 Ju　 Vi　 Sa　 Do</div><div className="days">{Array.from({ length: 31 }, (_, index) => <i className={index === 12 ? "today" : ""} key={index}>{index + 1}</i>)}</div></section></aside></div>
+      <aside className="right-column">
+        <section className="panel right-card now-playing-card">
+          <strong><BarChart3 size={14} style={{marginRight: 6}} />AHORA SUENA</strong>
+          <div className="now-playing-body">
+            <div className="now-playing-cover"><Music size={22} /></div>
+            <div className="now-playing-info">
+              <b>ZPU</b>
+              <span>Represento</span>
+              <div className="now-playing-row"><Play size={12} fill="currentColor" /><span className="now-playing-duration">2:45</span></div>
+            </div>
+          </div>
+          <div className="now-playing-listeners"><Users size={14} /> Escuchado por 12 personas</div>
+        </section>
+        <section className="panel right-card">
+          <strong>EVENTOS DESTACADOS</strong><button>Ver todos</button>
+          <div className="event-list">
+            <div className="event-list-item">
+              <div className="event-date-badge"><b>22</b><span>AGO</span></div>
+              <div className="event-details"><a href="#">Festival Madrid</a><p>Concierto</p><small>120 interesados</small></div>
+            </div>
+            <div className="event-list-item">
+              <div className="event-date-badge"><b>30</b><span>AGO</span></div>
+              <div className="event-details"><a href="#">Noche Indie</a><p>Sala El Sol</p><small>35 interesados</small></div>
+            </div>
+          </div>
+          <button className="see-all-events">Ver todos los eventos »</button>
+        </section>
+        <section className="panel calendar">
+          <div className="calendar-nav"><button><ChevronLeft size={16} /></button><h3>Agosto 2026</h3><button><ChevronRight size={16} /></button></div>
+          <div className="week">Lu　 Ma　 Mi　 Ju　 Vi　 Sa　 Do</div>
+          <div className="days">{Array.from({ length: 5 }, (_, index) => <i className="empty" key={"empty" + index}></i>)}{Array.from({ length: 31 }, (_, index) => <i className={index === 12 ? "today" : ""} key={index}>{index + 1}</i>)}</div>
+          <div className="month-note"><span className="dot" /> Tienes 2 eventos este mes</div>
+        </section>
+        <section className="panel right-card activity-card">
+          <strong>ACTIVIDAD DE AMIGOS</strong>
+          <div className="activity-list">
+            <div className="activity-item">
+              <span className="avatar tiny activity-avatar">L</span>
+              <div className="activity-text"><b>Laura</b> escuchó <b>Arctic Monkeys</b><small>hace 1 h</small></div>
+              <i className="activity-online-dot" />
+            </div>
+            <div className="activity-item">
+              <span className="avatar tiny activity-avatar">P</span>
+              <div className="activity-text"><b>Pedro</b> subió 5 fotos<small>hace 2 h</small></div>
+            </div>
+            <div className="activity-item">
+              <span className="avatar tiny activity-avatar">A</span>
+              <div className="activity-text"><b>Ana</b> tiene un evento<small>hace 3 h</small></div>
+            </div>
+          </div>
+          <button className="see-all">Ver toda la actividad »</button>
+        </section>
+      </aside></div>
     )}
     <button className="chat">▢ Chat (0)</button>
   </div>;
