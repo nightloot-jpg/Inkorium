@@ -11,7 +11,7 @@ import { supabase } from "./lib/supabase";
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from "./lib/cropImage";
 import { getDisplayName, formatPostTime } from "./utils";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, MoreVertical, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, ChevronLeft, ChevronRight, Users, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send, Calendar, MapPin, Loader2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, MoreVertical, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, ChevronLeft, ChevronRight, Users, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send, Calendar, MapPin, Loader2, BadgeCheck, Palette, Shuffle, Repeat } from "lucide-react";
 import "./styles.css";
 import { YoutubePlaylist } from './YoutubePlaylist';
 import { SingleSongPlayer } from './components/SingleSongPlayer';
@@ -464,7 +464,7 @@ async function toggleLike(id: string) {
     }
   }
 
-  return <div className={`feed-app theme-${theme}`}>
+  return <div className={`feed-app theme-${theme}${page === "perfil" ? " profile-light" : ""}`}>
     <FloatingMusicPlayer />
     <header className="topbar"><button className="brand-button" onClick={() => navigate("inicio")}><Brand /></button><nav className="top-nav">{([["inicio", "Inicio"], ["perfil", "Perfil"], ["mensajes", "Mensajes"], ["personas", "Personas"], ["musica", "Musica"], ["fotos", "Fotos"]] as [Page, string][]).map(([id, label]) => <button className={page === id ? "active" : ""} onClick={() => navigate(id)} key={id}>{label}</button>)}</nav><form className="search-form" onSubmit={(event) => { event.preventDefault(); navigate("buscar"); }}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar personas, musica, videos..." /></form><div className="top-actions">
   <button className="icon-button" ref={notificationsButtonRef} onClick={() => setNotifications(!notifications)} aria-label="Notificaciones">
@@ -771,6 +771,48 @@ function ProfileViewLegacy({ session, visitedUserId, goBack, navigate }: { sessi
   const playerState = usePlayerStore();
   const [songOfDay, setSongOfDay] = useState<any>(null);
   const [publicPlaylists, setPublicPlaylists] = useState<any[]>([]);
+  const [photosCount, setPhotosCount] = useState<number | null>(null);
+  const [videosCount, setVideosCount] = useState<number | null>(null);
+  const [friends, setFriends] = useState<{ id: string; username: string | null; full_name: string | null; avatar_url: string | null }[]>([]);
+  const [friendsCount, setFriendsCount] = useState(0);
+  const [mutualCount, setMutualCount] = useState(0);
+  const [featuredTracks, setFeaturedTracks] = useState<any[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSidebarData() {
+      if (!targetUserId) return;
+      const [{ data: f1 }, { data: f2 }, { count: photos }, { count: videos }, { data: tracks }] = await Promise.all([
+        supabase.from("friendships").select("friend_id").eq("user_id", targetUserId).eq("status", "accepted"),
+        supabase.from("friendships").select("user_id").eq("friend_id", targetUserId).eq("status", "accepted"),
+        supabase.from("photos").select("id", { count: "exact", head: true }).eq("user_id", targetUserId),
+        supabase.from("user_videos").select("id", { count: "exact", head: true }).eq("user_id", targetUserId),
+        supabase.from("music_tracks").select("*").eq("user_id", targetUserId).order("created_at", { ascending: false }).limit(4)
+      ]);
+      if (cancelled) return;
+      const friendIds = [...new Set([...(f1 || []).map((r: any) => r.friend_id), ...(f2 || []).map((r: any) => r.user_id)])];
+      const { data: friendProfiles } = friendIds.length ? await supabase.from("profiles").select("id, username, full_name, avatar_url").in("id", friendIds) : { data: [] as any[] };
+      if (cancelled) return;
+      const list = friendProfiles || [];
+      setFriends(list);
+      setFriendsCount(list.length);
+      setPhotosCount(photos ?? 0);
+      setVideosCount(videos ?? 0);
+      setFeaturedTracks(tracks || []);
+
+      if (!isOwnProfile) {
+        const [{ data: mf1 }, { data: mf2 }] = await Promise.all([
+          supabase.from("friendships").select("friend_id").eq("user_id", session.user.id).eq("status", "accepted"),
+          supabase.from("friendships").select("user_id").eq("friend_id", session.user.id).eq("status", "accepted")
+        ]);
+        if (cancelled) return;
+        const ownFriendIds = new Set([...(mf1 || []).map((r: any) => r.friend_id), ...(mf2 || []).map((r: any) => r.user_id)]);
+        setMutualCount(friendIds.filter((id: string) => ownFriendIds.has(id)).length);
+      }
+    }
+    void loadSidebarData();
+    return () => { cancelled = true; };
+  }, [targetUserId, isOwnProfile, session.user.id]);
 
   useEffect(() => {
     async function loadMusicData() {
@@ -859,45 +901,30 @@ async function toggleLike(id: string) {
       {goBack && <button onClick={goBack} className="primary-button" style={{marginTop: '1rem'}}>Atrás</button>}
     </section>;
   }
-  return <section className="profile-page"><aside className="profile-left"><section className="panel profile-summary"><div className="profile-summary-cover" /><div className="profile-summary-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><h2>{name}</h2><span className="online-dot">● En línea</span>
+  return <section className="profile-page ph-page"><aside className="profile-left ph-nav"><nav className="ph-side-menu panel">{([
+      ["Novedades", "inicio"], ["Fotos", "fotos"], ["Vídeos", "videos"], ["Música", "musica"], ["Eventos", "buscar"], ["Grupos", "personas"], ["Páginas", "personas"], ["Encuestas", "buscar"], ["Guardados", "buscar"], ["Configuración", "personas"]
+    ] as [string, Page][]).map(([label, id]) => <button key={label} onClick={() => navigate(id)}>{label}</button>)}</nav>
+    <section className="ph-friends-card panel">
+      <strong>AMIGOS ({friendsCount})</strong>
+      <div className="ph-friends-list">
+        {friends.length ? friends.slice(0, 6).map(f => (
+          <button key={f.id} className="ph-friend-row" onClick={() => navigate("perfil", { userId: f.id })}>
+            <span className="ph-friend-avatar">{f.avatar_url ? <img src={f.avatar_url} alt="" /> : (f.username || f.full_name || "?").slice(0, 1).toUpperCase()}</span>
+            <span>{f.username || f.full_name}</span>
+          </button>
+        )) : <p className="ph-empty-note">Sin amigos todavía.</p>}
+      </div>
+      {friendsCount > 6 && <button className="ph-see-all" onClick={() => navigate("personas")}>Ver todos »</button>}
+    </section>
+  </aside><div className="profile-main ph-main"><section className="ph-hero panel"><div className="ph-cover" style={profile?.banner_url ? { backgroundImage: `url(${profile.banner_url})` } : undefined} /><div className="ph-header"><div className="ph-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : <span>{initials}</span>}</div><div className="ph-identity"><h1>{name} <BadgeCheck size={18} className="ph-verified" /></h1>{profile?.username && <p className="ph-username">@{profile.username}</p>}<p className="ph-bio">{profile?.bio || "Comparte tus ideas, música y momentos en Inkorium."}</p><div className="ph-meta">{profile?.city && <span><MapPin size={13} /> {profile.city}</span>}{isOwnProfile && <span><Calendar size={13} /> Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span>}
     {isOwnProfile && viewCount !== null && (
-        <span className="profile-views" style={{display: 'block', fontSize: '0.85em', color: 'var(--text-light)', marginTop: '4px'}}>
-            {viewCount === 1 ? "1 visita al perfil" : `${viewCount} visitas al perfil`}
-        </span>
+        <span>{viewCount === 1 ? "1 visita al perfil" : `${viewCount} visitas al perfil`}</span>
     )}
-    <p>{profile?.city || "Sin especificar"}</p>{isOwnProfile && <p>Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</p>}<p>0 amigos</p></section>{songOfDay && (
-      <section className="panel profile-side-card">
-        <strong>CANCIÓN DEL DÍA</strong>
-        <div className="profile-music-card"
-             style={{cursor: 'pointer'}}
-             onClick={() => playerState.playSong({
-               source_type: songOfDay.source_type,
-               video_id: songOfDay.youtube_id,
-               title: songOfDay.title,
-               artist: songOfDay.artist,
-               thumbnail: songOfDay.cover_url,
-               id: songOfDay.id
-             })}>
-          {songOfDay.cover_url ? (
-            <img src={songOfDay.cover_url} style={{width: 32, height: 32, borderRadius: 2, objectFit: 'cover'}} />
-          ) : (
-            <span>♫</span>
-          )}
-          <div>
-            <b style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120, display: 'inline-block'}}>{songOfDay.title}</b>
-            <small style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120, display: 'inline-block'}}>{songOfDay.artist}</small>
-          </div>
-        </div>
-      </section>
-    )}</aside><div className="profile-main"><section className="profile-hero panel"><div className="profile-cover" /><div className="profile-hero-body"><div className="profile-large-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={name} /> : initials}</div><div className="profile-heading"><h1>{name}</h1><p>{profile?.bio || "Comparte tus ideas, música y momentos en Inkorium."}</p><span>● En línea</span>
-    {isOwnProfile && viewCount !== null && (
-        <span className="profile-views" style={{display: 'block', fontSize: '0.85em', color: 'var(--text-light)', marginTop: '4px'}}>
-            {viewCount === 1 ? "1 visita al perfil" : `${viewCount} visitas al perfil`}
-        </span>
-    )}
-    </div>
-    {goBack && <button onClick={goBack} className="profile-edit" style={{marginRight: 8}}>Atrás</button>}
-    {isOwnProfile && <button className="profile-edit">Editar perfil</button>}<button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Música</button><button>Amigos</button></nav></section>
+    </div></div>
+    <div className="ph-actions">
+    {goBack && <button onClick={goBack} className="ph-btn-secondary">Atrás</button>}
+    {isOwnProfile && <button className="ph-btn-primary">Editar perfil</button>}<button className="ph-btn-icon" aria-label="Más opciones"><MoreHorizontal size={18} /></button>
+    </div></div><nav className="ph-tabs"><button className="active">Inicio</button><button onClick={() => navigate("musica")}>Música</button><button onClick={() => navigate("fotos", { userId: targetUserId })}>Fotos{photosCount !== null ? ` ${photosCount}` : ""}</button><button onClick={() => navigate("videos")}>Vídeos{videosCount !== null ? ` ${videosCount}` : ""}</button><button>Eventos</button><button>Grupos</button><button onClick={() => navigate("personas")}>Amigos {friendsCount}</button></nav></section>
       {songOfDay && (
         <section className="panel profile-music-highlight" style={{marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12}}>
           <div style={{width: 60, height: 60, flexShrink: 0, borderRadius: 4, overflow: 'hidden', backgroundColor: '#eee'}}>
@@ -956,31 +983,64 @@ async function toggleLike(id: string) {
           {shareMenu === post.id && <ShareMenu post={post} session={session} onClose={() => setShareMenu(null)} />}
           </div>
           {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
-          </article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p>{isOwnProfile && <p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p>}</section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section>{songOfDay && (
-      <section className="panel profile-side-card">
-        <strong>CANCIÓN DEL DÍA</strong>
-        <div className="profile-music-card"
-             style={{cursor: 'pointer'}}
-             onClick={() => playerState.playSong({
-               source_type: songOfDay.source_type,
-               video_id: songOfDay.youtube_id,
-               title: songOfDay.title,
-               artist: songOfDay.artist,
-               thumbnail: songOfDay.cover_url,
-               id: songOfDay.id
-             })}>
-          {songOfDay.cover_url ? (
-            <img src={songOfDay.cover_url} style={{width: 32, height: 32, borderRadius: 2, objectFit: 'cover'}} />
-          ) : (
-            <span>♫</span>
-          )}
-          <div>
-            <b style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120, display: 'inline-block'}}>{songOfDay.title}</b>
-            <small style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120, display: 'inline-block'}}>{songOfDay.artist}</small>
-          </div>
+          </article>) : <div className="ph-empty-note panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side ph-rail">
+      <section className="ph-player-card panel">
+        <strong>REPRODUCTOR</strong>
+        {playerState.currentSong ? (
+          <>
+            <div className="ph-player-body">
+              <div className="ph-player-cover">{playerState.currentSong.thumbnail ? <img src={playerState.currentSong.thumbnail} alt="" /> : <Music size={20} />}</div>
+              <div className="ph-player-info"><b>{playerState.currentSong.title}</b><span>{playerState.currentSong.artist || playerState.currentSong.channel_title}</span></div>
+            </div>
+            <div className="ph-player-progress">
+              <span>{formatTime(playerState.currentTime)}</span>
+              <input type="range" min={0} max={playerState.duration || 0} value={playerState.currentTime} onChange={(event) => playerState.seek(Number(event.target.value))} />
+              <span>{formatTime(playerState.duration)}</span>
+            </div>
+            <div className="ph-player-controls">
+              <button type="button" className="disabled" title="Próximamente" disabled><Shuffle size={15} /></button>
+              <button type="button" onClick={() => playerState.previous()}><SkipBack size={16} /></button>
+              <button type="button" className="ph-play-toggle" onClick={() => playerState.isPlaying ? playerState.pause() : playerState.resume()}>{playerState.isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}</button>
+              <button type="button" onClick={() => playerState.next()}><SkipForward size={16} /></button>
+              <button type="button" className="disabled" title="Próximamente" disabled><Repeat size={15} /></button>
+            </div>
+            <div className="ph-player-volume">
+              <button type="button" onClick={() => playerState.toggleMute()}>{playerState.isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}</button>
+              <input type="range" min={0} max={100} value={playerState.volume} onChange={(event) => playerState.setVolume(Number(event.target.value))} />
+            </div>
+          </>
+        ) : <p className="ph-empty-note">No hay nada sonando ahora mismo.</p>}
+      </section>
+      <section className="ph-info-card panel">
+        <strong>INFORMACIÓN</strong>
+        <ul>
+          {profile?.bio && <li><Palette size={14} /> {profile.bio}</li>}
+          {profile?.city && <li><MapPin size={14} /> {profile.city}</li>}
+          {isOwnProfile && <li><Calendar size={14} /> Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</li>}
+          {!profile?.bio && !profile?.city && <li className="ph-empty-note">Sin información todavía.</li>}
+        </ul>
+      </section>
+      <section className="ph-music-card panel">
+        <div className="ph-card-title"><strong>MÚSICA DESTACADA</strong><button onClick={() => navigate("musica")}>Ver todo</button></div>
+        <div className="ph-track-list">
+          {featuredTracks.length ? featuredTracks.map((t: any) => (
+            <button key={t.id} className="ph-track-row" onClick={() => playerState.playSong({ source_type: t.source_type, video_id: t.youtube_id, audio_url: t.audio_url, title: t.title, artist: t.artist, thumbnail: t.cover_url || t.thumbnail, id: t.id })}>
+              <span className="ph-track-cover">{t.cover_url || t.thumbnail ? <img src={t.cover_url || t.thumbnail} alt="" /> : <Music size={16} />}</span>
+              <span className="ph-track-info"><b>{t.title}</b><small>{t.artist}</small></span>
+            </button>
+          )) : <p className="ph-empty-note">Todavía no hay música destacada.</p>}
         </div>
       </section>
-    )}</aside></section>;
+      <section className="ph-friends-mini-card panel">
+        <strong>{isOwnProfile ? `AMIGOS (${friendsCount})` : `AMIGOS EN COMÚN (${mutualCount})`}</strong>
+        <div className="ph-avatar-grid">
+          {friends.length ? friends.slice(0, 8).map(f => (
+            <span key={f.id} className="ph-mini-avatar" title={f.username || f.full_name || ""}>{f.avatar_url ? <img src={f.avatar_url} alt="" /> : (f.username || f.full_name || "?").slice(0, 1).toUpperCase()}</span>
+          )) : <p className="ph-empty-note">Sin amigos en común.</p>}
+        </div>
+        <button className="ph-see-all" onClick={() => navigate("personas")}>Ver todos »</button>
+      </section>
+    </aside></section>;
 }
 
 function ProfileMedia({ session }: { session: Session }) { const [media, setMedia] = useState<{ avatar_url: string | null; banner_url: string | null }>({ avatar_url: null, banner_url: null }); useEffect(() => { void supabase.from("profiles").select("avatar_url, banner_url").eq("id", session.user.id).maybeSingle().then(({ data }) => { if (data) setMedia(data); }); }, [session.user.id]); return <div className="profile-upload-media">{media.banner_url && <div className="uploaded-banner" style={{ backgroundImage: `url(${media.banner_url})` }} />}{media.avatar_url && <img className="uploaded-avatar" src={media.avatar_url} alt="Foto de perfil" />}</div>; }
