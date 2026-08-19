@@ -407,7 +407,14 @@ function Feed({ session, profile: initialProfile }: { session: Session, profile:
     await supabase.from('notifications').update({ is_read: true }).eq('id', id);
     setNotificationItems(items => items.map(i => i.id === id ? { ...i, is_read: true } : i));
     setUnreadCount(prev => Math.max(0, prev - 1));
-  }  const [theme, setTheme] = useState("blue"); const [position, setPosition] = useState({ x: 24, y: 90 }); const [dragging, setDragging] = useState(false);
+  }  const THEME_KEY = "inkorium-theme";
+  const THEME_OPTIONS = ["blue", "violet", "green", "sunset", "rose", "teal"] as const;
+  const [theme, setThemeState] = useState<string>(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem(THEME_KEY) : null;
+    return saved && (THEME_OPTIONS as readonly string[]).includes(saved) ? saved : "blue";
+  });
+  const setTheme = (value: string) => { setThemeState(value); try { localStorage.setItem(THEME_KEY, value); } catch (e) {} };
+  const [position, setPosition] = useState({ x: 24, y: 90 }); const [dragging, setDragging] = useState(false);
   useEffect(() => { let cancelled = false; async function loadPosts() { const [{ data: postsData, error: postsError }, { data: likesData }] = await Promise.all([
       supabase.from("posts").select("id, content, created_at, author_id, target_profile_id, shared_post_id, media_data, poll_id, post_likes(count), comments(count), original_post:shared_post_id(content, created_at, author_id, profiles!posts_author_id_fkey(username, full_name, avatar_url))").eq("visibility", "public").is("group_id", null).is("target_profile_id", null).order("created_at", { ascending: false }).limit(30),
       supabase.from("post_likes").select("post_id").eq("user_id", session.user.id)
@@ -510,7 +517,7 @@ async function toggleLike(id: string) {
   {notificationItems.length > 0 && <button onClick={() => void markAllRead()}>Marcar todo como leído</button>}
 </div>
 </NotificationsPortal>
-{userMenu && <div className="popover user-menu"><strong>{username}</strong><button onClick={() => navigate("perfil")}>Mi perfil</button><button onClick={() => navigate("mensajes")}>Mis mensajes</button><hr /><span>Color de la web</span><div className="themes"><button className="theme-dot blue" onClick={() => setTheme("blue")} /><button className="theme-dot violet" onClick={() => setTheme("violet")} /><button className="theme-dot green" onClick={() => setTheme("green")} /><button className="theme-dot sunset" onClick={() => setTheme("sunset")} /></div><button onClick={() => void supabase.auth.signOut()}>Cerrar sesion</button></div>}</header>
+{userMenu && <div className="popover user-menu"><strong>{username}</strong><button onClick={() => navigate("perfil")}>Mi perfil</button><button onClick={() => navigate("mensajes")}>Mis mensajes</button><hr /><span>Color de la web</span><div className="themes">{THEME_OPTIONS.map((option) => <button key={option} className={`theme-dot ${option}${theme === option ? " selected" : ""}`} title={option} aria-label={`Tema ${option}`} onClick={() => setTheme(option)} />)}</div><button onClick={() => void supabase.auth.signOut()}>Cerrar sesion</button></div>}</header>
     {page === "fotos" ? (
       <PhotosPage session={session} profileId={currentRoute.params?.userId} navigate={navigate} />
     ) : (
