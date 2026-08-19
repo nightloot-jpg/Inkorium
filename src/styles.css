@@ -3606,3 +3606,118 @@ button:disabled { cursor: wait; opacity: .65; }
 .play-overlay:hover { opacity: 1 !important; }
 
 .music-layout > * { min-width: 0; }
+
+/* ========================================================================
+   Perfil — rediseño claro (mockup "Perfil_de_Inkorium_con_reproductor")
+   Todo lo de abajo está scoped a .profile-light (topbar/sidebar globales)
+   y a .ph-* (contenido propio de la página de perfil), así que no afecta
+   a ninguna otra vista de la aplicación.
+   ======================================================================== */
+
+/* Topbar en modo claro cuando se visita /perfil */
+.feed-app.profile-light .topbar { background: #ffffff; box-shadow: 0 1px 0 #e7e9ee; }
+.feed-app.profile-light .topbar .brand { color: #111318; }
+.feed-app.profile-light .brand-mark { filter: invert(1); }
+.feed-app.profile-light .top-nav button { color: #4b5666; }
+.feed-app.profile-light .top-nav button.active { color: #1683ff; background: #eef5ff; border-bottom-color: #1683ff; }
+.feed-app.profile-light .search-form input { color: #1a2230; background: #f0f2f5; }
+.feed-app.profile-light .search-form input::placeholder { color: #8a93a3; }
+.feed-app.profile-light .icon-button, .feed-app.profile-light .user-chip { color: #354052; }
+.feed-app.profile-light .user-chip { border-left-color: #e3e6ea; }
+
+/* Layout de la página de perfil: nav (izq) + contenido (centro) + rail (der) */
+.ph-page.profile-page { grid-template-columns: 240px minmax(0, 1fr) 300px; gap: 22px; }
+.ph-page .panel { border-radius: 12px; border-color: #e9ecf1; box-shadow: 0 3px 12px rgba(20, 30, 50, 0.04); }
+
+/* --- Nav lateral izquierda --- */
+.ph-side-menu { display: grid; gap: 2px; padding: 12px; }
+.ph-side-menu button { display: flex; align-items: center; padding: 10px 12px; border-radius: 8px; color: #333c48; background: transparent; font-size: 14.5px; font-weight: 500; text-align: left; }
+.ph-side-menu button:hover { background: #f3f5f8; }
+.ph-friends-card { margin-top: 16px; padding: 16px; }
+.ph-friends-card > strong { display: block; margin-bottom: 12px; color: #8a93a3; font-size: 11px; letter-spacing: 0.04em; }
+.ph-friends-list { display: grid; gap: 10px; }
+.ph-friend-row { display: flex; align-items: center; gap: 10px; padding: 0; color: #263041; background: transparent; font-size: 13.5px; font-weight: 600; text-align: left; }
+.ph-friend-avatar { display: grid; flex: 0 0 32px; place-items: center; width: 32px; height: 32px; border-radius: 50%; overflow: hidden; color: #1683ff; background: #e7f1ff; font-size: 13px; font-weight: 700; }
+.ph-friend-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ph-see-all { display: block; margin-top: 14px; color: #1683ff; background: transparent; font-size: 12.5px; font-weight: 600; text-align: right; }
+.ph-empty-note { margin: 4px 0 0; color: #97a1b0; font-size: 12.5px; }
+
+/* --- Cabecera del perfil --- */
+.ph-hero { overflow: hidden; }
+.ph-cover { height: 220px; background: linear-gradient(135deg, #dfe6ee, #eef1f5) center/cover; }
+.ph-header { display: flex; align-items: flex-end; gap: 20px; padding: 0 24px 18px; }
+.ph-avatar { display: grid; flex: 0 0 120px; place-items: center; width: 120px; height: 120px; margin-top: -60px; border: 5px solid #fff; border-radius: 50%; color: #1683ff; background: #e7f1ff; font-size: 34px; font-weight: 700; overflow: hidden; box-shadow: 0 2px 8px rgba(20,30,50,0.12); }
+.ph-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ph-identity { flex: 1; min-width: 0; padding-top: 18px; }
+.ph-identity h1 { display: flex; align-items: center; gap: 6px; margin: 0; color: #12151c; font-size: 26px; font-weight: 800; }
+.ph-verified { color: #1683ff; }
+.ph-username { margin: 2px 0 0; color: #8a93a3; font-size: 14px; }
+.ph-bio { margin: 8px 0 0; color: #4a5568; font-size: 14px; line-height: 1.5; }
+.ph-meta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; color: #8a93a3; font-size: 12.5px; }
+.ph-meta span { display: inline-flex; align-items: center; gap: 5px; }
+.ph-actions { display: flex; align-items: center; gap: 8px; padding-top: 18px; }
+.ph-btn-primary { padding: 9px 18px; border-radius: 10px; color: #fff; background: #1683ff; font-weight: 700; font-size: 13.5px; }
+.ph-btn-secondary { padding: 9px 16px; border: 1px solid #dfe3ea; border-radius: 10px; color: #333c48; background: #fff; font-weight: 600; font-size: 13.5px; }
+.ph-btn-icon { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid #dfe3ea; border-radius: 10px; color: #4a5568; background: #fff; }
+.ph-tabs { display: flex; gap: 26px; padding: 14px 24px; border-top: 1px solid #eef0f3; overflow-x: auto; }
+.ph-tabs button { padding: 4px 2px 12px; border-bottom: 3px solid transparent; color: #7a8494; background: transparent; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.ph-tabs button.active { color: #1683ff; border-bottom-color: #1683ff; }
+
+/* --- Canción del día (dentro del feed) --- */
+.ph-main .profile-music-highlight { border-radius: 12px; }
+
+/* --- Composer (dentro de .ph-main) --- */
+.ph-main .composer-container { margin-top: 16px; border-radius: 12px; }
+.ph-main .post.panel { border-radius: 12px; margin-top: 16px; }
+
+/* --- Rail derecho --- */
+.ph-rail .panel { padding: 16px; margin-bottom: 16px; }
+.ph-rail > strong, .ph-rail section > strong { display: block; margin-bottom: 12px; color: #8a93a3; font-size: 11px; letter-spacing: 0.04em; }
+.ph-card-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.ph-card-title strong { margin: 0 !important; }
+.ph-card-title button { color: #1683ff; background: transparent; font-size: 12px; font-weight: 600; }
+
+.ph-player-body { display: flex; align-items: center; gap: 12px; }
+.ph-player-cover { display: grid; flex: 0 0 52px; place-items: center; width: 52px; height: 52px; border-radius: 8px; overflow: hidden; color: #8a93a3; background: #eef1f5; }
+.ph-player-cover img { width: 100%; height: 100%; object-fit: cover; }
+.ph-player-info { min-width: 0; }
+.ph-player-info b { display: block; overflow: hidden; color: #1a2230; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.ph-player-info span { display: block; overflow: hidden; color: #8a93a3; font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.ph-player-progress { display: flex; align-items: center; gap: 8px; margin-top: 12px; color: #97a1b0; font-size: 11px; }
+.ph-player-progress input[type="range"] { flex: 1; accent-color: #1683ff; }
+.ph-player-controls { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 10px; }
+.ph-player-controls button { color: #4a5568; background: transparent; }
+.ph-player-controls button.disabled { color: #cbd2dc; cursor: default; }
+.ph-play-toggle { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: #fff !important; background: #1683ff; }
+.ph-player-volume { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.ph-player-volume button { color: #97a1b0; background: transparent; }
+.ph-player-volume input[type="range"] { flex: 1; accent-color: #1683ff; }
+
+.ph-info-card ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.ph-info-card li { display: flex; align-items: flex-start; gap: 8px; color: #4a5568; font-size: 13px; line-height: 1.4; }
+.ph-info-card li svg { flex-shrink: 0; margin-top: 2px; color: #97a1b0; }
+
+.ph-track-list { display: grid; gap: 10px; }
+.ph-track-row { display: flex; align-items: center; gap: 10px; padding: 0; background: transparent; text-align: left; }
+.ph-track-cover { display: grid; flex: 0 0 36px; place-items: center; width: 36px; height: 36px; border-radius: 6px; overflow: hidden; color: #97a1b0; background: #eef1f5; }
+.ph-track-cover img { width: 100%; height: 100%; object-fit: cover; }
+.ph-track-info { min-width: 0; }
+.ph-track-info b { display: block; overflow: hidden; color: #1a2230; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.ph-track-info small { display: block; overflow: hidden; color: #97a1b0; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+
+.ph-avatar-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.ph-mini-avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; color: #1683ff; background: #e7f1ff; font-size: 12px; font-weight: 700; }
+.ph-mini-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+@media (max-width: 900px) {
+  .ph-page.profile-page { grid-template-columns: 1fr; }
+  .ph-page .profile-left, .ph-page .profile-main, .ph-page .profile-side { grid-column: 1; }
+  .ph-page .profile-left { order: 1; }
+  .ph-page .profile-main { order: 2; }
+  .ph-page .profile-side { order: 3; }
+}
+@media (max-width: 600px) {
+  .ph-header { flex-wrap: wrap; padding: 0 16px 16px; }
+  .ph-actions { padding-top: 12px; margin-left: auto; }
+  .ph-tabs { padding: 12px 16px; gap: 18px; }
+}
