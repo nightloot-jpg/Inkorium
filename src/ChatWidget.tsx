@@ -179,8 +179,8 @@ function ChatWindow({
         let newY = dragStartRef.current.posY + dy;
 
         // Clamp to viewport
-        const maxX = window.innerWidth - size.width - 16;
-        const maxY = window.innerHeight - size.height - 16;
+        const maxX = globalThis.window.innerWidth - size.width - 16;
+        const maxY = globalThis.window.innerHeight - size.height - 16;
         newX = Math.max(16, Math.min(newX, maxX));
         newY = Math.max(16, Math.min(newY, maxY));
 
@@ -205,11 +205,11 @@ function ChatWindow({
       setResizing(false);
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    globalThis.window.addEventListener("mousemove", handleMouseMove);
+    globalThis.window.addEventListener("mouseup", handleMouseUp);
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      globalThis.window.removeEventListener("mousemove", handleMouseMove);
+      globalThis.window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [dragging, resizing, position, size, window.id, onPositionChange, onSizeChange, minimized]);
 
@@ -356,6 +356,7 @@ function ChatWindow({
 // CONTACT PANEL - Panel de contactos (bottom-left, slides up)
 // ============================================================
 interface ContactPanelProps {
+  navigate: (page: string, params?: Record<string, any>) => void;
   contacts: ChatContact[];
   onlineIds: Set<string>;
   unreadByContact: Record<string, number>;
@@ -364,7 +365,7 @@ interface ContactPanelProps {
   onClose: () => void;
 }
 
-function ContactPanel({ contacts, onlineIds, unreadByContact, theme, onOpenConversation, onClose }: ContactPanelProps) {
+function ContactPanel({ contacts, onlineIds, unreadByContact, theme, onOpenConversation, onClose, navigate }: ContactPanelProps) {
   const themeColor = getThemeColor(theme);
   const [search, setSearch] = useState("");
 
@@ -459,8 +460,8 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === "inkorium-theme" && e.newValue) setTheme(e.newValue);
     };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    globalThis.window.addEventListener("storage", handleStorage);
+    return () => globalThis.window.removeEventListener("storage", handleStorage);
   }, []);
 
   const totalUnread = Object.values(unreadByContact).reduce((sum, n) => sum + n, 0);
@@ -579,7 +580,7 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
       loading: false,
       minimized: false,
       position: {
-        x: window.innerWidth - DEFAULT_WIDTH - 16 - (openCount % 5) * (DEFAULT_WIDTH + WINDOW_GAP),
+        x: globalThis.window.innerWidth - DEFAULT_WIDTH - 16 - (openCount % 5) * (DEFAULT_WIDTH + WINDOW_GAP),
         y: START_Y_OFFSET + (openCount % 5) * (DEFAULT_HEIGHT + WINDOW_GAP),
       },
       size: { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT },
@@ -706,6 +707,7 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
           theme={theme}
           onOpenConversation={openConversation}
           onClose={() => setPanelOpen(false)}
+          navigate={navigate}
         />
       )}
 

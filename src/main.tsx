@@ -552,7 +552,7 @@ async function toggleLike(id: string) {
           {shareMenu === post.id && <ShareMenu post={post} session={session} onClose={() => setShareMenu(null)} />}
           </div>
           {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
-          </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} shareVideo={currentRoute.params?.shareVideo} />}{page === "personas" && <PeopleView navigate={navigate} />}{page === "musica" && <MusicView session={session} navigate={navigate} />}{page === "videos" && <VideosView navigate={navigate} session={session} />}
+          </article>)}</>}{page === "perfil" && <ProfileView session={session} visitedUserId={currentRoute.params?.userId} goBack={history.length > 1 ? goBack : undefined} navigate={navigate} />}{page === "buscar" && <SearchView query={query} navigate={navigate} goBack={history.length > 1 ? goBack : undefined} />}{page === "mensajes" && <MessagesView navigate={navigate} shareVideo={currentRoute.params?.shareVideo} />}{page === "personas" && <PeopleView session={session} navigate={navigate as any} />}{page === "musica" && <MusicView session={session} navigate={navigate} />}{page === "videos" && <VideosView navigate={navigate} session={session} />}
         {videoToShare && <VideoShareModal video={videoToShare} onClose={() => setVideoToShare(null)} navigate={navigate} />}</main>
       <aside className="right-column">
         <section className="panel right-card now-playing-card">
@@ -619,7 +619,7 @@ async function toggleLike(id: string) {
         </section>
       </aside></div>
     )}
-    <ChatWidget session={session} navigate={navigate} />
+    <ChatWidget session={session} navigate={navigate as any} />
   </div>;
 }function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avatar" | "banner"; onCancel: () => void; onSave: (file: File) => void }) {
   const [preview, setPreview] = useState("");
@@ -1113,24 +1113,7 @@ function MessagesView({ navigate, shareVideo }: { navigate: (page: Page, params?
   <div className="empty-chat"><span>▢</span><h2>{selectedUser ? `Conversación con ${selectedUser.username}` : "Selecciona una conversacion"}</h2><p>{shareVideo ? "Haz clic en 'Enviar' arriba." : "Elige un contacto para comenzar a hablar."}</p></div></div></section>;
 }
 
-function PeopleView({ navigate }: { navigate: (page: Page, params?: Record<string, any>) => void }) {
-  const [users, setUsers] = useState<ProfileData[]>([]);
-  useEffect(() => {
-    supabase.from("profiles").select("*").limit(20).then(({ data }) => setUsers(data || []));
-  }, []);
 
-  return <section className="content-view"><h1>Personas</h1><p className="view-subtitle">Encuentra gente con tus mismos intereses.</p><div className="people-grid">
-    {users.map((person) => (
-      <div className="person-card panel" key={person.id}>
-        <div style={{marginBottom: 16}}>
-          <UserLink userId={person.id!} name={person.username || person.full_name || "Usuario"} avatarUrl={person.avatar_url} navigate={navigate} />
-        </div>
-        <p>{person.bio || "Amante de la música y las ideas."}</p>
-        <button onClick={() => navigate("mensajes")}>Enviar mensaje</button>
-      </div>
-    ))}
-  </div></section>;
-}
 
 
 function Login() { const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [mode, setMode] = useState<"login" | "signup">("login"); const [remember, setRemember] = useState(!!import.meta.env.VITE_YOUTUBE_API_KEY); const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); async function submit(event: FormEvent) { event.preventDefault(); setBusy(true); setMessage(""); const result = mode === "login" ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password }); setMessage(result.error ? result.error.message : mode === "login" ? "Sesion iniciada." : "Cuenta creada. Revisa tu correo si hace falta."); setBusy(false); } async function recoverPassword() { if (!email) { setMessage("Escribe tu email para recuperar la contraseña."); return; } setBusy(true); const result = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/` }); setMessage(result.error ? result.error.message : "Te hemos enviado un enlace para cambiar la contraseña."); setBusy(false); } return <main className="page"><Brand /><div className="card"><div className="card-heading"><h1>{mode === "login" ? "Iniciar sesión" : "Crear una cuenta"}</h1><p>{mode === "login" ? "Entra en tu espacio creativo." : "Empieza tu espacio creativo."}</p></div><form onSubmit={(event) => void submit(event)}><label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label>Contraseña<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required /></label><div className="form-options"><label className="remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>Recordarme en este equipo</span></label><button type="button" className="text-button" onClick={() => void recoverPassword()}>¿Contraseña olvidada?</button></div><button className="primary-button" disabled={busy}>{busy ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}</button></form>{message && <p className="message">{message}</p>}</div><div className="page-links"><button className="text-button" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setMessage(""); }}>{mode === "login" ? "¿Quieres crear una cuenta?" : "¿Ya tienes una cuenta?"}</button><span>|</span><button className="text-button" onClick={() => void recoverPassword()}>Recordar contraseña</button></div></main>; }
