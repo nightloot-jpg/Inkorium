@@ -548,15 +548,26 @@ async function toggleLike(id: string) {
       <aside className="right-column">
         <section className="panel right-card now-playing-card">
           <strong><BarChart3 size={14} style={{marginRight: 6}} />AHORA SUENA</strong>
-          <div className="now-playing-body">
-            <div className="now-playing-cover"><Music size={22} /></div>
-            <div className="now-playing-info">
-              <b>ZPU</b>
-              <span>Represento</span>
-              <div className="now-playing-row"><Play size={12} fill="currentColor" /><span className="now-playing-duration">2:45</span></div>
-            </div>
-          </div>
-          <div className="now-playing-listeners"><Users size={14} /> Escuchado por 12 personas</div>
+          {playerState.currentSong ? (
+            <>
+              <div className="now-playing-body">
+                <div className="now-playing-cover">
+                  {playerState.currentSong.thumbnail ? <img src={playerState.currentSong.thumbnail} alt="" /> : <Music size={22} />}
+                </div>
+                <div className="now-playing-info">
+                  <b>{playerState.currentSong.title}</b>
+                  {playerState.currentSong.artist || playerState.currentSong.channel_title ? <span>{playerState.currentSong.artist || playerState.currentSong.channel_title}</span> : null}
+                  <button type="button" className="now-playing-row" onClick={() => playerState.isPlaying ? playerState.pause() : playerState.resume()}>
+                    {playerState.isPlaying ? <Pause size={12} fill="currentColor" /> : <Play size={12} fill="currentColor" />}
+                    <span className="now-playing-duration">{formatTime(playerState.currentTime)} / {formatTime(playerState.duration)}</span>
+                  </button>
+                </div>
+              </div>
+              {playerState.isOpen ? null : <button type="button" className="see-all-events" onClick={() => playerState.openPlayer()}>Abrir reproductor »</button>}
+            </>
+          ) : (
+            <p style={{marginTop: 16, color: "#748498", fontSize: 13}}>No hay nada sonando ahora mismo.</p>
+          )}
         </section>
         <section className="panel right-card">
           <strong>EVENTOS DESTACADOS</strong><button>Ver todos</button>
