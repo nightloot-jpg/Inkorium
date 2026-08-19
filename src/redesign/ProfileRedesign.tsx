@@ -1,4 +1,5 @@
 import React from "react";
+import "./profile-reference.css";
 
 type ProfileRedesignProps = {
   name: string;
@@ -10,30 +11,37 @@ type ProfileRedesignProps = {
 
 export function ProfileRedesign({ name, username, bio, avatar, banner }: ProfileRedesignProps) {
   return (
-    <section className="ink-profile-redesign">
-      <div className="ink-profile-cover" style={{ backgroundImage: banner ? `url(${banner})` : undefined }} />
-      <div className="ink-profile-head">
-        <img className="ink-profile-avatar" src={avatar || "/default-avatar.png"} alt="" />
-        <div>
-          <h1>{name}</h1>
+    <section className="profile-reference-page">
+      <div className="profile-cover" style={{ backgroundImage: banner ? `url(${banner})` : undefined }} />
+      <div className="profile-header">
+        <img className="profile-avatar" src={avatar || "/default-avatar.png"} alt="" />
+        <div className="profile-info">
+          <h1>{name} <span className="verified">✓</span></h1>
           {username && <p>@{username}</p>}
           <span>{bio || "Comparte música, fotos y momentos"}</span>
+          <div className="profile-meta">📍 Madrid, España · 🎵 Música · ✨ Inkorium</div>
         </div>
+        <button className="profile-button">Editar perfil</button>
       </div>
-
-      <nav className="ink-profile-tabs">
-        <button>Inicio</button>
-        <button>Música</button>
-        <button>Fotos</button>
-        <button>Vídeos</button>
-        <button>Eventos</button>
-        <button>Amigos</button>
+      <nav className="profile-tabs">
+        <span className="active">Inicio</span>
+        <span>Música</span>
+        <span>Fotos</span>
+        <span>Vídeos</span>
+        <span>Eventos</span>
+        <span>Amigos</span>
       </nav>
-
-      <div className="ink-profile-grid">
-        <article><h3>🎧 Canción del día</h3><p>Tu música favorita aparecerá aquí</p></article>
-        <article><h3>📸 Fotos</h3><p>Últimos momentos compartidos</p></article>
-        <article><h3>🎉 Eventos</h3><p>Próximos eventos</p></article>
+      <div className="profile-columns">
+        <main>
+          <div className="profile-card composer-card">¿Qué estás escuchando ahora?</div>
+          <div className="profile-card">Publicaciones del usuario</div>
+        </main>
+        <aside>
+          <div className="profile-card">🎧 Reproductor</div>
+          <div className="profile-card">🎵 Música destacada</div>
+          <div className="profile-card">🎉 Próximos eventos</div>
+          <div className="profile-card">👥 Amigos en común</div>
+        </aside>
       </div>
     </section>
   );
