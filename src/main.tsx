@@ -182,7 +182,7 @@ function PostMedia({ media, pollId, session, text }: { media?: any, pollId?: str
     if (!media && !pollId) return null;
 
     if (media?.type === "photo") {
-        return <div style={{width: '100%', borderRadius: 12, marginTop: 12, maxHeight: 460, overflow: 'hidden', background: '#eef2f6'}}><img src={media.url} alt="Post media" style={{width: '100%', maxHeight: 460, objectFit: 'cover', display: 'block'}} /></div>;
+        return <div style={{width: '100%', borderRadius: 0, marginTop: 12, maxHeight: 460, overflow: 'hidden', background: '#eef2f6'}}><img src={media.url} alt="Post media" style={{width: '100%', maxHeight: 460, objectFit: 'cover', display: 'block'}} /></div>;
     }
     
     if (media?.type === "video") {
