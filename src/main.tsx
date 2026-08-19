@@ -471,7 +471,7 @@ async function toggleLike(id: string) {
     }
   }
 
-  return <div className={`feed-app theme-${theme}${page === "perfil" ? " profile-light" : ""}`}>
+  return <div className={`feed-app theme-${theme}`}>
     <FloatingMusicPlayer />
     <header className="topbar"><button className="brand-button" onClick={() => navigate("inicio")}><Brand /></button><nav className="top-nav">{([["inicio", "Inicio"], ["perfil", "Perfil"], ["mensajes", "Mensajes"], ["personas", "Personas"], ["musica", "Musica"], ["fotos", "Fotos"]] as [Page, string][]).map(([id, label]) => <button className={page === id ? "active" : ""} onClick={() => navigate(id)} key={id}>{label}</button>)}</nav><form className="search-form" onSubmit={(event) => { event.preventDefault(); navigate("buscar"); }}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar personas, musica, videos..." /></form><div className="top-actions">
   <button className="icon-button" ref={notificationsButtonRef} onClick={() => setNotifications(!notifications)} aria-label="Notificaciones">

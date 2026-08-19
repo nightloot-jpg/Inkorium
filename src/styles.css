@@ -3617,21 +3617,12 @@ button:disabled { cursor: wait; opacity: .65; }
 
 /* ========================================================================
    Perfil — rediseño claro (mockup "Perfil_de_Inkorium_con_reproductor")
-   Todo lo de abajo está scoped a .profile-light (topbar/sidebar globales)
-   y a .ph-* (contenido propio de la página de perfil), así que no afecta
-   a ninguna otra vista de la aplicación.
+   Todo lo de abajo está scoped a .ph-* (contenido propio de la página de
+   perfil), así que no afecta a ninguna otra vista de la aplicación.
+   El topbar ya no se sobreescribe aquí: usa siempre el color del tema
+   elegido por el usuario, igual que en el resto de la app.
    ======================================================================== */
 
-/* Topbar en modo claro cuando se visita /perfil */
-.feed-app.profile-light .topbar { background: #ffffff; box-shadow: 0 1px 0 #e7e9ee; }
-.feed-app.profile-light .topbar .brand { color: #111318; }
-.feed-app.profile-light .brand-mark { filter: invert(1); }
-.feed-app.profile-light .top-nav button { color: #4b5666; }
-.feed-app.profile-light .top-nav button.active { color: #1683ff; background: #eef5ff; border-bottom-color: #1683ff; }
-.feed-app.profile-light .search-form input { color: #1a2230; background: #f0f2f5; }
-.feed-app.profile-light .search-form input::placeholder { color: #8a93a3; }
-.feed-app.profile-light .icon-button, .feed-app.profile-light .user-chip { color: #354052; }
-.feed-app.profile-light .user-chip { border-left-color: #e3e6ea; }
 
 /* Layout de la página de perfil: nav (izq) + contenido (centro) + rail (der) */
 .ph-page.profile-page { grid-template-columns: 240px minmax(0, 1fr) 300px; gap: 22px; }
