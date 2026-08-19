@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { supabase } from "./lib/supabase";
 import type { Session } from "@supabase/supabase-js";
-import { MessageCircle, X, ChevronUp, ChevronDown, Send, Paperclip, Smile, Mic, Camera, Search, Minimize, Maximize2 } from "lucide-react";
+import { MessageCircle, X, ChevronUp, ChevronDown, Send, Paperclip, Smile, Mic, Camera, Search, Minimize, Maximize2, UserPlus } from "lucide-react";
 import { UserLink } from "./utils";
 
 // ============================================================
@@ -423,6 +423,9 @@ function ContactPanel({ contacts, onlineIds, unreadByContact, theme, onOpenConve
             </button>
           ))}
       </div>
+      <button className="tuenti-panel-add-contact" onClick={() => { onClose(); navigate("personas"); }}>
+        <UserPlus size={16} /> Agregar contacto
+      </button>
     </div>
   );
 }
