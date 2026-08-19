@@ -1,14 +1,12 @@
 // ============================================================
-// NUEVO: ChatWidget + ChatWindow (ventanas arrastrables estilo Messenger/Tuenti 2009)
+// ChatWidget estilo Tuenti 2009 - Ventanas rectangulares con franja superior
 // ============================================================
-// Reemplaza la función ChatWidget completa en src/main.tsx
-// y añade los estilos CSS al final de src/styles.css
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { supabase } from "./lib/supabase";
 import type { Session } from "@supabase/supabase-js";
-import { ChevronLeft, X, Minimize2, Maximize2, Send, MessageCircle, MoreVertical, Paperclip, Smile, Mic, Camera, Search, Users, Settings, Bell, Archive, Trash2, Block, Flag, LogOut, UserPlus, UserMinus, Shield, HelpCircle, Info, Moon, Sun, Palette, Layout, Grid, List, Home, Heart, Star, Flag as FlagIcon, Lock, Unlock, Eye, EyeOff, Copy, Link2, ExternalLink, Download, Upload, Edit, Delete, Share2, MoreHorizontal, ChevronDown, ChevronUp, Menu, X as XIcon, Check, AlertCircle, AlertTriangle, RefreshCw, RotateCcw, Settings as SettingsIcon, User, Users as UsersIcon, MessageSquare, Bot, Zap, Sparkles, Brain, Shield as ShieldIcon, Lock as LockIcon, Key, Hash, Terminal, Code, Database, Server, Globe, Wifi, WifiOff, Battery, BatteryCharging, Volume2, VolumeX, Mic as MicIcon, MicOff, Camera as CameraIcon, CameraOff, Image, Video, Music, File, FileText, Archive as ArchiveIcon, Trash2 as TrashIcon, Folder, FolderOpen, FolderPlus, FolderMinus, Search as SearchIcon, Filter, FilterX, SortAsc, SortDesc, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, ChevronUp as ChevronUpIcon, ChevronDown as ChevronDownIcon, Menu as MenuIcon, X as XIcon2, Check as CheckIcon, AlertCircle as AlertCircleIcon, AlertTriangle as AlertTriangleIcon, RefreshCw as RefreshCwIcon, RotateCcw as RotateCcwIcon } from "lucide-react";
-import { UserLink } from "./utils"; // assuming UserLink is exported from utils
+import { MessageCircle, X, ChevronUp, ChevronDown, Send, Paperclip, Smile, Mic, Camera, Search, Minimize, Maximize2 } from "lucide-react";
+import { UserLink } from "./utils";
 
 // ============================================================
 // TIPOS
@@ -31,28 +29,32 @@ type ChatMessage = {
 };
 
 type ChatWindowState = {
-  id: string; // unique window id (contact.id)
+  id: string; // contact.id
   contact: ChatContact;
   messages: ChatMessage[];
   draft: string;
   loading: boolean;
   minimized: boolean;
-  maximized: boolean;
   position: { x: number; y: number };
   size: { width: number; height: number };
   unreadCount: number;
   hasMore: boolean;
   page: number;
+  zIndex: number;
 };
 
 // ============================================================
 // CONSTANTES
 // ============================================================
-const DEFAULT_WINDOW_SIZE = { width: 380, height: 520 };
-const MIN_WINDOW_SIZE = { width: 320, height: 400 };
-const MAX_WINDOW_SIZE = { width: 600, height: 800 };
-const WINDOW_OFFSET = 30; // cascade offset for new windows
-const SNAP_THRESHOLD = 20; // snap to edges
+const DEFAULT_WIDTH = 320;
+const DEFAULT_HEIGHT = 400;
+const MIN_WIDTH = 280;
+const MIN_HEIGHT = 300;
+const MAX_WIDTH = 450;
+const MAX_HEIGHT = 600;
+const WINDOW_GAP = 8; // gap between stacked windows
+const START_X = 16;
+const START_Y_OFFSET = 16; // from bottom
 
 // ============================================================
 // UTILIDADES
@@ -62,15 +64,26 @@ const formatTime = (iso: string) => {
   const d = new Date(iso);
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
-const generateId = () => `win-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+const getThemeColor = (theme: string) => {
+  const colors: Record<string, string> = {
+    blue: "#1e6fdf",
+    violet: "#7c3aed",
+    green: "#059669",
+    sunset: "#ea580c",
+    rose: "#e11d48",
+    teal: "#0d9488",
+  };
+  return colors[theme] || colors.blue;
+};
 
 // ============================================================
-// CHAT WINDOW - Ventana individual arrastrable
+// CHAT WINDOW - Ventana individual estilo Tuenti 2009
 // ============================================================
 interface ChatWindowProps {
   window: ChatWindowState;
   myId: string;
   onlineIds: Set<string>;
+  theme: string;
   onClose: (windowId: string) => void;
   onMinimize: (windowId: string) => void;
   onMaximize: (windowId: string) => void;
@@ -80,13 +93,13 @@ interface ChatWindowProps {
   onPositionChange: (windowId: string, position: { x: number; y: number }) => void;
   onSizeChange: (windowId: string, size: { width: number; height: number }) => void;
   onFocus: (windowId: string) => void;
-  zIndex: number;
 }
 
 function ChatWindow({
   window,
   myId,
   onlineIds,
+  theme,
   onClose,
   onMinimize,
   onMaximize,
@@ -96,14 +109,14 @@ function ChatWindow({
   onPositionChange,
   onSizeChange,
   onFocus,
-  zIndex,
 }: ChatWindowProps) {
-  const { contact, messages, draft, loading, minimized, maximized, position, size, unreadCount, hasMore } = window;
+  const { contact, messages, draft, loading, minimized, position, size, unreadCount, hasMore } = window;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const themeColor = getThemeColor(theme);
+  const isOnline = onlineIds.has(contact.id);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -118,23 +131,17 @@ function ChatWindow({
   const dragStartRef = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
   const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
-  const isOnline = onlineIds.has(contact.id);
-
-  // Focus management - bring to front on click
+  // Focus management
   const handleMouseDown = (e: React.MouseEvent) => {
     onFocus(window.id);
-    // Don't start drag if clicking buttons or input
-    if (
-      e.target instanceof HTMLElement &&
-      (e.target.closest("button") || e.target.closest("input") || e.target.closest("textarea"))
-    ) {
+    if (e.target instanceof HTMLElement && (e.target.closest("button") || e.target.closest("input") || e.target.closest("textarea"))) {
       return;
     }
   };
 
   // Header drag
   const handleHeaderMouseDown = (e: React.MouseEvent) => {
-    if (maximized) return;
+    if (minimized) return;
     if (e.target instanceof HTMLElement && e.target.closest("button")) return;
 
     setDragging(true);
@@ -147,9 +154,9 @@ function ChatWindow({
     e.preventDefault();
   };
 
-  // Resize from bottom-right corner
+  // Resize from bottom-right
   const handleResizeMouseDown = (e: React.MouseEvent) => {
-    if (maximized) return;
+    if (minimized) return;
     setResizing(true);
     resizeStartRef.current = {
       x: e.clientX,
@@ -171,18 +178,11 @@ function ChatWindow({
         let newX = dragStartRef.current.posX + dx;
         let newY = dragStartRef.current.posY + dy;
 
-        // Clamp to viewport with snap
-        const maxX = window.innerWidth - size.width;
-        const maxY = window.innerHeight - size.height - 60; // leave space for topbar
-
-        // Snap to edges
-        if (Math.abs(newX) < SNAP_THRESHOLD) newX = 0;
-        if (Math.abs(newX - maxX) < SNAP_THRESHOLD) newX = maxX;
-        if (Math.abs(newY) < SNAP_THRESHOLD) newY = 0;
-        if (Math.abs(newY - maxY) < SNAP_THRESHOLD) newY = maxY;
-
-        newX = Math.max(0, Math.min(newX, maxX));
-        newY = Math.max(0, Math.min(newY, maxY));
+        // Clamp to viewport
+        const maxX = window.innerWidth - size.width - 16;
+        const maxY = window.innerHeight - size.height - 16;
+        newX = Math.max(16, Math.min(newX, maxX));
+        newY = Math.max(16, Math.min(newY, maxY));
 
         onPositionChange(window.id, { x: newX, y: newY });
       }
@@ -193,8 +193,8 @@ function ChatWindow({
         let newWidth = resizeStartRef.current.width + dx;
         let newHeight = resizeStartRef.current.height + dy;
 
-        newWidth = Math.max(MIN_WINDOW_SIZE.width, Math.min(newWidth, MAX_WINDOW_SIZE.width));
-        newHeight = Math.max(MIN_WINDOW_SIZE.height, Math.min(newHeight, MAX_WINDOW_SIZE.height));
+        newWidth = Math.max(MIN_WIDTH, Math.min(newWidth, MAX_WIDTH));
+        newHeight = Math.max(MIN_HEIGHT, Math.min(newHeight, MAX_HEIGHT));
 
         onSizeChange(window.id, { width: newWidth, height: newHeight });
       }
@@ -211,7 +211,7 @@ function ChatWindow({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [dragging, resizing, position, size, window.id, onPositionChange, onSizeChange, maximized]);
+  }, [dragging, resizing, position, size, window.id, onPositionChange, onSizeChange, minimized]);
 
   // Keyboard: Enter to send, Shift+Enter for newline
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -222,129 +222,213 @@ function ChatWindow({
   };
 
   if (minimized) {
-    // Minimized state - just a tab at bottom
+    // Minimized tab at bottom-left
     return (
       <div
-        className="chat-window-minimized"
+        className="tuenti-chat-minimized"
         style={{
           left: position.x,
-          bottom: 0,
-          zIndex,
+          bottom: START_Y_OFFSET,
+          zIndex: window.zIndex,
           width: size.width,
+          background: themeColor,
         }}
         onMouseDown={handleMouseDown}
         onClick={() => onMaximize(window.id)}
+        onDoubleClick={(e) => e.stopPropagation()}
       >
-        <div className="minimized-header">
-          <span className="avatar tiny">
-            {contact.avatar_url ? <img src={contact.avatar_url} alt="" /> : contactName(contact)[0]?.toUpperCase()}
-            <i className={`chat-status-dot inline ${isOnline ? "online" : "offline"}`} />
-          </span>
-          <span className="minimized-name">{contactName(contact)}</span>
-          {unreadCount > 0 && <span className="chat-unread-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>}
-          <button className="minimized-close" onClick={(e) => { e.stopPropagation(); onClose(window.id); }}><X size={14} /></button>
+        <div className="tuenti-minimized-content">
+          <div className="tuenti-minimized-avatar">
+            {contact.avatar_url ? (
+              <img src={contact.avatar_url} alt="" />
+            ) : (
+              contactName(contact).charAt(0).toUpperCase()
+            )}
+          </div>
+          <span className="tuenti-minimized-name">{contactName(contact)}</span>
+          {unreadCount > 0 && (
+            <span className="tuenti-minimized-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+          )}
+          <button className="tuenti-minimized-close" onClick={(e) => { e.stopPropagation(); onClose(window.id); }}><X size={12} /></button>
         </div>
       </div>
     );
   }
 
+  const windowStyle: React.CSSProperties = {
+    left: position.x,
+    bottom: position.y,
+    width: size.width,
+    height: size.height,
+    zIndex: window.zIndex,
+  };
+
   return (
     <div
-      ref={containerRef}
-      className="chat-window"
-      style={{
-        left: position.x,
-        top: position.y,
-        width: size.width,
-        height: size.height,
-        zIndex,
-        transform: maximized ? "none" : undefined,
-      }}
+      className="tuenti-chat-window"
+      style={windowStyle}
       onMouseDown={handleMouseDown}
     >
-      {/* Header - Drag handle */}
+      {/* Header bar - thin strip with square avatar + name */}
       <div
         ref={headerRef}
-        className="chat-window-header"
+        className="tuenti-chat-header"
+        style={{ background: themeColor }}
         onMouseDown={handleHeaderMouseDown}
-        style={{ cursor: maximized ? "default" : "move" }}
       >
-        <div className="window-header-left">
-          <span className="avatar small">
-            {contact.avatar_url ? <img src={contact.avatar_url} alt="" /> : contactName(contact)[0]?.toUpperCase()}
-            <i className={`chat-status-dot inline ${isOnline ? "online" : "offline"}`} />
-          </span>
-          <UserLink userId={contact.id} name={contactName(contact)} avatarUrl={contact.avatar_url} navigate={() => {}} />
+        <div className="tuenti-header-left">
+          <div className="tuenti-header-avatar">
+            {contact.avatar_url ? (
+              <img src={contact.avatar_url} alt="" />
+            ) : (
+              contactName(contact).charAt(0).toUpperCase()
+            )}
+            <span className={`tuenti-status-dot ${isOnline ? "online" : "offline"}`} />
+          </div>
+          <span className="tuenti-header-name">{contactName(contact)}</span>
+          {isOnline && <span className="tuenti-online-text">En línea</span>}
         </div>
-        <div className="window-header-center">
-          <span className="online-status">{isOnline ? "En línea" : "Desconectado"}</span>
-        </div>
-        <div className="window-header-right">
-          <button className="window-btn" onClick={() => onMinimize(window.id)} title="Minimizar"><Minimize2 size={14} /></button>
-          <button className="window-btn" onClick={() => onMaximize(window.id)} title={maximized ? "Restaurar" : "Maximizar"}><Maximize2 size={14} /></button>
-          <button className="window-btn close-btn" onClick={() => onClose(window.id)} title="Cerrar"><X size={14} /></button>
+        <div className="tuenti-header-right">
+          <button className="tuenti-header-btn" onClick={() => onMinimize(window.id)} title="Minimizar"><Minimize size={12} /></button>
+          <button className="tuenti-header-btn" onClick={() => onMaximize(window.id)} title="Maximizar"><Maximize2 size={12} /></button>
+          <button className="tuenti-header-btn tuenti-close-btn" onClick={() => onClose(window.id)} title="Cerrar"><X size={12} /></button>
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages area */}
       <div
         ref={scrollRef}
-        className="chat-window-messages"
-        style={{ height: maximized ? `calc(100vh - 180px)` : size.height - 140 }}
+        className="tuenti-chat-messages"
+        style={{ height: size.height - 56 }}
       >
-        {loading && <p className="chat-empty">Cargando conversación...</p>}
-        {!loading && messages.length === 0 && <p className="chat-empty">Aún no hay mensajes. ¡Saluda!</p>}
+        {loading && <div className="tuenti-loading">Cargando...</div>}
+        {!loading && messages.length === 0 && <div className="tuenti-empty">Sin mensajes aún</div>}
         {messages.map((message) => (
-          <div key={message.id} className={`chat-bubble-row ${message.sender_id === myId ? "mine" : "theirs"}`}>
-            <span className={`chat-bubble${message.pending ? " pending" : ""}`}>{message.content}</span>
-            <span className="chat-time">{formatTime(message.created_at)}</span>
+          <div key={message.id} className={`tuenti-message ${message.sender_id === myId ? "mine" : "theirs"}`}>
+            <div className={`tuenti-bubble${message.pending ? " pending" : ""}`}>
+              {message.content}
+            </div>
+            <span className="tuenti-time">{formatTime(message.created_at)}</span>
           </div>
         ))}
         {hasMore && !loading && (
-          <button className="load-more-btn" onClick={() => onLoadMore(window.id)}>Cargar más mensajes</button>
+          <button className="tuenti-load-more" onClick={() => onLoadMore(window.id)}>Cargar más</button>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form className="chat-window-input" onSubmit={(e) => { e.preventDefault(); if (draft.trim()) onSendMessage(window.id, draft.trim()); }}>
-        <div className="input-toolbar">
-          <button type="button" className="toolbar-btn" title="Adjuntar"><Paperclip size={16} /></button>
-          <button type="button" className="toolbar-btn" title="Emojis"><Smile size={16} /></button>
-          <button type="button" className="toolbar-btn" title="Grabadora"><Mic size={16} /></button>
-          <button type="button" className="toolbar-btn" title="Cámara"><Camera size={16} /></button>
+      {/* Input area */}
+      <div className="tuenti-chat-input" style={{ borderTopColor: themeColor }}>
+        <div className="tuenti-input-toolbar">
+          <button type="button" className="tuenti-toolbar-btn" title="Adjuntar"><Paperclip size={14} /></button>
+          <button type="button" className="tuenti-toolbar-btn" title="Emojis"><Smile size={14} /></button>
+          <button type="button" className="tuenti-toolbar-btn" title="Voz"><Mic size={14} /></button>
+          <button type="button" className="tuenti-toolbar-btn" title="Cámara"><Camera size={14} /></button>
         </div>
-        <div className="input-wrapper">
+        <form className="tuenti-input-form" onSubmit={(e) => { e.preventDefault(); if (draft.trim()) onSendMessage(window.id, draft.trim()); }}>
           <input
             value={draft}
             onChange={(e) => onDraftChange(window.id, e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Escribe un mensaje..."
-            autoComplete="off"
+            className="tuenti-input"
+            style={{ borderColor: themeColor }}
           />
-          <button type="submit" disabled={!draft.trim()} className="send-btn"><Send size={16} /></button>
-        </div>
-      </form>
+          <button type="submit" disabled={!draft.trim()} className="tuenti-send-btn" style={{ background: themeColor }}>
+            <Send size={14} />
+          </button>
+        </form>
+      </div>
 
       {/* Resize handle */}
-      {!maximized && (
+      {!minimized && (
         <div
           ref={resizeRef}
-          className="resize-handle"
+          className="tuenti-resize-handle"
           onMouseDown={handleResizeMouseDown}
-          style={{ cursor: "se-resize" }}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M14 4L4 14M16 6L6 16M16 8L8 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/>
-          </svg>
-        </div>
+        />
       )}
     </div>
   );
 }
 
 // ============================================================
-// CHAT WIDGET PRINCIPAL - Gestiona contactos y ventanas
+// CONTACT PANEL - Panel de contactos (bottom-left, slides up)
+// ============================================================
+interface ContactPanelProps {
+  contacts: ChatContact[];
+  onlineIds: Set<string>;
+  unreadByContact: Record<string, number>;
+  theme: string;
+  onOpenConversation: (contact: ChatContact) => void;
+  onClose: () => void;
+}
+
+function ContactPanel({ contacts, onlineIds, unreadByContact, theme, onOpenConversation, onClose }: ContactPanelProps) {
+  const themeColor = getThemeColor(theme);
+  const [search, setSearch] = useState("");
+
+  const filteredContacts = useMemo(() => {
+    if (!search.trim()) return contacts;
+    const q = search.toLowerCase();
+    return contacts.filter(c => contactName(c).toLowerCase().includes(q));
+  }, [contacts, search]);
+
+  return (
+    <div className="tuenti-contact-panel" style={{ borderColor: themeColor }}>
+      <div className="tuenti-panel-header" style={{ background: themeColor }}>
+        <span>Mensajes</span>
+        <button className="tuenti-panel-close" onClick={onClose}><X size={16} /></button>
+      </div>
+      <div className="tuenti-panel-search" style={{ borderColor: themeColor }}>
+        <Search size={16} />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar..."
+          style={{ borderColor: themeColor }}
+        />
+      </div>
+      <div className="tuenti-contact-list">
+        {filteredContacts.length === 0 && <div className="tuenti-panel-empty">Sin contactos</div>}
+        {filteredContacts
+          .slice()
+          .sort((a, b) => Number(onlineIds.has(b.id)) - Number(onlineIds.has(a.id)))
+          .map((contact) => (
+            <button
+              key={contact.id}
+              className="tuenti-contact-row"
+              onClick={() => { onOpenConversation(contact); onClose(); }}
+              style={{ borderColor: themeColor }}
+            >
+              <div className="tuenti-contact-avatar">
+                {contact.avatar_url ? (
+                  <img src={contact.avatar_url} alt="" />
+                ) : (
+                  contactName(contact).charAt(0).toUpperCase()
+                )}
+                <span className={`tuenti-status-dot ${onlineIds.has(contact.id) ? "online" : "offline"}`} />
+              </div>
+              <div className="tuenti-contact-info">
+                <span className="tuenti-contact-name">{contactName(contact)}</span>
+                <span className={`tuenti-contact-status ${onlineIds.has(contact.id) ? "online" : "offline"}`}>
+                  {onlineIds.has(contact.id) ? "En línea" : "Desconectado"}
+                </span>
+              </div>
+              {unreadByContact[contact.id] && (
+                <span className="tuenti-unread-badge" style={{ background: themeColor }}>
+                  {unreadByContact[contact.id] > 99 ? "99+" : unreadByContact[contact.id]}
+                </span>
+              )}
+            </button>
+          ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// MAIN CHAT WIDGET
 // ============================================================
 interface ChatWidgetProps {
   session: Session;
@@ -356,9 +440,25 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
   const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const [unreadByContact, setUnreadByContact] = useState<Record<string, number>>({});
   const [windows, setWindows] = useState<Record<string, ChatWindowState>>({});
-  const [contactPanelOpen, setContactPanelOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [zIndexCounter, setZIndexCounter] = useState(1000);
+  const [theme, setTheme] = useState("blue");
   const myId = session.user.id;
+
+  // Load theme from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("inkorium-theme");
+    if (saved) setTheme(saved);
+  }, []);
+
+  // Sync theme changes from other components
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "inkorium-theme" && e.newValue) setTheme(e.newValue);
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   const totalUnread = Object.values(unreadByContact).reduce((sum, n) => sum + n, 0);
 
@@ -381,7 +481,7 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
     return () => { cancelled = true; };
   }, [myId]);
 
-  // ---- Presence (who's online) ----
+  // ---- Presence ----
   useEffect(() => {
     const channel = supabase.channel("online-users", { config: { presence: { key: myId } } });
     channel.on("presence", { event: "sync" }, () => {
@@ -409,63 +509,56 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
       .channel("chat_incoming_" + myId)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `recipient_id=eq.${myId}` }, (payload) => {
         const row = payload.new as ChatMessage;
-        // Update unread count if window not focused
+        const senderId = row.sender_id;
+
+        // Update window if open
         setWindows((prev) => {
-          const win = prev[row.sender_id];
-          if (win && !win.minimized && win.messages.some(m => m.id === row.id)) return prev; // already in window
+          const win = prev[senderId];
           if (win && !win.minimized) {
-            // Window open but message not in it yet (shouldn't happen with realtime)
-            return prev;
+            // Add message to open window
+            return { ...prev, [senderId]: { ...win, messages: [...win.messages, row], unreadCount: 0 } };
           }
-          // Not in open window or window closed/minimized
-          setUnreadByContact((prevCounts) => ({ ...prevCounts, [row.sender_id]: (prevCounts[row.sender_id] || 0) + 1 }));
-          // If window exists (minimized), update its unreadCount
+          // Increment unread
+          setUnreadByContact((c) => ({ ...c, [senderId]: (c[senderId] || 0) + 1 }));
           if (win) {
-            return {
-              ...prev,
-              [row.sender_id]: { ...win, unreadCount: win.unreadCount + 1 },
-            };
+            return { ...prev, [senderId]: { ...win, unreadCount: win.unreadCount + 1 } };
           }
           return prev;
         });
-        // If window is open and active, mark as read
-        const activeWin = windows[row.sender_id];
+
+        // Mark as read if window focused
+        const activeWin = windows[senderId];
         if (activeWin && !activeWin.minimized) {
-          setMessagesForWindow(row.sender_id, (prev) => [...prev, row]);
           void supabase.from("messages").update({ read_at: new Date().toISOString() }).eq("id", row.id);
         }
       })
       .subscribe();
 
     return () => { cancelled = true; supabase.removeChannel(channel); };
-  }, [myId]);
+  }, [myId, windows]);
 
-  // Helper to update messages for a specific window
+  // Helper: update messages for a window
   const setMessagesForWindow = useCallback((windowId: string, updater: (prev: ChatMessage[]) => ChatMessage[]) => {
     setWindows((prev) => {
       const win = prev[windowId];
       if (!win) return prev;
       return { ...prev, [windowId]: { ...win, messages: updater(win.messages) } };
     });
-  });
+  }, []);
 
-  // ---- Open conversation (create/get window) ----
+  // ---- Open conversation ----
   const openConversation = useCallback(async (contact: ChatContact) => {
-    // Check if window already exists
     if (windows[contact.id]) {
       const win = windows[contact.id];
       if (win.minimized) {
-        // Restore minimized window
         setWindows((prev) => ({ ...prev, [contact.id]: { ...win, minimized: false, unreadCount: 0 } }));
-        setUnreadByContact((prev) => { const next = { ...prev }; delete next[contact.id]; return next; });
+        setUnreadByContact((c) => { const n = { ...c }; delete n[contact.id]; return n; });
       }
-      // Bring to front
-      setZIndexCounter((c) => c + 1);
+      setZIndexCounter((z) => z + 1);
       return;
     }
 
-    // Create new window
-    setLoadingMessages(true);
+    // Load messages
     const { data } = await supabase
       .from("messages")
       .select("*")
@@ -473,6 +566,8 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
       .order("created_at", { ascending: true })
       .limit(50);
 
+    // Calculate cascading position
+    const openCount = Object.values(windows).filter(w => !w.minimized).length;
     const newWindow: ChatWindowState = {
       id: contact.id,
       contact,
@@ -480,24 +575,24 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
       draft: "",
       loading: false,
       minimized: false,
-      maximized: false,
       position: {
-        x: window.innerWidth - DEFAULT_WINDOW_SIZE.width - WINDOW_OFFSET * (Object.keys(windows).length % 5),
-        y: window.innerHeight - DEFAULT_WINDOW_SIZE.height - 80 - WINDOW_OFFSET * (Object.keys(windows).length % 5),
+        x: START_X + (openCount % 5) * (DEFAULT_WIDTH + WINDOW_GAP),
+        y: START_Y_OFFSET + (openCount % 5) * (DEFAULT_HEIGHT + WINDOW_GAP),
       },
-      size: DEFAULT_WINDOW_SIZE,
+      size: { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT },
       unreadCount: 0,
       hasMore: (data || []).length === 50,
       page: 1,
+      zIndex: zIndexCounter + 1,
     };
 
     setWindows((prev) => ({ ...prev, [contact.id]: newWindow }));
-    setZIndexCounter((c) => c + 1);
-    setUnreadByContact((prev) => { const next = { ...prev }; delete next[contact.id]; return next; });
+    setZIndexCounter((z) => z + 1);
+    setUnreadByContact((c) => { const n = { ...c }; delete n[contact.id]; return n; });
 
     // Mark as read
     void supabase.from("messages").update({ read_at: new Date().toISOString() }).eq("sender_id", contact.id).eq("recipient_id", myId).is("read_at", null);
-  }, [myId, windows]);
+  }, [myId, windows, zIndexCounter]);
 
   // ---- Send message ----
   const sendMessage = useCallback(async (windowId: string, content: string) => {
@@ -515,7 +610,7 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
       if (error || !data) return prev.filter((m) => m.id !== tempId);
       return prev.map((m) => (m.id === tempId ? (data as ChatMessage) : m));
     });
-  }, [myId, windows]);
+  }, [myId, windows, setMessagesForWindow]);
 
   // ---- Draft change ----
   const handleDraftChange = useCallback((windowId: string, draft: string) => {
@@ -526,7 +621,7 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
     });
   }, []);
 
-  // ---- Load more messages ----
+  // ---- Load more ----
   const loadMore = useCallback(async (windowId: string) => {
     const win = windows[windowId];
     if (!win || win.loading) return;
@@ -549,7 +644,7 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
         ...prev,
         [windowId]: {
           ...w,
-          messages: [...newMessages, ...w.messages], // prepend older messages
+          messages: [...newMessages, ...w.messages],
           loading: false,
           hasMore: newMessages.length === 50,
           page: w.page + 1,
@@ -579,126 +674,97 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
     setWindows((prev) => {
       const win = prev[windowId];
       if (!win) return prev;
-      return { ...prev, [windowId]: { ...win, maximized: !win.maximized, minimized: false } };
+      return { ...prev, [windowId]: { ...win, minimized: false } };
     });
   }, []);
 
   const focusWindow = useCallback((windowId: string) => {
-    setZIndexCounter((c) => c + 1);
-    // Mark as read if unread
+    setZIndexCounter((z) => z + 1);
     const win = windows[windowId];
     if (win && win.unreadCount > 0) {
       setWindows((prev) => ({ ...prev, [windowId]: { ...win, unreadCount: 0 } }));
-      setUnreadByContact((prev) => { const next = { ...prev }; delete next[windowId]; return next; });
+      setUnreadByContact((c) => { const n = { ...c }; delete n[windowId]; return n; });
       void supabase.from("messages").update({ read_at: new Date().toISOString() }).eq("sender_id", windowId).eq("recipient_id", myId).is("read_at", null);
     }
   }, [myId, windows]);
 
-  // ---- Calculate z-indices for windows ----
-  const windowEntries = Object.entries(windows).sort((a, b) => {
-    // Minimized windows at bottom
-    if (a[1].minimized && !b[1].minimized) return -1;
-    if (!a[1].minimized && b[1].minimized) return 1;
-    return 0;
-  });
-
   // ---- Render ----
+  const openWindows = Object.values(windows).filter(w => !w.minimized).sort((a, b) => a.zIndex - b.zIndex);
+  const minimizedWindows = Object.values(windows).filter(w => w.minimized);
+
   return (
-    <div className="chat-widget-new">
-      {/* Contact Panel (bottom-left) */}
-      {contactPanelOpen && (
-        <div className="chat-contact-panel panel">
-          <div className="chat-panel-header">
-            <strong>Mensajes</strong>
-            <div className="panel-actions">
-              <button className="icon-btn" onClick={() => navigate("mensajes")} title="Ver todos los mensajes"><MessageSquare size={16} /></button>
-              <button className="icon-btn" onClick={() => setContactPanelOpen(false)} title="Cerrar"><X size={16} /></button>
-            </div>
-          </div>
-          <div className="chat-contact-search">
-            <Search size={16} />
-            <input type="text" placeholder="Buscar contactos..." />
-          </div>
-          <div className="chat-contact-list">
-            {contacts.length === 0 && <p className="chat-empty">Todavía no tienes contactos. Agrega amigos para chatear.</p>}
-            {contacts
-              .slice()
-              .sort((a, b) => Number(onlineIds.has(b.id)) - Number(onlineIds.has(a.id)))
-              .map((contact) => (
-                <button
-                  key={contact.id}
-                  className="chat-contact-row"
-                  onClick={() => { openConversation(contact); setContactPanelOpen(false); }}
-                >
-                  <span className="avatar tiny chat-contact-avatar">
-                    {contact.avatar_url ? <img src={contact.avatar_url} alt="" /> : contactName(contact)[0]?.toUpperCase()}
-                    <i className={`chat-status-dot ${onlineIds.has(contact.id) ? "online" : "offline"}`} />
-                  </span>
-                  <span className="chat-contact-info">
-                    <b>{contactName(contact)}</b>
-                    <small>{onlineIds.has(contact.id) ? "En línea" : "Desconectado"}</small>
-                  </span>
-                  {unreadByContact[contact.id] ? <span className="chat-unread-badge">{unreadByContact[contact.id] > 99 ? "99+" : unreadByContact[contact.id]}</span> : null}
-                </button>
-              ))}
-          </div>
-        </div>
+    <div className="tuenti-chat-root">
+      {/* Contact Panel */}
+      {panelOpen && (
+        <ContactPanel
+          contacts={contacts}
+          onlineIds={onlineIds}
+          unreadByContact={unreadByContact}
+          theme={theme}
+          onOpenConversation={openConversation}
+          onClose={() => setPanelOpen(false)}
+        />
       )}
 
       {/* Chat Windows */}
-      {windowEntries.map(([windowId, win], index) => (
+      {openWindows.map((win) => (
         <ChatWindow
-          key={windowId}
+          key={win.id}
           window={win}
           myId={myId}
           onlineIds={onlineIds}
+          theme={theme}
           onClose={closeWindow}
           onMinimize={minimizeWindow}
           onMaximize={maximizeWindow}
           onSendMessage={sendMessage}
           onDraftChange={handleDraftChange}
           onLoadMore={loadMore}
-          onPositionChange={(id, pos) => setWindows((prev) => ({ ...prev, [id]: { ...prev[id], position: pos } }))}
-          onSizeChange={(id, size) => setWindows((prev) => ({ ...prev, [id]: { ...prev[id], size } }))}
+          onPositionChange={(id, pos) => setWindows((p) => ({ ...p, [id]: { ...p[id], position: pos } }))}
+          onSizeChange={(id, size) => setWindows((p) => ({ ...p, [id]: { ...p[id], size } }))}
           onFocus={focusWindow}
-          zIndex={zIndexCounter + index}
         />
       ))}
 
-      {/* Minimized tabs bar (bottom) */}
-      <div className="chat-minimized-bar">
-        {Object.values(windows)
-          .filter((w) => w.minimized)
-          .map((win) => (
-            <div
-              key={win.id}
-              className="chat-window-minimized"
-              style={{ width: win.size.width }}
-              onClick={() => maximizeWindow(win.id)}
-            >
-              <div className="minimized-header">
-                <span className="avatar tiny">
-                  {win.contact.avatar_url ? <img src={win.contact.avatar_url} alt="" /> : contactName(win.contact)[0]?.toUpperCase()}
-                  <i className={`chat-status-dot inline ${onlineIds.has(win.contact.id) ? "online" : "offline"}`} />
-                </span>
-                <span className="minimized-name">{contactName(win.contact)}</span>
-                {win.unreadCount > 0 && <span className="chat-unread-badge">{win.unreadCount > 99 ? "99+" : win.unreadCount}</span>}
-                <button className="minimized-close" onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}><X size={14} /></button>
+      {/* Minimized tabs bar */}
+      <div className="tuenti-minimized-bar">
+        {minimizedWindows.map((win) => (
+          <div
+            key={win.id}
+            className="tuenti-chat-minimized"
+            style={{
+              left: win.position.x,
+              bottom: START_Y_OFFSET,
+              zIndex: win.zIndex,
+              width: win.size.width,
+              background: getThemeColor(theme),
+            }}
+            onClick={() => maximizeWindow(win.id)}
+          >
+            <div className="tuenti-minimized-content">
+              <div className="tuenti-minimized-avatar">
+                {win.contact.avatar_url ? <img src={win.contact.avatar_url} alt="" /> : contactName(win.contact).charAt(0).toUpperCase()}
               </div>
+              <span className="tuenti-minimized-name">{contactName(win.contact)}</span>
+              {win.unreadCount > 0 && <span className="tuenti-minimized-badge">{win.unreadCount > 99 ? "99+" : win.unreadCount}</span>}
+              <button className="tuenti-minimized-close" onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}><X size={12} /></button>
             </div>
-          ))}
+          </div>
+        ))}
       </div>
 
-      {/* Main Chat Button (bottom-left) */}
-      <button className="chat-main-button" onClick={() => setContactPanelOpen((v) => !v)} aria-label="Chat">
+      {/* Main button - bottom left */}
+      <button
+        className="tuenti-main-btn"
+        onClick={() => setPanelOpen((v) => !v)}
+        style={{ background: getThemeColor(theme) }}
+        aria-label="Chat"
+      >
         <MessageCircle size={22} />
-        {totalUnread > 0 && <span className="chat-main-badge">{totalUnread > 99 ? "99+" : totalUnread}</span>}
+        {totalUnread > 0 && <span className="tuenti-main-badge">{totalUnread > 99 ? "99+" : totalUnread}</span>}
       </button>
     </div>
   );
 }
 
-// ============================================================
-// EXPORTS
-// ============================================================
 export type { ChatContact, ChatMessage, ChatWindowState };
