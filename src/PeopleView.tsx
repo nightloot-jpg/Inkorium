@@ -57,7 +57,7 @@ export function PeopleView({ session, navigate }: { session: Session; navigate: 
     // Incoming (friend_id = me, status = pending)
     const { data: inc } = await supabase
       .from("friendships")
-      .select("id, user_id, friend_id, status, created_at, requester:user_id(id, username, full_name, avatar_url, bio, city)")
+      .select("id, user_id, friend_id, status, created_at, requester:profiles!user_id(id, username, full_name, avatar_url, bio, city)")
       .eq("friend_id", myId)
       .eq("status", "pending")
       .order("created_at", { ascending: false });
@@ -65,7 +65,7 @@ export function PeopleView({ session, navigate }: { session: Session; navigate: 
     // Outgoing (user_id = me, status = pending)
     const { data: out } = await supabase
       .from("friendships")
-      .select("id, user_id, friend_id, status, created_at, addressee:friend_id(id, username, full_name, avatar_url, bio, city)")
+      .select("id, user_id, friend_id, status, created_at, addressee:profiles!friend_id(id, username, full_name, avatar_url, bio, city)")
       .eq("user_id", myId)
       .eq("status", "pending")
       .order("created_at", { ascending: false });
