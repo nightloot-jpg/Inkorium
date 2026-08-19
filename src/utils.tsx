@@ -35,3 +35,24 @@ export function parseISO8601Duration(duration: string): string {
 
     return formatted;
 }
+
+export function UserLink({ userId, name, avatarUrl, navigate, onClick }: { userId: string; name: string; avatarUrl?: string | null; navigate: (page: string, params?: Record<string, any>) => void; onClick?: () => void }) {
+  return (
+    <div
+      className="user-link"
+      style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", transition: "opacity 0.2s" }}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onClick) onClick();
+        navigate("perfil", { userId });
+      }}
+      onMouseEnter={(e) => e.currentTarget.style.opacity = "0.8"}
+      onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+    >
+      <div className="avatar tiny" style={{ flexShrink: 0, width: "24px", height: "24px" }}>
+        {avatarUrl ? <img src={avatarUrl} alt={name} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} /> : name[0]?.toUpperCase()}
+      </div>
+      <strong style={{ fontSize: "0.95em" }}>{name}</strong>
+    </div>
+  );
+}
