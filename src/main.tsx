@@ -182,7 +182,7 @@ function PostMedia({ media, pollId, session, text }: { media?: any, pollId?: str
     if (!media && !pollId) return null;
 
     if (media?.type === "photo") {
-        return <div style={{width: '100%', borderRadius: 12, marginTop: 12, maxHeight: 460, overflow: 'hidden', background: '#eef2f6'}}><img src={media.url} alt="Post media" style={{width: '100%', maxHeight: 460, objectFit: 'cover', display: 'block'}} /></div>;
+        return <div style={{width: '100%', borderRadius: 8, marginTop: 12, maxHeight: 500, overflow: 'hidden', background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'center'}}><img src={media.url} alt="Post media" style={{maxWidth: '100%', maxHeight: 500, objectFit: 'contain'}} /></div>;
     }
     
     if (media?.type === "video") {
@@ -475,7 +475,7 @@ async function toggleLike(id: string) {
   </button>
   <button className="icon-button" onClick={() => playerState.isOpen ? playerState.closePlayer() : playerState.openPlayer()} aria-label="Reproductor">♫</button>
   <button className="user-chip" onClick={() => setUserMenu(!userMenu)}>
-    <span className="avatar small">{username[0].toUpperCase()}</span>{username}<ChevronDown size={14} />
+    <span className="avatar small">{username[0].toUpperCase()}</span>{username}
   </button>
 </div><NotificationsPortal isOpen={notifications} onClose={() => setNotifications(false)} triggerRef={notificationsButtonRef}>
   <div className="popover notifications" style={{ position: "static", boxShadow: "0 8px 24px #18375b35" }}>
