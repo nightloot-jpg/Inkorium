@@ -3481,9 +3481,20 @@ button:disabled { cursor: wait; opacity: .65; }
 
 
 /* Music View Responsive */
+@media (max-width: 1200px) {
+  .music-layout {
+    grid-template-columns: 260px 1fr !important;
+  }
+  .music-sidebar-right {
+    display: none !important; /* Hide or move in tablet? Let's just hide or stack */
+  }
+}
 @media (max-width: 900px) {
   .music-layout {
     grid-template-columns: 1fr !important;
+  }
+  .music-sidebar-right {
+    display: flex !important; /* Show again in mobile to stack at bottom */
   }
   .music-sidebar-left { order: -1; }
   .music-main-content { order: 0; }
@@ -3493,3 +3504,5 @@ button:disabled { cursor: wait; opacity: .65; }
 
 /* Playlist hover */
 .play-overlay:hover { opacity: 1 !important; }
+
+.music-layout > * { min-width: 0; }
