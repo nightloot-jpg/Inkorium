@@ -53,7 +53,7 @@ const MIN_HEIGHT = 300;
 const MAX_WIDTH = 450;
 const MAX_HEIGHT = 600;
 const WINDOW_GAP = 8; // gap between stacked windows
-const START_X = 16;
+const START_X = 16; // from right
 const START_Y_OFFSET = 16; // from bottom
 
 // ============================================================
@@ -579,7 +579,7 @@ export function ChatWidget({ session, navigate }: ChatWidgetProps) {
       loading: false,
       minimized: false,
       position: {
-        x: START_X + (openCount % 5) * (DEFAULT_WIDTH + WINDOW_GAP),
+        x: window.innerWidth - DEFAULT_WIDTH - 16 - (openCount % 5) * (DEFAULT_WIDTH + WINDOW_GAP),
         y: START_Y_OFFSET + (openCount % 5) * (DEFAULT_HEIGHT + WINDOW_GAP),
       },
       size: { width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT },
