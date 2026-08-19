@@ -13,6 +13,7 @@ import { getCroppedImg } from "./lib/cropImage";
 import { getDisplayName, formatPostTime } from "./utils";
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, MoreVertical, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, ChevronLeft, ChevronRight, Users, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send, Calendar, MapPin, Loader2 } from "lucide-react";
 import "./styles.css";
+import "./redesign/profile-theme.css";
 import { YoutubePlaylist } from './YoutubePlaylist';
 import { SingleSongPlayer } from './components/SingleSongPlayer';
 
@@ -762,6 +763,45 @@ function PhotoEditor({ file, kind, onCancel, onSave }: { file: File; kind: "avat
   );
 }
 
+function RdPlayerWidget() {
+  const currentSong = usePlayerStore(state => state.currentSong);
+  const isPlaying = usePlayerStore(state => state.isPlaying);
+  const currentTime = usePlayerStore(state => state.currentTime);
+  const duration = usePlayerStore(state => state.duration);
+  const pause = usePlayerStore(state => state.pause);
+  const resume = usePlayerStore(state => state.resume);
+  const next = usePlayerStore(state => state.next);
+  const previous = usePlayerStore(state => state.previous);
+
+  if (!currentSong) {
+    return <div className="rd-player-empty">Nada sonando ahora mismo</div>;
+  }
+  const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  return (
+    <div className="rd-player">
+      <div className="rd-player-track">
+        <div className="rd-player-art">{currentSong.thumbnail ? <img src={currentSong.thumbnail} alt="" /> : <Music size={18} />}</div>
+        <div className="rd-player-meta">
+          <b>{currentSong.title}</b>
+          <span>{currentSong.artist || currentSong.channel_title || ""}</span>
+        </div>
+      </div>
+      <div className="rd-player-progress">
+        <span>{formatTime(currentTime)}</span>
+        <div className="rd-player-bar"><i style={{ width: `${pct}%` }} /></div>
+        <span>{formatTime(duration)}</span>
+      </div>
+      <div className="rd-player-controls">
+        <button onClick={previous} aria-label="Anterior"><SkipBack size={16} /></button>
+        <button className="rd-play" onClick={() => (isPlaying ? pause() : resume())} aria-label={isPlaying ? "Pausar" : "Reproducir"}>
+          {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+        </button>
+        <button onClick={next} aria-label="Siguiente"><SkipForward size={16} /></button>
+      </div>
+    </div>
+  );
+}
+
 function ProfileViewLegacy({ session, visitedUserId, goBack, navigate }: { session: Session; visitedUserId?: string; goBack?: () => void; navigate: any }) {
   const fallbackName = "";
   const isOwnProfile = !visitedUserId || visitedUserId === session.user.id;
@@ -783,6 +823,8 @@ function ProfileViewLegacy({ session, visitedUserId, goBack, navigate }: { sessi
 
   const profile = useAuthStore(state => state.profile);
   const setProfile = useAuthStore(state => state.setProfile); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [postMenu, setPostMenu] = useState<string | null>(null);
+  const [friendsCount, setFriendsCount] = useState<number | null>(null);
+  const [mutualFriends, setMutualFriends] = useState<ProfileData[] | null>(null);
 
 
   const deletePost = async (id: string, mediaData: any) => {
@@ -852,6 +894,43 @@ async function toggleLike(id: string) {
 
     return () => { cancelled = true; }; }, [targetUserId, name]);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadFriends() {
+      const { data: accepted } = await supabase
+        .from("friendships")
+        .select("requester_id, addressee_id")
+        .eq("status", "accepted")
+        .or(`requester_id.eq.${targetUserId},addressee_id.eq.${targetUserId}`);
+      if (cancelled) return;
+      const targetFriendIds = new Set(
+        (accepted ?? []).map((row: any) => (row.requester_id === targetUserId ? row.addressee_id : row.requester_id))
+      );
+      setFriendsCount(targetFriendIds.size);
+
+      if (!isOwnProfile) {
+        const { data: mine } = await supabase
+          .from("friendships")
+          .select("requester_id, addressee_id")
+          .eq("status", "accepted")
+          .or(`requester_id.eq.${session.user.id},addressee_id.eq.${session.user.id}`);
+        if (cancelled) return;
+        const myFriendIds = new Set(
+          (mine ?? []).map((row: any) => (row.requester_id === session.user.id ? row.addressee_id : row.requester_id))
+        );
+        const mutualIds = [...targetFriendIds].filter((id) => myFriendIds.has(id)).slice(0, 6);
+        if (mutualIds.length) {
+          const { data: mutualProfiles } = await supabase.from("profiles").select("id, username, full_name, avatar_url").in("id", mutualIds);
+          if (!cancelled) setMutualFriends((mutualProfiles as ProfileData[]) || []);
+        } else if (!cancelled) {
+          setMutualFriends([]);
+        }
+      }
+    }
+    void loadFriends();
+    return () => { cancelled = true; };
+  }, [targetUserId, isOwnProfile, session.user.id]);
+
   if (profileNotFound) {
     return <section className="profile-page" style={{padding: '2rem', textAlign: 'center'}}>
       <h2>Usuario no encontrado</h2>
@@ -865,7 +944,7 @@ async function toggleLike(id: string) {
             {viewCount === 1 ? "1 visita al perfil" : `${viewCount} visitas al perfil`}
         </span>
     )}
-    <p>{profile?.city || "Sin especificar"}</p>{isOwnProfile && <p>Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</p>}<p>0 amigos</p></section>{songOfDay && (
+    <p>{profile?.city || "Sin especificar"}</p>{isOwnProfile && <p>Se unió en {new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</p>}<p>{friendsCount ?? 0} amigos</p></section>{songOfDay && (
       <section className="panel profile-side-card">
         <strong>CANCIÓN DEL DÍA</strong>
         <div className="profile-music-card"
@@ -897,7 +976,7 @@ async function toggleLike(id: string) {
     )}
     </div>
     {goBack && <button onClick={goBack} className="profile-edit" style={{marginRight: 8}}>Atrás</button>}
-    {isOwnProfile && <button className="profile-edit">Editar perfil</button>}<button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Música</button><button>Amigos</button></nav></section>
+    {isOwnProfile && <button className="profile-edit">Editar perfil</button>}<button className="profile-more">•••</button></div><nav className="profile-tabs"><button className="active">Tablón</button><button>Información</button><button>Fotos (0)</button><button>Vídeos (0)</button><button>Música</button><button>Amigos{friendsCount !== null ? ` (${friendsCount})` : ""}</button></nav></section>
       {songOfDay && (
         <section className="panel profile-music-highlight" style={{marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12}}>
           <div style={{width: 60, height: 60, flexShrink: 0, borderRadius: 4, overflow: 'hidden', backgroundColor: '#eee'}}>
@@ -956,7 +1035,24 @@ async function toggleLike(id: string) {
           {shareMenu === post.id && <ShareMenu post={post} session={session} onClose={() => setShareMenu(null)} />}
           </div>
           {openComments === post.id && <CommentsSection postId={post.id} session={session} navigate={navigate} />}
-          </article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p>{isOwnProfile && <p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p>}</section><section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section>{songOfDay && (
+          </article>) : <div className="profile-empty panel">Todavía no hay publicaciones en tu tablón.</div>}</div><aside className="profile-side"><section className="panel profile-side-card"><div className="profile-section-title"><strong>REPRODUCTOR</strong></div><RdPlayerWidget /></section><section className="panel profile-info"><div className="profile-section-title"><strong>INFORMACIÓN</strong><button>Editar</button></div><p><b>Usuario</b><span>{profile?.username || fallbackName}</span></p><p><b>Ciudad</b><span>{profile?.city || "Sin especificar"}</span></p>{isOwnProfile && <p><b>Se unió</b><span>{new Date(session.user.created_at).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</span></p>}</section>{!isOwnProfile && (
+        <section className="panel profile-side-card">
+          <div className="profile-section-title"><strong>AMIGOS EN COMÚN</strong></div>
+          {mutualFriends === null ? (
+            <p style={{ fontSize: "0.85em", opacity: 0.7 }}>Cargando…</p>
+          ) : mutualFriends.length ? (
+            <div className="rd-mutual-grid">
+              {mutualFriends.map((f) => (
+                <div key={f.id} className="rd-avatar" title={getDisplayName(f, undefined)} onClick={() => f.id && navigate("perfil", { userId: f.id })} style={{ cursor: "pointer" }}>
+                  {f.avatar_url ? <img src={f.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : getDisplayName(f, undefined).slice(0, 2).toUpperCase()}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <span className="rd-mutual-empty">Todavía no tenéis amigos en común.</span>
+          )}
+        </section>
+      )}<section className="panel profile-side-card"><strong>FOTOS</strong><p>Comparte tus primeras fotos con la comunidad.</p><button>Subir una foto</button></section>{songOfDay && (
       <section className="panel profile-side-card">
         <strong>CANCIÓN DEL DÍA</strong>
         <div className="profile-music-card"
