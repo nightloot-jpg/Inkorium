@@ -1,0 +1,143 @@
+/* People / friend requests: match the light Inkorium visual language */
+
+.people-view .requests-section {
+  margin-top: 24px;
+}
+
+.people-view .requests-section h3 {
+  margin: 0 0 12px;
+  color: #637489;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.people-view .requests-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.people-view .request-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #344457;
+  box-shadow: 0 1px 2px rgba(23,55,90,.03), 0 2px 8px rgba(23,55,90,.035);
+}
+
+.people-view .request-card:hover {
+  border-color: #d3deea;
+  box-shadow: 0 2px 10px rgba(23,55,90,.06);
+}
+
+.people-view .request-card .user-link {
+  flex: 1;
+  min-width: 0;
+  color: #1f2e40;
+}
+
+.people-view .request-card .user-link strong,
+.people-view .request-card .user-link span {
+  color: #1f2e40;
+}
+
+.people-view .request-card .avatar {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.people-view .request-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.people-view .request-card .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 13px;
+  border: 1px solid #d4deea;
+  border-radius: 5px;
+  color: #24557f;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.people-view .request-card .btn.accept {
+  border-color: #176bc4;
+  color: #fff;
+  background: #176bc4;
+}
+
+.people-view .request-card .btn.accept:hover {
+  background: #0f5aa8;
+}
+
+.people-view .request-card .btn.reject {
+  color: #526579;
+  background: #fff;
+}
+
+.people-view .request-card .btn.reject:hover {
+  border-color: #c6d2df;
+  background: #f4f7fa;
+}
+
+.people-view .request-card .request-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid #d9e5f2;
+  border-radius: 999px;
+  color: #1765b5;
+  background: #edf4fb;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.people-view .request-card > .icon-btn {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d4deea;
+  border-radius: 5px;
+  color: #718196;
+  background: #fff;
+}
+
+.people-view .request-card > .icon-btn:hover {
+  color: #40566d;
+  background: #f4f7fa;
+}
+
+@media (max-width: 700px) {
+  .people-view .request-card {
+    flex-wrap: wrap;
+  }
+
+  .people-view .request-actions {
+    width: 100%;
+    margin-left: 58px;
+  }
+
+  .people-view .request-card .request-status {
+    margin-left: auto;
+  }
+}
