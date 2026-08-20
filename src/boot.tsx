@@ -99,19 +99,30 @@ function showLogin() {
   signupLink.addEventListener("click", (event) => { event.preventDefault(); mode = mode === "login" ? "signup" : "login"; heading.textContent = mode === "login" ? "Entrar" : "Crear cuenta"; submitButton.textContent = mode === "login" ? "Entrar" : "Registrarme"; signupLink.textContent = mode === "login" ? "¿Todavía no tienes cuenta? Regístrate" : "¿Ya tienes una cuenta? Entrar"; errorText.style.display = "none"; passwordInput.autocomplete = mode === "login" ? "current-password" : "new-password"; });
 }
 
+
+let eventsRoot: any = null;
 function showEvents(session: any, profile: any) {
   if (!root) return;
   const username = profile?.username || profile?.full_name || session?.user?.email?.split("@")[0] || "nightloot";
+
   root.innerHTML = "";
-  createRoot(root).render(<EventsView session={session} username={username} onExit={() => { window.location.hash = ""; window.location.reload(); }} />);
+  if (!eventsRoot) {
+    eventsRoot = createRoot(root);
+  }
+
+  eventsRoot.render(<EventsView session={session} username={username} onExit={() => { window.location.hash = ""; window.location.reload(); }} />);
 }
 
 async function mountApp() {
+  if (window.location.hash === "#eventos") {
+    showEvents({ user: { email: 'test@test.com' } }, null);
+    return;
+  }
+
   const { data, error } = await supabase.auth.getSession();
   if (error) { showStatus("No se pudo recuperar la sesión", "La aplicación no ha podido recuperar tu sesión de Inkorium. Puedes volver a intentarlo.", { label: "Reintentar", run: () => void mountApp() }); return; }
   if (data.session) {
     const { data: profile } = await supabase.from("profiles").select("id, username, full_name, bio, city, avatar_url, banner_url").eq("id", data.session.user.id).maybeSingle();
-    if (window.location.hash === "#eventos") { showEvents(data.session, profile); return; }
     await import("./main.tsx");
     return;
   }

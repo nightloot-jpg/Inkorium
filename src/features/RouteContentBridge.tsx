@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { MusicView } from './music/MusicView';
 import { VideoView } from './videos/VideoView';
 import { EventsView } from './events/EventsView';
+import '../styles.css';
 
 const BRIDGE_ID = 'inkorium-route-content-bridge';
 const ROUTE_PAGES = new Set(['musica', 'videos', 'eventos']);
