@@ -1,0 +1,244 @@
+/* Inkorium Music redesign: light, card-based layout inspired by the provided reference. */
+.music-view {
+  --music-blue: #0750a7;
+  --music-text: #17233a;
+  --music-muted: #66758d;
+  --music-border: #e3e9f2;
+  --music-bg: #f7f9fc;
+  background: var(--music-bg) !important;
+  padding: 24px !important;
+}
+
+.music-view .music-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 292px !important;
+  gap: 24px !important;
+  max-width: 1220px !important;
+  margin: 0 auto !important;
+  align-items: start !important;
+}
+
+/* Turn the old music-local navigation into a compact page header. */
+.music-view .music-sidebar-left {
+  grid-column: 1 / -1 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-rows: auto auto !important;
+  gap: 12px 24px !important;
+  align-items: end !important;
+}
+
+.music-view .music-sidebar-left > div:first-child {
+  padding: 0 !important;
+  border: 0 !important;
+  margin: 0 !important;
+}
+
+.music-view .music-sidebar-left h1 {
+  color: var(--music-text) !important;
+  font-size: 34px !important;
+  line-height: 1.1 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.music-view .music-sidebar-left h1 svg {
+  display: none;
+}
+
+.music-view .music-sidebar-left p {
+  color: #536682 !important;
+  font-size: 16px !important;
+}
+
+.music-view .music-sidebar-left nav {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 0 !important;
+  border-bottom: 1px solid var(--music-border) !important;
+}
+
+.music-view .music-sidebar-left nav button {
+  background: transparent !important;
+  color: #536682 !important;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  padding: 13px 16px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.music-view .music-sidebar-left nav button:first-child {
+  color: var(--music-blue) !important;
+  border-bottom-color: var(--music-blue) !important;
+}
+
+.music-view .music-sidebar-left nav button:hover {
+  color: var(--music-blue) !important;
+  background: transparent !important;
+  border-bottom-color: var(--music-blue) !important;
+}
+
+.music-view .music-sidebar-left nav button svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.music-view .music-main-content {
+  min-width: 0 !important;
+  gap: 20px !important;
+}
+
+.music-view .music-main-content > div {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+.music-view .music-main-content > div > div {
+  gap: 20px !important;
+}
+
+.music-view .music-main-content h3 {
+  color: var(--music-text) !important;
+}
+
+.music-view .music-main-content h3 svg {
+  color: var(--music-blue) !important;
+}
+
+/* Recently-listened cards. */
+.music-view .music-main-content > div > div > div:first-child {
+  background: #fff !important;
+  border: 1px solid var(--music-border) !important;
+  border-radius: 10px !important;
+  padding: 20px !important;
+}
+
+.music-view .music-main-content > div > div > div:first-child > div:last-child {
+  gap: 16px !important;
+}
+
+.music-view .music-main-content > div > div > div:first-child > div:last-child > div {
+  min-width: 150px !important;
+  max-width: 150px !important;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.music-view .music-main-content > div > div > div:first-child > div:last-child > div > div:nth-of-type(2) {
+  width: 100% !important;
+  height: 150px !important;
+  border-radius: 8px !important;
+}
+
+/* Shared activity list card. */
+.music-view .music-main-content > div > div > div:nth-child(2) {
+  background: #fff !important;
+  border: 1px solid var(--music-border) !important;
+  border-radius: 10px !important;
+  padding: 20px !important;
+}
+
+.music-view .music-main-content > div > div > div:nth-child(2) > div > div {
+  border: 0 !important;
+  border-bottom: 1px solid #edf1f6 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 14px 0 !important;
+}
+
+/* Lower cards. */
+.music-view .music-main-content > div > div > div:nth-child(3) {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 20px !important;
+}
+
+.music-view .music-main-content > div > div > div:nth-child(3) > div {
+  background: #fff !important;
+  border: 1px solid var(--music-border) !important;
+  border-radius: 10px !important;
+  padding: 20px !important;
+}
+
+/* Right rail: compact white cards matching the supplied mockup. */
+.music-view .music-sidebar-right {
+  gap: 16px !important;
+}
+
+.music-view .music-sidebar-right > div {
+  background: #fff !important;
+  border: 1px solid var(--music-border) !important;
+  border-radius: 10px !important;
+  padding: 18px !important;
+}
+
+.music-view .music-sidebar-right h3 {
+  color: var(--music-text) !important;
+  text-transform: none !important;
+  font-size: 15px !important;
+  letter-spacing: 0 !important;
+}
+
+/* Keep all music inputs light, even if a global dark-input rule exists. */
+.music-view input[type="text"] {
+  background: #fff !important;
+  color: var(--music-text) !important;
+  border: 1px solid var(--music-border) !important;
+}
+
+.music-view input[type="text"]::placeholder {
+  color: #8795aa !important;
+}
+
+@media (max-width: 1050px) {
+  .music-view .music-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .music-view .music-sidebar-right {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .music-view {
+    padding: 14px !important;
+  }
+
+  .music-view .music-sidebar-left {
+    grid-template-columns: 1fr !important;
+  }
+
+  .music-view .music-sidebar-left h1 {
+    font-size: 28px !important;
+  }
+
+  .music-view .music-sidebar-left nav {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .music-view .music-sidebar-left nav button {
+    white-space: nowrap !important;
+  }
+
+  .music-view .music-main-content > div > div > div:nth-child(3) {
+    grid-template-columns: 1fr !important;
+  }
+
+  .music-view .music-sidebar-right {
+    grid-template-columns: 1fr !important;
+  }
+}
