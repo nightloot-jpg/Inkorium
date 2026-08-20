@@ -54,22 +54,31 @@ function setRoute(next: string): void {
   window.dispatchEvent(new CustomEvent('inkorium-route-change', { detail: next }));
 }
 
+function normalizeRouteLabel(value: string): string {
+  return value
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+    .replace(/^[^a-záéíóúüñ]+/i, '')
+    .replace(/[^a-záéíóúüñ]+$/i, '');
+}
+
 function getClickedRoute(target: HTMLElement | null): RoutePage | null {
   if (!target) return null;
   const candidate = target.closest('button, a, [role="button"], [data-page], [data-route]') as HTMLElement | null;
   const routeValue = candidate?.getAttribute('data-page') || candidate?.getAttribute('data-route');
-  const label = candidate?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
-  if (routeValue && ROUTE_PAGES.has(routeValue.toLowerCase())) return routeValue.toLowerCase() as RoutePage;
-  if (label === 'eventos') return 'eventos';
-  if (label === 'música' || label === 'musica') return 'musica';
-  if (label === 'vídeos' || label === 'videos') return 'videos';
+  const label = normalizeRouteLabel(candidate?.textContent || '');
+  if (routeValue && ROUTE_PAGES.has(normalizeRouteLabel(routeValue))) return normalizeRouteLabel(routeValue) as RoutePage;
+  if (label.includes('eventos')) return 'eventos';
+  if (label.includes('música') || label.includes('musica')) return 'musica';
+  if (label.includes('vídeos') || label.includes('videos')) return 'videos';
 
   let node: HTMLElement | null = target;
-  for (let depth = 0; depth < 6 && node; depth += 1, node = node.parentElement) {
-    const text = node.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
-    if (text === 'eventos') return 'eventos';
-    if (text === 'música' || text === 'musica') return 'musica';
-    if (text === 'vídeos' || text === 'videos') return 'videos';
+  for (let depth = 0; depth < 8 && node; depth += 1, node = node.parentElement) {
+    const text = normalizeRouteLabel(node.textContent || '');
+    if (text.includes('eventos')) return 'eventos';
+    if (text.includes('música') || text.includes('musica')) return 'musica';
+    if (text.includes('vídeos') || text.includes('videos')) return 'videos';
   }
   return null;
 }
