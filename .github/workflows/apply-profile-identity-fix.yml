@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - fix/profile-identity-navigation
+  pull_request:
+    types: [opened, synchronize]
 
 permissions:
   contents: write
@@ -40,12 +42,8 @@ jobs:
           text = text.replace(old, new, 1)
           main.write_text(text, encoding="utf-8")
 
-          # Keep the fix focused on navigation/profile state. The temporary
-          # store hardening commit is reverted because ProfileView now owns
-          # the visited profile locally.
           subprocess.run(["git", "checkout", "origin/main", "--", "src/lib/store.ts"], check=True)
           subprocess.run(["git", "rm", ".github/workflows/apply-profile-identity-fix.yml"], check=True)
-
           subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
           subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
           subprocess.run(["git", "add", "src/main.tsx", "src/lib/store.ts"], check=True)
