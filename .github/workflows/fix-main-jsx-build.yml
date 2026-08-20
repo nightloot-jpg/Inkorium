@@ -27,21 +27,19 @@ jobs:
           path = Path("src/main.tsx")
           text = path.read_text(encoding="utf-8")
 
-          opening = 22632
-          if text[opening:opening + 2] == "<>":
-              text = text[:opening] + "<div>" + text[opening + 2:]
-          elif text[opening:opening + 5] != "<div>":
-              raise SystemExit("Could not find the reported JSX fragment opening")
+          opening = text.rfind("<>")
+          if opening < 0:
+              raise SystemExit("Could not find the JSX fragment opening")
+          text = text[:opening] + "<div>" + text[opening + 2:]
 
           needle = "</article>)}</main></div>}</div>;"
           replacement = "</article>)</div>}</main></div>}</div>;"
-          if replacement not in text:
-              if needle not in text:
-                  raise SystemExit("Could not find the expected final JSX structure in src/main.tsx")
-              text = text.replace(needle, replacement, 1)
+          if needle not in text:
+              raise SystemExit("Could not find the expected final JSX structure in src/main.tsx")
+          text = text.replace(needle, replacement, 1)
 
           path.write_text(text, encoding="utf-8")
-          print("Replaced the unmatched fragment with a regular div container.")
+          print(f"Replaced fragment opening at character {opening} and closed it before the conditional brace.")
 
       - name: Install dependencies
         run: npm ci
