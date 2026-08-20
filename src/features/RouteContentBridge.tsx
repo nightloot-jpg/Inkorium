@@ -7,15 +7,7 @@ import { EventsView } from './events/EventsView';
 
 const BRIDGE_ID = 'inkorium-route-content-bridge';
 const ROUTE_PAGES = new Set([
-  'inicio',
-  'perfil',
-  'mensajes',
-  'personas',
-  'musica',
-  'buscar',
-  'fotos',
-  'videos',
-  'eventos',
+  'inicio', 'perfil', 'mensajes', 'personas', 'musica', 'buscar', 'fotos', 'videos', 'eventos',
 ]);
 
 type RoutePage = 'inicio' | 'perfil' | 'mensajes' | 'personas' | 'musica' | 'buscar' | 'fotos' | 'videos' | 'eventos';
@@ -106,8 +98,7 @@ function getClickedRoute(target: HTMLElement | null): RoutePage | null {
 function findShellNavigationButton(route: RoutePage): HTMLElement | null {
   const selectors = ['.top-nav button', '.side-menu button'];
   const candidates = selectors.flatMap((selector) => Array.from(document.querySelectorAll<HTMLElement>(selector)));
-  const matches = candidates.filter((button) => routeFromLabel(button.textContent || '') === route);
-  return matches[0] || null;
+  return candidates.find((button) => routeFromLabel(button.textContent || '') === route) || null;
 }
 
 function RouteContentBridge() {
@@ -118,35 +109,64 @@ function RouteContentBridge() {
 
   useEffect(() => {
     let active = true;
+    let profileRequest = 0;
+
+    const loadUsername = async (nextSession: any) => {
+      const requestId = ++profileRequest;
+      if (!nextSession) {
+        if (active) setUsername('');
+        return;
+      }
+
+      // Always show a stable identity immediately. The profile lookup can fail
+      // because of a transient RLS/network issue, but that must never make the
+      // authenticated user look logged out on Events.
+      const fallback = nextSession.user.email?.split('@')[0] || 'Usuario';
+      setUsername(fallback);
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, full_name')
+        .eq('id', nextSession.user.id)
+        .maybeSingle();
+
+      if (!active || requestId !== profileRequest) return;
+      setUsername(profile?.username || profile?.full_name || fallback);
+    };
+
+    const applySession = (nextSession: any) => {
+      if (!active) return;
+      setSession(nextSession);
+      setSessionReady(true);
+      // Supabase auth callbacks run inside the auth lock. Defer the profile
+      // query until the callback has returned so navigation cannot interfere
+      // with session hydration.
+      window.setTimeout(() => void loadUsername(nextSession), 0);
+    };
 
     async function loadSession() {
-      const { data } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
       if (!active) return;
+      if (error) {
+        setSession(null);
+        setSessionReady(true);
+        setUsername('');
+        return;
+      }
       setSession(data.session);
       setSessionReady(true);
-
-      if (data.session) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, full_name')
-          .eq('id', data.session.user.id)
-          .maybeSingle();
-        if (!active) return;
-        setUsername(profile?.username || profile?.full_name || data.session.user.email?.split('@')[0] || 'Usuario');
-      }
+      void loadUsername(data.session);
     }
 
     void loadSession();
 
     const auth = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!active) return;
-      setSession(nextSession);
-      setSessionReady(true);
-      if (!nextSession) setUsername('');
+      applySession(nextSession);
     });
 
     return () => {
       active = false;
+      profileRequest += 1;
       auth.data.subscription.unsubscribe();
     };
   }, []);
@@ -180,10 +200,6 @@ function RouteContentBridge() {
         return;
       }
 
-      // The Events/Music/Video bridge sits above the normal shell. When the
-      // user chooses another section from that overlay, replay the click on
-      // the real shell navigation button instead of guessing from ancestor
-      // text. This prevents a Fotos click from being interpreted as Eventos.
       const shellButton = findShellNavigationButton(route);
       if (!shellButton) return;
 
@@ -213,10 +229,6 @@ function RouteContentBridge() {
   const isRoute = ROUTE_PAGES.has(page);
   const isEvents = page === 'eventos';
 
-  // Eventos is a self-contained discovery page and must not wait for the
-  // bridge's second Supabase session lookup. The main app already authenticated
-  // the user, and gating this route on a duplicate getSession() was the reason
-  // the shell could remain visible while the Events content stayed empty.
   if (!isRoute) return null;
   if (!isEvents && !sessionReady) {
     return (
@@ -250,7 +262,7 @@ function RouteContentBridge() {
         {routePage === 'eventos' && (
           <EventsView
             session={session}
-            username={username || 'Usuario'}
+            username={username || session?.user?.email?.split('@')[0] || 'Usuario'}
             onExit={() => {
               sessionStorage.setItem('inkorium-page', 'inicio');
               window.history.replaceState({}, '', window.location.pathname);
