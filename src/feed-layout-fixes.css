@@ -1,7 +1,5 @@
 /* Feed layout hardening.
- * Keep the desktop feed inside the viewport even when a stream child has a large
- * intrinsic width. The previous min-content sizing could push the first grid
- * column off-screen after navigating back from secondary views.
+ * Keep the three desktop rails explicit so the right rail stays visible.
  */
 html,
 body,
@@ -38,7 +36,8 @@ body {
   width: auto;
 }
 
-.feed-layout > .left-column {
+.feed-layout > .left-column,
+.feed-layout > .right-column {
   display: block;
 }
 
@@ -47,10 +46,12 @@ body {
   max-width: 100%;
 }
 
-/* The current feed does not render a right rail, so never let an empty third
- * track force the content area to become wider than the viewport. */
-.feed-layout > .right-column:empty {
-  display: none;
+@media (max-width: 1320px) {
+  .feed-layout {
+    grid-template-columns: 237px minmax(0, 1fr) 280px;
+    gap: 22px;
+    padding-inline: 24px;
+  }
 }
 
 @media (max-width: 1100px) {
@@ -60,6 +61,10 @@ body {
     grid-template-columns: 143px minmax(0, 1fr);
     gap: 18px;
     padding: 0 18px;
+  }
+
+  .feed-layout > .right-column {
+    display: none;
   }
 }
 
@@ -71,13 +76,14 @@ body {
     padding: 0 12px;
   }
 
-  .feed-layout > .left-column {
+  .feed-layout > .left-column,
+  .feed-layout > .right-column {
     display: none;
   }
 }
 
 /* ChatWidget is rendered outside the feed grid. Keep its root non-invasive
- * while allowing its existing tuenti-chat.css to receive pointer events. */
+ * while allowing its existing chat CSS to receive pointer events. */
 .tuenti-chat-root {
   position: fixed;
   inset: 0;
