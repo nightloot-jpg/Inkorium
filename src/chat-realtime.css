@@ -1,0 +1,98 @@
+.tuenti-chat-root { position: fixed; inset: 0; pointer-events: none; z-index: 1000; }
+.tuenti-chat-root > * { pointer-events: auto; }
+.tuenti-chat-window, .tuenti-chat-minimized, .tuenti-contact-panel { font-family: Arial, Helvetica, sans-serif; }
+
+.tuenti-chat-window { position: fixed; overflow: hidden; border: 1px solid #d7ddea; border-radius: 9px; background: #fff; box-shadow: 0 16px 40px rgba(24, 35, 55, .25); }
+.tuenti-chat-header { height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 9px 0 11px; color: #fff; user-select: none; cursor: move; }
+.tuenti-header-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.tuenti-header-avatar { position: relative; display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 38px; border: 2px solid rgba(255,255,255,.9); border-radius: 50%; overflow: visible; background: #eef3fa; color: #2166ad; font-weight: 700; }
+.tuenti-header-avatar img, .tuenti-minimized-avatar img, .tuenti-contact-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.tuenti-header-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 700; }
+.tuenti-header-right { display: flex; align-items: center; gap: 2px; }
+.tuenti-header-btn, .tuenti-panel-close { display: grid; place-items: center; width: 27px; height: 27px; padding: 0; border: 0; border-radius: 5px; color: #fff; background: transparent; cursor: pointer; }
+.tuenti-header-btn:hover, .tuenti-panel-close:hover { background: rgba(255,255,255,.16); }
+.tuenti-status-dot { position: absolute; right: -2px; bottom: 0; width: 10px; height: 10px; border: 2px solid #fff; border-radius: 50%; background: #9aa5b1; }
+.tuenti-status-dot.online { background: #22c55e; }
+.tuenti-status-dot.offline { background: #aab3bd; }
+
+.tuenti-chat-messages { overflow-y: auto; padding: 13px 12px 8px; background: #f6f8fb; scrollbar-width: thin; }
+.tuenti-loading, .tuenti-empty, .tuenti-chat-error, .tuenti-contacts-empty { display: grid; place-items: center; min-height: 100%; padding: 20px; color: #7b8796; text-align: center; font-size: 13px; }
+.tuenti-chat-error { color: #b42318; }
+.tuenti-message { display: flex; flex-direction: column; max-width: 84%; margin: 0 0 10px; }
+.tuenti-message.mine { align-items: flex-end; margin-left: auto; }
+.tuenti-message.theirs { align-items: flex-start; }
+.tuenti-bubble { max-width: 100%; padding: 9px 11px; border-radius: 14px; color: #25364a; background: #fff; box-shadow: 0 1px 2px rgba(28,42,60,.08); overflow-wrap: anywhere; font-size: 13px; line-height: 1.4; }
+.tuenti-message.mine .tuenti-bubble { color: #fff; background: #6f3bc1; }
+.tuenti-bubble.pending { opacity: .62; }
+.tuenti-bubble-image, .tuenti-bubble-audio { padding: 4px; }
+.tuenti-time { margin: 3px 5px 0; color: #9aa5b1; font-size: 9px; }
+.tuenti-chat-image { display: block; width: min(245px, 100%); max-height: 260px; object-fit: cover; border-radius: 10px; }
+
+.tuenti-chat-music-card { display: flex; align-items: center; gap: 9px; min-width: 230px; max-width: 280px; padding: 5px; }
+.tuenti-chat-music-cover { width: 52px; height: 52px; flex: 0 0 52px; object-fit: cover; border-radius: 7px; background: #e9e4f7; }
+.tuenti-chat-music-placeholder { display: grid; place-items: center; color: #7041bd; }
+.tuenti-chat-music-meta { min-width: 0; display: grid; gap: 3px; }
+.tuenti-chat-music-meta strong, .tuenti-chat-music-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tuenti-chat-music-meta strong { font-size: 12px; }
+.tuenti-chat-music-meta span { color: #788597; font-size: 10px; }
+.tuenti-message.mine .tuenti-chat-music-meta span { color: rgba(255,255,255,.8); }
+.tuenti-chat-music-meta audio { width: 170px; height: 26px; margin-top: 3px; }
+
+.tuenti-chat-input { position: relative; min-height: 87px; padding: 7px 8px 8px; border-top: 2px solid; background: #fff; }
+.tuenti-input-toolbar { display: flex; align-items: center; gap: 2px; height: 25px; }
+.tuenti-toolbar-btn { display: grid; place-items: center; width: 26px; height: 25px; padding: 0; border: 0; border-radius: 5px; color: #66778c; background: transparent; cursor: pointer; }
+.tuenti-toolbar-btn:hover { color: #6333ae; background: #f0ebfa; }
+.tuenti-music-btn { color: #6333ae; }
+.tuenti-input-form { display: flex; align-items: center; gap: 6px; margin: 5px 0 0; }
+.tuenti-input { min-width: 0; flex: 1; height: 40px; padding: 8px 11px; border: 2px solid; border-radius: 9px; outline: none; color: #3e5065; background: #fff; font-size: 13px; }
+.tuenti-input:focus { box-shadow: 0 0 0 2px rgba(124,58,237,.12); }
+.tuenti-send-btn { display: grid; place-items: center; width: 35px; height: 35px; padding: 0; border: 0; border-radius: 6px; color: #fff; cursor: pointer; }
+.tuenti-send-btn:disabled { opacity: .45; cursor: default; }
+
+.tuenti-emoji-picker, .tuenti-music-picker { position: absolute; right: 8px; bottom: 86px; z-index: 20; border: 1px solid #d9dce5; border-radius: 9px; background: #fff; box-shadow: 0 10px 28px rgba(23,32,50,.2); }
+.tuenti-emoji-picker { display: grid; grid-template-columns: repeat(6, 34px); gap: 3px; padding: 7px; }
+.tuenti-emoji-picker button { width: 34px; height: 34px; padding: 0; border: 0; border-radius: 6px; background: transparent; font-size: 19px; cursor: pointer; }
+.tuenti-emoji-picker button:hover { background: #f1eef8; }
+.tuenti-music-picker { width: 300px; max-height: 315px; overflow: hidden; }
+.tuenti-picker-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 11px; border-bottom: 1px solid #e7e9ef; color: #2f3e52; font-size: 12px; }
+.tuenti-picker-header button { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 5px; color: #6c7a8e; background: transparent; }
+.tuenti-picker-search { display: flex; align-items: center; gap: 6px; margin: 8px; padding: 7px 9px; border: 1px solid #d8dee8; border-radius: 6px; color: #7a8796; }
+.tuenti-picker-search input { width: 100%; border: 0; outline: 0; color: #344457; background: transparent; font-size: 12px; }
+.tuenti-picker-list { max-height: 230px; overflow-y: auto; padding: 0 6px 6px; }
+.tuenti-picker-track { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px; border: 0; border-radius: 7px; color: #33465b; background: transparent; text-align: left; cursor: pointer; }
+.tuenti-picker-track:hover { background: #f2eff8; }
+.tuenti-picker-track img, .tuenti-picker-track-placeholder { width: 36px; height: 36px; flex: 0 0 36px; border-radius: 5px; object-fit: cover; }
+.tuenti-picker-track-placeholder { display: grid; place-items: center; color: #7041bd; background: #eee9f8; }
+.tuenti-picker-track span { min-width: 0; flex: 1; display: grid; gap: 2px; }
+.tuenti-picker-track strong, .tuenti-picker-track small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tuenti-picker-track strong { font-size: 11px; }
+.tuenti-picker-track small { color: #7c8998; font-size: 10px; }
+.tuenti-picker-track > svg { color: #7041bd; }
+.tuenti-picker-empty { padding: 18px 10px; color: #8b96a4; text-align: center; font-size: 12px; }
+
+.tuenti-contact-panel { position: fixed; right: 28px; bottom: 70px; z-index: 1100; display: flex; flex-direction: column; width: 340px; max-height: 470px; overflow: hidden; border: 1px solid; border-radius: 9px; background: #fff; box-shadow: 0 16px 40px rgba(24,35,55,.25); }
+.tuenti-panel-header { display: flex; align-items: center; justify-content: space-between; height: 54px; padding: 0 11px 0 15px; color: #fff; font-size: 14px; font-weight: 700; }
+.tuenti-panel-search { display: flex; align-items: center; gap: 7px; margin: 10px; padding: 8px 10px; border: 1px solid; border-radius: 7px; color: #8190a1; }
+.tuenti-panel-search input { width: 100%; border: 0; outline: 0; color: #33465b; background: transparent; font-size: 12px; }
+.tuenti-contact-list { min-height: 60px; max-height: 320px; overflow-y: auto; padding: 2px 7px 7px; }
+.tuenti-contact-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 9px; border: 0; border-radius: 7px; color: #26374c; background: transparent; text-align: left; cursor: pointer; }
+.tuenti-contact-row:hover { background: #f0f3f7; }
+.tuenti-contact-avatar { position: relative; display: grid; place-items: center; width: 37px; height: 37px; flex: 0 0 37px; border-radius: 50%; overflow: visible; color: #1760b0; background: #e9f0f8; font-size: 13px; font-weight: 700; }
+.tuenti-contact-info { min-width: 0; }
+.tuenti-contact-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; font-size: 13px; font-weight: 600; }
+.tuenti-panel-add-contact { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 47px; border-top: 1px solid #e8ebf0; color: #2166ad; background: #fff; cursor: pointer; }
+.tuenti-panel-add-contact:hover { background: #f7f9fb; }
+
+.tuenti-chat-minimized { position: fixed; height: 42px; padding: 0 8px; border-radius: 8px 8px 0 0; color: #fff; box-shadow: 0 8px 20px rgba(20,25,40,.22); cursor: pointer; }
+.tuenti-minimized-content { display: flex; align-items: center; gap: 7px; height: 100%; }
+.tuenti-minimized-avatar { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; overflow: hidden; color: #2367ae; background: #fff; font-size: 11px; font-weight: 700; }
+.tuenti-minimized-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 700; }
+.tuenti-minimized-close { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; color: #fff; background: transparent; cursor: pointer; }
+.tuenti-minimized-close:hover { background: rgba(255,255,255,.16); }
+
+@media (max-width: 640px) {
+  .tuenti-contact-panel { right: 10px; bottom: 64px; width: min(340px, calc(100vw - 20px)); }
+  .tuenti-chat-window { right: 8px !important; left: 8px !important; bottom: 8px !important; width: auto !important; height: min(520px, calc(100vh - 72px)) !important; }
+  .tuenti-music-picker { right: 4px; left: 4px; width: auto; }
+  .tuenti-chat-minimized { left: 8px !important; right: 8px; width: auto !important; }
+}
