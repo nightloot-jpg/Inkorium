@@ -26,18 +26,17 @@ jobs:
 
           path = Path("src/main.tsx")
           text = path.read_text(encoding="utf-8")
-          marker = "</>"
-          insertion = 25531
+          needle = "</article>)}</main></div>}</div>;"
+          replacement = "</article>)}</></main></div>}</div>;"
 
-          if text[insertion:insertion + len(marker)] == marker:
-              print("Fragment is already closed at the reported parser position.")
-          else:
-              if insertion > len(text):
-                  raise SystemExit(f"Reported parser position {insertion} exceeds file length {len(text)}")
-              print("Context before repair:")
-              print(repr(text[max(0, insertion - 120):insertion + 120]))
-              text = text[:insertion] + marker + text[insertion:]
+          if replacement in text:
+              print("JSX fragment is already closed in the correct location.")
+          elif needle in text:
+              text = text.replace(needle, replacement, 1)
               path.write_text(text, encoding="utf-8")
+              print("Inserted </> immediately before the closing </main>.")
+          else:
+              raise SystemExit("Could not find the expected final JSX structure in src/main.tsx")
 
       - name: Install dependencies
         run: npm ci
@@ -52,5 +51,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/main.tsx
           git rm .github/workflows/fix-main-jsx-build.yml
-          git commit -m "fix: repair missing JSX fragment in main" || true
+          git commit -m "fix: repair missing JSX fragment in main"
           git push origin HEAD:fix/main-jsx-build
