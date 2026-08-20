@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { EventsView } from "./EventsView";
 
 const HOST_ID = "inkorium-events-fallback";
+const SYNC_INTERVAL_MS = 250;
 
 class EventsFallbackBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -57,9 +58,12 @@ export function mountEventsFallback() {
   let root: Root | null = null;
 
   const hide = () => {
+    if (root) {
+      root.unmount();
+      root = null;
+    }
     host?.remove();
     host = null;
-    root = null;
   };
 
   const show = () => {
@@ -105,7 +109,15 @@ export function mountEventsFallback() {
   window.addEventListener("hashchange", sync);
   window.addEventListener("popstate", sync);
   window.addEventListener("inkorium-route-change", sync);
+  window.addEventListener("storage", sync);
+  const timer = window.setInterval(sync, SYNC_INTERVAL_MS);
+
   sync();
+
+  // Keep the fallback's listeners alive for the lifetime of the document.
+  // The module is loaded once from boot.tsx, so this timer is intentionally
+  // tied to the page lifetime rather than a React component lifecycle.
+  void timer;
 }
 
 mountEventsFallback();
