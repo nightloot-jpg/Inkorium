@@ -88,6 +88,10 @@ function getClickedRoute(target: HTMLElement | null): RoutePage | null {
   const candidate = target.closest('button, a, [role="button"], [data-page], [data-route]') as HTMLElement | null;
   if (!candidate) return null;
 
+  // Only the actual shell navigation is interpreted as a route.
+  // Internal page actions such as "Subir fotos" must keep their own click handler.
+  if (!candidate.closest('.top-nav, .side-menu')) return null;
+
   const routeValue = candidate.getAttribute('data-page') || candidate.getAttribute('data-route');
   if (routeValue) {
     const route = routeFromLabel(routeValue);
