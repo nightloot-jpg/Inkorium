@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
@@ -6,11 +7,11 @@ import type { Session } from "@supabase/supabase-js";
 type Props = {
   session: Session;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: () => void | Promise<void>;
 };
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const MAX_SIZE = 10 * 1024 * 1024;
 
 export function PhotoUploader({ session, onClose, onSuccess }: Props) {
   const [file, setFile] = useState<File | null>(null);
@@ -21,11 +22,24 @@ export function PhotoUploader({ session, onClose, onSuccess }: Props) {
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const selected = e.target.files?.[0];
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !uploading) onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, uploading]);
+
+  function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const selected = event.target.files?.[0];
     if (!selected) return;
-    
-    if (!ALLOWED_TYPES.includes(selected.type)) {
+    if (!ALLOWED_TYPES.has(selected.type)) {
       setError("Formato no soportado. Usa JPG, PNG, WEBP o GIF.");
       return;
     }
@@ -33,141 +47,138 @@ export function PhotoUploader({ session, onClose, onSuccess }: Props) {
       setError("La imagen es demasiado grande. Máximo 10MB.");
       return;
     }
-
-    setFile(selected);
     setError("");
+    setFile(selected);
     setPreview(URL.createObjectURL(selected));
   }
 
-
   async function handleUpload() {
-    if (!file) return;
-
-    // Auth Check
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      setError("Debes iniciar sesión para subir fotos.");
-      return;
-    }
-
+    if (!file || uploading) return;
     setUploading(true);
     setError("");
     let uploadedPath = "";
 
     try {
-      const ext = file.name.split('.').pop();
-      // Use user.id as requested to ensure ownership matches storage structure
-      const path = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+      const userId = session.user.id;
+      if (!userId) throw new Error("No hay una sesión válida.");
+
+      const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${userId}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
       uploadedPath = path;
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('photos')
-        .upload(path, file);
+      const { error: uploadError } = await supabase.storage.from("photos").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
 
-      if (uploadError) {
-        console.error("[PHOTO_UPLOAD] STORAGE", uploadError);
-        throw new Error("No se ha podido subir la imagen.");
-      }
+      if (uploadError) throw new Error(uploadError.message || "No se ha podido subir la imagen.");
 
-      const { data: publicUrlData } = supabase.storage
-        .from('photos')
-        .getPublicUrl(path);
+      const { data: publicUrlData } = supabase.storage.from("photos").getPublicUrl(path);
+      const publicUrl = publicUrlData.publicUrl;
+      if (!publicUrl) throw new Error("No se ha podido obtener la URL de la imagen.");
 
-      const { error: dbError } = await supabase
-        .from('photos')
-        .insert({
-          user_id: user.id, // specifically use user.id
-          storage_path: path,
-          url: publicUrlData.publicUrl,
-          caption: caption.trim(),
-          visibility: visibility
-        });
+      const { error: dbError } = await supabase.from("photos").insert({
+        user_id: userId,
+        storage_path: path,
+        url: publicUrl,
+        caption: caption.trim() || null,
+        visibility,
+      });
 
       if (dbError) {
-        console.error("[PHOTO_UPLOAD] PHOTOS_INSERT", dbError);
-        // Avoid throwing raw RLS errors
-        throw new Error("No se ha podido guardar la fotografía.");
+        await supabase.storage.from("photos").remove([uploadedPath]);
+        throw new Error(dbError.message || "No se ha podido guardar la fotografía.");
       }
 
-      onSuccess();
+      await onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "Error al publicar la foto.");
-
-      // Cleanup orphaned file if DB insert failed but storage succeeded
-      if (uploadedPath && err.message === "No se ha podido guardar la fotografía.") {
-        try {
-           await supabase.storage.from('photos').remove([uploadedPath]);
-           console.log("[PHOTO_UPLOAD] Limpieza de archivo huérfano completada.");
-        } catch (cleanupErr) {
-           console.error("[PHOTO_UPLOAD] Error al limpiar archivo huérfano:", cleanupErr);
-        }
-      }
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "No se ha podido subir la fotografía.";
+      console.error("[PHOTO_UPLOAD]", caught);
+      setError(message);
     } finally {
       setUploading(false);
     }
   }
-  return (
-    <div className="photos-uploader-modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="photos-uploader-content">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ margin: 0, fontSize: "1.2em" }}>Subir nueva foto</h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={24} /></button>
-        </div>
 
-        {error && <p style={{ color: "red", margin: 0, fontSize: "0.9em" }}>{error}</p>}
-
-        {!file ? (
-          <div className="photos-uploader-dropzone" onClick={() => inputRef.current?.click()}>
-            <ImageIcon size={48} style={{ opacity: 0.5, marginBottom: 16 }} />
-            <p>Haz clic para seleccionar una foto</p>
-            <small>JPG, PNG, WEBP, GIF (Max. 10MB)</small>
-            <input 
-              type="file" 
-              ref={inputRef} 
-              style={{ display: "none" }} 
-              accept="image/jpeg, image/png, image/webp, image/gif" 
-              onChange={handleFileSelect} 
-            />
+  return createPortal(
+    <div
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !uploading) onClose();
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 2147483647,
+        display: "grid",
+        placeItems: "center",
+        padding: 20,
+        background: "rgba(15, 28, 48, 0.58)",
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="Subir nueva foto"
+        style={{
+          width: "min(100%, 560px)",
+          maxHeight: "calc(100vh - 40px)",
+          overflowY: "auto",
+          borderRadius: 12,
+          background: "#fff",
+          boxShadow: "0 24px 70px rgba(0,0,0,.28)",
+        }}
+      >
+        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 18px", borderBottom: "1px solid #e8edf3" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <ImageIcon size={22} color="#0750A7" />
+            <strong style={{ color: "#1f2e40", fontSize: 18 }}>Subir nueva foto</strong>
           </div>
-        ) : (
-          <>
-            <div className="photos-uploader-preview">
-              <img src={preview!} alt="Preview" />
-              <button 
-                onClick={() => { setFile(null); setPreview(null); }}
-                style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.5)", color: "white", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer" }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            
-            <textarea 
-              placeholder="Escribe una descripción..." 
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid var(--border)", minHeight: 80, resize: "vertical", boxSizing: "border-box" }}
-            />
+          <button type="button" onClick={onClose} disabled={uploading} aria-label="Cerrar" style={{ width: 34, height: 34, display: "grid", placeItems: "center", border: 0, borderRadius: 8, background: "transparent", cursor: "pointer" }}>
+            <X size={20} />
+          </button>
+        </header>
 
-            <select 
-              value={visibility} 
-              onChange={(e) => setVisibility(e.target.value)}
-              style={{ padding: 8, borderRadius: 8, border: "1px solid var(--border)" }}
-            >
-              <option value="public">Público</option>
-              <option value="friends">Solo amigos</option>
-              <option value="private">Privado</option>
-            </select>
+        <div style={{ padding: 18, display: "grid", gap: 14 }}>
+          {error && <div style={{ padding: 11, borderRadius: 8, background: "#fff2f2", color: "#bd2c2c", fontSize: 13 }}>{error}</div>}
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 16 }}>
-              <button className="text-button" onClick={onClose} disabled={uploading}>Cancelar</button>
-              <button className="primary-button" onClick={handleUpload} disabled={uploading}>
-                {uploading ? "Subiendo..." : "Publicar foto"}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+          {!file ? (
+            <button type="button" onClick={() => inputRef.current?.click()} style={{ minHeight: 250, display: "grid", placeItems: "center", alignContent: "center", gap: 10, border: "2px dashed #cbd7e4", borderRadius: 12, background: "#f8fbff", color: "#45617d", cursor: "pointer" }}>
+              <Upload size={34} />
+              <strong>Selecciona una foto</strong>
+              <span style={{ fontSize: 13, color: "#7c8d9f" }}>JPG, PNG, WEBP o GIF · máximo 10MB</span>
+            </button>
+          ) : (
+            <>
+              <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", background: "#0f1720", textAlign: "center" }}>
+                <img src={preview ?? ""} alt="Vista previa" style={{ display: "block", width: "100%", maxHeight: 390, objectFit: "contain" }} />
+                <button type="button" onClick={() => { setFile(null); setPreview(null); }} disabled={uploading} aria-label="Quitar foto" style={{ position: "absolute", top: 10, right: 10, width: 34, height: 34, border: 0, borderRadius: "50%", color: "#fff", background: "rgba(0,0,0,.55)", cursor: "pointer" }}>
+                  <X size={18} />
+                </button>
+              </div>
+
+              <textarea value={caption} onChange={(event) => setCaption(event.target.value)} placeholder="Escribe una descripción..." rows={3} style={{ width: "100%", resize: "vertical", padding: 12, border: "1px solid #d5dee8", borderRadius: 8, font: "inherit" }} />
+              <select value={visibility} onChange={(event) => setVisibility(event.target.value)} style={{ width: "100%", padding: 10, border: "1px solid #d5dee8", borderRadius: 8, background: "#fff" }}>
+                <option value="public">Público</option>
+                <option value="friends">Solo amigos</option>
+                <option value="private">Privado</option>
+              </select>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button type="button" onClick={onClose} disabled={uploading} style={{ padding: "10px 16px", border: "1px solid #d5dee8", borderRadius: 8, background: "#fff", cursor: "pointer" }}>Cancelar</button>
+                <button type="button" onClick={() => void handleUpload()} disabled={uploading} style={{ padding: "10px 18px", border: 0, borderRadius: 8, color: "#fff", background: "#0750A7", cursor: "pointer", fontWeight: 700 }}>
+                  {uploading ? "Subiendo…" : "Publicar foto"}
+                </button>
+              </div>
+            </>
+          )}
+
+          <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFileSelect} style={{ display: "none" }} />
+        </div>
+      </section>
+    </div>,
+    document.body,
   );
 }
