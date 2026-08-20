@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - fix/main-jsx-build
+  pull_request:
+    types: [opened, synchronize]
 
 permissions:
   contents: write
@@ -21,7 +23,6 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          import subprocess
 
           path = Path("src/main.tsx")
           text = path.read_text(encoding="utf-8")
@@ -51,5 +52,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/main.tsx
           git rm .github/workflows/fix-main-jsx-build.yml
-          git commit -m "fix: repair missing JSX fragment in main"
+          git commit -m "fix: repair missing JSX fragment in main" || true
           git push origin HEAD:fix/main-jsx-build
