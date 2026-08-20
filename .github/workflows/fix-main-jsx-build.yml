@@ -1,0 +1,55 @@
+name: Repair main JSX build
+
+on:
+  push:
+    branches:
+      - fix/main-jsx-build
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Repair missing JSX fragment close
+        shell: python
+        run: |
+          from pathlib import Path
+          import subprocess
+
+          path = Path("src/main.tsx")
+          text = path.read_text(encoding="utf-8")
+          marker = "</>"
+          insertion = 25531
+
+          if text[insertion:insertion + len(marker)] == marker:
+              print("Fragment is already closed at the reported parser position.")
+          else:
+              if insertion > len(text):
+                  raise SystemExit(f"Reported parser position {insertion} exceeds file length {len(text)}")
+              print("Context before repair:")
+              print(repr(text[max(0, insertion - 120):insertion + 120]))
+              text = text[:insertion] + marker + text[insertion:]
+              path.write_text(text, encoding="utf-8")
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Commit verified repair and remove workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main.tsx
+          git rm .github/workflows/fix-main-jsx-build.yml
+          git commit -m "fix: repair missing JSX fragment in main"
+          git push origin HEAD:fix/main-jsx-build
