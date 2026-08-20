@@ -9,7 +9,6 @@ const BRIDGE_ID = 'inkorium-route-content-bridge';
 const ROUTE_PAGES = new Set(['musica', 'videos', 'eventos']);
 
 type RoutePage = 'musica' | 'videos' | 'eventos';
-
 type RouteErrorBoundaryProps = { children: ReactNode };
 type RouteErrorBoundaryState = { error: Error | null };
 
@@ -40,15 +39,39 @@ class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBo
 }
 
 function readRoute(): string {
-  const hash = window.location.hash.replace(/^#/, '').trim();
+  const hash = window.location.hash.replace(/^#/, '').trim().toLowerCase();
+  const path = window.location.pathname.replace(/\/+$/, '').split('/').pop()?.toLowerCase() || '';
+  const stored = sessionStorage.getItem('inkorium-page')?.trim().toLowerCase() || '';
   if (ROUTE_PAGES.has(hash)) return hash;
-  return sessionStorage.getItem('inkorium-page') || 'inicio';
+  if (ROUTE_PAGES.has(path)) return path;
+  if (ROUTE_PAGES.has(stored)) return stored;
+  return 'inicio';
 }
 
 function setRoute(next: string): void {
   if (!ROUTE_PAGES.has(next)) return;
   sessionStorage.setItem('inkorium-page', next);
   window.dispatchEvent(new CustomEvent('inkorium-route-change', { detail: next }));
+}
+
+function getClickedRoute(target: HTMLElement | null): RoutePage | null {
+  if (!target) return null;
+  const candidate = target.closest('button, a, [role="button"], [data-page], [data-route]') as HTMLElement | null;
+  const routeValue = candidate?.getAttribute('data-page') || candidate?.getAttribute('data-route');
+  const label = candidate?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
+  if (routeValue && ROUTE_PAGES.has(routeValue.toLowerCase())) return routeValue.toLowerCase() as RoutePage;
+  if (label === 'eventos') return 'eventos';
+  if (label === 'música' || label === 'musica') return 'musica';
+  if (label === 'vídeos' || label === 'videos') return 'videos';
+
+  let node: HTMLElement | null = target;
+  for (let depth = 0; depth < 6 && node; depth += 1, node = node.parentElement) {
+    const text = node.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
+    if (text === 'eventos') return 'eventos';
+    if (text === 'música' || text === 'musica') return 'musica';
+    if (text === 'vídeos' || text === 'videos') return 'videos';
+  }
+  return null;
 }
 
 function RouteContentBridge() {
@@ -103,21 +126,16 @@ function RouteContentBridge() {
     window.addEventListener('inkorium-route-change', onRouteChange);
 
     const handleNavigationClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      const candidate = target?.closest('button, a, [role="button"], [data-page], [data-route]') as HTMLElement | null;
-      if (!candidate) return;
+      const route = getClickedRoute(event.target as HTMLElement | null);
+      if (!route) return;
 
-      const routeValue = candidate.getAttribute('data-page') || candidate.getAttribute('data-route');
-      const label = candidate.textContent?.replace(/\s+/g, ' ').trim().toLowerCase();
-      const next = routeValue || (label === 'eventos' ? 'eventos' : label === 'música' ? 'musica' : label === 'vídeos' ? 'videos' : '');
-      if (!ROUTE_PAGES.has(next)) return;
+      setRoute(route);
+      setPage(route);
 
-      setRoute(next);
-      setPage(next);
-
-      if (next === 'eventos') {
+      if (route === 'eventos') {
         event.preventDefault();
         event.stopPropagation();
+        window.history.replaceState({}, '', `${window.location.pathname}#eventos`);
       }
     };
 
@@ -134,10 +152,18 @@ function RouteContentBridge() {
     };
   }, []);
 
-  if (!sessionReady) return null;
+  if (!sessionReady) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'grid', placeItems: 'center', background: '#f3f6fa', color: '#5b2db5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+        Cargando Inkorium…
+      </div>
+    );
+  }
+
   if (!session || !ROUTE_PAGES.has(page)) return null;
 
   const routePage = page as RoutePage;
+  const isEvents = routePage === 'eventos';
 
   return (
     <div
@@ -145,11 +171,11 @@ function RouteContentBridge() {
       data-route-page={routePage}
       style={{
         position: 'fixed',
-        top: 57,
-        left: '320px',
+        top: isEvents ? 0 : 57,
+        left: isEvents ? 0 : 320,
         right: 0,
         bottom: 0,
-        zIndex: 1000,
+        zIndex: 10000,
         overflow: 'auto',
         background: '#f3f6fa',
       }}
