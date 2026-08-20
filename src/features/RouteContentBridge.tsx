@@ -152,18 +152,24 @@ function RouteContentBridge() {
     };
   }, []);
 
-  if (!sessionReady) {
+  const isRoute = ROUTE_PAGES.has(page);
+  const isEvents = page === 'eventos';
+
+  // Eventos is a self-contained discovery page and must not wait for the
+  // bridge's second Supabase session lookup. The main app already authenticated
+  // the user, and gating this route on a duplicate getSession() was the reason
+  // the shell could remain visible while the Events content stayed empty.
+  if (!isRoute) return null;
+  if (!isEvents && !sessionReady) {
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'grid', placeItems: 'center', background: '#f3f6fa', color: '#5b2db5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
         Cargando Inkorium…
       </div>
     );
   }
-
-  if (!session || !ROUTE_PAGES.has(page)) return null;
+  if (!isEvents && !session) return null;
 
   const routePage = page as RoutePage;
-  const isEvents = routePage === 'eventos';
 
   return (
     <div
@@ -186,7 +192,7 @@ function RouteContentBridge() {
         {routePage === 'eventos' && (
           <EventsView
             session={session}
-            username={username}
+            username={username || 'Usuario'}
             onExit={() => {
               sessionStorage.setItem('inkorium-page', 'inicio');
               window.history.replaceState({}, '', window.location.pathname);
