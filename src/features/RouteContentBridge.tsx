@@ -6,9 +6,19 @@ import { VideoView } from './videos/VideoView';
 import { EventsView } from './events/EventsView';
 
 const BRIDGE_ID = 'inkorium-route-content-bridge';
-const ROUTE_PAGES = new Set(['musica', 'videos', 'eventos']);
+const ROUTE_PAGES = new Set([
+  'inicio',
+  'perfil',
+  'mensajes',
+  'personas',
+  'musica',
+  'buscar',
+  'fotos',
+  'videos',
+  'eventos',
+]);
 
-type RoutePage = 'musica' | 'videos' | 'eventos';
+type RoutePage = 'inicio' | 'perfil' | 'mensajes' | 'personas' | 'musica' | 'buscar' | 'fotos' | 'videos' | 'eventos';
 type RouteErrorBoundaryProps = { children: ReactNode };
 type RouteErrorBoundaryState = { error: Error | null };
 
@@ -48,8 +58,7 @@ function readRoute(): string {
   return 'inicio';
 }
 
-function setRoute(next: string): void {
-  if (!ROUTE_PAGES.has(next)) return;
+function setRoute(next: RoutePage): void {
   sessionStorage.setItem('inkorium-page', next);
   window.dispatchEvent(new CustomEvent('inkorium-route-change', { detail: next }));
 }
@@ -63,24 +72,42 @@ function normalizeRouteLabel(value: string): string {
     .replace(/[^a-záéíóúüñ]+$/i, '');
 }
 
+function routeFromLabel(value: string): RoutePage | null {
+  const label = normalizeRouteLabel(value);
+  if (!label) return null;
+  if (label.includes('inicio') || label.includes('novedades')) return 'inicio';
+  if (label.includes('perfil')) return 'perfil';
+  if (label.includes('mensajes')) return 'mensajes';
+  if (label.includes('personas')) return 'personas';
+  if (label.includes('música') || label.includes('musica')) return 'musica';
+  if (label.includes('buscar')) return 'buscar';
+  if (label.includes('fotos')) return 'fotos';
+  if (label.includes('vídeos') || label.includes('videos')) return 'videos';
+  if (label.includes('eventos')) return 'eventos';
+  if (label.includes('grupos') || label.includes('páginas') || label.includes('paginas') || label.includes('configuracion')) return 'personas';
+  if (label.includes('encuestas') || label.includes('guardados')) return 'buscar';
+  return null;
+}
+
 function getClickedRoute(target: HTMLElement | null): RoutePage | null {
   if (!target) return null;
   const candidate = target.closest('button, a, [role="button"], [data-page], [data-route]') as HTMLElement | null;
-  const routeValue = candidate?.getAttribute('data-page') || candidate?.getAttribute('data-route');
-  const label = normalizeRouteLabel(candidate?.textContent || '');
-  if (routeValue && ROUTE_PAGES.has(normalizeRouteLabel(routeValue))) return normalizeRouteLabel(routeValue) as RoutePage;
-  if (label.includes('eventos')) return 'eventos';
-  if (label.includes('música') || label.includes('musica')) return 'musica';
-  if (label.includes('vídeos') || label.includes('videos')) return 'videos';
+  if (!candidate) return null;
 
-  let node: HTMLElement | null = target;
-  for (let depth = 0; depth < 8 && node; depth += 1, node = node.parentElement) {
-    const text = normalizeRouteLabel(node.textContent || '');
-    if (text.includes('eventos')) return 'eventos';
-    if (text.includes('música') || text.includes('musica')) return 'musica';
-    if (text.includes('vídeos') || text.includes('videos')) return 'videos';
+  const routeValue = candidate.getAttribute('data-page') || candidate.getAttribute('data-route');
+  if (routeValue) {
+    const route = routeFromLabel(routeValue);
+    if (route) return route;
   }
-  return null;
+
+  return routeFromLabel(candidate.textContent || '');
+}
+
+function findShellNavigationButton(route: RoutePage): HTMLElement | null {
+  const selectors = ['.top-nav button', '.side-menu button'];
+  const candidates = selectors.flatMap((selector) => Array.from(document.querySelectorAll<HTMLElement>(selector)));
+  const matches = candidates.filter((button) => routeFromLabel(button.textContent || '') === route);
+  return matches[0] || null;
 }
 
 function RouteContentBridge() {
@@ -129,22 +156,44 @@ function RouteContentBridge() {
     const onStorage = () => syncRoute();
     const onHash = () => syncRoute();
     const onRouteChange = () => syncRoute();
+    let replayingShellNavigation = false;
 
     window.addEventListener('storage', onStorage);
     window.addEventListener('hashchange', onHash);
     window.addEventListener('inkorium-route-change', onRouteChange);
 
     const handleNavigationClick = (event: MouseEvent) => {
+      if (replayingShellNavigation) return;
+
       const route = getClickedRoute(event.target as HTMLElement | null);
       if (!route) return;
 
-      setRoute(route);
-      setPage(route);
+      if (route === 'musica' || route === 'videos' || route === 'eventos') {
+        setRoute(route);
+        setPage(route);
 
-      if (route === 'eventos') {
-        event.preventDefault();
-        event.stopPropagation();
-        window.history.replaceState({}, '', `${window.location.pathname}#eventos`);
+        if (route === 'eventos') {
+          event.preventDefault();
+          event.stopPropagation();
+          window.history.replaceState({}, '', `${window.location.pathname}#eventos`);
+        }
+        return;
+      }
+
+      // The Events/Music/Video bridge sits above the normal shell. When the
+      // user chooses another section from that overlay, replay the click on
+      // the real shell navigation button instead of guessing from ancestor
+      // text. This prevents a Fotos click from being interpreted as Eventos.
+      const shellButton = findShellNavigationButton(route);
+      if (!shellButton) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      replayingShellNavigation = true;
+      try {
+        shellButton.click();
+      } finally {
+        replayingShellNavigation = false;
       }
     };
 
