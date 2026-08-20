@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { EventDetailView } from "./EventDetailView";
 import { CalendarDays, ChevronLeft, ChevronRight, Filter, Grid2X2, List, MapPin, Plus, Search, Star, Music2, PartyPopper, Trophy, Palette, Monitor, MoreHorizontal, X, Clock3, Users } from "lucide-react";
 
 const purple = "#5b2db5";
@@ -6,7 +7,7 @@ const border = "#e4e7ee";
 const muted = "#718096";
 const today = new Date();
 
-type EventItem = {
+export type EventItem = {
   id: string;
   title: string;
   category: string;
@@ -48,6 +49,7 @@ export function EventsView({ session, username, onExit }: { session: any; userna
   const [modal, setModal] = useState(false);
   const [events, setEvents] = useState(seedEvents);
   const [notice, setNotice] = useState("");
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
 
   const visible = useMemo(() => events.filter((event) => {
     const q = query.trim().toLowerCase();
@@ -111,14 +113,18 @@ export function EventsView({ session, username, onExit }: { session: any; userna
         <section className="events-panel" style={{marginTop:12}}>
           <div className="events-toolbar"><div className="searchbox"><Search size={17}/><input placeholder="Buscar eventos..." value={query} onChange={(e)=>setQuery(e.target.value)}/></div><button className="events-filter" onClick={()=>setCategory(category === "Todos los eventos" ? "Música" : "Todos los eventos")}><Filter size={15}/> Filtros</button><div className="events-view-toggle"><button className={grid ? "active" : ""} onClick={()=>setGrid(true)}><Grid2X2 size={16}/></button><button className={!grid ? "active" : ""} onClick={()=>setGrid(false)}><List size={16}/></button></div></div>
           <div className="events-section">
-            {tab === "descubrir" && <>
+            {selectedEvent ? (
+              <EventDetailView event={selectedEvent} onBack={() => setSelectedEvent(null)} />
+            ) : (
+            <>            {tab === "descubrir" && <>
               <h2>Eventos destacados</h2>
-              <div className={grid ? "events-featured" : "events-list"}>{featured.map((event)=><EventCard key={event.id} event={event}/>)}</div>
+              <div className={grid ? "events-featured" : "events-list"}>{featured.map((event)=><EventCard key={event.id} event={event} onClick={() => setSelectedEvent(event)}/>)}</div>
               <h2 style={{marginTop:25}}>Eventos próximos</h2>
-              <div className="events-upcoming">{upcoming.map((event)=><UpcomingEvent key={event.id} event={event}/>)}</div>
+              <div className="events-upcoming">{upcoming.map((event)=><UpcomingEvent key={event.id} event={event} onClick={() => setSelectedEvent(event)}/>)}</div>
               {upcoming.length === 0 && <Empty text="No encontramos eventos con esos filtros."/>}
             </>}
             {tab === "mis" && <div style={{padding:"35px 10px",textAlign:"center",color:muted}}><CalendarDays size={42} style={{opacity:.35}}/><h3>Mis eventos</h3><p>Los eventos que crees aparecerán aquí.</p></div>}
+            </>)}
             {tab === "invitaciones" && <div style={{padding:"35px 10px",textAlign:"center",color:muted}}><Users size={42} style={{opacity:.35}}/><h3>Invitaciones</h3><p>Cuando recibas una invitación aparecerá aquí.</p></div>}
           </div>
         </section>
@@ -135,7 +141,7 @@ export function EventsView({ session, username, onExit }: { session: any; userna
   </div>;
 }
 
-function EventCard({ event }: { event: EventItem }) { return <article className="events-panel event-card"><div className="event-image"><img src={event.image} alt=""/><div className="event-date-badge">{formatDay(event.date)}<small>{formatMonth(event.date)}</small></div></div><div className="event-body"><h3>{event.title}</h3><div className="event-meta"><Music2 size={12}/> {event.category}</div><div className="event-meta"><CalendarDays size={12}/> {formatLongDate(event.date,event.time)}</div><div className="event-meta"><MapPin size={12}/> {event.city}</div><div className="event-attendees"><span>{event.attendees} asistirán</span><span className="mini-avatars"><span className="mini-avatar">N</span><span className="mini-avatar">A</span><span className="mini-avatar">L</span><span className="plus-attendees">+{Math.max(0,event.attendees-3)}</span></span></div></div></article>; }
-function UpcomingEvent({ event }: { event: EventItem }) { return <article className="upcoming-row"><img src={event.image} alt=""/><div className="upcoming-date">{formatDay(event.date)}<small>{formatMonth(event.date)}</small></div><div className="upcoming-info"><h3>{event.title}</h3><p><Music2 size={11}/> {event.category}</p><p><Clock3 size={11}/> {formatLongDate(event.date,event.time)}</p><p><MapPin size={11}/> {event.city}</p></div><div className="upcoming-actions"><strong>{event.attendees}</strong><span style={{color:muted,fontSize:11}}>asistirán</span><br/><button>Ver evento</button></div></article>; }
+function EventCard({ event, onClick }: { event: EventItem, onClick?: () => void }) { return <article className="events-panel event-card" onClick={onClick} style={{cursor:"pointer"}}><div className="event-image"><img src={event.image} alt=""/><div className="event-date-badge">{formatDay(event.date)}<small>{formatMonth(event.date)}</small></div></div><div className="event-body"><h3>{event.title}</h3><div className="event-meta"><Music2 size={12}/> {event.category}</div><div className="event-meta"><CalendarDays size={12}/> {formatLongDate(event.date,event.time)}</div><div className="event-meta"><MapPin size={12}/> {event.city}</div><div className="event-attendees"><span>{event.attendees} asistirán</span><span className="mini-avatars"><span className="mini-avatar">N</span><span className="mini-avatar">A</span><span className="mini-avatar">L</span><span className="plus-attendees">+{Math.max(0,event.attendees-3)}</span></span></div></div></article>; }
+function UpcomingEvent({ event, onClick }: { event: EventItem, onClick?: () => void }) { return <article className="upcoming-row" onClick={onClick} style={{cursor:"pointer"}}><img src={event.image} alt=""/><div className="upcoming-date">{formatDay(event.date)}<small>{formatMonth(event.date)}</small></div><div className="upcoming-info"><h3>{event.title}</h3><p><Music2 size={11}/> {event.category}</p><p><Clock3 size={11}/> {formatLongDate(event.date,event.time)}</p><p><MapPin size={11}/> {event.city}</p></div><div className="upcoming-actions"><strong>{event.attendees}</strong><span style={{color:muted,fontSize:11}}>asistirán</span><br/><button>Ver evento</button></div></article>; }
 function Empty({ text }: { text: string }) { return <div style={{padding:"40px 10px",textAlign:"center",color:muted}}>{text}</div>; }
 function calendarDays(month: Date) { const first = new Date(month.getFullYear(), month.getMonth(), 1); const last = new Date(month.getFullYear(), month.getMonth()+1, 0); const offset = (first.getDay()+6)%7; const days = Array.from({length: offset},()=>0); for(let d=1; d<=last.getDate(); d++) days.push(d); return days; }
