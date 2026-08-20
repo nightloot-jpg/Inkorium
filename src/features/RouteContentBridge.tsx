@@ -9,6 +9,7 @@ const BRIDGE_ID = 'inkorium-route-content-bridge';
 const ROUTE_PAGES = new Set([
   'inicio', 'perfil', 'mensajes', 'personas', 'musica', 'buscar', 'fotos', 'videos', 'eventos',
 ]);
+const BRIDGED_ROUTE_PAGES = new Set(['musica', 'videos', 'eventos']);
 
 type RoutePage = 'inicio' | 'perfil' | 'mensajes' | 'personas' | 'musica' | 'buscar' | 'fotos' | 'videos' | 'eventos';
 type RouteErrorBoundaryProps = { children: ReactNode };
@@ -226,9 +227,14 @@ function RouteContentBridge() {
     };
   }, []);
 
-  const isRoute = ROUTE_PAGES.has(page);
+  const isRoute = BRIDGED_ROUTE_PAGES.has(page);
   const isEvents = page === 'eventos';
 
+  // The bridge is only responsible for standalone Music, Videos and Events.
+  // Shell pages such as Feed, Profile and Messages already render inside the
+  // application's normal layout. Rendering a fixed bridge for those routes
+  // would cover the shell with an empty opaque layer and make the Feed look
+  // collapsed while also hiding the global chat launcher.
   if (!isRoute) return null;
   if (!isEvents && !sessionReady) {
     return (
