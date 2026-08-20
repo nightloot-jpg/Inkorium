@@ -1,0 +1,51 @@
+name: Apply profile identity fix
+
+on:
+  push:
+    branches:
+      - fix/profile-identity-navigation
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply source fix
+        shell: python
+        run: |
+          from pathlib import Path
+          import subprocess
+
+          main = Path("src/main.tsx")
+          text = main.read_text(encoding="utf-8")
+
+          old = '  const profile = useAuthStore(state => state.profile);\n  const setProfile = useAuthStore(state => state.setProfile); const [posts, setPosts] = useState<Post[]>([]);'
+          new = '''  const authProfile = useAuthStore(state => state.profile);
+  const [profile, setProfile] = useState<ProfileData | null>(() => isOwnProfile ? useAuthStore.getState().profile : null);
+  useEffect(() => {
+    if (isOwnProfile && authProfile) setProfile(authProfile);
+  }, [isOwnProfile, authProfile]);
+  const [posts, setPosts] = useState<Post[]>([]);'''
+
+          if old not in text:
+              raise SystemExit("Expected ProfileViewLegacy store binding was not found")
+
+          text = text.replace(old, new, 1)
+          main.write_text(text, encoding="utf-8")
+
+          subprocess.run(["git", "checkout", "origin/main", "--", "src/lib/store.ts"], check=True)
+          subprocess.run(["git", "rm", ".github/workflows/apply-profile-identity-fix.yml"], check=True)
+          subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+          subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
+          subprocess.run(["git", "add", "src/main.tsx", "src/lib/store.ts"], check=True)
+          subprocess.run(["git", "commit", "-m", "fix: preserve authenticated identity after visiting profiles"], check=True)
+          subprocess.run(["git", "push", "origin", "HEAD:fix/profile-identity-navigation"], check=True)
