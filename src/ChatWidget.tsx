@@ -274,6 +274,12 @@ export function ChatWidget({ session, navigate }: { session: Session; navigate: 
   }, []);
 
   useEffect(() => {
+    const openPanel = () => setPanelOpen(true);
+    globalThis.window.addEventListener("open-chat-panel", openPanel);
+    return () => globalThis.window.removeEventListener("open-chat-panel", openPanel);
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     const loadContacts = async () => {
       const [outgoing, incoming] = await Promise.all([
