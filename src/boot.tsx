@@ -3,6 +3,8 @@ import "./features/RouteContentBridge";
 import "./features/events/EventsFallback";
 
 const root = document.getElementById("root");
+let appMounted = false;
+let mountPromise: Promise<void> | null = null;
 
 function showStatus(title: string, message: string, action?: { label: string; run: () => void }) {
   if (!root) return;
@@ -31,7 +33,7 @@ function showStatus(title: string, message: string, action?: { label: string; ru
 }
 
 function showLogin() {
-  if (!root) return;
+  if (!root || appMounted) return;
   root.innerHTML = "";
 
   const BLUE_BG = "#78afd1";
@@ -98,16 +100,37 @@ function showLogin() {
 }
 
 async function mountApp() {
-  const { data, error } = await supabase.auth.getSession();
-  if (error) {
-    showStatus("No se pudo recuperar la sesión", "La aplicación no ha podido recuperar tu sesión de Inkorium. Puedes volver a intentarlo.", { label: "Reintentar", run: () => void mountApp() });
-    return;
-  }
-  if (data.session) {
+  if (appMounted) return;
+  if (mountPromise) return mountPromise;
+  mountPromise = (async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      mountPromise = null;
+      showStatus("No se pudo recuperar la sesión", "La aplicación no ha podido recuperar tu sesión de Inkorium. Puedes volver a intentarlo.", { label: "Reintentar", run: () => void mountApp() });
+      return;
+    }
+    if (!data.session) {
+      mountPromise = null;
+      showLogin();
+      return;
+    }
+    appMounted = true;
     await import("./main.tsx");
+  })();
+  await mountPromise;
+}
+
+supabase.auth.onAuthStateChange((event, session) => {
+  if (session && !appMounted && (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")) {
+    queueMicrotask(() => void mountApp());
     return;
   }
-  showLogin();
-}
+
+  if (!session && appMounted) {
+    appMounted = false;
+    mountPromise = null;
+    showLogin();
+  }
+});
 
 void mountApp();
