@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Repair malformed JSX fragment
+      - name: Repair JSX closing sequence
         shell: python
         run: |
           from pathlib import Path
@@ -27,21 +27,18 @@ jobs:
           path = Path("src/main.tsx")
           text = path.read_text(encoding="utf-8")
 
-          opening = text.rfind("<>")
-          if opening < 0:
-              raise SystemExit("Could not find the JSX fragment opening")
-          text = text[:opening] + "<div>" + text[opening + 2:]
-
           needle = "</article>)}</main></div>}</div>;"
-          replacement = "</article>)</div>}</main></div>}</div>;"
-          if needle not in text:
-              raise SystemExit("Could not find the expected final JSX structure in src/main.tsx")
-          text = text.replace(needle, replacement, 1)
+          replacement = "</article>)}</>}</main></div>}</div>;"
+          if replacement in text:
+              print("JSX closing sequence is already correct.")
+          elif needle in text:
+              text = text.replace(needle, replacement, 1)
+              path.write_text(text, encoding="utf-8")
+              print("Added the fragment close and the conditional-expression close in the correct order.")
+          else:
+              raise SystemExit("Could not find the expected JSX closing sequence in src/main.tsx")
 
-          path.write_text(text, encoding="utf-8")
-          print(f"Replaced fragment opening at character {opening}.")
-          print("TAIL:")
-          print(repr(text[-700:]))
+          print(repr(text[-450:]))
 
       - name: Install dependencies
         run: npm ci
@@ -56,5 +53,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/main.tsx
           git rm .github/workflows/fix-main-jsx-build.yml
-          git commit -m "fix: repair malformed JSX in main"
+          git commit -m "fix: repair missing JSX fragment close"
           git push origin HEAD:fix/main-jsx-build
