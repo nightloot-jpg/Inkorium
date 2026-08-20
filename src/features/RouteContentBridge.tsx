@@ -6,9 +6,11 @@ import { VideoView } from './videos/VideoView';
 import { EventsView } from './events/EventsView';
 
 const BRIDGE_ID = 'inkorium-route-content-bridge';
-const ROUTE_PAGES = new Set(['musica', 'videos', 'eventos']);
+const ROUTE_PAGES = new Set([
+  'inicio', 'perfil', 'mensajes', 'personas', 'musica', 'buscar', 'fotos', 'videos', 'eventos',
+]);
 
-type RoutePage = 'musica' | 'videos' | 'eventos';
+type RoutePage = 'inicio' | 'perfil' | 'mensajes' | 'personas' | 'musica' | 'buscar' | 'fotos' | 'videos' | 'eventos';
 type RouteErrorBoundaryProps = { children: ReactNode };
 type RouteErrorBoundaryState = { error: Error | null };
 
@@ -48,8 +50,7 @@ function readRoute(): string {
   return 'inicio';
 }
 
-function setRoute(next: string): void {
-  if (!ROUTE_PAGES.has(next)) return;
+function setRoute(next: RoutePage): void {
   sessionStorage.setItem('inkorium-page', next);
   window.dispatchEvent(new CustomEvent('inkorium-route-change', { detail: next }));
 }
@@ -63,24 +64,41 @@ function normalizeRouteLabel(value: string): string {
     .replace(/[^a-záéíóúüñ]+$/i, '');
 }
 
+function routeFromLabel(value: string): RoutePage | null {
+  const label = normalizeRouteLabel(value);
+  if (!label) return null;
+  if (label.includes('inicio') || label.includes('novedades')) return 'inicio';
+  if (label.includes('perfil')) return 'perfil';
+  if (label.includes('mensajes')) return 'mensajes';
+  if (label.includes('personas')) return 'personas';
+  if (label.includes('música') || label.includes('musica')) return 'musica';
+  if (label.includes('buscar')) return 'buscar';
+  if (label.includes('fotos')) return 'fotos';
+  if (label.includes('vídeos') || label.includes('videos')) return 'videos';
+  if (label.includes('eventos')) return 'eventos';
+  if (label.includes('grupos') || label.includes('páginas') || label.includes('paginas') || label.includes('configuracion')) return 'personas';
+  if (label.includes('encuestas') || label.includes('guardados')) return 'buscar';
+  return null;
+}
+
 function getClickedRoute(target: HTMLElement | null): RoutePage | null {
   if (!target) return null;
   const candidate = target.closest('button, a, [role="button"], [data-page], [data-route]') as HTMLElement | null;
-  const routeValue = candidate?.getAttribute('data-page') || candidate?.getAttribute('data-route');
-  const label = normalizeRouteLabel(candidate?.textContent || '');
-  if (routeValue && ROUTE_PAGES.has(normalizeRouteLabel(routeValue))) return normalizeRouteLabel(routeValue) as RoutePage;
-  if (label.includes('eventos')) return 'eventos';
-  if (label.includes('música') || label.includes('musica')) return 'musica';
-  if (label.includes('vídeos') || label.includes('videos')) return 'videos';
+  if (!candidate) return null;
 
-  let node: HTMLElement | null = target;
-  for (let depth = 0; depth < 8 && node; depth += 1, node = node.parentElement) {
-    const text = normalizeRouteLabel(node.textContent || '');
-    if (text.includes('eventos')) return 'eventos';
-    if (text.includes('música') || text.includes('musica')) return 'musica';
-    if (text.includes('vídeos') || text.includes('videos')) return 'videos';
+  const routeValue = candidate.getAttribute('data-page') || candidate.getAttribute('data-route');
+  if (routeValue) {
+    const route = routeFromLabel(routeValue);
+    if (route) return route;
   }
-  return null;
+
+  return routeFromLabel(candidate.textContent || '');
+}
+
+function findShellNavigationButton(route: RoutePage): HTMLElement | null {
+  const selectors = ['.top-nav button', '.side-menu button'];
+  const candidates = selectors.flatMap((selector) => Array.from(document.querySelectorAll<HTMLElement>(selector)));
+  return candidates.find((button) => routeFromLabel(button.textContent || '') === route) || null;
 }
 
 function RouteContentBridge() {
@@ -91,35 +109,64 @@ function RouteContentBridge() {
 
   useEffect(() => {
     let active = true;
+    let profileRequest = 0;
+
+    const loadUsername = async (nextSession: any) => {
+      const requestId = ++profileRequest;
+      if (!nextSession) {
+        if (active) setUsername('');
+        return;
+      }
+
+      // Always show a stable identity immediately. The profile lookup can fail
+      // because of a transient RLS/network issue, but that must never make the
+      // authenticated user look logged out on Events.
+      const fallback = nextSession.user.email?.split('@')[0] || 'Usuario';
+      setUsername(fallback);
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, full_name')
+        .eq('id', nextSession.user.id)
+        .maybeSingle();
+
+      if (!active || requestId !== profileRequest) return;
+      setUsername(profile?.username || profile?.full_name || fallback);
+    };
+
+    const applySession = (nextSession: any) => {
+      if (!active) return;
+      setSession(nextSession);
+      setSessionReady(true);
+      // Supabase auth callbacks run inside the auth lock. Defer the profile
+      // query until the callback has returned so navigation cannot interfere
+      // with session hydration.
+      window.setTimeout(() => void loadUsername(nextSession), 0);
+    };
 
     async function loadSession() {
-      const { data } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
       if (!active) return;
+      if (error) {
+        setSession(null);
+        setSessionReady(true);
+        setUsername('');
+        return;
+      }
       setSession(data.session);
       setSessionReady(true);
-
-      if (data.session) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, full_name')
-          .eq('id', data.session.user.id)
-          .maybeSingle();
-        if (!active) return;
-        setUsername(profile?.username || profile?.full_name || data.session.user.email?.split('@')[0] || 'Usuario');
-      }
+      void loadUsername(data.session);
     }
 
     void loadSession();
 
     const auth = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!active) return;
-      setSession(nextSession);
-      setSessionReady(true);
-      if (!nextSession) setUsername('');
+      applySession(nextSession);
     });
 
     return () => {
       active = false;
+      profileRequest += 1;
       auth.data.subscription.unsubscribe();
     };
   }, []);
@@ -129,22 +176,40 @@ function RouteContentBridge() {
     const onStorage = () => syncRoute();
     const onHash = () => syncRoute();
     const onRouteChange = () => syncRoute();
+    let replayingShellNavigation = false;
 
     window.addEventListener('storage', onStorage);
     window.addEventListener('hashchange', onHash);
     window.addEventListener('inkorium-route-change', onRouteChange);
 
     const handleNavigationClick = (event: MouseEvent) => {
+      if (replayingShellNavigation) return;
+
       const route = getClickedRoute(event.target as HTMLElement | null);
       if (!route) return;
 
-      setRoute(route);
-      setPage(route);
+      if (route === 'musica' || route === 'videos' || route === 'eventos') {
+        setRoute(route);
+        setPage(route);
 
-      if (route === 'eventos') {
-        event.preventDefault();
-        event.stopPropagation();
-        window.history.replaceState({}, '', `${window.location.pathname}#eventos`);
+        if (route === 'eventos') {
+          event.preventDefault();
+          event.stopPropagation();
+          window.history.replaceState({}, '', `${window.location.pathname}#eventos`);
+        }
+        return;
+      }
+
+      const shellButton = findShellNavigationButton(route);
+      if (!shellButton) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      replayingShellNavigation = true;
+      try {
+        shellButton.click();
+      } finally {
+        replayingShellNavigation = false;
       }
     };
 
@@ -164,10 +229,6 @@ function RouteContentBridge() {
   const isRoute = ROUTE_PAGES.has(page);
   const isEvents = page === 'eventos';
 
-  // Eventos is a self-contained discovery page and must not wait for the
-  // bridge's second Supabase session lookup. The main app already authenticated
-  // the user, and gating this route on a duplicate getSession() was the reason
-  // the shell could remain visible while the Events content stayed empty.
   if (!isRoute) return null;
   if (!isEvents && !sessionReady) {
     return (
@@ -201,7 +262,7 @@ function RouteContentBridge() {
         {routePage === 'eventos' && (
           <EventsView
             session={session}
-            username={username || 'Usuario'}
+            username={username || session?.user?.email?.split('@')[0] || 'Usuario'}
             onExit={() => {
               sessionStorage.setItem('inkorium-page', 'inicio');
               window.history.replaceState({}, '', window.location.pathname);
