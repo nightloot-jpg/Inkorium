@@ -1,0 +1,15 @@
+/* Keep the Personas search field aligned with Inkorium's light page design. */
+.people-view .search-tab .search-bar {
+  background: #fff !important;
+  border-color: #e0e6ed !important;
+  color: #6a7a8a !important;
+}
+
+.people-view .search-tab .search-bar input {
+  background: transparent !important;
+  color: #1a2a3a !important;
+}
+
+.people-view .search-tab .search-bar input::placeholder {
+  color: #6a7a8a !important;
+}
