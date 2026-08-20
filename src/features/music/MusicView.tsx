@@ -34,7 +34,9 @@ export function MusicView({ session }: { session: any; navigate: any }) {
     <section className="content-view music-view" style={{ background: '#f3f6fa', minHeight: '100%', padding: '18px 20px' }}>
       <style>{`
         .feed-layout:has(.music-view) { grid-template-columns: minmax(190px, 280px) minmax(0, 1fr) !important; }
-        .feed-layout:has(.music-view) > .right-column { display: none !important; }
+        .feed-layout:has(.music-view) > .right-column,
+        .feed-layout:has(.music-view) .right-column,
+        body:has(.music-view) .right-column { display: none !important; }
         .music-shell { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:18px; max-width:1220px; margin:0 auto; }
         .music-panel { background:#fff; border:1px solid ${border}; border-radius:6px; box-shadow:0 1px 2px rgba(23,55,90,.03); }
         .music-tabs { display:flex; gap:26px; border-bottom:1px solid #e5eaf0; overflow:auto; }
