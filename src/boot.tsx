@@ -1,6 +1,7 @@
 import { supabase } from "./lib/supabase";
 import "./features/RouteContentBridge";
 import "./features/events/EventsFallback";
+import "./feed/FeedEnhancements";
 
 const root = document.getElementById("root");
 
