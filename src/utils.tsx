@@ -56,3 +56,7 @@ export function UserLink({ userId, name, avatarUrl, navigate, onClick }: { userI
     </div>
   );
 }
+
+// main.tsx references UserLink without importing it. Expose the component on the
+// global object so the repaired legacy JSX can resolve it at runtime.
+(globalThis as any).UserLink = UserLink;
