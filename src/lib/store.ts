@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { supabase } from './supabase';
 
 export type ProfileData = {
   id?: string;
@@ -16,13 +17,51 @@ interface AuthStore {
   updateProfile: (updates: Partial<ProfileData>) => void;
 }
 
+let authenticatedUserId: string | null = null;
+
 export const useAuthStore = create<AuthStore>((set) => ({
   profile: null,
-  setProfile: (profile) => set({ profile }),
-  updateProfile: (updates) => set((state) => ({ 
-    profile: state.profile ? { ...state.profile, ...updates } : null 
+  // Only authenticated-user profiles may update this global store.
+  // Visited profiles intentionally do not carry the authenticated id here,
+  // which prevents opening another user's profile from replacing the header
+  // identity used by the feed.
+  setProfile: (profile) => set((state) => {
+    if (!profile) return { profile: null };
+    if (!profile.id || !authenticatedUserId || profile.id !== authenticatedUserId) {
+      return state;
+    }
+    return { profile };
+  }),
+  updateProfile: (updates) => set((state) => ({
+    profile: state.profile ? { ...state.profile, ...updates } : null
   })),
 }));
+
+async function hydrateAuthenticatedProfile(userId: string | null) {
+  authenticatedUserId = userId;
+  if (!userId) {
+    useAuthStore.setState({ profile: null });
+    return;
+  }
+
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, username, full_name, bio, city, avatar_url, banner_url')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (data && authenticatedUserId === userId) {
+    useAuthStore.setState({ profile: data as ProfileData });
+  }
+}
+
+void supabase.auth.getSession().then(({ data }) => {
+  void hydrateAuthenticatedProfile(data.session?.user.id ?? null);
+});
+
+supabase.auth.onAuthStateChange((_event, session) => {
+  void hydrateAuthenticatedProfile(session?.user.id ?? null);
+});
 
 export type PlayerItem = {
   type: 'youtube_song' | 'youtube_playlist';
