@@ -1,7 +1,4 @@
-import React from "react";
-import { createRoot } from "react-dom/client";
 import { supabase } from "./lib/supabase";
-import { EventsView } from "./features/events/EventsView";
 import "./features/RouteContentBridge";
 
 const root = document.getElementById("root");
@@ -99,65 +96,17 @@ function showLogin() {
   signupLink.addEventListener("click", (event) => { event.preventDefault(); mode = mode === "login" ? "signup" : "login"; heading.textContent = mode === "login" ? "Entrar" : "Crear cuenta"; submitButton.textContent = mode === "login" ? "Entrar" : "Registrarme"; signupLink.textContent = mode === "login" ? "¿Todavía no tienes cuenta? Regístrate" : "¿Ya tienes una cuenta? Entrar"; errorText.style.display = "none"; passwordInput.autocomplete = mode === "login" ? "current-password" : "new-password"; });
 }
 
-function showEvents(session: any, profile: any) {
-  if (!root) return;
-  const username = profile?.username || profile?.full_name || session?.user?.email?.split("@")[0] || "nightloot";
-  root.innerHTML = "";
-  createRoot(root).render(<EventsView session={session} username={username} onExit={() => { window.location.hash = ""; window.location.reload(); }} />);
-}
-
-function isEventsTarget(target: HTMLElement | null): boolean {
-  if (!target) return false;
-
-  const direct = target.closest("button, a, [role=\"button\"], [data-page], [data-route], [aria-label], [title]") as HTMLElement | null;
-  const candidates: HTMLElement[] = [];
-  if (direct) candidates.push(direct);
-
-  let node: HTMLElement | null = target;
-  for (let depth = 0; depth < 8 && node; depth += 1, node = node.parentElement) {
-    candidates.push(node);
-  }
-
-  return candidates.some((element) => {
-    const values = [
-      element.textContent || "",
-      element.getAttribute("data-page") || "",
-      element.getAttribute("data-route") || "",
-      element.getAttribute("aria-label") || "",
-      element.getAttribute("title") || "",
-      element.getAttribute("href") || "",
-    ].map((value) => value.replace(/\s+/g, " ").trim().toLowerCase());
-
-    return values.some((value) => value === "eventos" || value === "eventos/" || value.endsWith("#eventos") || value.endsWith("/eventos"));
-  });
-}
-
 async function mountApp() {
   const { data, error } = await supabase.auth.getSession();
-  if (error) { showStatus("No se pudo recuperar la sesión", "La aplicación no ha podido recuperar tu sesión de Inkorium. Puedes volver a intentarlo.", { label: "Reintentar", run: () => void mountApp() }); return; }
+  if (error) {
+    showStatus("No se pudo recuperar la sesión", "La aplicación no ha podido recuperar tu sesión de Inkorium. Puedes volver a intentarlo.", { label: "Reintentar", run: () => void mountApp() });
+    return;
+  }
   if (data.session) {
-    const { data: profile } = await supabase.from("profiles").select("id, username, full_name, bio, city, avatar_url, banner_url").eq("id", data.session.user.id).maybeSingle();
-    if (window.location.hash === "#eventos") { showEvents(data.session, profile); return; }
     await import("./main.tsx");
     return;
   }
   showLogin();
 }
 
-const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => { if (session && (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) void mountApp(); });
-
-document.addEventListener("click", (event) => {
-  const target = event.target as HTMLElement | null;
-  if (!isEventsTarget(target)) return;
-
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  if (window.location.hash !== "#eventos") {
-    window.location.hash = "#eventos";
-  } else {
-    void mountApp();
-  }
-}, true);
-
 void mountApp();
-window.addEventListener("beforeunload", () => { authListener.subscription.unsubscribe(); });
