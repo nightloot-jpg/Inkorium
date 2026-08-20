@@ -19,24 +19,29 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Repair missing JSX fragment close
+      - name: Repair malformed JSX fragment
         shell: python
         run: |
           from pathlib import Path
 
           path = Path("src/main.tsx")
           text = path.read_text(encoding="utf-8")
-          needle = "</article>)}</main></div>}</div>;"
-          replacement = "</article>)</>}</main></div>}</div>;"
 
-          if replacement in text:
-              print("JSX fragment is already closed in the correct location.")
-          elif needle in text:
+          opening = 22632
+          if text[opening:opening + 2] == "<>":
+              text = text[:opening] + "<div>" + text[opening + 2:]
+          elif text[opening:opening + 5] != "<div>":
+              raise SystemExit("Could not find the reported JSX fragment opening")
+
+          needle = "</article>)}</main></div>}</div>;"
+          replacement = "</article>)</div>}</main></div>}</div>;"
+          if replacement not in text:
+              if needle not in text:
+                  raise SystemExit("Could not find the expected final JSX structure in src/main.tsx")
               text = text.replace(needle, replacement, 1)
-              path.write_text(text, encoding="utf-8")
-              print("Inserted </> before the conditional expression closing brace.")
-          else:
-              raise SystemExit("Could not find the expected final JSX structure in src/main.tsx")
+
+          path.write_text(text, encoding="utf-8")
+          print("Replaced the unmatched fragment with a regular div container.")
 
       - name: Install dependencies
         run: npm ci
@@ -51,5 +56,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/main.tsx
           git rm .github/workflows/fix-main-jsx-build.yml
-          git commit -m "fix: repair missing JSX fragment in main"
+          git commit -m "fix: repair malformed JSX in main"
           git push origin HEAD:fix/main-jsx-build
