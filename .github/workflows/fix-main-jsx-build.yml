@@ -1,0 +1,57 @@
+name: Repair main JSX build
+
+on:
+  push:
+    branches:
+      - fix/main-jsx-build
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Repair JSX closing sequence
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("src/main.tsx")
+          text = path.read_text(encoding="utf-8")
+
+          needle = "</article>)}</main></div>}</div>;"
+          replacement = "</article>)}</>}</main></div>}</div>;"
+          if replacement in text:
+              print("JSX closing sequence is already correct.")
+          elif needle in text:
+              text = text.replace(needle, replacement, 1)
+              path.write_text(text, encoding="utf-8")
+              print("Added the fragment close and the conditional-expression close in the correct order.")
+          else:
+              raise SystemExit("Could not find the expected JSX closing sequence in src/main.tsx")
+
+          print(repr(text[-450:]))
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Commit verified repair and remove workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main.tsx
+          git rm .github/workflows/fix-main-jsx-build.yml
+          git commit -m "fix: repair missing JSX fragment close"
+          git push origin HEAD:fix/main-jsx-build
