@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from './supabase';
+import type { Session } from '@supabase/supabase-js';
 
 export type ProfileData = {
   id?: string;
@@ -13,7 +14,9 @@ export type ProfileData = {
 
 interface AuthStore {
   profile: ProfileData | null;
+  session: Session | null;
   setProfile: (profile: ProfileData | null) => void;
+  setSession: (session: Session | null) => void;
   updateProfile: (updates: Partial<ProfileData>) => void;
 }
 
@@ -21,6 +24,11 @@ let authenticatedUserId: string | null = null;
 
 export const useAuthStore = create<AuthStore>((set) => ({
   profile: null,
+  session: null,
+  // Keep the authenticated session in the same store used by the app bootstrap.
+  // This is intentionally independent from visited profiles so navigating to
+  // another user's profile cannot replace the logged-in identity.
+  setSession: (session) => set({ session }),
   // Only authenticated-user profiles may update this global store.
   // Visited profiles intentionally do not carry the authenticated id here,
   // which prevents opening another user's profile from replacing the header
@@ -40,7 +48,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 async function hydrateAuthenticatedProfile(userId: string | null) {
   authenticatedUserId = userId;
   if (!userId) {
-    useAuthStore.setState({ profile: null });
+    useAuthStore.setState({ profile: null, session: null });
     return;
   }
 
@@ -56,10 +64,12 @@ async function hydrateAuthenticatedProfile(userId: string | null) {
 }
 
 void supabase.auth.getSession().then(({ data }) => {
+  useAuthStore.getState().setSession(data.session ?? null);
   void hydrateAuthenticatedProfile(data.session?.user.id ?? null);
 });
 
 supabase.auth.onAuthStateChange((_event, session) => {
+  useAuthStore.getState().setSession(session);
   void hydrateAuthenticatedProfile(session?.user.id ?? null);
 });
 
