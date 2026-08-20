@@ -1,0 +1,27 @@
+name: Revert broken build commit
+
+on:
+  push:
+    branches:
+      - fix/revert-broken-main-build-2
+
+permissions:
+  contents: write
+
+jobs:
+  revert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Revert broken commit
+        run: |
+          if git merge-base --is-ancestor 326df31606e50ced841d0caa373dcb91b16a61a1 HEAD; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git revert --no-edit 326df31606e50ced841d0caa373dcb91b16a61a1
+            git rm .github/workflows/revert-broken-build.yml
+            git commit --amend --no-edit
+            git push origin HEAD --force-with-lease
+          fi
