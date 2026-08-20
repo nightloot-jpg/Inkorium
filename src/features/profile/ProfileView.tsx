@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Camera, MapPin, Music2, Pencil, Users, Video } from "lucide-react";
+import { CalendarDays, Camera, MapPin, Music2, Pencil, Play, Pause, Users, Video } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import { usePlayerStore } from "../../lib/store";
 import type { Session } from "@supabase/supabase-js";
 import "./profile-view.css";
 
@@ -31,10 +32,28 @@ function initials(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U";
 }
 
+function formatPlayerTime(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const total = Math.floor(seconds);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
 export function ProfileView({ session, profile, username }: ProfileViewProps) {
   const [posts, setPosts] = useState<UserPost[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [activeTab, setActiveTab] = useState("Inicio");
+
+  // Use the same Zustand player store as the global player. This makes this
+  // section react immediately to play/pause/skip changes without a second
+  // source of truth for "now playing".
+  const currentSong = usePlayerStore((state) => state.currentSong);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const pendingPlay = usePlayerStore((state) => state.pendingPlay);
+  const currentTime = usePlayerStore((state) => state.currentTime);
+  const duration = usePlayerStore((state) => state.duration);
+  const pause = usePlayerStore((state) => state.pause);
+  const resume = usePlayerStore((state) => state.resume);
+  const openPlayer = usePlayerStore((state) => state.openPlayer);
 
   const displayName = profile?.full_name || profile?.username || username || "Usuario";
   const handle = profile?.username ? `@${profile.username}` : `@${username}`;
@@ -62,6 +81,16 @@ export function ProfileView({ session, profile, username }: ProfileViewProps) {
   }, [session.user.id]);
 
   const postCountLabel = useMemo(() => `${posts.length}${posts.length === 20 ? "+" : ""}`, [posts.length]);
+  const progress = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
+
+  const togglePlayback = () => {
+    if (!currentSong) {
+      openPlayer();
+      return;
+    }
+    if (isPlaying || pendingPlay) pause();
+    else resume();
+  };
 
   return (
     <section className="profile-view-page">
@@ -115,7 +144,42 @@ export function ProfileView({ session, profile, username }: ProfileViewProps) {
         <main className="profile-view-main">
           <div className="profile-view-card profile-view-intro-card">
             <div className="profile-view-card-title"><Music2 size={18} /> ¿Qué estás escuchando ahora?</div>
-            <div className="profile-view-listening">Añade tu música del día desde el feed.</div>
+            {currentSong ? (
+              <div className="profile-view-listening profile-view-listening-active">
+                <button
+                  type="button"
+                  className="profile-view-listening-main"
+                  onClick={openPlayer}
+                  aria-label="Abrir el reproductor global"
+                >
+                  {currentSong.thumbnail ? (
+                    <img className="profile-view-listening-cover" src={currentSong.thumbnail} alt="" />
+                  ) : (
+                    <div className="profile-view-listening-cover profile-view-listening-cover-fallback"><Music2 size={20} /></div>
+                  )}
+                  <span className="profile-view-listening-copy">
+                    <strong>{currentSong.title}</strong>
+                    <small>{currentSong.artist || currentSong.channel_title || "Inkorium"}</small>
+                    <span className="profile-view-listening-progress" aria-hidden="true">
+                      <span style={{ width: `${progress}%` }} />
+                    </span>
+                    <small>{formatPlayerTime(currentTime)} / {formatPlayerTime(duration)}</small>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="profile-view-listening-control"
+                  onClick={togglePlayback}
+                  aria-label={isPlaying || pendingPlay ? "Pausar" : "Reproducir"}
+                >
+                  {isPlaying || pendingPlay ? <Pause size={18} /> : <Play size={18} />}
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="profile-view-listening" onClick={openPlayer}>
+                Nada reproduciéndose ahora. Abre el reproductor global para empezar a escuchar música.
+              </button>
+            )}
           </div>
 
           <div className="profile-view-card">
@@ -154,7 +218,7 @@ export function ProfileView({ session, profile, username }: ProfileViewProps) {
           </div>
           <div className="profile-view-card">
             <h2>Tu Inkorium</h2>
-            <div className="profile-view-feature"><Music2 size={18} /><span><strong>Música destacada</strong><small>Tu canción del día</small></span></div>
+            <div className="profile-view-feature"><Music2 size={18} /><span><strong>Música destacada</strong><small>La canción que escuchas ahora</small></span></div>
             <div className="profile-view-feature"><Camera size={18} /><span><strong>Fotos</strong><small>Comparte tus momentos</small></span></div>
             <div className="profile-view-feature"><CalendarDays size={18} /><span><strong>Eventos</strong><small>Descubre y organiza planes</small></span></div>
           </div>
