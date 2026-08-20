@@ -34,14 +34,18 @@ function showStatus(title: string, message: string, action?: { label: string; ru
 function showLogin() {
   if (!root) return;
   root.innerHTML = "";
+
+  // Tuenti-inspired proportions, adapted to Inkorium's own identity.
   const BLUE_BG = "#78afd1";
   const BLUE_HEADER = "#d7ebf6";
   const BLUE_BORDER = "#a9c8da";
   const BLUE_BUTTON = "#67a4cd";
   const TEXT = "#5d6f7d";
   const LINK = "#4e7d9d";
+
   const page = document.createElement("main");
   page.style.cssText = `min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 16px 30px;background:${BLUE_BG};font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;color:${TEXT}`;
+
   const brand = document.createElement("div");
   brand.style.cssText = "display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 12px;height:46px";
   const logoImg = document.createElement("img");
@@ -52,6 +56,7 @@ function showLogin() {
   wordmark.textContent = "inkorium";
   wordmark.style.cssText = "font-size:32px;line-height:1;font-weight:800;color:#fff;letter-spacing:-1.1px";
   brand.append(logoImg, wordmark);
+
   const card = document.createElement("section");
   card.style.cssText = `width:min(100%,360px);background:#fff;border:1px solid rgba(66,105,129,.18);box-shadow:0 2px 7px rgba(35,67,87,.18);box-sizing:border-box`;
   const cardHeader = document.createElement("div");
@@ -59,6 +64,7 @@ function showLogin() {
   const heading = document.createElement("span");
   heading.textContent = "Entrar";
   cardHeader.appendChild(heading);
+
   const form = document.createElement("form");
   form.style.cssText = "padding:15px 16px 13px;box-sizing:border-box";
   const fieldRowStyle = "display:grid;grid-template-columns:82px minmax(0,1fr);align-items:center;gap:8px;margin-bottom:9px";
@@ -77,16 +83,50 @@ function showLogin() {
   const errorText = document.createElement("p"); errorText.style.cssText = "margin:0 0 7px;color:#c0392b;font-size:11px;line-height:1.35;text-align:center;display:none";
   const submitButton = document.createElement("button"); submitButton.type = "submit"; submitButton.textContent = "Entrar"; submitButton.style.cssText = `display:block;margin:0 auto;padding:5px 22px;border:1px solid rgba(63,111,143,.35);border-radius:2px;background:${BLUE_BUTTON};box-shadow:inset 0 1px rgba(255,255,255,.35);color:#fff;font:700 12px Arial,Helvetica,sans-serif;cursor:pointer;text-shadow:0 1px rgba(40,80,105,.25)`;
   form.append(emailField, passwordField, rememberRow, errorText, submitButton);
+
   const footer = document.createElement("div"); footer.style.cssText = "padding:7px 9px;background:#f3f3f3;border-top:1px solid #dfe3e6;text-align:center;font-size:11px";
   const forgotLink = document.createElement("a"); forgotLink.href = "#"; forgotLink.textContent = "¿Has olvidado tu contraseña?"; forgotLink.style.cssText = `color:${LINK};text-decoration:none`; footer.appendChild(forgotLink); card.append(cardHeader, form, footer);
   const signupLink = document.createElement("a"); signupLink.href = "#"; signupLink.textContent = "¿Todavía no tienes cuenta? Regístrate"; signupLink.style.cssText = `margin-top:13px;color:#fff;text-decoration:none;font-size:11px;text-shadow:0 1px rgba(55,85,100,.18)`;
   page.append(brand, card, signupLink); root.appendChild(page);
+
   const setBusy = (busy: boolean, label: string) => { submitButton.disabled = busy; submitButton.textContent = label; submitButton.style.opacity = busy ? "0.7" : "1"; submitButton.style.cursor = busy ? "wait" : "pointer"; };
   const showMessage = (message: string, success = false) => { errorText.style.display = "block"; errorText.style.color = success ? "#267b4b" : "#c0392b"; errorText.textContent = message; };
   let mode: "login" | "signup" = "login";
-  form.addEventListener("submit", (event) => { event.preventDefault(); errorText.style.display = "none"; setBusy(true, mode === "login" ? "Entrando…" : "Creando…"); const email = emailInput.value.trim(); const password = passwordInput.value; const request = mode === "login" ? supabase.auth.signInWithPassword({ email, password }) : supabase.auth.signUp({ email, password }); void request.then(({ error }) => { if (error) { showMessage(mode === "login" && error.message === "Invalid login credentials" ? "Correo o contraseña incorrectos." : mode === "signup" ? "No se ha podido crear la cuenta. Inténtalo de nuevo." : "No se ha podido iniciar sesión. Inténtalo de nuevo."); setBusy(false, mode === "login" ? "Entrar" : "Registrarme"); return; } if (mode === "signup") { showMessage("Cuenta creada. Revisa tu correo para confirmar el registro.", true); setBusy(false, "Registrarme"); } }); });
-  forgotLink.addEventListener("click", (event) => { event.preventDefault(); const email = emailInput.value.trim() || window.prompt("Introduce tu correo electrónico:") || ""; if (!email) return; errorText.style.display = "none"; void supabase.auth.resetPasswordForEmail(email).then(({ error }) => { if (error) showMessage("No se ha podido enviar el correo de recuperación."); else showMessage("Te hemos enviado un correo para restablecer tu contraseña.", true); }); });
-  signupLink.addEventListener("click", (event) => { event.preventDefault(); mode = mode === "login" ? "signup" : "login"; heading.textContent = mode === "login" ? "Entrar" : "Crear cuenta"; submitButton.textContent = mode === "login" ? "Entrar" : "Registrarme"; signupLink.textContent = mode === "login" ? "¿Todavía no tienes cuenta? Regístrate" : "¿Ya tienes una cuenta? Entrar"; errorText.style.display = "none"; passwordInput.autocomplete = mode === "login" ? "current-password" : "new-password"; });
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    errorText.style.display = "none";
+    setBusy(true, mode === "login" ? "Entrando…" : "Creando…");
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    const request = mode === "login" ? supabase.auth.signInWithPassword({ email, password }) : supabase.auth.signUp({ email, password });
+    void request.then(({ error }) => {
+      if (error) {
+        showMessage(mode === "login" && error.message === "Invalid login credentials" ? "Correo o contraseña incorrectos." : mode === "signup" ? "No se ha podido crear la cuenta. Inténtalo de nuevo." : "No se ha podido iniciar sesión. Inténtalo de nuevo.");
+        setBusy(false, mode === "login" ? "Entrar" : "Registrarme");
+        return;
+      }
+      if (mode === "signup") { showMessage("Cuenta creada. Revisa tu correo para confirmar el registro.", true); setBusy(false, "Registrarme"); }
+    });
+  });
+
+  const handleForgotPassword = (event: Event) => {
+    event.preventDefault();
+    const email = emailInput.value.trim() || window.prompt("Introduce tu correo electrónico:") || "";
+    if (!email) return;
+    errorText.style.display = "none";
+    void supabase.auth.resetPasswordForEmail(email).then(({ error }) => { if (error) showMessage("No se ha podido enviar el correo de recuperación."); else showMessage("Te hemos enviado un correo para restablecer tu contraseña.", true); });
+  };
+  forgotLink.addEventListener("click", handleForgotPassword);
+  signupLink.addEventListener("click", (event) => {
+    event.preventDefault();
+    mode = mode === "login" ? "signup" : "login";
+    heading.textContent = mode === "login" ? "Entrar" : "Crear cuenta";
+    submitButton.textContent = mode === "login" ? "Entrar" : "Registrarme";
+    signupLink.textContent = mode === "login" ? "¿Todavía no tienes cuenta? Regístrate" : "¿Ya tienes una cuenta? Entrar";
+    errorText.style.display = "none";
+    passwordInput.autocomplete = mode === "login" ? "current-password" : "new-password";
+  });
 }
 
 function showEvents(session: any, profile: any) {
@@ -104,10 +144,7 @@ async function mountApp() {
   }
   if (data.session) {
     const { data: profile } = await supabase.from("profiles").select("id, username, full_name, bio, city, avatar_url, banner_url").eq("id", data.session.user.id).maybeSingle();
-    if (window.location.hash === "#eventos") {
-      showEvents(data.session, profile);
-      return;
-    }
+    if (window.location.hash === "#eventos") { showEvents(data.session, profile); return; }
     await import("./main.tsx");
     return;
   }
@@ -115,13 +152,9 @@ async function mountApp() {
 }
 
 const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-  if (session && (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
-    void mountApp();
-  }
+  if (session && (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) void mountApp();
 });
 
-// The current social shell owns the navigation state. Intercept the existing Eventos action and
-// switch to the dedicated page through the URL hash so no changes to the large Feed component are needed.
 document.addEventListener("click", (event) => {
   const target = event.target as HTMLElement | null;
   const button = target?.closest("button");
@@ -137,6 +170,4 @@ document.addEventListener("click", (event) => {
 
 void mountApp();
 
-window.addEventListener("beforeunload", () => {
-  authListener.subscription.unsubscribe();
-});
+window.addEventListener("beforeunload", () => { authListener.subscription.unsubscribe(); });
