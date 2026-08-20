@@ -1,819 +1,267 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { usePlayerStore } from '../../lib/store';
-import { Search, Heart, Share2, Plus, Music, Play, ListPlus, Loader2, UploadCloud, X } from 'lucide-react';
-import * as tus from "tus-js-client";
-import { v4 as uuidv4 } from "uuid";
-import { formatTime } from '../../components_player';
+import { Search, Heart, Share2, Plus, Music, Play, ListPlus, Loader2, UploadCloud, X, Users } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
-export function MusicView({ session, navigate }: { session: any, navigate: any }) {
+const blue = '#0750A7';
+const border = '#dfe6ee';
+const text = '#1f2e40';
+const muted = '#718096';
+
+type MusicTrack = {
+  id?: string;
+  title: string;
+  artist?: string | null;
+  source_type?: 'youtube' | 'local';
+  youtube_id?: string | null;
+  cover_url?: string | null;
+};
+
+type YouTubeResult = {
+  id: { videoId: string };
+  snippet: {
+    title: string;
+    channelTitle: string;
+    thumbnails?: { high?: { url: string }; medium?: { url: string }; default?: { url: string } };
+  };
+};
+
+export function MusicView({ session }: { session: any; navigate: any }) {
   const [activeTab, setActiveTab] = useState<'descubrir' | 'buscar' | 'mi-musica' | 'playlists' | 'subir'>('descubrir');
-  
 
-  // Responsive column layout styling based on Tuenti/MySpace aesthetics
   return (
-    <section className="content-view music-view" style={{ backgroundColor: '#eef2f5', minHeight: '100%', padding: '15px' }}>
-      <div className="music-layout" style={{
-        display: 'grid',
-        gridTemplateColumns: '260px minmax(650px, 1fr) 300px',
-        gap: '15px',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        alignItems: 'start'
-      }}>
-        {/* LEFT SIDEBAR: Navigation */}
-        <div className="music-sidebar-left" style={{
-          backgroundColor: '#fff',
-          borderRadius: '4px',
-          border: '1px solid #d3d9df',
-          padding: '15px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '15px'
-        }}>
-          <div style={{ paddingBottom: '10px', borderBottom: '1px solid #e0e5ea', marginBottom: '5px' }}>
-            <h1 style={{ margin: '0 0 5px 0', fontSize: '1.4em', color: '#0750A7', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Music size={22} /> Música
-            </h1>
-            <p style={{ margin: 0, fontSize: '0.85em', color: '#666', lineHeight: 1.4 }}>
-              Escucha, comparte y descubre música con tus amigos.
-            </p>
+    <section className="content-view music-view" style={{ background: '#f3f6fa', minHeight: '100%', padding: '18px 20px' }}>
+      <style>{`
+        .feed-layout:has(.music-view) { grid-template-columns: minmax(190px, 280px) minmax(0, 1fr) !important; }
+        .feed-layout:has(.music-view) > .right-column { display: none !important; }
+        .music-shell { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:18px; max-width:1220px; margin:0 auto; }
+        .music-panel { background:#fff; border:1px solid ${border}; border-radius:6px; box-shadow:0 1px 2px rgba(23,55,90,.03); }
+        .music-tabs { display:flex; gap:26px; border-bottom:1px solid #e5eaf0; overflow:auto; }
+        .music-tab { display:flex; align-items:center; gap:7px; padding:13px 4px 12px; border:0; border-bottom:2px solid transparent; background:transparent; color:#51657b; font-weight:600; white-space:nowrap; cursor:pointer; }
+        .music-tab.active { color:${blue}; border-bottom-color:${blue}; }
+        .music-search-row { display:flex; gap:10px; }
+        .music-search-input { flex:1; min-width:0; height:44px; padding:0 14px 0 40px; border:1px solid #d3dce6; border-radius:5px; outline:0; color:${text}; background:#fff; }
+        .music-search-input:focus { border-color:${blue}; box-shadow:0 0 0 2px rgba(7,80,167,.10); }
+        .music-result { display:flex; align-items:center; gap:14px; padding:11px 0; border-bottom:1px solid #edf1f5; }
+        .music-result:last-child { border-bottom:0; }
+        .music-cover { width:72px; height:72px; flex:0 0 72px; border-radius:5px; object-fit:cover; background:#edf2f7; }
+        .music-action { display:grid; place-items:center; width:36px; height:36px; padding:0; border:1px solid #cbd7e4; border-radius:5px; color:#536b84; background:#fff; cursor:pointer; }
+        .music-action:hover { border-color:${blue}; color:${blue}; background:#f5f9ff; }
+        .music-action.primary { color:#fff; border-color:${blue}; background:${blue}; }
+        .music-action.primary:hover { background:#06458f; color:#fff; }
+        .music-card { padding:16px; }
+        .music-side-card { padding:17px; }
+        .music-side-item { display:flex; gap:10px; padding:10px 0; border-bottom:1px solid #edf1f5; }
+        .music-side-item:last-child { border-bottom:0; }
+        .music-avatar { width:34px; height:34px; flex:0 0 34px; border-radius:50%; object-fit:cover; background:#e7eef6; }
+        .music-modal-backdrop { position:fixed; inset:0; z-index:2000; display:grid; place-items:center; padding:20px; background:rgba(20,34,52,.35); }
+        .music-modal { width:min(520px,100%); max-height:min(680px,90vh); overflow:auto; background:#fff; border:1px solid ${border}; border-radius:8px; box-shadow:0 20px 60px rgba(20,34,52,.25); }
+        @media(max-width:900px){ .music-shell{grid-template-columns:1fr}.music-sidebar{order:2} }
+        @media(max-width:700px){ .feed-layout:has(.music-view){grid-template-columns:1fr !important}.music-view{padding:10px}.music-result{align-items:flex-start}.music-result-actions{flex-wrap:wrap}.music-cover{width:64px;height:64px;flex-basis:64px} }
+      `}</style>
+
+      <div className="music-shell">
+        <div className="music-main">
+          <div className="music-panel" style={{ padding: '22px' }}>
+            <header style={{ marginBottom: 8 }}>
+              <h1 style={{ margin: 0, color: text, fontSize: 30 }}>Música</h1>
+              <p style={{ margin: '5px 0 0', color: '#58708a', fontSize: 16 }}>Escucha, comparte y descubre música con tus amigos.</p>
+            </header>
+            <nav className="music-tabs" aria-label="Secciones de música">
+              <Tab active={activeTab === 'descubrir'} onClick={() => setActiveTab('descubrir')} icon={<Heart size={17} />} label="Descubrir" />
+              <Tab active={activeTab === 'buscar'} onClick={() => setActiveTab('buscar')} icon={<Search size={17} />} label="Buscar" />
+              <Tab active={activeTab === 'mi-musica'} onClick={() => setActiveTab('mi-musica')} icon={<Music size={17} />} label="Mi música" />
+              <Tab active={activeTab === 'playlists'} onClick={() => setActiveTab('playlists')} icon={<ListPlus size={17} />} label="Playlists" />
+              <Tab active={activeTab === 'subir'} onClick={() => setActiveTab('subir')} icon={<UploadCloud size={17} />} label="Subir canción" />
+            </nav>
           </div>
-
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            {[
-              ['descubrir', 'Descubrir', <Heart size={16} />],
-              ['buscar', 'Buscar', <Search size={16} />],
-              ['mi-musica', 'Mi música', <Music size={16} />],
-              ['playlists', 'Playlists', <ListPlus size={16} />],
-              ['subir', 'Subir canción', <UploadCloud size={16} />]
-            ].map(([id, label, icon]) => (
-              <button
-                key={id as string}
-                onClick={() => setActiveTab(id as any)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: activeTab === id ? '#0750A7' : 'transparent',
-                  color: activeTab === id ? '#fff' : '#333',
-                  border: '1px solid',
-                  borderColor: activeTab === id ? '#0750A7' : 'transparent',
-                  padding: '8px 12px',
-                  borderRadius: '3px',
-                  cursor: 'pointer',
-                  fontWeight: activeTab === id ? 'bold' : 'normal',
-                  fontSize: '0.9em',
-                  textAlign: 'left',
-                  transition: 'all 0.1s'
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== id) e.currentTarget.style.backgroundColor = '#f0f4f8';
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== id) e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                {icon} {label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* CENTER: Main Content */}
-        <div className="music-main-content" style={{ display: 'flex', flexDirection: 'column', gap: '15px', minWidth: 0 }}>
-
-          <div style={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #d3d9df', padding: '15px' }}>
-        {activeTab === 'buscar' && <MusicSearch />}
-        {activeTab === 'subir' && <MusicUpload session={session} onDone={() => setActiveTab('mi-musica')} />}
-        {activeTab === 'descubrir' && <MusicDiscover session={session} />}
-        {activeTab === 'mi-musica' && <MyMusic session={session} />}
-        {activeTab === 'playlists' && <PlaylistsTab session={session} />}
-      </div>
-        </div>
-        {/* RIGHT SIDEBAR: Activity & Friends' Playlists */}
-        <div className="music-sidebar-right" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <div style={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #d3d9df', padding: '15px' }}>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '0.9em', color: '#0750A7', textTransform: 'uppercase', fontWeight: 'bold' }}>Actividad musical</h3>
-            <MusicActivitySidebar />
-          </div>
-          <div style={{ backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #d3d9df', padding: '15px' }}>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '0.9em', color: '#0750A7', textTransform: 'uppercase', fontWeight: 'bold' }}>Playlists de amigos</h3>
-            <FriendsPlaylistsSidebar />
+          <div style={{ marginTop: 14 }}>
+            {activeTab === 'buscar' && <MusicSearch session={session} />}
+            {activeTab === 'descubrir' && <MusicDiscover onSearch={() => setActiveTab('buscar')} />}
+            {activeTab === 'mi-musica' && <MyMusic session={session} />}
+            {activeTab === 'playlists' && <PlaylistsTab session={session} />}
+            {activeTab === 'subir' && <MusicUpload session={session} onDone={() => setActiveTab('mi-musica')} />}
           </div>
         </div>
+        <aside className="music-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <MusicActivitySidebar />
+          <FriendsPlaylistsSidebar session={session} />
+        </aside>
       </div>
     </section>
   );
 }
 
+function Tab({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return <button className={`music-tab${active ? ' active' : ''}`} onClick={onClick}>{icon}{label}</button>;
+}
+
+function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <div className="music-panel music-card" style={style}>{children}</div>;
+}
 
 function MusicActivitySidebar() {
   const [activities, setActivities] = useState<any[]>([]);
-
   useEffect(() => {
-    async function fetchActivity() {
-      const { data } = await supabase
-        .from('music_activity')
-        .select('*, profiles:user_id(username, full_name, avatar_url), music_tracks:track_id(*)')
-        .order('created_at', { ascending: false })
-        .limit(8);
-      if(data) setActivities(data);
-    }
-    fetchActivity();
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from('music_activity').select('*, profiles:user_id(username, full_name, avatar_url), music_tracks:track_id(*)').order('created_at', { ascending: false }).limit(6);
+      if (!cancelled && data) setActivities(data);
+    })();
+    return () => { cancelled = true; };
   }, []);
-
-  if (activities.length === 0) return <p style={{color: '#666', fontSize: '0.85em', fontStyle: 'italic'}}>No hay actividad reciente.</p>;
-
-  return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
-      {activities.map(act => (
-        <div key={act.id} style={{display: 'flex', gap: 10, fontSize: '0.85em', alignItems: 'flex-start'}}>
-          <img src={act.profiles?.avatar_url || '/default-avatar.png'} style={{width: 32, height: 32, borderRadius: '50%'}}/>
-          <div>
-            <strong style={{color: '#1a202c'}}>{act.profiles?.full_name || act.profiles?.username}</strong>
-            <span style={{color: '#4a5568'}}>
-              {act.action === 'listened' ? ' escuchó ' :
-               act.action === 'shared' ? ' compartió ' :
-               act.action === 'saved' ? ' guardó ' :
-               act.action === 'playlist_created' ? ' creó una playlist ' : ' '}
-            </span>
-            <strong style={{color: '#1a202c'}}>{act.music_tracks?.title}</strong>
-            <div style={{color: '#a0aec0', fontSize: '0.9em', marginTop: 2}}>
-              {new Date(act.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return <div className="music-panel music-side-card">
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}><Music size={18} color={blue} /><strong style={{ color: text, fontSize: 17 }}>Actividad musical</strong></div>
+    {activities.length === 0 ? <p style={{ margin: '16px 0 4px', color: muted, fontStyle: 'italic', fontSize: 14 }}>No hay actividad reciente.</p> : activities.map((activity) => <div className="music-side-item" key={activity.id}>
+      <img className="music-avatar" src={activity.profiles?.avatar_url || '/default-avatar.png'} alt="" />
+      <div style={{ minWidth: 0, fontSize: 13 }}><strong style={{ color: text }}>{activity.profiles?.full_name || activity.profiles?.username || 'Usuario'}</strong><span style={{ color: '#5d7187' }}>{activity.action === 'listened' ? ' escuchó ' : activity.action === 'shared' ? ' compartió ' : activity.action === 'saved' ? ' guardó ' : ' creó una playlist '}</span><strong style={{ color: text }}>{activity.music_tracks?.title || 'una canción'}</strong><div style={{ color: '#9aa8b6', fontSize: 11, marginTop: 3 }}>{relativeTime(activity.created_at)}</div></div>
+    </div>)}
+  </div>;
 }
 
-function FriendsPlaylistsSidebar() {
+function FriendsPlaylistsSidebar({ session }: { session: any }) {
   const [playlists, setPlaylists] = useState<any[]>([]);
-
   useEffect(() => {
-    async function fetchPlaylists() {
-      const { data } = await supabase
-        .from('music_playlists')
-        .select('*, profiles:user_id(username, full_name)')
-        .eq('is_public', true)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if(data) setPlaylists(data);
-    }
-    fetchPlaylists();
-  }, []);
-
-  if (playlists.length === 0) return <p style={{color: '#666', fontSize: '0.85em', fontStyle: 'italic'}}>No hay playlists públicas.</p>;
-
-  return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
-      {playlists.map(pl => (
-        <div key={pl.id} style={{display: 'flex', gap: 10, alignItems: 'center', backgroundColor: '#fafafa', padding: 8, borderRadius: 4, border: '1px solid #edf2f7'}}>
-          <div style={{width: 40, height: 40, backgroundColor: '#e2e8f0', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-            {pl.cover_url ? <img src={pl.cover_url} style={{width: '100%', height: '100%', objectFit: 'cover'}}/> : <ListPlus size={16} color="#718096"/>}
-          </div>
-          <div style={{flex: 1, minWidth: 0}}>
-            <strong style={{display: 'block', fontSize: '0.85em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#1a202c'}}>{pl.name}</strong>
-            <span style={{fontSize: '0.75em', color: '#718096'}}>Por {pl.profiles?.full_name || pl.profiles?.username}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function MusicSearch() {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
-  const playerState = usePlayerStore();
-
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if(!query.trim()) return;
-    setSearching(true);
-    try {
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=15&key=${import.meta.env.VITE_YOUTUBE_API_KEY}`);
-      const data = await res.json();
-      setResults(data.items || []);
-    } catch(e) {
-      console.error(e);
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  return (
-    <div>
-      <h3 style={{margin: '0 0 15px 0', color: '#0750A7', fontSize: '1.2em'}}>Buscar Música</h3>
-      <form onSubmit={handleSearch} style={{display: 'flex', gap: 10, marginBottom: 20}}>
-        <div style={{position: 'relative', flex: 1}}>
-          <Search size={18} color="#999" style={{position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)'}}/>
-          <input
-            type="text"
-            placeholder="Buscar canciones en YouTube..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            style={{width: '100%', padding: '10px 10px 10px 35px', border: '1px solid #d3d9df', borderRadius: 4, outline: 'none', fontSize: '0.95em', boxSizing: 'border-box'}}
-          />
-        </div>
-        <button type="submit" disabled={searching} style={{backgroundColor: '#0750A7', color: '#fff', border: 'none', padding: '0 20px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 'bold'}}>
-          {searching ? <Loader2 className="spin" size={16}/> : 'Buscar'}
-        </button>
-      </form>
-      
-      <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
-        {results.map(item => (
-          <div key={item.id.videoId} style={{display: 'flex', alignItems: 'center', gap: 15, padding: 10, border: '1px solid #e0e5ea', borderRadius: 4, backgroundColor: '#fafafa', transition: 'background 0.2s'}}
-               onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0f4f8'}
-               onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fafafa'}>
-            <div style={{width: 60, height: 45, borderRadius: 2, overflow: 'hidden', position: 'relative'}}>
-              <img src={item.snippet.thumbnails?.default?.url} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-            </div>
-
-            <div style={{flex: 1, minWidth: 0}}>
-              <strong style={{display: 'block', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', color: '#1a202c'}}>{item.snippet.title}</strong>
-              <span style={{fontSize: '0.85em', color: '#718096'}}>{item.snippet.channelTitle}</span>
-            </div>
-
-            <div style={{display: 'flex', gap: 8}}>
-              <button
-                onClick={() => {
-                  playerState.playSong({
-                    source_type: 'youtube',
-                    video_id: item.id.videoId,
-                    title: item.snippet.title,
-                    artist: item.snippet.channelTitle,
-                    thumbnail: item.snippet.thumbnails?.default?.url
-                  });
-                }}
-                style={{background: '#0750A7', color: '#fff', border: 'none', padding: '6px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}
-                title="Escuchar"
-              >
-                <Play size={16}/>
-              </button>
-
-              <button style={{background: '#fff', border: '1px solid #cbd5e0', padding: '6px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a5568'}} title="Guardar a Mis Canciones">
-                <Heart size={16}/>
-              </button>
-
-              <button style={{background: '#fff', border: '1px solid #cbd5e0', padding: '6px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a5568'}} title="Añadir a Playlist">
-                <Plus size={16}/>
-              </button>
-
-              <button style={{background: '#fff', border: '1px solid #cbd5e0', padding: '6px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a5568'}} title="Compartir">
-                <Share2 size={16}/>
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MusicUpload({ session, onDone }: { session: any, onDone: () => void }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState("");
-  const [artist, setArtist] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState("");
-
-  async function handleUpload(e: React.FormEvent) {
-    e.preventDefault();
-    if(!file || !title || !artist) return;
-    if(!file.type.startsWith('audio/')) {
-      setError("Solo se permiten archivos de audio.");
-      return;
-    }
-    if(file.size > 20 * 1024 * 1024) {
-      setError("El archivo es muy grande (máx 20MB).");
-      return;
-    }
-    
-    setUploading(true);
-    setError("");
-    const ext = file.name.split('.').pop();
-    const fileName = `${session.user.id}/${uuidv4()}.${ext}`;
-    
-    const { data: uploadData, error: uploadError } = await supabase.storage.from('music-media').upload(fileName, file, {
-      cacheControl: '3600',
-      upsert: false
-    });
-    
-    if(uploadError) {
-      console.error(uploadError);
-      setError("Error al subir el archivo.");
-      setUploading(false);
-      return;
-    }
-    
-    // Save to database
-    const { error: dbError } = await supabase.from('music_tracks').insert({
-      title,
-      artist,
-      source_type: 'local',
-      youtube_id: fileName, // Using this field for the storage path
-      user_id: session.user.id
-    });
-    
-    if(dbError) {
-      console.error(dbError);
-      setError("Error al guardar la canción.");
-      setUploading(false);
-      return;
-    }
-    
-    setUploading(false);
-    onDone();
-  }
-
-  return (
-    <div>
-      <h3 style={{margin: '0 0 15px 0', color: '#0750A7', fontSize: '1.2em'}}>Subir Canción</h3>
-      <div style={{backgroundColor: '#fafafa', border: '1px solid #e0e5ea', borderRadius: 4, padding: '20px', maxWidth: 500, margin: '0 auto'}}>
-        {error && <div style={{backgroundColor: '#ffebee', color: '#c62828', padding: 10, borderRadius: 4, marginBottom: 15, fontSize: '0.9em'}}>{error}</div>}
-
-        <form onSubmit={handleUpload} style={{display: 'flex', flexDirection: 'column', gap: 15}}>
-          <div>
-            <label style={{display: 'block', marginBottom: 5, fontSize: '0.9em', fontWeight: 'bold', color: '#333'}}>Archivo de audio (MP3, WAV, M4A, OGG)</label>
-            <input
-              type="file"
-              accept="audio/*"
-              onChange={e => setFile(e.target.files?.[0] || null)}
-              style={{width: '100%', padding: 8, border: '1px solid #d3d9df', borderRadius: 4, backgroundColor: '#fff', boxSizing: 'border-box'}}
-            />
-          </div>
-
-          <div>
-            <label style={{display: 'block', marginBottom: 5, fontSize: '0.9em', fontWeight: 'bold', color: '#333'}}>Título</label>
-            <input
-              type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="Ej: La Incondicional"
-              style={{width: '100%', padding: 8, border: '1px solid #d3d9df', borderRadius: 4, outline: 'none', boxSizing: 'border-box'}}
-            />
-          </div>
-
-          <div>
-            <label style={{display: 'block', marginBottom: 5, fontSize: '0.9em', fontWeight: 'bold', color: '#333'}}>Artista</label>
-            <input
-              type="text"
-              value={artist}
-              onChange={e => setArtist(e.target.value)}
-              placeholder="Ej: Luis Miguel"
-              style={{width: '100%', padding: 8, border: '1px solid #d3d9df', borderRadius: 4, outline: 'none', boxSizing: 'border-box'}}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={uploading || !file || !title || !artist}
-            style={{
-              backgroundColor: '#0750A7',
-              color: '#fff',
-              border: 'none',
-              padding: '10px',
-              borderRadius: 4,
-              cursor: (uploading || !file || !title || !artist) ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              fontWeight: 'bold',
-              opacity: (uploading || !file || !title || !artist) ? 0.7 : 1,
-              marginTop: 10
-            }}
-          >
-            {uploading ? <><Loader2 className="spin" size={18}/> Subiendo...</> : <><UploadCloud size={18}/> Subir canción</>}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-function MusicDiscover({ session }: { session: any }) {
-  const [listeningNow, setListeningNow] = useState<any[]>([]);
-  const [recentlyShared, setRecentlyShared] = useState<any[]>([]);
-  const [songOfDay, setSongOfDay] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const playerState = usePlayerStore();
-
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-
-      // 1. TUS AMIGOS ESTÁN ESCUCHANDO (Recent 'listened' activity)
-      // Group by user to get only their latest track. We'll do this client-side for simplicity.
-      const { data: activityData } = await supabase
-        .from('music_activity')
-        .select('*, profiles:user_id(id, username, full_name, avatar_url), music_tracks:track_id(*)')
-        .eq('action', 'listened')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (activityData) {
-        const uniqueUsers = new Map();
-        for (const item of activityData) {
-          if (!uniqueUsers.has(item.user_id) && item.music_tracks) {
-            // Only consider it "listening now" if it was in the last hour maybe?
-            // Actually instructions say "recent activity, no algorithm". Let's just take the latest.
-            uniqueUsers.set(item.user_id, item);
-          }
-          if (uniqueUsers.size >= 10) break; // limit to 10 unique friends
-        }
-        setListeningNow(Array.from(uniqueUsers.values()));
-      }
-
-      // 2. MÚSICA COMPARTIDA RECIENTEMENTE (Posts with music + shared activity)
-      // We will fetch music posts and explicit shares, combine and sort.
-      const { data: postsData } = await supabase
-        .from('posts')
-        .select('*, profiles:user_id(username, full_name, avatar_url), music_tracks:music_track_id(*)')
-        .not('music_track_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      const { data: sharedData } = await supabase
-        .from('music_activity')
-        .select('*, profiles:user_id(username, full_name, avatar_url), music_tracks:track_id(*)')
-        .eq('action', 'shared')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      const combined: any[] = [];
-      if (postsData) {
-        postsData.forEach(p => combined.push({
-           type: 'post',
-           id: p.id,
-           created_at: p.created_at,
-           user: p.profiles,
-           track: p.music_tracks
-        }));
-      }
-      if (sharedData) {
-        sharedData.forEach(s => combined.push({
-           type: 'shared',
-           id: s.id,
-           created_at: s.created_at,
-           user: s.profiles,
-           track: s.music_tracks
-        }));
-      }
-
-      combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setRecentlyShared(combined.slice(0, 15));
-
-      // 3. CANCIÓN DEL DÍA
-      // Song of the day of the current user, or maybe global?
-      // "La canción debe estar conectada con ProfileView. Si el usuario cambia su Canción del Día desde Música, debe cambiar también en su Perfil."
-      // So we fetch current user's song of the day.
-      const { data: sodData } = await supabase
-        .from('profile_song_of_day')
-        .select('*, music_tracks(*)')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-
-      if (sodData && sodData.music_tracks) {
-        setSongOfDay(sodData.music_tracks);
-      }
-
-      setLoading(false);
-    }
-    load();
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from('music_playlists').select('*, profiles:user_id(username, full_name, avatar_url)').eq('is_public', true).neq('user_id', session.user.id).order('created_at', { ascending: false }).limit(5);
+      if (!cancelled && data) setPlaylists(data);
+    })();
+    return () => { cancelled = true; };
   }, [session.user.id]);
+  return <div className="music-panel music-side-card">
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}><Users size={18} color={blue} /><strong style={{ color: text, fontSize: 17 }}>Playlists de amigos</strong></div>
+    {playlists.length === 0 ? <p style={{ margin: '16px 0 4px', color: muted, fontStyle: 'italic', fontSize: 14 }}>No hay playlists públicas de amigos.</p> : playlists.map((playlist) => <div className="music-side-item" key={playlist.id}>
+      <div style={{ width: 44, height: 44, flex: '0 0 44px', borderRadius: 5, overflow: 'hidden', background: '#edf2f7', display: 'grid', placeItems: 'center' }}>{playlist.cover_url ? <img src={playlist.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ListPlus size={18} color={muted} />}</div>
+      <div style={{ minWidth: 0 }}><strong style={{ display: 'block', color: text, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{playlist.name}</strong><span style={{ color: muted, fontSize: 11 }}>Por {playlist.profiles?.full_name || playlist.profiles?.username || 'Usuario'}</span></div>
+    </div>)}
+  </div>;
+}
 
-  const handlePlayTrack = (track: any) => {
-    const song = {
-      source_type: track.source_type,
-      video_id: track.youtube_id,
-      audio_url: track.source_type === 'local' ? supabase.storage.from('music-media').getPublicUrl(track.youtube_id).data.publicUrl : undefined,
-      title: track.title,
-      artist: track.artist,
-      thumbnail: track.cover_url,
-      duration: track.duration?.toString(),
-      id: track.id
-    };
-    playerState.playSong(song as any);
-  };
+function MusicSearch({ session }: { session: any }) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<YouTubeResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [error, setError] = useState('');
+  const [selectedTrack, setSelectedTrack] = useState<MusicTrack | null>(null);
+  const [notice, setNotice] = useState('');
+  async function handleSearch(event: React.FormEvent) {
+    event.preventDefault();
+    const value = query.trim();
+    if (!value) return;
+    setSearching(true); setError(''); setNotice('');
+    try {
+      const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+      if (!apiKey) throw new Error('Falta VITE_YOUTUBE_API_KEY');
+      const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(value)}&type=video&maxResults=15&key=${apiKey}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error?.message || 'No se pudo buscar música.');
+      setResults((data.items || []).filter((item: YouTubeResult) => item?.id?.videoId));
+    } catch (err: any) { console.error(err); setError(err?.message || 'No se pudo completar la búsqueda.'); }
+    finally { setSearching(false); }
+  }
+  return <Card>
+    <h2 style={{ margin: '0 0 15px', color: text, fontSize: 22 }}>Buscar música</h2>
+    <form onSubmit={handleSearch} className="music-search-row" style={{ marginBottom: 18 }}>
+      <div style={{ position: 'relative', flex: 1, minWidth: 0 }}><Search size={18} color="#8192a5" style={{ position: 'absolute', left: 13, top: 13 }} /><input className="music-search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar canciones, artistas, vídeos..." /></div>
+      <button type="submit" disabled={searching} style={{ minWidth: 96, borderRadius: 5, color: '#fff', background: blue, fontWeight: 700 }}>{searching ? <Loader2 size={18} className="spin" /> : 'Buscar'}</button>
+    </form>
+    {error && <div style={{ padding: 12, marginBottom: 14, borderRadius: 5, color: '#a52828', background: '#fff1f1', border: '1px solid #f0caca', fontSize: 13 }}>{error}</div>}
+    {notice && <div style={{ padding: 12, marginBottom: 14, borderRadius: 5, color: '#24613b', background: '#effaf2', border: '1px solid #ccebd5', fontSize: 13 }}>{notice}</div>}
+    {results.length === 0 && !searching ? <div style={{ padding: '45px 15px', textAlign: 'center', color: muted }}><Search size={42} color="#b8c5d2" /><p style={{ margin: '12px 0 0' }}>Busca una canción para ver su carátula, artista y acciones.</p></div> : <div>{results.map((item) => { const cover = item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url; const track: MusicTrack = { source_type: 'youtube', youtube_id: item.id.videoId, title: stripHtml(item.snippet.title), artist: item.snippet.channelTitle, cover_url: cover }; return <SearchResult key={item.id.videoId} track={track} onNotice={setNotice} onAdd={() => setSelectedTrack(track)} session={session} />; })}</div>}
+    {selectedTrack && <PlaylistPicker track={selectedTrack} session={session} onClose={() => setSelectedTrack(null)} onDone={() => { setSelectedTrack(null); setNotice('Canción añadida a la playlist.'); }} />}
+  </Card>;
+}
 
-  const handleChangeSongOfDay = async () => {
-     // A modal or prompt to change song of day. For now let's just alert since we need a picker.
-     // In a full implementation, this could open a modal with search/my music.
-     alert("Para cambiar la canción del día, ve a Mi Música o Buscar, y selecciona 'Establecer como canción del día' en las opciones de la canción.");
-  };
+function SearchResult({ track, session, onNotice, onAdd }: { track: MusicTrack; session: any; onNotice: (message: string) => void; onAdd: () => void }) {
+  const player = usePlayerStore();
+  const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+  async function ensureTrack() {
+    if (track.id) return track.id;
+    const { data: existing } = await supabase.from('music_tracks').select('id').eq('source_type', 'youtube').eq('youtube_id', track.youtube_id).maybeSingle();
+    if (existing?.id) return existing.id;
+    const { data, error } = await supabase.from('music_tracks').insert({ user_id: session.user.id, title: track.title, artist: track.artist, source_type: 'youtube', youtube_id: track.youtube_id, cover_url: track.cover_url }).select('id').single();
+    if (error) throw error;
+    return data.id;
+  }
+  async function saveFavorite() {
+    setBusy(true);
+    try { const id = await ensureTrack(); const { error } = await supabase.from('music_favorites').upsert({ user_id: session.user.id, track_id: id }, { onConflict: 'user_id,track_id' }); if (error) throw error; setSaved(true); await supabase.from('music_activity').insert({ user_id: session.user.id, track_id: id, action: 'saved' }); onNotice('Canción guardada en tus favoritas.'); }
+    catch (error: any) { console.error(error); onNotice(error?.message || 'No se pudo guardar la canción.'); }
+    finally { setBusy(false); }
+  }
+  async function share() {
+    setBusy(true);
+    try { const id = await ensureTrack(); await supabase.from('music_activity').insert({ user_id: session.user.id, track_id: id, action: 'shared' }); const shareData = { title: track.title, text: `${track.title} · ${track.artist}`, url: `https://www.youtube.com/watch?v=${track.youtube_id}` }; if (navigator.share) await navigator.share(shareData); else { await navigator.clipboard.writeText(shareData.url); onNotice('Enlace de la canción copiado.'); } }
+    catch (error: any) { if (error?.name !== 'AbortError') onNotice(error?.message || 'No se pudo compartir.'); }
+    finally { setBusy(false); }
+  }
+  const play = () => player.playSong({ source_type: 'youtube', video_id: track.youtube_id || undefined, title: track.title, artist: track.artist || '', thumbnail: track.cover_url || undefined });
+  return <div className="music-result">
+    <div style={{ position: 'relative', flex: '0 0 72px' }}>{track.cover_url ? <img className="music-cover" src={track.cover_url} alt="" /> : <div className="music-cover" />}<button className="music-action primary" onClick={play} title="Reproducir" style={{ position: 'absolute', left: 18, top: 18, width: 36, height: 36, borderRadius: '50%' }}><Play size={17} fill="currentColor" /></button></div>
+    <div style={{ flex: 1, minWidth: 0 }}><strong style={{ display: 'block', color: '#3f2aa6', fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.title}</strong><span style={{ display: 'block', marginTop: 4, color: muted, fontSize: 13 }}>{track.artist}</span><span style={{ display: 'block', marginTop: 3, color: '#9aa8b6', fontSize: 11 }}>YouTube</span></div>
+    <div className="music-result-actions" style={{ display: 'flex', gap: 7, alignItems: 'center' }}><button className="music-action primary" onClick={play} title="Reproducir"><Play size={16} fill="currentColor" /></button><button className="music-action" onClick={saveFavorite} disabled={busy} title="Guardar en favoritas"><Heart size={16} fill={saved ? 'currentColor' : 'none'} color={saved ? blue : undefined} /></button><button className="music-action" onClick={onAdd} disabled={busy} title="Añadir a playlist"><Plus size={18} /></button><button className="music-action" onClick={share} disabled={busy} title="Compartir"><Share2 size={16} /></button></div>
+  </div>;
+}
 
-  if(loading) return <div style={{textAlign: 'center', padding: 40}}><Loader2 className="spin" size={24} /></div>;
-
-  return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 25}}>
-      {/* 1. TUS AMIGOS ESTÁN ESCUCHANDO */}
-      <div>
-        <h3 style={{margin: '0 0 10px 0', color: '#0750A7', fontSize: '1.1em', display: 'flex', alignItems: 'center', gap: 6}}>
-          <Heart size={18}/> Tus amigos están escuchando
-        </h3>
-        {listeningNow.length === 0 ? (
-          <p style={{color: '#666', fontSize: '0.9em', fontStyle: 'italic'}}>Nadie está escuchando música ahora mismo.</p>
-        ) : (
-          <div style={{display: 'flex', gap: 15, overflowX: 'auto', paddingBottom: 10}}>
-            {listeningNow.map((item) => (
-              <div key={item.id} style={{
-                minWidth: 160,
-                maxWidth: 160,
-                backgroundColor: '#fff',
-                border: '1px solid #e0e5ea',
-                borderRadius: 6,
-                padding: 12,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                position: 'relative'
-              }}>
-                <img src={item.profiles?.avatar_url || '/default-avatar.png'} style={{width: 48, height: 48, borderRadius: '50%', marginBottom: 8}}/>
-                <strong style={{fontSize: '0.9em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%'}}>
-                  {item.profiles?.full_name || item.profiles?.username}
-                </strong>
-                <span style={{fontSize: '0.8em', color: '#666', marginBottom: 10}}>Está escuchando</span>
-
-                <div style={{position: 'relative', width: 80, height: 80, marginBottom: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                   {item.music_tracks.cover_url ?
-                     <img src={item.music_tracks.cover_url} style={{width: '100%', height: '100%', objectFit: 'cover'}}/> :
-                     <Music size={24} color="#999"/>}
-
-                   <button
-                     onClick={() => handlePlayTrack(item.music_tracks)}
-                     style={{
-                       position: 'absolute',
-                       background: 'rgba(7, 80, 167, 0.8)',
-                       color: '#fff',
-                       border: 'none',
-                       borderRadius: '50%',
-                       width: 36, height: 36,
-                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                       cursor: 'pointer'
-                     }}>
-                     <Play size={18} fill="#fff" style={{marginLeft: 2}}/>
-                   </button>
-                </div>
-                <strong style={{fontSize: '0.85em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%'}}>{item.music_tracks.title}</strong>
-                <span style={{fontSize: '0.8em', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%'}}>{item.music_tracks.artist}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 2. MÚSICA COMPARTIDA RECIENTEMENTE (Full Width) */}
-      <div>
-        <h3 style={{margin: '0 0 10px 0', color: '#0750A7', fontSize: '1.1em', display: 'flex', alignItems: 'center', gap: 6}}>
-          <Share2 size={18}/> Música compartida recientemente
-        </h3>
-        {recentlyShared.length === 0 ? (
-          <p style={{color: '#666', fontSize: '0.9em', fontStyle: 'italic'}}>No hay música compartida recientemente.</p>
-        ) : (
-          <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
-            {recentlyShared.map(item => (
-              <div key={item.id} style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                backgroundColor: '#fff',
-                border: '1px solid #e0e5ea',
-                borderRadius: 4,
-                padding: 12
-              }}>
-                <div style={{display: 'flex', alignItems: 'center', gap: 15, flex: 1, minWidth: 0}}>
-                  <img src={item.user?.avatar_url || '/default-avatar.png'} style={{width: 36, height: 36, borderRadius: '50%'}}/>
-
-                  <div style={{width: 48, height: 48, backgroundColor: '#e2e8f0', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0}}>
-                    {item.track.cover_url ? <img src={item.track.cover_url} style={{width: '100%', height: '100%', objectFit: 'cover'}}/> : <Music size={20} color="#a0aec0"/>}
-                  </div>
-
-                  <div style={{flex: 1, minWidth: 0}}>
-                    <strong style={{display: 'block', fontSize: '0.95em', color: '#1a202c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{item.track.title}</strong>
-                    <span style={{fontSize: '0.85em', color: '#718096', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block'}}>{item.track.artist}</span>
-                  </div>
-
-                  <div style={{fontSize: '0.85em', color: '#666', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: 120, flexShrink: 0}}>
-                    <span>{item.user?.full_name || item.user?.username}</span>
-                    <span style={{fontSize: '0.9em', color: '#999'}}>hace {Math.round((Date.now() - new Date(item.created_at).getTime()) / 60000)} min</span>
-                  </div>
-                </div>
-
-                <div style={{display: 'flex', gap: 8, marginLeft: 15}}>
-                  <button onClick={() => handlePlayTrack(item.track)} style={{background: 'transparent', border: '1px solid #cbd5e0', padding: '6px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a5568'}}>
-                    <Play size={16}/>
-                  </button>
-                  <button style={{background: 'transparent', border: '1px solid #cbd5e0', padding: '6px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a5568'}}>
-                    <Heart size={16}/>
-                  </button>
-                  <button style={{background: 'transparent', border: '1px solid #cbd5e0', padding: '6px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a5568'}}>
-                    <Share2 size={16}/>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 3. BLOQUE INFERIOR HORIZONTAL */}
-      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20}}>
-        {/* CANCIÓN DEL DÍA */}
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e0e5ea', borderRadius: 4, padding: 15, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <h3 style={{margin: '0 0 10px 0', color: '#0750A7', fontSize: '1em'}}>Canción del día</h3>
-          <div style={{width: 80, height: 80, backgroundColor: '#edf2f7', borderRadius: 4, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative'}}>
-            {songOfDay?.cover_url ?
-              <img src={songOfDay.cover_url} style={{width: '100%', height: '100%', objectFit: 'cover'}}/> :
-              <Music size={30} color="#cbd5e0"/>}
-
-            {songOfDay && (
-              <button onClick={() => handlePlayTrack(songOfDay)} style={{position: 'absolute', background: 'rgba(7, 80, 167, 0.9)', color: '#fff', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'}}>
-                <Play size={16} fill="#fff" style={{marginLeft: 2}}/>
-              </button>
-            )}
-          </div>
-
-          {songOfDay ? (
-            <>
-              <strong style={{fontSize: '0.9em', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%'}}>{songOfDay.title}</strong>
-              <span style={{fontSize: '0.8em', color: '#666', marginBottom: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%'}}>{songOfDay.artist}</span>
-            </>
-          ) : (
-            <p style={{fontSize: '0.8em', color: '#666', marginBottom: 10}}>No has elegido tu canción.</p>
-          )}
-
-          <button onClick={handleChangeSongOfDay} style={{background: 'transparent', border: '1px solid #0750A7', color: '#0750A7', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: '0.8em', width: '100%'}}>
-            Cambiar
-          </button>
-        </div>
-
-        {/* ACCESOS RÁPIDOS */}
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e0e5ea', borderRadius: 4, padding: 15, display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{margin: '0 0 10px 0', color: '#0750A7', fontSize: '1em'}}>Mis accesos rápidos</h3>
-          <div style={{display: 'flex', flexDirection: 'column', gap: 8, flex: 1, justifyContent: 'center'}}>
-            <button style={{background: '#f0f4f8', border: '1px solid #d3d9df', padding: 8, borderRadius: 4, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9em'}}>
-              <Heart size={16} color="#0750A7"/> Mis Favoritas
-            </button>
-            <button style={{background: '#f0f4f8', border: '1px solid #d3d9df', padding: 8, borderRadius: 4, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9em'}}>
-              <ListPlus size={16} color="#0750A7"/> Crear nueva playlist
-            </button>
-            <button style={{background: '#f0f4f8', border: '1px solid #d3d9df', padding: 8, borderRadius: 4, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9em'}}>
-              <UploadCloud size={16} color="#0750A7"/> Subir canción
-            </button>
-          </div>
-        </div>
-      </div>
+function PlaylistPicker({ track, session, onClose, onDone }: { track: MusicTrack; session: any; onClose: () => void; onDone: () => void }) {
+  const [playlists, setPlaylists] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  useEffect(() => { (async () => { const { data } = await supabase.from('music_playlists').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }); setPlaylists(data || []); setLoading(false); })(); }, [session.user.id]);
+  async function ensureTrack() { const { data: existing } = await supabase.from('music_tracks').select('id').eq('source_type', 'youtube').eq('youtube_id', track.youtube_id).maybeSingle(); if (existing?.id) return existing.id; const { data, error } = await supabase.from('music_tracks').insert({ user_id: session.user.id, title: track.title, artist: track.artist, source_type: 'youtube', youtube_id: track.youtube_id, cover_url: track.cover_url }).select('id').single(); if (error) throw error; return data.id; }
+  async function addToPlaylist(playlistId: string) { setError(''); try { const trackId = await ensureTrack(); const { error } = await supabase.from('music_playlist_items').upsert({ playlist_id: playlistId, track_id: trackId, position: 0 }, { onConflict: 'playlist_id,track_id' }); if (error) throw error; onDone(); } catch (err: any) { setError(err?.message || 'No se pudo añadir la canción.'); } }
+  async function createAndAdd() { if (!name.trim()) return; setCreating(true); setError(''); try { const { data, error } = await supabase.from('music_playlists').insert({ user_id: session.user.id, name: name.trim(), is_public: true }).select('id').single(); if (error) throw error; await addToPlaylist(data.id); } catch (err: any) { setError(err?.message || 'No se pudo crear la playlist.'); } finally { setCreating(false); } }
+  return <div className="music-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><div className="music-modal">
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: `1px solid ${border}` }}><strong style={{ color: text }}>Añadir a playlist</strong><button onClick={onClose} style={{ background: 'transparent', color: muted }}><X size={18} /></button></div>
+    <div style={{ padding: 16 }}><div style={{ display: 'flex', gap: 10, marginBottom: 15 }}>{track.cover_url && <img src={track.cover_url} alt="" style={{ width: 52, height: 52, borderRadius: 4, objectFit: 'cover' }} />}<div style={{ minWidth: 0 }}><strong style={{ display: 'block', color: text }}>{track.title}</strong><span style={{ color: muted, fontSize: 12 }}>{track.artist}</span></div></div>
+      {loading ? <Loader2 className="spin" size={20} /> : playlists.length === 0 ? <p style={{ color: muted, fontSize: 13 }}>No tienes playlists todavía. Crea una abajo.</p> : playlists.map((playlist) => <button key={playlist.id} onClick={() => addToPlaylist(playlist.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: 10, marginBottom: 7, border: `1px solid ${border}`, borderRadius: 5, color: text, background: '#fff', textAlign: 'left', cursor: 'pointer' }}><ListPlus size={17} color={blue} />{playlist.name}</button>)}
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre de nueva playlist" style={{ flex: 1, minWidth: 0, height: 38, padding: '0 10px', border: `1px solid ${border}`, borderRadius: 5 }} /><button onClick={createAndAdd} disabled={creating || !name.trim()} style={{ padding: '0 13px', borderRadius: 5, color: '#fff', background: blue, fontWeight: 700 }}>{creating ? <Loader2 className="spin" size={17} /> : <Plus size={17} />}</button></div>
+      {error && <p style={{ margin: '10px 0 0', color: '#b52a2a', fontSize: 12 }}>{error}</p>}
     </div>
-  );
+  </div></div>;
+}
+
+function MusicDiscover({ onSearch }: { onSearch: () => void }) {
+  const [activities, setActivities] = useState<any[]>([]);
+  const player = usePlayerStore();
+  useEffect(() => { (async () => { const { data } = await supabase.from('music_activity').select('*, profiles:user_id(username, full_name, avatar_url), music_tracks:track_id(*)').order('created_at', { ascending: false }).limit(12); setActivities(data || []); })(); }, []);
+  return <div style={{ display: 'grid', gap: 14 }}><Card><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}><div><h2 style={{ margin: 0, color: text, fontSize: 21 }}>Descubrir</h2><p style={{ margin: '5px 0 0', color: muted }}>Música compartida recientemente por la comunidad.</p></div><button onClick={onSearch} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 13px', border: `1px solid ${blue}`, borderRadius: 5, color: blue, background: '#fff', fontWeight: 700 }}><Search size={16} /> Buscar</button></div></Card><Card><h3 style={{ margin: '0 0 10px', color: text }}>Actividad musical reciente</h3>{activities.length === 0 ? <p style={{ color: muted, fontStyle: 'italic' }}>No hay actividad reciente.</p> : activities.map((activity) => { const track = activity.music_tracks; if (!track) return null; const cover = track.cover_url || (track.source_type === 'youtube' && track.youtube_id ? `https://i.ytimg.com/vi/${track.youtube_id}/hqdefault.jpg` : null); return <div className="music-result" key={activity.id}>{cover ? <img className="music-cover" src={cover} alt="" /> : <div className="music-cover" style={{ display: 'grid', placeItems: 'center' }}><Music size={24} color="#aebdca" /></div>}<div style={{ flex: 1, minWidth: 0 }}><strong style={{ color: text }}>{track.title}</strong><div style={{ color: muted, fontSize: 13 }}>{track.artist || 'Artista desconocido'}</div><div style={{ color: '#98a6b4', fontSize: 11, marginTop: 3 }}>{activity.profiles?.full_name || activity.profiles?.username || 'Usuario'} · {relativeTime(activity.created_at)}</div></div><button className="music-action primary" onClick={() => player.playSong({ source_type: track.source_type, video_id: track.youtube_id || undefined, audio_url: track.source_type === 'local' && track.youtube_id ? supabase.storage.from('music-media').getPublicUrl(track.youtube_id).data.publicUrl : undefined, title: track.title, artist: track.artist || '', thumbnail: cover || undefined, id: track.id })}><Play size={16} fill="currentColor" /></button></div>; })}</Card></div>;
 }
 
 function MyMusic({ session }: { session: any }) {
   const [tracks, setTracks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const playerState = usePlayerStore();
-
-  useEffect(() => {
-    async function load() {
-      // In a real app we'd fetch favorites, saved, history.
-      // For now let's just fetch user's uploaded tracks to show something.
-      const { data } = await supabase.from('music_tracks').select('*').eq('user_id', session.user.id).order('created_at', {ascending: false});
-      if(data) setTracks(data);
-      setLoading(false);
-    }
-    load();
-  }, [session.user.id]);
-
-  if(loading) return <div style={{textAlign: 'center', padding: 40}}><Loader2 className="spin" size={24}/></div>;
-
-  return (
-    <div>
-      <h3 style={{margin: '0 0 15px 0', color: '#0750A7', fontSize: '1.2em'}}>Mi Música</h3>
-
-      <div style={{display: 'flex', gap: 15, marginBottom: 25}}>
-        <div style={{flex: 1, backgroundColor: '#f0f4f8', border: '1px solid #d3d9df', borderRadius: 4, padding: 15, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer'}}>
-          <div style={{width: 40, height: 40, backgroundColor: '#0750A7', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-            <Heart size={20} fill="#fff"/>
-          </div>
-          <div>
-            <strong style={{display: 'block', fontSize: '0.95em'}}>Favoritas</strong>
-            <span style={{fontSize: '0.85em', color: '#666'}}>12 canciones</span>
-          </div>
-        </div>
-
-        <div style={{flex: 1, backgroundColor: '#f0f4f8', border: '1px solid #d3d9df', borderRadius: 4, padding: 15, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer'}}>
-          <div style={{width: 40, height: 40, backgroundColor: '#0750A7', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-            <Music size={20}/>
-          </div>
-          <div>
-            <strong style={{display: 'block', fontSize: '0.95em'}}>Mis subidas</strong>
-            <span style={{fontSize: '0.85em', color: '#666'}}>{tracks.length} canciones</span>
-          </div>
-        </div>
-      </div>
-
-      <h4 style={{margin: '0 0 10px 0', fontSize: '1em', color: '#333'}}>Mis canciones subidas</h4>
-      {tracks.length === 0 ? (
-        <p style={{color: '#666', fontSize: '0.9em', fontStyle: 'italic'}}>No has subido ninguna canción todavía.</p>
-      ) : (
-        <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-          {tracks.map(t => (
-            <div key={t.id} style={{display: 'flex', alignItems: 'center', gap: 12, padding: 8, border: '1px solid #e0e5ea', borderRadius: 4, backgroundColor: '#fff'}}>
-              <div style={{width: 40, height: 40, backgroundColor: '#edf2f7', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                {t.cover_url ? <img src={t.cover_url} style={{width: '100%', height: '100%', objectFit: 'cover'}}/> : <Music size={16} color="#a0aec0"/>}
-              </div>
-              <div style={{flex: 1, minWidth: 0}}>
-                <strong style={{display: 'block', fontSize: '0.9em', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden'}}>{t.title}</strong>
-                <span style={{fontSize: '0.8em', color: '#718096'}}>{t.artist}</span>
-              </div>
-              <button
-                onClick={() => {
-                  playerState.playSong({
-                    source_type: 'local',
-                    video_id: t.youtube_id,
-                    audio_url: supabase.storage.from('music-media').getPublicUrl(t.youtube_id).data.publicUrl,
-                    title: t.title,
-                    artist: t.artist,
-                    id: t.id
-                  });
-                }}
-                style={{background: '#0750A7', color: '#fff', border: 'none', padding: '6px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}
-              >
-                <Play size={14}/>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  const player = usePlayerStore();
+  useEffect(() => { (async () => { const { data } = await supabase.from('music_tracks').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }); setTracks(data || []); setLoading(false); })(); }, [session.user.id]);
+  if (loading) return <Card><div style={{ display: 'grid', placeItems: 'center', padding: 40 }}><Loader2 className="spin" size={24} /></div></Card>;
+  return <Card><h2 style={{ margin: '0 0 16px', color: text, fontSize: 22 }}>Mi música</h2>{tracks.length === 0 ? <p style={{ color: muted }}>Todavía no has subido canciones.</p> : tracks.map((track) => { const cover = track.cover_url || (track.source_type === 'youtube' && track.youtube_id ? `https://i.ytimg.com/vi/${track.youtube_id}/hqdefault.jpg` : null); return <div className="music-result" key={track.id}>{cover ? <img className="music-cover" src={cover} alt="" /> : <div className="music-cover" style={{ display: 'grid', placeItems: 'center' }}><Music size={24} color="#aebdca" /></div>}<div style={{ flex: 1, minWidth: 0 }}><strong style={{ color: text }}>{track.title}</strong><div style={{ color: muted, fontSize: 13 }}>{track.artist}</div></div><button className="music-action primary" onClick={() => player.playSong({ source_type: track.source_type, video_id: track.youtube_id || undefined, audio_url: track.source_type === 'local' && track.youtube_id ? supabase.storage.from('music-media').getPublicUrl(track.youtube_id).data.publicUrl : undefined, title: track.title, artist: track.artist || '', thumbnail: cover || undefined, id: track.id })}><Play size={16} fill="currentColor" /></button></div>; })}</Card>;
 }
 
 function PlaylistsTab({ session }: { session: any }) {
   const [playlists, setPlaylists] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      const { data } = await supabase.from('music_playlists').select('*').eq('user_id', session.user.id).order('created_at', {ascending: false});
-      if(data) setPlaylists(data);
-      setLoading(false);
-    }
-    load();
-  }, [session.user.id]);
-
-  if(loading) return <div style={{textAlign: 'center', padding: 40}}><Loader2 className="spin" size={24}/></div>;
-
-  return (
-    <div>
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20}}>
-        <h3 style={{margin: 0, color: '#0750A7', fontSize: '1.2em'}}>Mis Playlists</h3>
-        <button style={{backgroundColor: '#0750A7', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 'bold', fontSize: '0.85em'}}>
-          <Plus size={16}/> Crear playlist
-        </button>
-      </div>
-
-      {playlists.length === 0 ? (
-        <div style={{textAlign: 'center', padding: '30px 15px', backgroundColor: '#fafafa', border: '1px solid #e0e5ea', borderRadius: 4}}>
-          <ListPlus size={32} color="#a0aec0" style={{marginBottom: 10}}/>
-          <p style={{color: '#666', fontSize: '0.9em', margin: 0}}>No tienes playlists creadas todavía.</p>
-        </div>
-      ) : (
-        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 15}}>
-          {playlists.map(pl => (
-            <div key={pl.id} style={{
-              backgroundColor: '#fff',
-              border: '1px solid #e0e5ea',
-              borderRadius: 4,
-              overflow: 'hidden',
-              cursor: 'pointer',
-              transition: 'transform 0.1s, box-shadow 0.1s'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
-            >
-              <div style={{width: '100%', aspectRatio: '1/1', backgroundColor: '#edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
-                {pl.cover_url ? <img src={pl.cover_url} style={{width: '100%', height: '100%', objectFit: 'cover'}}/> : <ListPlus size={32} color="#a0aec0"/>}
-                <div className="play-overlay" style={{position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s'}}>
-                  <button style={{background: '#0750A7', color: '#fff', border: 'none', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'}}>
-                    <Play size={20} fill="#fff" style={{marginLeft: 2}}/>
-                  </button>
-                </div>
-              </div>
-              <div style={{padding: '12px'}}>
-                <strong style={{display: 'block', fontSize: '0.95em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 4}}>{pl.name}</strong>
-                <span style={{fontSize: '0.8em', color: '#718096'}}>{pl.is_public ? 'Pública' : 'Privada'}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  const [name, setName] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState('');
+  async function load() { const { data } = await supabase.from('music_playlists').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }); setPlaylists(data || []); }
+  useEffect(() => { load(); }, [session.user.id]);
+  async function createPlaylist() { if (!name.trim()) return; setCreating(true); setError(''); const { error: insertError } = await supabase.from('music_playlists').insert({ user_id: session.user.id, name: name.trim(), is_public: true }); if (insertError) setError(insertError.message); else { setName(''); await load(); } setCreating(false); }
+  return <Card><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16 }}><h2 style={{ margin: 0, color: text, fontSize: 22 }}>Mis playlists</h2><div style={{ display: 'flex', gap: 7 }}><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nueva playlist" style={{ width: 180, height: 36, padding: '0 9px', border: `1px solid ${border}`, borderRadius: 5 }} /><button onClick={createPlaylist} disabled={creating || !name.trim()} className="music-action primary"><Plus size={17} /></button></div></div>{error && <p style={{ color: '#b52a2a', fontSize: 13 }}>{error}</p>}{playlists.length === 0 ? <p style={{ color: muted }}>No tienes playlists creadas todavía.</p> : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(190px,1fr))', gap: 12 }}>{playlists.map((playlist) => <div key={playlist.id} style={{ border: `1px solid ${border}`, borderRadius: 6, overflow: 'hidden', background: '#fff' }}><div style={{ aspectRatio: '1', background: '#edf2f7', display: 'grid', placeItems: 'center' }}>{playlist.cover_url ? <img src={playlist.cover_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ListPlus size={35} color="#aab9c7" />}</div><div style={{ padding: 11 }}><strong style={{ color: text }}>{playlist.name}</strong><div style={{ color: muted, fontSize: 12, marginTop: 4 }}>{playlist.is_public ? 'Pública' : 'Privada'}</div></div></div>)}</div>}</Card>;
 }
+
+function MusicUpload({ session, onDone }: { session: any; onDone: () => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [title, setTitle] = useState('');
+  const [artist, setArtist] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  async function upload(event: React.FormEvent) { event.preventDefault(); if (!file || !title.trim() || !artist.trim()) return; if (!file.type.startsWith('audio/')) return setError('Solo se permiten archivos de audio.'); if (file.size > 20 * 1024 * 1024) return setError('El archivo es demasiado grande. Máximo 20 MB.'); setUploading(true); setError(''); try { const ext = file.name.split('.').pop() || 'mp3'; const path = `${session.user.id}/${uuidv4()}.${ext}`; const { error: uploadError } = await supabase.storage.from('music-media').upload(path, file, { cacheControl: '3600', upsert: false }); if (uploadError) throw uploadError; const { error: dbError } = await supabase.from('music_tracks').insert({ user_id: session.user.id, title: title.trim(), artist: artist.trim(), source_type: 'local', youtube_id: path }); if (dbError) throw dbError; setFile(null); setTitle(''); setArtist(''); onDone(); } catch (err: any) { setError(err?.message || 'No se pudo subir la canción.'); } finally { setUploading(false); } }
+  return <Card><h2 style={{ margin: '0 0 16px', color: text, fontSize: 22 }}>Subir canción</h2>{error && <p style={{ color: '#b52a2a', background: '#fff1f1', border: '1px solid #f0caca', padding: 10, borderRadius: 5, fontSize: 13 }}>{error}</p>}<form onSubmit={upload} style={{ display: 'grid', gap: 13, maxWidth: 560 }}><label style={{ color: text, fontWeight: 700, fontSize: 13 }}>Archivo de audio<input type="file" accept="audio/*" onChange={(e) => setFile(e.target.files?.[0] || null)} style={{ display: 'block', width: '100%', marginTop: 6 }} /></label><label style={{ color: text, fontWeight: 700, fontSize: 13 }}>Título<input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título de la canción" style={{ display: 'block', width: '100%', height: 38, marginTop: 6, padding: '0 10px', border: `1px solid ${border}`, borderRadius: 5 }} /></label><label style={{ color: text, fontWeight: 700, fontSize: 13 }}>Artista<input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artista" style={{ display: 'block', width: '100%', height: 38, marginTop: 6, padding: '0 10px', border: `1px solid ${border}`, borderRadius: 5 }} /></label><button type="submit" disabled={uploading || !file || !title.trim() || !artist.trim()} style={{ width: 150, height: 40, borderRadius: 5, color: '#fff', background: blue, fontWeight: 700 }}>{uploading ? <Loader2 className="spin" size={18} /> : <><UploadCloud size={17} style={{ verticalAlign: 'middle', marginRight: 6 }} />Subir canción</>}</button></form></Card>;
+}
+
+function stripHtml(value: string) { return value.replace(/<[^>]*>/g, '').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&'); }
+function relativeTime(value: string) { const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000)); if (minutes < 1) return 'ahora'; if (minutes < 60) return `hace ${minutes} min`; const hours = Math.floor(minutes / 60); if (hours < 24) return `hace ${hours} h`; return `hace ${Math.floor(hours / 24)} d`; }
