@@ -830,8 +830,11 @@ function ProfileViewLegacy({ session, visitedUserId, goBack, navigate, onEditBan
     loadMusicData();
   }, [targetUserId]);
 
-  const profile = useAuthStore(state => state.profile);
-  const setProfile = useAuthStore(state => state.setProfile); const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [postMenu, setPostMenu] = useState<string | null>(null);
+  const authProfile = useAuthStore(state => state.profile);
+  const setProfile = useAuthStore(state => state.setProfile);
+  const [viewedProfile, setViewedProfile] = useState<ProfileData | null>(null);
+  const profile = isOwnProfile ? authProfile : viewedProfile;
+  const [posts, setPosts] = useState<Post[]>([]); const [liked, setLiked] = useState<string[]>([]); const [draft, setDraft] = useState(""); const [saving, setSaving] = useState(false); const [uploading, setUploading] = useState<"avatar" | "banner" | "">(""); const [error, setError] = useState(""); const [profileNotFound, setProfileNotFound] = useState(false); const [openComments, setOpenComments] = useState<string | null>(null); const [shareMenu, setShareMenu] = useState<string | null>(null); const [postMenu, setPostMenu] = useState<string | null>(null);
 
 
   const deletePost = async (id: string, mediaData: any) => {
@@ -861,7 +864,8 @@ async function toggleLike(id: string) {
     ]);
     if (cancelled) return;
     if (profileError || postError || (!isOwnProfile && !profileData)) { setError((profileError || postError)?.message || "No se pudo cargar el perfil."); setProfileNotFound(true); return; }
-    setProfile(profileData as ProfileData | null);
+    setViewedProfile(profileData as ProfileData | null);
+    if (isOwnProfile) setProfile(profileData as ProfileData | null);
 
     const rows = postData ?? [];
     const authorIds = [...new Set(rows.map((row) => row.author_id).filter(Boolean))];
@@ -957,9 +961,9 @@ async function toggleLike(id: string) {
         </section>
       )}
       {isOwnProfile ? (
-        <Composer session={session} profile={profile} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} targetProfileId={session.user.id} />
+        <Composer session={session} profile={authProfile || profile} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} targetProfileId={session.user.id} />
       ) : (
-        <Composer session={session} profile={profile} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} targetProfileId={targetUserId!} targetName={name} />
+        <Composer session={session} profile={authProfile} onPublish={(newPost) => setPosts(curr => [newPost, ...curr])} targetProfileId={targetUserId!} targetName={name} />
       )}
 {error && <p className="message">{error}</p>}{posts.length ? posts.map((post) => <article className="post panel" key={post.id}><div className="post-head">          <div style={{ position: "absolute", top: 12, right: 12 }}>            {post.author_id === session.user.id && (              <button className="post-menu-toggle" onClick={() => setPostMenu(postMenu === post.id ? null : post.id)}>                <MoreHorizontal size={16} />              </button>            )}            {postMenu === post.id && post.author_id === session.user.id && (              <div className="popover" style={{ top: 24, right: 0, minWidth: 150, zIndex: 10 }}>                <button onClick={() => deletePost(post.id, post.media_data)} style={{ color: "var(--error-color, #d32f2f)", textAlign: "left", width: "100%" }}>                  🗑 Eliminar publicación                </button>              </div>            )}          </div><div className="avatar">{profile?.avatar_url ? <img src={profile.avatar_url} style={{width:"100%", height:"100%", borderRadius:"50%", objectFit:"cover"}}/> : initials}</div>
           <div>
