@@ -106,6 +106,32 @@ function showEvents(session: any, profile: any) {
   createRoot(root).render(<EventsView session={session} username={username} onExit={() => { window.location.hash = ""; window.location.reload(); }} />);
 }
 
+function isEventsTarget(target: HTMLElement | null): boolean {
+  if (!target) return false;
+
+  const direct = target.closest("button, a, [role=\"button\"], [data-page], [data-route], [aria-label], [title]") as HTMLElement | null;
+  const candidates: HTMLElement[] = [];
+  if (direct) candidates.push(direct);
+
+  let node: HTMLElement | null = target;
+  for (let depth = 0; depth < 8 && node; depth += 1, node = node.parentElement) {
+    candidates.push(node);
+  }
+
+  return candidates.some((element) => {
+    const values = [
+      element.textContent || "",
+      element.getAttribute("data-page") || "",
+      element.getAttribute("data-route") || "",
+      element.getAttribute("aria-label") || "",
+      element.getAttribute("title") || "",
+      element.getAttribute("href") || "",
+    ].map((value) => value.replace(/\s+/g, " ").trim().toLowerCase());
+
+    return values.some((value) => value === "eventos" || value === "eventos/" || value.endsWith("#eventos") || value.endsWith("/eventos"));
+  });
+}
+
 async function mountApp() {
   const { data, error } = await supabase.auth.getSession();
   if (error) { showStatus("No se pudo recuperar la sesión", "La aplicación no ha podido recuperar tu sesión de Inkorium. Puedes volver a intentarlo.", { label: "Reintentar", run: () => void mountApp() }); return; }
@@ -122,11 +148,14 @@ const { data: authListener } = supabase.auth.onAuthStateChange((event, session) 
 
 document.addEventListener("click", (event) => {
   const target = event.target as HTMLElement | null;
-  const button = target?.closest("button");
-  if (!button) return;
-  const label = button.textContent?.replace(/\s+/g, " ").trim().toLowerCase();
-  if (label === "eventos") {
-    event.preventDefault(); event.stopImmediatePropagation(); window.location.hash = "#eventos"; window.location.reload();
+  if (!isEventsTarget(target)) return;
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  if (window.location.hash !== "#eventos") {
+    window.location.hash = "#eventos";
+  } else {
+    void mountApp();
   }
 }, true);
 
