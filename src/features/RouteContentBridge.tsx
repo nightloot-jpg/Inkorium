@@ -4,12 +4,13 @@ import { supabase } from '../lib/supabase';
 import { MusicView } from './music/MusicView';
 import { VideoView } from './videos/VideoView';
 import { EventsView } from './events/EventsView';
+import { ProfileView } from './profile/ProfileView';
 
 const BRIDGE_ID = 'inkorium-route-content-bridge';
 const ROUTE_PAGES = new Set([
   'inicio', 'perfil', 'mensajes', 'personas', 'musica', 'buscar', 'fotos', 'videos', 'eventos',
 ]);
-const BRIDGED_ROUTE_PAGES = new Set(['musica', 'videos', 'eventos']);
+const BRIDGED_ROUTE_PAGES = new Set(['perfil', 'musica', 'videos', 'eventos']);
 
 type RoutePage = 'inicio' | 'perfil' | 'mensajes' | 'personas' | 'musica' | 'buscar' | 'fotos' | 'videos' | 'eventos';
 type RouteErrorBoundaryProps = { children: ReactNode };
@@ -107,6 +108,7 @@ function RouteContentBridge() {
   const [session, setSession] = useState<any>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [username, setUsername] = useState('');
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
     let active = true;
@@ -115,33 +117,31 @@ function RouteContentBridge() {
     const loadUsername = async (nextSession: any) => {
       const requestId = ++profileRequest;
       if (!nextSession) {
-        if (active) setUsername('');
+        if (active) {
+          setUsername('');
+          setProfile(null);
+        }
         return;
       }
 
-      // Always show a stable identity immediately. The profile lookup can fail
-      // because of a transient RLS/network issue, but that must never make the
-      // authenticated user look logged out on Events.
       const fallback = nextSession.user.email?.split('@')[0] || 'Usuario';
       setUsername(fallback);
 
-      const { data: profile } = await supabase
+      const { data: profileData } = await supabase
         .from('profiles')
-        .select('username, full_name')
+        .select('id, username, full_name, bio, city, avatar_url, banner_url')
         .eq('id', nextSession.user.id)
         .maybeSingle();
 
       if (!active || requestId !== profileRequest) return;
-      setUsername(profile?.username || profile?.full_name || fallback);
+      setProfile(profileData || null);
+      setUsername(profileData?.username || profileData?.full_name || fallback);
     };
 
     const applySession = (nextSession: any) => {
       if (!active) return;
       setSession(nextSession);
       setSessionReady(true);
-      // Supabase auth callbacks run inside the auth lock. Defer the profile
-      // query until the callback has returned so navigation cannot interfere
-      // with session hydration.
       window.setTimeout(() => void loadUsername(nextSession), 0);
     };
 
@@ -152,6 +152,7 @@ function RouteContentBridge() {
         setSession(null);
         setSessionReady(true);
         setUsername('');
+        setProfile(null);
         return;
       }
       setSession(data.session);
@@ -189,7 +190,7 @@ function RouteContentBridge() {
       const route = getClickedRoute(event.target as HTMLElement | null);
       if (!route) return;
 
-      if (route === 'musica' || route === 'videos' || route === 'eventos') {
+      if (route === 'musica' || route === 'videos' || route === 'eventos' || route === 'perfil') {
         setRoute(route);
         setPage(route);
 
@@ -230,11 +231,6 @@ function RouteContentBridge() {
   const isRoute = BRIDGED_ROUTE_PAGES.has(page);
   const isEvents = page === 'eventos';
 
-  // The bridge is only responsible for standalone Music, Videos and Events.
-  // Shell pages such as Feed, Profile and Messages already render inside the
-  // application's normal layout. Rendering a fixed bridge for those routes
-  // would cover the shell with an empty opaque layer and make the Feed look
-  // collapsed while also hiding the global chat launcher.
   if (!isRoute) return null;
   if (!isEvents && !sessionReady) {
     return (
@@ -263,6 +259,7 @@ function RouteContentBridge() {
       }}
     >
       <RouteErrorBoundary>
+        {routePage === 'perfil' && <ProfileView session={session} profile={profile} username={username || session?.user?.email?.split('@')[0] || 'Usuario'} />}
         {routePage === 'musica' && <MusicView session={session} navigate={() => {}} />}
         {routePage === 'videos' && <VideoView session={session} navigate={() => {}} />}
         {routePage === 'eventos' && (
