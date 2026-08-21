@@ -5,7 +5,6 @@ import { MusicView } from './music/MusicView';
 import { VideoView } from './videos/VideoView';
 import { EventsView } from './events/EventsView';
 import { ProfileView } from './profile/ProfileView';
-import { ChatWidget } from '../ChatWidget';
 
 const BRIDGE_ID = 'inkorium-route-content-bridge';
 const ROUTE_PAGES = new Set([
@@ -312,7 +311,6 @@ function RouteContentBridge() {
           />
         )}
       </RouteErrorBoundary>
-      <ChatWidget session={session} navigate={bridgeNavigate} />
     </div>
   );
 }
