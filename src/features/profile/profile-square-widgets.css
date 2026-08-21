@@ -1,0 +1,26 @@
+/* Profile content widgets: match the sharp-corner header language. */
+html body:has(.profile-view-page) .profile-view-grid .profile-view-card,
+html body:has(.profile-view-page) .profile-view-grid article,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-post,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-widget,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-section {
+  border-radius: 0 !important;
+}
+
+html body:has(.profile-view-page) .profile-view-grid .profile-view-card::before,
+html body:has(.profile-view-page) .profile-view-grid article::before,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-post::before,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-widget::before,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-section::before {
+  border-radius: 0 !important;
+}
+
+@media (max-width: 760px) {
+  html body:has(.profile-view-page) .profile-view-grid .profile-view-card,
+  html body:has(.profile-view-page) .profile-view-grid article,
+  html body:has(.profile-view-page) .profile-view-grid .profile-view-post,
+  html body:has(.profile-view-page) .profile-view-grid .profile-view-widget,
+  html body:has(.profile-view-page) .profile-view-grid .profile-view-section {
+    border-radius: 0 !important;
+  }
+}
