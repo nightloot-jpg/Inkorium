@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Session } from "@supabase/supabase-js";
 import {
   Camera,
-  ImagePlus,
   Maximize2,
   MessageCircle,
   Minimize2,
@@ -18,11 +17,14 @@ import {
 import { supabase } from "./lib/supabase";
 import "./chat-realtime.css";
 
+type UserStatus = "conectado" | "ausente" | "desconectado";
+
 type ChatContact = {
   id: string;
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  user_status: UserStatus | null;
 };
 
 type MusicTrack = {
@@ -69,6 +71,9 @@ const themeColor = (theme: string) =>
   ({ blue: "#1e6fdf", violet: "#7c3aed", green: "#059669", sunset: "#ea580c", rose: "#e11d48", teal: "#0d9488" }[theme] || "#1e6fdf");
 const formatTime = (value: string) => new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 const avatar = (contact: ChatContact) => contactName(contact).slice(0, 1).toUpperCase();
+const normalizeStatus = (value: string | null | undefined): UserStatus => value === "ausente" || value === "desconectado" ? value : "conectado";
+const statusColor = (value: string | null | undefined) => ({ conectado: "#16a34a", ausente: "#f59e0b", desconectado: "#9ca3af" }[normalizeStatus(value)]);
+const statusLabel = (value: string | null | undefined) => ({ conectado: "Conectado", ausente: "Ausente", desconectado: "Desconectado" }[normalizeStatus(value)]);
 
 function parseMessageContent(message: ChatMessage) {
   if (message.type !== "audio") return { kind: message.type, value: message.content };
@@ -103,7 +108,6 @@ function MessageBody({ message }: { message: ChatMessage }) {
 function ChatWindow({
   window: w,
   myId,
-  onlineIds,
   color,
   tracks,
   onClose,
@@ -118,7 +122,6 @@ function ChatWindow({
 }: {
   window: ChatWindowState;
   myId: string;
-  onlineIds: Set<string>;
   color: string;
   tracks: MusicTrack[];
   onClose: (id: string) => void;
@@ -194,7 +197,7 @@ function ChatWindow({
         <div className="tuenti-header-left">
           <div className="tuenti-header-avatar">
             {w.contact.avatar_url ? <img src={w.contact.avatar_url} alt="" /> : avatar(w.contact)}
-            <span className={`tuenti-status-dot ${onlineIds.has(w.contact.id) ? "online" : "offline"}`} />
+            <span className="tuenti-status-dot" title={statusLabel(w.contact.user_status)} style={{ backgroundColor: statusColor(w.contact.user_status) }} />
           </div>
           <span className="tuenti-header-name">{contactName(w.contact)}</span>
         </div>
@@ -258,7 +261,7 @@ function ChatWindow({
   );
 }
 
-function ContactPanel({ contacts, onlineIds, color, onOpen, onClose, navigate }: { contacts: ChatContact[]; onlineIds: Set<string>; color: string; onOpen: (contact: ChatContact) => void; onClose: () => void; navigate: (page: string, params?: Record<string, unknown>) => void }) {
+function ContactPanel({ contacts, color, onOpen, onClose, navigate }: { contacts: ChatContact[]; color: string; onOpen: (contact: ChatContact) => void; onClose: () => void; navigate: (page: string, params?: Record<string, unknown>) => void }) {
   const [search, setSearch] = useState("");
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -277,7 +280,7 @@ function ContactPanel({ contacts, onlineIds, color, onOpen, onClose, navigate }:
           <button type="button" key={contact.id} className="tuenti-contact-row" onClick={(event) => { event.preventDefault(); onOpen(contact); }}>
             <div className="tuenti-contact-avatar">
               {contact.avatar_url ? <img src={contact.avatar_url} alt="" /> : avatar(contact)}
-              <span className={`tuenti-status-dot ${onlineIds.has(contact.id) ? "online" : "offline"}`} />
+              <span className="tuenti-status-dot" title={statusLabel(contact.user_status)} style={{ backgroundColor: statusColor(contact.user_status) }} />
             </div>
             <div className="tuenti-contact-info"><span className="tuenti-contact-name">{contactName(contact)}</span></div>
           </button>
@@ -292,7 +295,6 @@ export function ChatWidget({ session, navigate }: { session: Session; navigate: 
   const myId = session.user.id;
   const [contacts, setContacts] = useState<ChatContact[]>([]);
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
-  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const [windows, setWindows] = useState<Record<string, ChatWindowState>>({});
   const [panelOpen, setPanelOpen] = useState(false);
   const [zIndex, setZIndex] = useState(1000);
@@ -314,28 +316,48 @@ export function ChatWidget({ session, navigate }: { session: Session; navigate: 
     return () => removeEventListener("open-chat-panel", open);
   }, []);
 
+  const loadContacts = useCallback(async () => {
+    const [outgoing, incoming] = await Promise.all([
+      supabase.from("friendships").select("friend_id").eq("user_id", myId).eq("status", "accepted"),
+      supabase.from("friendships").select("user_id").eq("friend_id", myId).eq("status", "accepted"),
+    ]);
+    if (outgoing.error || incoming.error) {
+      console.error("[Chat] friendships", outgoing.error || incoming.error);
+      return;
+    }
+    const ids = Array.from(new Set([...(outgoing.data ?? []).map((row: { friend_id: string }) => row.friend_id), ...(incoming.data ?? []).map((row: { user_id: string }) => row.user_id)]));
+    if (!ids.length) {
+      setContacts([]);
+      return;
+    }
+    const { data, error } = await supabase.from("profiles").select("id, username, full_name, avatar_url, user_status").in("id", ids);
+    if (error) console.error("[Chat] profiles", error);
+    setContacts((data ?? []) as ChatContact[]);
+  }, [myId]);
+
   useEffect(() => {
     let cancelled = false;
-    const loadContacts = async () => {
-      const [outgoing, incoming] = await Promise.all([
-        supabase.from("friendships").select("friend_id").eq("user_id", myId).eq("status", "accepted"),
-        supabase.from("friendships").select("user_id").eq("friend_id", myId).eq("status", "accepted"),
-      ]);
-      if (outgoing.error || incoming.error) {
-        console.error("[Chat] friendships", outgoing.error || incoming.error);
-        return;
-      }
-      const ids = Array.from(new Set([...(outgoing.data ?? []).map((row: { friend_id: string }) => row.friend_id), ...(incoming.data ?? []).map((row: { user_id: string }) => row.user_id)]));
-      if (!ids.length) {
-        if (!cancelled) setContacts([]);
-        return;
-      }
-      const { data, error } = await supabase.from("profiles").select("id, username, full_name, avatar_url").in("id", ids);
-      if (error) console.error("[Chat] profiles", error);
-      if (!cancelled) setContacts((data ?? []) as ChatContact[]);
-    };
-    void loadContacts();
-    return () => { cancelled = true; };
+    void loadContacts().then(() => { if (cancelled) return; });
+    const interval = window.setInterval(() => { void loadContacts(); }, 15000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [loadContacts]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`chat-profile-status:${myId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, (payload) => {
+        const changed = payload.new as Partial<ChatContact> & { id?: string };
+        if (!changed.id) return;
+        setContacts((current) => current.map((contact) => contact.id === changed.id ? {
+          ...contact,
+          username: changed.username ?? contact.username,
+          full_name: changed.full_name ?? contact.full_name,
+          avatar_url: changed.avatar_url ?? contact.avatar_url,
+          user_status: normalizeStatus(changed.user_status),
+        } : contact));
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
   }, [myId]);
 
   useEffect(() => {
@@ -348,15 +370,6 @@ export function ChatWidget({ session, navigate }: { session: Session; navigate: 
     void loadTracks();
     return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => {
-    const channel = supabase.channel(`online-users:${myId}`, { config: { presence: { key: myId } } });
-    channel.on("presence", { event: "sync" }, () => setOnlineIds(new Set(Object.keys(channel.presenceState()))));
-    channel.subscribe((status) => {
-      if (status === "SUBSCRIBED") void channel.track({ user_id: myId, online_at: new Date().toISOString() });
-    });
-    return () => { void supabase.removeChannel(channel); };
-  }, [myId]);
 
   const loadMessages = useCallback(async (channelId: string) => {
     const { data, error } = await supabase.from("chat_messages").select("id, channel_id, sender_id, type, content, created_at").eq("channel_id", channelId).order("created_at", { ascending: true }).limit(100);
@@ -497,13 +510,12 @@ export function ChatWidget({ session, navigate }: { session: Session; navigate: 
 
   return (
     <div className="tuenti-chat-root">
-      {panelOpen ? <ContactPanel contacts={contacts} onlineIds={onlineIds} color={color} onOpen={openConversation} onClose={() => setPanelOpen(false)} navigate={navigate} /> : null}
+      {panelOpen ? <ContactPanel contacts={contacts} color={color} onOpen={openConversation} onClose={() => setPanelOpen(false)} navigate={navigate} /> : null}
       {Object.values(windows).map((window) => (
         <ChatWindow
           key={window.id}
           window={window}
           myId={myId}
-          onlineIds={onlineIds}
           color={color}
           tracks={tracks}
           onClose={closeWindow}

@@ -10,6 +10,7 @@ export type ProfileData = {
   city: string | null;
   avatar_url: string | null;
   banner_url: string | null;
+  user_status: string | null;
 };
 
 interface AuthStore {
@@ -25,19 +26,10 @@ let authenticatedUserId: string | null = null;
 export const useAuthStore = create<AuthStore>((set) => ({
   profile: null,
   session: null,
-  // Keep the authenticated session in the same store used by the app bootstrap.
-  // This is intentionally independent from visited profiles so navigating to
-  // another user's profile cannot replace the logged-in identity.
   setSession: (session) => set({ session }),
-  // Only authenticated-user profiles may update this global store.
-  // Visited profiles intentionally do not carry the authenticated id here,
-  // which prevents opening another user's profile from replacing the header
-  // identity used by the feed.
   setProfile: (profile) => set((state) => {
     if (!profile) return { profile: null };
-    if (!profile.id || !authenticatedUserId || profile.id !== authenticatedUserId) {
-      return state;
-    }
+    if (!profile.id || !authenticatedUserId || profile.id !== authenticatedUserId) return state;
     return { profile };
   }),
   updateProfile: (updates) => set((state) => ({
@@ -54,7 +46,7 @@ async function hydrateAuthenticatedProfile(userId: string | null) {
 
   const { data } = await supabase
     .from('profiles')
-    .select('id, username, full_name, bio, city, avatar_url, banner_url')
+    .select('id, username, full_name, bio, city, avatar_url, banner_url, user_status')
     .eq('id', userId)
     .maybeSingle();
 
@@ -91,7 +83,7 @@ export type QueueItem = {
   thumbnail?: string;
   duration?: string;
   artist?: string;
-  id?: string; // database track id
+  id?: string;
 };
 
 interface PlayerStore {
@@ -111,7 +103,6 @@ interface PlayerStore {
   previousVolume: number;
   seekRequest: number | null;
   clearSeekRequest: () => void;
-
   playSong: (song: QueueItem, openUI?: boolean) => void;
   playPlaylist: (playlist: PlayerItem, queue: QueueItem[], startIndex?: number, openUI?: boolean) => void;
   pause: () => void;
@@ -123,7 +114,6 @@ interface PlayerStore {
   toggleMute: () => void;
   updateProgress: (currentTime: number, duration: number) => void;
   setIsPlaying: (isPlaying: boolean) => void;
-
   openPlayer: () => void;
   closePlayer: () => void;
   minimizePlayer: () => void;
@@ -146,46 +136,37 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   isMuted: false,
   previousVolume: 100,
   seekRequest: null,
-
   playSong: (song, openUI = true) => set({ isOpen: openUI, currentSong: song, currentPlaylist: null, queue: [song], currentIndex: 0, isPlaying: false, pendingPlay: true }),
   playPlaylist: (playlist, queue, startIndex = 0, openUI = false) => set({ isOpen: openUI, currentPlaylist: playlist, queue, currentIndex: startIndex, currentSong: queue[startIndex] || null, isPlaying: false, pendingPlay: true }),
   pause: () => set({ isPlaying: false, pendingPlay: false }),
   resume: () => set({ pendingPlay: true }),
   next: () => set((state) => {
     const nextIndex = state.currentIndex + 1;
-    if (nextIndex < state.queue.length) {
-      return { currentIndex: nextIndex, currentSong: state.queue[nextIndex], isPlaying: false, pendingPlay: true };
-    }
+    if (nextIndex < state.queue.length) return { currentIndex: nextIndex, currentSong: state.queue[nextIndex], isPlaying: false, pendingPlay: true };
     return state;
   }),
   previous: () => set((state) => {
     const prevIndex = state.currentIndex - 1;
-    if (prevIndex >= 0) {
-      return { currentIndex: prevIndex, currentSong: state.queue[prevIndex], isPlaying: false, pendingPlay: true };
-    }
+    if (prevIndex >= 0) return { currentIndex: prevIndex, currentSong: state.queue[prevIndex], isPlaying: false, pendingPlay: true };
     return state;
   }),
   seek: (time) => set({ currentTime: time, seekRequest: time }),
   clearSeekRequest: () => set({ seekRequest: null }),
   setVolume: (vol) => set((state) => {
     const clamped = Math.max(0, Math.min(100, vol));
-    if (clamped === 0) {
-      return { volume: 0, isMuted: true };
-    }
+    if (clamped === 0) return { volume: 0, isMuted: true };
     return { volume: clamped, isMuted: false, previousVolume: clamped };
   }),
   toggleMute: () => set((state) => {
     if (state.isMuted) {
       const restoreVol = state.previousVolume > 0 ? state.previousVolume : 100;
       return { isMuted: false, volume: restoreVol };
-    } else {
-      return { isMuted: true, previousVolume: state.volume, volume: 0 };
     }
+    return { isMuted: true, previousVolume: state.volume, volume: 0 };
   }),
   updateProgress: (currentTime, duration) => set({ currentTime, duration }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setPendingPlay: (pendingPlay) => set({ pendingPlay }),
-
   openPlayer: () => set({ isOpen: true }),
   closePlayer: () => set({ isOpen: false, isExpanded: false }),
   minimizePlayer: () => set({ isExpanded: false }),
