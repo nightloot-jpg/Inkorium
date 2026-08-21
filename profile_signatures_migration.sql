@@ -11,15 +11,18 @@ create index if not exists profile_signatures_profile_id_created_at_idx
 
 alter table public.profile_signatures enable row level security;
 
+drop policy if exists "Profile signatures are publicly readable" on public.profile_signatures;
 create policy "Profile signatures are publicly readable"
   on public.profile_signatures for select
   using (true);
 
+drop policy if exists "Authenticated users can leave profile signatures" on public.profile_signatures;
 create policy "Authenticated users can leave profile signatures"
   on public.profile_signatures for insert
   to authenticated
   with check (auth.uid() = author_id);
 
+drop policy if exists "Authors can delete own profile signatures" on public.profile_signatures;
 create policy "Authors can delete own profile signatures"
   on public.profile_signatures for delete
   to authenticated
