@@ -1,0 +1,15 @@
+/* Profile header order: avatar beside identity, no handle, daily song before bio. */
+html body:has(.profile-view-page) .profile-view-header{position:relative!important;display:block!important;height:auto!important;min-height:184px!important;padding:18px 28px 18px 176px!important;gap:0!important;align-items:initial!important;overflow:visible!important}
+html body:has(.profile-view-page) .profile-view-avatar-wrap{position:absolute!important;left:28px!important;top:-56px!important;margin:0!important;width:124px!important;height:124px!important;z-index:4!important}
+html body:has(.profile-view-page) .profile-view-avatar{width:124px!important;height:124px!important}
+html body:has(.profile-view-page) .profile-view-identity{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:flex-start!important;min-width:0!important;width:min(760px,100%)!important;padding:0!important;margin:0!important}
+html body:has(.profile-view-page) .profile-view-name-row{display:flex!important;align-items:center!important;gap:8px!important;min-height:34px!important}
+html body:has(.profile-view-page) .profile-view-name-row h1{display:block!important;margin:0!important;font-size:28px!important;line-height:1.15!important;color:#132a45!important;position:static!important}
+html body:has(.profile-view-page) .profile-view-handle{display:none!important}
+html body:has(.profile-view-page) .profile-view-status-row{display:flex!important;align-items:center!important;gap:6px!important;margin:6px 0 0!important;height:22px!important}
+html body:has(.profile-view-page) .profile-view-bio{order:4!important;width:auto!important;max-width:100%!important;margin:8px 0 0!important;padding:0!important;font-size:14px!important;line-height:1.4!important}
+html body:has(.profile-view-page) .profile-daily-song-card{order:3!important;width:min(520px,100%)!important;margin:9px 0 0!important}
+html body:has(.profile-view-page) .profile-view-name-row,.profile-view-status-row,.profile-daily-song-card,.profile-view-bio{position:relative!important;z-index:2!important}
+html body:has(.profile-view-page) .profile-view-tabs{margin-top:0!important;height:50px!important;overflow:hidden!important}
+html body:has(.profile-view-page) .profile-view-tabs button{height:50px!important}
+@media(max-width:720px){html body:has(.profile-view-page) .profile-view-header{min-height:245px!important;padding:54px 16px 18px!important}.profile-view-avatar-wrap{left:16px!important;top:-50px!important}.profile-view-avatar{width:104px!important;height:104px!important}.profile-view-identity{width:100%!important}.profile-view-name-row h1{font-size:23px!important}.profile-daily-song-card{width:100%!important;max-width:520px!important}.profile-view-bio{margin-top:8px!important}}
