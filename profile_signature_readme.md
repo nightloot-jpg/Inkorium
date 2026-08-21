@@ -1,0 +1,1 @@
+The profile guestbook lets visitors leave short signatures on another user's profile.
