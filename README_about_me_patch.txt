@@ -1,1 +1,0 @@
-Temporary marker for the customizable About Me patch branch.
