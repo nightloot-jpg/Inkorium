@@ -1,0 +1,17 @@
+/* Sticky left navigation for the feed layout. */
+.feed-layout > :first-child {
+  position: sticky;
+  top: 18px;
+  align-self: start;
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 900px) {
+  .feed-layout > :first-child {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
