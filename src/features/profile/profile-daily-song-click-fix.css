@@ -1,0 +1,6 @@
+/* Make the daily-song control the active interactive layer in the profile header. */
+html body:has(.profile-view-page) .profile-daily-song-card{position:relative!important;z-index:30!important;pointer-events:auto!important;isolation:isolate}
+html body:has(.profile-view-page) .profile-daily-song-card::before,html body:has(.profile-view-page) .profile-daily-song-card::after{pointer-events:none!important}
+html body:has(.profile-view-page) .profile-daily-head,html body:has(.profile-view-page) .profile-daily-head button{position:relative!important;z-index:31!important;pointer-events:auto!important}
+html body:has(.profile-view-page) .profile-daily-head button{cursor:pointer!important}
+.profile-daily-song-modal-backdrop{z-index:10000!important;pointer-events:auto!important}
