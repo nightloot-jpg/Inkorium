@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Camera, Image as ImageIcon, MapPin, Music2, Pencil, Play, Pause, Users, Video, X, Upload, Check, Circle } from "lucide-react";
+import { CalendarDays, Camera, Gamepad2, Image as ImageIcon, MapPin, Music2, Pencil, Play, Pause, Users, Video, Film, X, Upload, Check, Circle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuthStore, usePlayerStore } from "../../lib/store";
 import type { Session } from "@supabase/supabase-js";
@@ -197,7 +197,34 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
           <div className="profile-view-card"><div className="profile-view-section-head"><h2>Publicaciones</h2><span>{postCountLabel}</span></div>{loadingPosts ? <div className="profile-view-empty">Cargando publicaciones…</div> : posts.length === 0 ? <div className="profile-view-empty">Todavía no has publicado nada.</div> : <div className="profile-view-posts">{posts.map((post) => <article key={post.id} className="profile-view-post"><div className="profile-view-post-date">{new Date(post.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}</div>{post.content && <p>{post.content}</p>}{post.media_data?.type === "photo" && <img src={post.media_data.url} alt="Publicación" />}{post.media_data?.type === "video" && <div className="profile-view-media-label"><Video size={16} /> Vídeo compartido</div>}{post.media_data?.type === "youtube_song" && <div className="profile-view-media-label"><Music2 size={16} /> Música compartida</div>}{!post.content && !post.media_data && <p className="muted">Publicación sin texto.</p>}</article>)}</div>}</div>
         </main>
         <aside className="profile-view-side">
-          <div className="profile-view-card"><h2>Sobre mí</h2><p>{displayProfile?.bio || "Este perfil todavía no tiene una biografía."}</p>{displayProfile?.city && <div className="profile-view-side-row"><MapPin size={17} /> {displayProfile.city}</div>}</div>
+          <div className="profile-view-card" style={{ padding: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+              <div>
+                <h2 style={{ margin: 0 }}>Sobre mí</h2>
+                <span style={{ display: "block", marginTop: 4, color: "#8a9caf", fontSize: 12, fontWeight: 700, letterSpacing: 0.4 }}>CONOCE UN POCO MÁS</span>
+              </div>
+              <div style={{ width: 36, height: 36, borderRadius: 10, display: "grid", placeItems: "center", background: "#f0eafa", color: "#6a35c2" }}><Users size={18} /></div>
+            </div>
+            <p style={{ margin: "0 0 16px", color: "#3f5368", lineHeight: 1.6, fontSize: 14 }}>{displayProfile?.bio || "Este perfil todavía no tiene una biografía."}</p>
+            <div style={{ borderTop: "1px solid #edf1f5", paddingTop: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 9, display: "grid", placeItems: "center", background: "#f4f6f9", color: "#61768c" }}><MapPin size={17} /></div>
+                <div style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", color: "#8999aa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Vive en</span>
+                  <strong style={{ display: "block", marginTop: 2, color: "#29435f", fontSize: 13 }}>{displayProfile?.city || "No indicado"}</strong>
+                </div>
+              </div>
+              <div>
+                <span style={{ display: "block", marginBottom: 8, color: "#8999aa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Intereses</span>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", border: "1px solid #edf1f5", borderRadius: 9, background: "#fbfcfe" }}><Music2 size={15} color="#6a35c2" /><span style={{ color: "#40576f", fontSize: 12, fontWeight: 700 }}>Música</span></div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", border: "1px solid #edf1f5", borderRadius: 9, background: "#fbfcfe" }}><Gamepad2 size={15} color="#6a35c2" /><span style={{ color: "#40576f", fontSize: 12, fontWeight: 700 }}>Gaming</span></div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", border: "1px solid #edf1f5", borderRadius: 9, background: "#fbfcfe" }}><Camera size={15} color="#6a35c2" /><span style={{ color: "#40576f", fontSize: 12, fontWeight: 700 }}>Fotografía</span></div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", border: "1px solid #edf1f5", borderRadius: 9, background: "#fbfcfe" }}><Film size={15} color="#6a35c2" /><span style={{ color: "#40576f", fontSize: 12, fontWeight: 700 }}>Cine</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="profile-view-card"><h2>Tu Inkorium</h2><div className="profile-view-feature"><Music2 size={18} /><span><strong>Música destacada</strong><small>La canción que escuchas ahora</small></span></div><div className="profile-view-feature"><Camera size={18} /><span><strong>Fotos</strong><small>Comparte tus momentos</small></span></div><div className="profile-view-feature"><CalendarDays size={18} /><span><strong>Eventos</strong><small>Descubre y organiza planes</small></span></div></div>
           <div className="profile-view-card profile-view-stats"><div><strong>{postCountLabel}</strong><span>Publicaciones</span></div><div><strong>0</strong><span>Amigos</span></div><div><strong>0</strong><span>Seguidores</span></div></div>
         </aside>
