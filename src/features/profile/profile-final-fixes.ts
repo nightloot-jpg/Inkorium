@@ -3,6 +3,19 @@ const profileFixes = () => {
   if (!root || root.getAttribute('data-final-fixes') === '1') return;
   root.setAttribute('data-final-fixes', '1');
 
+  const syncCoverBackground = () => {
+    const cover = root.querySelector<HTMLElement>('.profile-view-cover');
+    if (!cover) return;
+    const inlineBackground = cover.style.backgroundImage;
+    if (inlineBackground) {
+      cover.style.setProperty('background-image', inlineBackground, 'important');
+    } else if (cover.style.getPropertyPriority('background-image') === 'important') {
+      cover.style.removeProperty('background-image');
+    }
+  };
+
+  syncCoverBackground();
+
   root.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
@@ -31,8 +44,20 @@ const profileFixes = () => {
 
 const boot = () => {
   profileFixes();
-  const observer = new MutationObserver(() => profileFixes());
-  observer.observe(document.body, { childList: true, subtree: true });
+  const observer = new MutationObserver(() => {
+    profileFixes();
+    const root = document.querySelector('.profile-view-page');
+    if (!root) return;
+
+    const cover = root.querySelector<HTMLElement>('.profile-view-cover');
+    if (!cover) return;
+
+    const inlineBackground = cover.style.backgroundImage;
+    if (inlineBackground) {
+      cover.style.setProperty('background-image', inlineBackground, 'important');
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
 };
 
 if (document.readyState === 'loading') {
