@@ -56,17 +56,21 @@ function playTrack(track: Track) {
 }
 
 function findMusicRoot(): HTMLElement | null {
-  return document.querySelector<HTMLElement>('.profile-view-page .profile-music-final');
+  return document.querySelector<HTMLElement>('.profile-view-page .profile-music-final, .profile-view-page .profile-music-tab');
 }
 
 function findDailyCard(root: HTMLElement): HTMLElement | null {
-  return Array.from(root.querySelectorAll<HTMLElement>('.profile-music-final-side .profile-music-final-card'))
+  return Array.from(root.querySelectorAll<HTMLElement>('.profile-music-final-side .profile-music-final-card, section, article, div'))
     .find(card => card.querySelector('h2')?.textContent?.includes('Canción del día')) || null;
 }
 
-function findDiaryCard(root: HTMLElement): HTMLElement | null {
-  return Array.from(root.querySelectorAll<HTMLElement>('.profile-music-final-side .profile-music-final-card'))
-    .find(card => card.querySelector('h2')?.textContent?.includes('Diario musical')) || null;
+function findDiaryTarget(root: HTMLElement): HTMLElement | null {
+  const modern = Array.from(root.querySelectorAll<HTMLElement>('.profile-music-final-side .profile-music-final-card'))
+    .find(card => card.querySelector('h2')?.textContent?.includes('Diario musical'));
+  if (modern) return modern;
+  const heading = Array.from(root.querySelectorAll<HTMLElement>('h1,h2,h3,strong,span,div'))
+    .find(el => el.textContent?.trim() === 'Diario musical');
+  return heading?.closest('section,article,.profile-music-tab>div,.profile-music-tab') || heading || null;
 }
 
 function renderDailyCard(card: HTMLElement, track: Track | null) {
@@ -94,56 +98,70 @@ function renderDailyCard(card: HTMLElement, track: Track | null) {
 }
 
 function addSwitcher(root: HTMLElement) {
-  if (root.querySelector('.profile-music-daily-sync-switcher')) return;
+  if (root.querySelector('.profile-music-daily-sync-restore-switcher')) return;
+
   const switcher = document.createElement('div');
-  switcher.className = 'profile-music-daily-sync-switcher';
+  switcher.className = 'profile-music-daily-sync-restore-switcher';
   switcher.innerHTML = `
-    <div class="profile-music-daily-sync-switcher-copy"><span>ESPACIO MUSICAL</span><strong>Música</strong></div>
-    <div class="profile-music-daily-sync-switcher-actions" role="tablist">
+    <div class="profile-music-daily-sync-restore-copy">
+      <span>ESPACIO MUSICAL</span>
+      <strong>Música</strong>
+    </div>
+    <div class="profile-music-daily-sync-restore-actions" role="tablist" aria-label="Secciones musicales">
       <button type="button" class="active" data-daily-view="library">Mi música</button>
       <button type="button" data-daily-view="diary">Diario musical</button>
     </div>`;
 
   root.prepend(switcher);
+
   const library = switcher.querySelector<HTMLButtonElement>('[data-daily-view="library"]');
   const diary = switcher.querySelector<HTMLButtonElement>('[data-daily-view="diary"]');
   const activate = (button: HTMLButtonElement) => {
     switcher.querySelectorAll('[data-daily-view]').forEach(item => item.classList.remove('active'));
     button.classList.add('active');
   };
+
   library?.addEventListener('click', () => {
-    if (!library) return;
     activate(library);
     root.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+
   diary?.addEventListener('click', () => {
-    if (!diary) return;
-    activate(diary);
-    findDiaryCard(root)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    activate(diary!);
+    findDiaryTarget(root)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+}
+
+function ensureUi() {
+  const root = findMusicRoot();
+  if (!root) return;
+  addSwitcher(root);
+  bindDailyPlayback(root);
+  const page = document.querySelector<HTMLElement>('.profile-view-page');
+  if (page) bindMusicTab(page);
 }
 
 let syncing = false;
 let scheduled = false;
 
 async function syncProfileMusic() {
-  if (syncing) return;
   const root = findMusicRoot();
   const page = document.querySelector<HTMLElement>('.profile-view-page');
   if (!root || !page) return;
+  ensureUi();
+  if (syncing) return;
 
   syncing = true;
   try {
-    addSwitcher(root);
     const dailyCard = findDailyCard(root);
     const track = await loadTodayTrack(page);
-    if (dailyCard && track) {
-      renderDailyCard(dailyCard, track);
-    } else if (dailyCard) {
-      renderDailyCard(dailyCard, null);
-    }
+    if (dailyCard) renderDailyCard(dailyCard, track);
   } finally {
     syncing = false;
+    // The music tab can replace its DOM after the async load. Re-attach the switcher after every render pass.
+    requestAnimationFrame(() => ensureUi());
+    window.setTimeout(() => ensureUi(), 250);
+    window.setTimeout(() => ensureUi(), 900);
   }
 }
 
@@ -165,7 +183,9 @@ function bindDailyPlayback(root: HTMLElement) {
     if (!row) return;
     event.preventDefault();
     event.stopPropagation();
-    void loadTodayTrack(document.querySelector<HTMLElement>('.profile-view-page')!).then(track => {
+    const page = document.querySelector<HTMLElement>('.profile-view-page');
+    if (!page) return;
+    void loadTodayTrack(page).then(track => {
       if (track) playTrack(track);
     });
   }, true);
@@ -182,17 +202,15 @@ function bindMusicTab(page: HTMLElement) {
 
 function boot() {
   const observer = new MutationObserver(() => {
-    const root = findMusicRoot();
-    const page = document.querySelector<HTMLElement>('.profile-view-page');
-    if (!root || !page || syncing) return;
-    addSwitcher(root);
-    bindDailyPlayback(root);
-    bindMusicTab(page);
+    // Never gate UI restoration behind the async Supabase request. The profile music DOM is rebuilt several times.
+    ensureUi();
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
   window.addEventListener('inkorium:daily-song-changed', () => scheduleSync(50));
-  scheduleSync(200);
+  scheduleSync(120);
+  window.setTimeout(() => ensureUi(), 300);
+  window.setTimeout(() => ensureUi(), 1000);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
