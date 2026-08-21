@@ -18,6 +18,7 @@ type Profile = {
 type ProfileViewProps = {
   session: Session;
   profile: Profile | null;
+  profileId: string;
   username: string;
 };
 
@@ -38,26 +39,12 @@ function formatPlayerTime(seconds: number) {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
-function readRequestedProfileId(session: Session): string {
-  const fallback = session.user.id;
-  try {
-    const raw = sessionStorage.getItem("inkorium-history");
-    if (!raw) return fallback;
-    const history = JSON.parse(raw);
-    const current = Array.isArray(history) ? history[history.length - 1] : null;
-    const userId = typeof current?.params?.userId === "string" ? current.params.userId.trim() : "";
-    return userId || fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-export function ProfileView({ session, profile, username }: ProfileViewProps) {
+export function ProfileView({ session, profile, profileId, username }: ProfileViewProps) {
   const [posts, setPosts] = useState<UserPost[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [activeTab, setActiveTab] = useState("Inicio");
   const [viewedProfile, setViewedProfile] = useState<Profile | null>(profile);
-  const [viewedProfileId, setViewedProfileId] = useState(() => readRequestedProfileId(session));
+  const [viewedProfileId, setViewedProfileId] = useState(profileId);
 
   const currentSong = usePlayerStore((state) => state.currentSong);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -77,12 +64,10 @@ export function ProfileView({ session, profile, username }: ProfileViewProps) {
 
   useEffect(() => {
     let cancelled = false;
+    setViewedProfileId(profileId);
 
     async function resolveProfile() {
-      const targetId = readRequestedProfileId(session);
-      setViewedProfileId(targetId);
-
-      if (targetId === session.user.id) {
+      if (profileId === session.user.id) {
         if (!cancelled) setViewedProfile(profile);
         return;
       }
@@ -90,7 +75,7 @@ export function ProfileView({ session, profile, username }: ProfileViewProps) {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, username, full_name, bio, city, avatar_url, banner_url")
-        .eq("id", targetId)
+        .eq("id", profileId)
         .maybeSingle();
 
       if (!cancelled) {
@@ -101,20 +86,17 @@ export function ProfileView({ session, profile, username }: ProfileViewProps) {
 
     void resolveProfile();
     return () => { cancelled = true; };
-  }, [profile, session.user.id]);
+  }, [profile, profileId, session.user.id]);
 
   useEffect(() => {
     let cancelled = false;
+    setLoadingPosts(true);
 
     async function loadPosts() {
-      const targetId = readRequestedProfileId(session);
-      setViewedProfileId(targetId);
-      setLoadingPosts(true);
-
       const { data, error } = await supabase
         .from("posts")
         .select("id, content, created_at, media_data")
-        .eq("author_id", targetId)
+        .eq("author_id", profileId)
         .is("group_id", null)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -128,7 +110,7 @@ export function ProfileView({ session, profile, username }: ProfileViewProps) {
 
     void loadPosts();
     return () => { cancelled = true; };
-  }, [session.user.id]);
+  }, [profileId]);
 
   const postCountLabel = useMemo(() => `${posts.length}${posts.length === 20 ? "+" : ""}`, [posts.length]);
   const progress = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;

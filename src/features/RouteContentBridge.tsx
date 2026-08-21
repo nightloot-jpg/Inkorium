@@ -5,6 +5,7 @@ import { MusicView } from './music/MusicView';
 import { VideoView } from './videos/VideoView';
 import { EventsView } from './events/EventsView';
 import { ProfileView } from './profile/ProfileView';
+import { ChatWidget } from '../ChatWidget';
 
 const BRIDGE_ID = 'inkorium-route-content-bridge';
 const ROUTE_PAGES = new Set([
@@ -13,6 +14,7 @@ const ROUTE_PAGES = new Set([
 const BRIDGED_ROUTE_PAGES = new Set(['perfil', 'musica', 'videos', 'eventos']);
 
 type RoutePage = 'inicio' | 'perfil' | 'mensajes' | 'personas' | 'musica' | 'buscar' | 'fotos' | 'videos' | 'eventos';
+type RouteState = { page: string; params?: Record<string, any> };
 type RouteErrorBoundaryProps = { children: ReactNode };
 type RouteErrorBoundaryState = { error: Error | null };
 
@@ -42,14 +44,29 @@ class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBo
   }
 }
 
-function readRoute(): string {
+function readRouteState(): RouteState {
   const hash = window.location.hash.replace(/^#/, '').trim().toLowerCase();
   const path = window.location.pathname.replace(/\/+$/, '').split('/').pop()?.toLowerCase() || '';
   const stored = sessionStorage.getItem('inkorium-page')?.trim().toLowerCase() || '';
-  if (ROUTE_PAGES.has(hash)) return hash;
-  if (ROUTE_PAGES.has(path)) return path;
-  if (ROUTE_PAGES.has(stored)) return stored;
-  return 'inicio';
+
+  let page = 'inicio';
+  if (ROUTE_PAGES.has(hash)) page = hash;
+  else if (ROUTE_PAGES.has(path)) page = path;
+  else if (ROUTE_PAGES.has(stored)) page = stored;
+
+  let params: Record<string, any> | undefined;
+  try {
+    const raw = sessionStorage.getItem('inkorium-history');
+    const history = raw ? JSON.parse(raw) : null;
+    const current = Array.isArray(history) ? history[history.length - 1] : null;
+    if (current?.page === page && current?.params && typeof current.params === 'object') {
+      params = current.params;
+    }
+  } catch {
+    params = undefined;
+  }
+
+  return { page, params };
 }
 
 function setRoute(next: RoutePage): void {
@@ -88,8 +105,6 @@ function getClickedRoute(target: HTMLElement | null): RoutePage | null {
   const candidate = target.closest('button, a, [role="button"], [data-page], [data-route]') as HTMLElement | null;
   if (!candidate) return null;
 
-  // Only the actual shell navigation is interpreted as a route.
-  // Internal page actions such as "Subir fotos" must keep their own click handler.
   if (!candidate.closest('.top-nav, .side-menu')) return null;
 
   const routeValue = candidate.getAttribute('data-page') || candidate.getAttribute('data-route');
@@ -107,8 +122,21 @@ function findShellNavigationButton(route: RoutePage): HTMLElement | null {
   return candidates.find((button) => routeFromLabel(button.textContent || '') === route) || null;
 }
 
+function appendNavigationEntry(page: RoutePage, params?: Record<string, any>) {
+  try {
+    const raw = sessionStorage.getItem('inkorium-history');
+    const history = raw ? JSON.parse(raw) : [];
+    const next = Array.isArray(history) ? [...history, { page, params }] : [{ page, params }];
+    sessionStorage.setItem('inkorium-history', JSON.stringify(next));
+  } catch {
+    sessionStorage.setItem('inkorium-history', JSON.stringify([{ page, params }]));
+  }
+  sessionStorage.setItem('inkorium-page', page);
+  window.dispatchEvent(new CustomEvent('inkorium-route-change', { detail: page }));
+}
+
 function RouteContentBridge() {
-  const [page, setPage] = useState(() => readRoute());
+  const [routeState, setRouteState] = useState<RouteState>(() => readRouteState());
   const [session, setSession] = useState<any>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [username, setUsername] = useState('');
@@ -178,7 +206,7 @@ function RouteContentBridge() {
   }, []);
 
   useEffect(() => {
-    const syncRoute = () => setPage(readRoute());
+    const syncRoute = () => setRouteState(readRouteState());
     const onStorage = () => syncRoute();
     const onHash = () => syncRoute();
     const onRouteChange = () => syncRoute();
@@ -196,7 +224,7 @@ function RouteContentBridge() {
 
       if (route === 'musica' || route === 'videos' || route === 'eventos' || route === 'perfil') {
         setRoute(route);
-        setPage(route);
+        setRouteState(readRouteState());
 
         if (route === 'eventos') {
           event.preventDefault();
@@ -232,20 +260,23 @@ function RouteContentBridge() {
     };
   }, []);
 
+  const page = routeState.page;
+  const routeParams = routeState.params;
   const isRoute = BRIDGED_ROUTE_PAGES.has(page);
   const isEvents = page === 'eventos';
 
   if (!isRoute) return null;
-  if (!isEvents && !sessionReady) {
-    return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'grid', placeItems: 'center', background: '#f3f6fa', color: '#5b2db5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-        Cargando Inkorium…
-      </div>
-    );
-  }
-  if (!isEvents && !session) return null;
+  if (!sessionReady) return null;
+  if (!session) return null;
 
   const routePage = page as RoutePage;
+  const bridgeNavigate = (nextPage: RoutePage, params?: Record<string, any>) => {
+    appendNavigationEntry(nextPage, params);
+    setRouteState(readRouteState());
+  };
+  const visitedProfileId = typeof routeParams?.userId === 'string' && routeParams.userId.trim()
+    ? routeParams.userId.trim()
+    : session.user.id;
 
   return (
     <div
@@ -263,22 +294,25 @@ function RouteContentBridge() {
       }}
     >
       <RouteErrorBoundary>
-        {routePage === 'perfil' && <ProfileView session={session} profile={profile} username={username || session?.user?.email?.split('@')[0] || 'Usuario'} />}
-        {routePage === 'musica' && <MusicView session={session} navigate={() => {}} />}
-        {routePage === 'videos' && <VideoView session={session} navigate={() => {}} />}
+        {routePage === 'perfil' && (
+          <ProfileView
+            session={session}
+            profile={profile}
+            profileId={visitedProfileId}
+            username={username || session?.user?.email?.split('@')[0] || 'Usuario'}
+          />
+        )}
+        {routePage === 'musica' && <MusicView session={session} navigate={bridgeNavigate} />}
+        {routePage === 'videos' && <VideoView session={session} navigate={bridgeNavigate} />}
         {routePage === 'eventos' && (
           <EventsView
             session={session}
             username={username || session?.user?.email?.split('@')[0] || 'Usuario'}
-            onExit={() => {
-              sessionStorage.setItem('inkorium-page', 'inicio');
-              window.history.replaceState({}, '', window.location.pathname);
-              window.dispatchEvent(new Event('inkorium-route-change'));
-              setPage('inicio');
-            }}
+            onExit={() => bridgeNavigate('inicio')}
           />
         )}
       </RouteErrorBoundary>
+      <ChatWidget session={session} navigate={bridgeNavigate} />
     </div>
   );
 }
