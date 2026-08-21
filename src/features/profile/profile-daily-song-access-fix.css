@@ -1,0 +1,1 @@
+html body:has(.profile-view-page) .profile-daily-song-card{position:relative;z-index:20;pointer-events:auto}.profile-daily-song-card button[data-pick]{position:relative;z-index:21;pointer-events:auto;cursor:pointer}
