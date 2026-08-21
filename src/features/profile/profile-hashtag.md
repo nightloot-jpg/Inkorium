@@ -1,0 +1,1 @@
+The profile hashtag is stored in `public.profiles.profile_hashtag` and is editable inline from the profile header.
