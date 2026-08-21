@@ -1,0 +1,2 @@
+/* force the profile route canvas to span the viewport */
+body:has(.profile-view-page) .inkorium-route-bridge{left:0!important;right:0!important;top:57px!important;bottom:0!important}
