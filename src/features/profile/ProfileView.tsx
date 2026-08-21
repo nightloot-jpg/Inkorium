@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuthStore, usePlayerStore } from "../../lib/store";
 import type { Session } from "@supabase/supabase-js";
 import "./profile-view.css";
+import "./profile-about-card.css";
 
 type Profile = {
   id?: string;
@@ -14,6 +15,7 @@ type Profile = {
   avatar_url: string | null;
   banner_url: string | null;
   user_status: string | null;
+  profile_interests?: string[] | null;
 };
 
 type ProfileViewProps = { session: Session; profile: Profile | null; profileId: string; username: string };
@@ -52,6 +54,12 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
   const [bioDraft, setBioDraft] = useState(profile?.bio || "");
   const [savingBio, setSavingBio] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [editingAbout, setEditingAbout] = useState(false);
+  const [aboutBioDraft, setAboutBioDraft] = useState(profile?.bio || "");
+  const [aboutCityDraft, setAboutCityDraft] = useState(profile?.city || "");
+  const [aboutInterestsDraft, setAboutInterestsDraft] = useState<string[]>(profile?.profile_interests || ["Música", "Gaming", "Fotografía", "Cine"]);
+  const [aboutCustomInterest, setAboutCustomInterest] = useState("");
+  const [savingAbout, setSavingAbout] = useState(false);
 
   const globalProfile = useAuthStore((state) => state.profile);
   const updateGlobalProfile = useAuthStore((state) => state.updateProfile);
@@ -77,7 +85,7 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
     let cancelled = false;
     setViewedProfileId(profileId);
     async function resolveProfile() {
-      const { data, error } = await supabase.from("profiles").select("id, username, full_name, bio, city, avatar_url, banner_url, user_status").eq("id", profileId).maybeSingle();
+      const { data, error } = await supabase.from("profiles").select("id, username, full_name, bio, city, avatar_url, banner_url, user_status, profile_interests").eq("id", profileId).maybeSingle();
       if (cancelled) return;
       if (error) console.error("Error loading profile:", error);
       const resolved = (data || profile || null) as Profile | null;
@@ -99,7 +107,10 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
     }
     setStatus(normalizeStatus(displayProfile?.user_status));
     setBioDraft(displayProfile?.bio || "");
-  }, [displayProfile?.user_status, displayProfile?.bio, globalProfile?.user_status, globalProfile?.bio, isOwnProfile]);
+    setAboutBioDraft(displayProfile?.bio || "");
+    setAboutCityDraft(displayProfile?.city || "");
+    setAboutInterestsDraft(displayProfile?.profile_interests?.length ? displayProfile.profile_interests : ["Música", "Gaming", "Fotografía", "Cine"]);
+  }, [displayProfile?.user_status, displayProfile?.bio, displayProfile?.city, displayProfile?.profile_interests, globalProfile?.user_status, globalProfile?.bio, isOwnProfile]);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,6 +182,33 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
 
   const togglePlayback = () => { if (!currentSong) { openPlayer(); return; } if (isPlaying || pendingPlay) pause(); else resume(); };
 
+  const saveAboutMe = async () => {
+    if (!isOwnProfile) return;
+    setSavingAbout(true);
+    const bio = aboutBioDraft.trim().slice(0, 280);
+    const city = aboutCityDraft.trim().slice(0, 80);
+    const interests = Array.from(new Set(aboutInterestsDraft.map((value) => value.trim()).filter(Boolean))).slice(0, 10);
+    const { error } = await supabase.from("profiles").update({ bio: bio || null, city: city || null, profile_interests: interests, updated_at: new Date().toISOString() }).eq("id", session.user.id);
+    setSavingAbout(false);
+    if (error) { window.alert(`No se pudo guardar "Sobre mí": ${error.message}`); return; }
+    setViewedProfile((current) => current ? { ...current, bio: bio || null, city: city || null, profile_interests: interests } : current);
+    updateGlobalProfile({ bio: bio || null, city: city || null } as any);
+    setBioDraft(bio);
+    setEditingAbout(false);
+    setAboutCustomInterest("");
+  };
+
+  const toggleAboutInterest = (interest: string) => {
+    setAboutInterestsDraft((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest].slice(0, 10));
+  };
+
+  const addAboutCustomInterest = () => {
+    const value = aboutCustomInterest.trim().slice(0, 28);
+    if (!value) return;
+    if (!aboutInterestsDraft.includes(value)) setAboutInterestsDraft((current) => [...current, value].slice(0, 10));
+    setAboutCustomInterest("");
+  };
+
   return (
     <section className="profile-view-page">
       <button className={`profile-view-cover profile-view-cover-button ${isOwnProfile ? "editable" : ""}`} type="button" onClick={() => void openMediaChooser("banner")} disabled={!isOwnProfile} style={banner ? { backgroundImage: `url(${banner})` } : undefined} aria-label={isOwnProfile ? "Cambiar foto de portada" : "Foto de portada"}>
@@ -197,33 +235,28 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
           <div className="profile-view-card"><div className="profile-view-section-head"><h2>Publicaciones</h2><span>{postCountLabel}</span></div>{loadingPosts ? <div className="profile-view-empty">Cargando publicaciones…</div> : posts.length === 0 ? <div className="profile-view-empty">Todavía no has publicado nada.</div> : <div className="profile-view-posts">{posts.map((post) => <article key={post.id} className="profile-view-post"><div className="profile-view-post-date">{new Date(post.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}</div>{post.content && <p>{post.content}</p>}{post.media_data?.type === "photo" && <img src={post.media_data.url} alt="Publicación" />}{post.media_data?.type === "video" && <div className="profile-view-media-label"><Video size={16} /> Vídeo compartido</div>}{post.media_data?.type === "youtube_song" && <div className="profile-view-media-label"><Music2 size={16} /> Música compartida</div>}{!post.content && !post.media_data && <p className="muted">Publicación sin texto.</p>}</article>)}</div>}</div>
         </main>
         <aside className="profile-view-side">
-          <div className="profile-view-card" style={{ padding: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
-              <div>
-                <h2 style={{ margin: 0 }}>Sobre mí</h2>
-                <span style={{ display: "block", marginTop: 4, color: "#8a9caf", fontSize: 12, fontWeight: 700, letterSpacing: 0.4 }}>CONOCE UN POCO MÁS</span>
-              </div>
-              <div style={{ width: 36, height: 36, borderRadius: 10, display: "grid", placeItems: "center", background: "#f0eafa", color: "#6a35c2" }}><Users size={18} /></div>
+          <div className="profile-view-card profile-about-card">
+            <div className="profile-about-head">
+              <div className="profile-about-title-wrap"><h2>Sobre mí</h2><span className="profile-about-subtitle">CONOCE UN POCO MÁS</span></div>
+              {isOwnProfile && !editingAbout && <button type="button" className="profile-about-edit" onClick={() => { setEditingAbout(true); setAboutBioDraft(displayProfile?.bio || ""); setAboutCityDraft(displayProfile?.city || ""); setAboutInterestsDraft(displayProfile?.profile_interests?.length ? displayProfile.profile_interests : ["Música", "Gaming", "Fotografía", "Cine"]); }}><Pencil size={13} /> Editar</button>}
+              {!editingAbout && <div className="profile-about-icon"><Users size={18} /></div>}
             </div>
-            <p style={{ margin: "0 0 16px", color: "#3f5368", lineHeight: 1.6, fontSize: 14 }}>{displayProfile?.bio || "Este perfil todavía no tiene una biografía."}</p>
-            <div style={{ borderTop: "1px solid #edf1f5", paddingTop: 14 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 9, display: "grid", placeItems: "center", background: "#f4f6f9", color: "#61768c" }}><MapPin size={17} /></div>
-                <div style={{ minWidth: 0 }}>
-                  <span style={{ display: "block", color: "#8999aa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Vive en</span>
-                  <strong style={{ display: "block", marginTop: 2, color: "#29435f", fontSize: 13 }}>{displayProfile?.city || "No indicado"}</strong>
-                </div>
+
+            {editingAbout && isOwnProfile ? (
+              <div className="profile-about-content profile-about-edit-form">
+                <div className="profile-about-field"><label htmlFor="about-bio">Biografía</label><textarea id="about-bio" value={aboutBioDraft} maxLength={280} onChange={(event) => setAboutBioDraft(event.target.value)} placeholder="Cuéntanos algo sobre ti..." /></div>
+                <div className="profile-about-field"><label htmlFor="about-city">Vive en</label><input id="about-city" value={aboutCityDraft} maxLength={80} onChange={(event) => setAboutCityDraft(event.target.value)} placeholder="Madrid" /></div>
+                <div className="profile-about-field"><label>Intereses</label><div className="profile-about-interest-picker">{["Música", "Gaming", "Fotografía", "Cine", "Viajes", "Arte", "Series", "Videojuegos"].map((interest) => <button key={interest} type="button" className={`profile-about-interest-option ${aboutInterestsDraft.includes(interest) ? "active" : ""}`} onClick={() => toggleAboutInterest(interest)}>{interest}</button>)}</div><div className="profile-about-custom-interest"><input value={aboutCustomInterest} maxLength={28} onChange={(event) => setAboutCustomInterest(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addAboutCustomInterest(); } }} placeholder="Añadir interés personalizado" /><button type="button" onClick={addAboutCustomInterest}>Añadir</button></div></div>
+                <div className="profile-about-form-actions"><button type="button" onClick={() => setEditingAbout(false)}>Cancelar</button><button type="button" className="primary" onClick={() => void saveAboutMe()} disabled={savingAbout}><Check size={14} /> Guardar</button></div>
               </div>
-              <div>
-                <span style={{ display: "block", marginBottom: 8, color: "#8999aa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Intereses</span>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", border: "1px solid #edf1f5", borderRadius: 9, background: "#fbfcfe" }}><Music2 size={15} color="#6a35c2" /><span style={{ color: "#40576f", fontSize: 12, fontWeight: 700 }}>Música</span></div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", border: "1px solid #edf1f5", borderRadius: 9, background: "#fbfcfe" }}><Gamepad2 size={15} color="#6a35c2" /><span style={{ color: "#40576f", fontSize: 12, fontWeight: 700 }}>Gaming</span></div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", border: "1px solid #edf1f5", borderRadius: 9, background: "#fbfcfe" }}><Camera size={15} color="#6a35c2" /><span style={{ color: "#40576f", fontSize: 12, fontWeight: 700 }}>Fotografía</span></div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", border: "1px solid #edf1f5", borderRadius: 9, background: "#fbfcfe" }}><Film size={15} color="#6a35c2" /><span style={{ color: "#40576f", fontSize: 12, fontWeight: 700 }}>Cine</span></div>
-                </div>
+            ) : (
+              <div className="profile-about-content">
+                <p className="profile-about-bio">{displayProfile?.bio || "Este perfil todavía no tiene una biografía."}</p>
+                <hr className="profile-about-divider" />
+                <div className="profile-about-location"><div className="profile-about-location-icon"><MapPin size={17} /></div><div><span className="profile-about-label">Vive en</span><strong className="profile-about-value">{displayProfile?.city || "No indicado"}</strong></div></div>
+                <div><span className="profile-about-label profile-about-interests-label">Intereses</span><div className="profile-about-interests">{(displayProfile?.profile_interests?.length ? displayProfile.profile_interests : ["Música", "Gaming", "Fotografía", "Cine"]).map((interest) => <div className="profile-about-interest" key={interest}><span className="profile-about-interest-dot">•</span><span className="profile-about-interest-text">{interest}</span></div>)}</div></div>
               </div>
-            </div>
+            )}
           </div>
           <div className="profile-view-card"><h2>Tu Inkorium</h2><div className="profile-view-feature"><Music2 size={18} /><span><strong>Música destacada</strong><small>La canción que escuchas ahora</small></span></div><div className="profile-view-feature"><Camera size={18} /><span><strong>Fotos</strong><small>Comparte tus momentos</small></span></div><div className="profile-view-feature"><CalendarDays size={18} /><span><strong>Eventos</strong><small>Descubre y organiza planes</small></span></div></div>
           <div className="profile-view-card profile-view-stats"><div><strong>{postCountLabel}</strong><span>Publicaciones</span></div><div><strong>0</strong><span>Amigos</span></div><div><strong>0</strong><span>Seguidores</span></div></div>
