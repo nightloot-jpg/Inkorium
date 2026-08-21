@@ -1,0 +1,34 @@
+/* Profile content widgets: square corners, matching the profile header. */
+html body:has(.profile-view-page) .profile-view-grid .profile-view-card,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-post,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-widget,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-section,
+html body:has(.profile-view-page) .profile-view-grid > article,
+html body:has(.profile-view-page) .profile-view-grid > section,
+html body:has(.profile-view-page) .profile-view-grid > div {
+  border-radius: 0 !important;
+}
+
+/* Keep the outer widget square even when it has pseudo-element chrome. */
+html body:has(.profile-view-page) .profile-view-grid .profile-view-card::before,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-post::before,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-widget::before,
+html body:has(.profile-view-page) .profile-view-grid .profile-view-section::before,
+html body:has(.profile-view-page) .profile-view-grid > article::before,
+html body:has(.profile-view-page) .profile-view-grid > section::before,
+html body:has(.profile-view-page) .profile-view-grid > div::before {
+  border-radius: 0 !important;
+}
+
+/* The inner listing rows can stay rounded, but the widget itself stays square. */
+@media (max-width: 760px) {
+  html body:has(.profile-view-page) .profile-view-grid .profile-view-card,
+  html body:has(.profile-view-page) .profile-view-grid .profile-view-post,
+  html body:has(.profile-view-page) .profile-view-grid .profile-view-widget,
+  html body:has(.profile-view-page) .profile-view-grid .profile-view-section,
+  html body:has(.profile-view-page) .profile-view-grid > article,
+  html body:has(.profile-view-page) .profile-view-grid > section,
+  html body:has(.profile-view-page) .profile-view-grid > div {
+    border-radius: 0 !important;
+  }
+}
