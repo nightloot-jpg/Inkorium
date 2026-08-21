@@ -1,10 +1,8 @@
-import { supabase } from '../../lib/supabase';
 import { usePlayerStore } from '../../lib/store';
 import './profile-music-final-fixes.css';
 
 const MUSIC_ROOT = '.profile-view-page .profile-music-final';
 const MUSIC_TAB = '.profile-view-page .profile-view-tabs button';
-const DAILY_HEADER = '.profile-view-page .profile-daily-song-card [data-pick]';
 
 const player = () => usePlayerStore.getState();
 
@@ -13,24 +11,9 @@ function musicTab(): HTMLButtonElement | null {
     .find((button) => button.textContent?.trim() === 'Música') || null;
 }
 
-function dailyCard(): HTMLElement | null {
-  return Array.from(document.querySelectorAll<HTMLElement>(`${MUSIC_ROOT} .profile-music-final-side .profile-music-final-card`))
-    .find((card) => card.querySelector('h2')?.textContent?.includes('Canción del día')) || null;
-}
-
 function diaryCard(): HTMLElement | null {
   return Array.from(document.querySelectorAll<HTMLElement>(`${MUSIC_ROOT} .profile-music-final-side .profile-music-final-card`))
     .find((card) => card.querySelector('h2')?.textContent?.includes('Diario musical')) || null;
-}
-
-function playDailyFromCard(card: HTMLElement) {
-  const playButton = card.querySelector<HTMLButtonElement>('[data-diary-play]');
-  if (playButton) {
-    playButton.click();
-    return;
-  }
-  const trackId = card.querySelector<HTMLElement>('[data-diary-play]')?.dataset.diaryPlay;
-  if (!trackId) return;
 }
 
 function addSwitcher() {
@@ -51,39 +34,49 @@ function addSwitcher() {
 
   root.prepend(switcher);
 
-  switcher.querySelector<HTMLButtonElement>('[data-music-view="library"]')?.addEventListener('click', () => {
+  const libraryButton = switcher.querySelector<HTMLButtonElement>('[data-music-view="library"]');
+  const diaryButton = switcher.querySelector<HTMLButtonElement>('[data-music-view="diary"]');
+  const setActive = (button: HTMLButtonElement | null) => {
+    switcher.querySelectorAll('[data-music-view]').forEach((item) => item.classList.remove('active'));
+    button?.classList.add('active');
+  };
+
+  libraryButton?.addEventListener('click', () => {
+    setActive(libraryButton);
     root.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  switcher.querySelector<HTMLButtonElement>('[data-music-view="diary"]')?.addEventListener('click', () => {
+  diaryButton?.addEventListener('click', () => {
+    setActive(diaryButton);
     diaryCard()?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 }
 
 function syncDailySong() {
-  const root = document.querySelector<HTMLElement>(MUSIC_ROOT);
-  if (!root) return;
+  const tabRoot = document.querySelector<HTMLElement>('.profile-view-page .profile-music-tab');
+  if (!tabRoot) return;
+  tabRoot.removeAttribute('data-finalized');
+  musicTab()?.click();
+}
 
-  root.removeAttribute('data-finalized');
-  const tab = musicTab();
-  if (tab) tab.click();
+function playDailyCard(event: Event) {
+  const target = event.target as HTMLElement;
+  const card = target.closest<HTMLElement>('.profile-music-final-side .profile-music-final-card');
+  if (!card || !card.querySelector('h2')?.textContent?.includes('Canción del día')) return;
+  if (target.closest('button,a,input,select,textarea')) return;
+
+  const playButton = card.querySelector<HTMLButtonElement>('[data-diary-play]');
+  if (playButton) {
+    event.preventDefault();
+    playButton.click();
+  }
 }
 
 function bindClicks() {
   const root = document.querySelector<HTMLElement>(MUSIC_ROOT);
   if (!root || root.dataset.finalFixesBound === '1') return;
   root.dataset.finalFixesBound = '1';
-
-  root.addEventListener('click', (event) => {
-    const target = event.target as HTMLElement;
-    const card = target.closest<HTMLElement>('.profile-music-final-side .profile-music-final-card');
-    if (!card || !card.querySelector('h2')?.textContent?.includes('Canción del día')) return;
-
-    const clickedControl = target.closest('button,a,input,select,textarea');
-    if (clickedControl) return;
-
-    playDailyFromCard(card);
-  }, true);
+  root.addEventListener('click', playDailyCard, true);
 }
 
 function boot() {
