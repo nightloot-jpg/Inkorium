@@ -1,0 +1,2 @@
+/* Inkorium profile header v2: a clean reference-style social profile header. */
+html body:has(.profile-view-page) .profile-view-page{max-width:1496px!important;margin:0 auto!important;padding:20px 20px 48px!important;background:#f4f6fa!important}
