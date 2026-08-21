@@ -1,0 +1,1 @@
+Profile redesign reference: three-column desktop layout with a deeper cover, identity header, About/Stats on the left, publications in the center, and listening/activity on the right.
