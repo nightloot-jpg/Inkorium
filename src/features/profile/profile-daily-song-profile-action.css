@@ -1,0 +1,25 @@
+/* Daily song action: visible, clickable control inside the profile header. */
+html body:has(.profile-view-page) .profile-daily-song-card .profile-daily-head button[data-pick] {
+  position: relative !important;
+  z-index: 50 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 32px !important;
+  padding: 0 2px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #6a35c2 !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+html body:has(.profile-view-page) .profile-daily-song-card .profile-daily-head button[data-pick]:hover {
+  text-decoration: underline !important;
+}
+html body:has(.profile-view-page) .profile-daily-song-card .profile-daily-head button[data-pick][data-busy="1"] {
+  opacity: .65 !important;
+  cursor: progress !important;
+}
