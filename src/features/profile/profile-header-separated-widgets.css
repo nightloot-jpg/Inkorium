@@ -1,0 +1,173 @@
+/* Profile header: two explicit widgets below the banner.
+   Left widget = identity. Right widget = daily music. Tabs remain separate. */
+html body:has(.profile-view-page) .profile-view-header{
+  display:grid!important;
+  grid-template-columns:minmax(300px,360px) minmax(0,1fr)!important;
+  grid-template-rows:auto!important;
+  align-items:stretch!important;
+  gap:18px!important;
+  min-height:150px!important;
+  height:auto!important;
+  padding:18px 20px!important;
+  background:#f4f7fb!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+html body:has(.profile-view-page) .profile-view-avatar-wrap{
+  position:absolute!important;
+  left:18px!important;
+  top:-58px!important;
+  width:116px!important;
+  height:116px!important;
+  margin:0!important;
+  z-index:20!important;
+}
+html body:has(.profile-view-page) .profile-view-avatar{
+  width:116px!important;
+  height:116px!important;
+  border:4px solid #fff!important;
+  box-shadow:0 6px 18px rgba(27,55,90,.18)!important;
+}
+html body:has(.profile-view-page) .profile-view-identity{
+  grid-column:1!important;
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  grid-template-rows:auto auto auto!important;
+  gap:6px!important;
+  width:auto!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:20px 18px 16px 126px!important;
+  background:#fff!important;
+  border:1px solid #e1e8f0!important;
+  border-radius:14px!important;
+  box-shadow:0 2px 8px rgba(27,55,90,.035)!important;
+  position:relative!important;
+  transform:none!important;
+  top:auto!important;
+}
+html body:has(.profile-view-page) .profile-view-name-row{
+  grid-column:1!important;
+  grid-row:1!important;
+  min-height:34px!important;
+  margin:0!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  position:static!important;
+}
+html body:has(.profile-view-page) .profile-view-name-row h1{
+  margin:0!important;
+  font-size:28px!important;
+  line-height:1.1!important;
+  color:#102a45!important;
+  position:static!important;
+}
+html body:has(.profile-view-page) .profile-view-handle{display:none!important}
+html body:has(.profile-view-page) .profile-view-status-row{
+  grid-column:1!important;
+  grid-row:2!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  height:22px!important;
+  margin:0!important;
+}
+html body:has(.profile-view-page) .profile-view-bio{
+  grid-column:1!important;
+  grid-row:3!important;
+  width:auto!important;
+  max-width:none!important;
+  margin:2px 0 0!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  color:#6a7d91!important;
+  font-size:14px!important;
+  line-height:1.4!important;
+  position:static!important;
+}
+html body:has(.profile-view-page) .profile-daily-song-card{
+  grid-column:2!important;
+  grid-row:1!important;
+  width:auto!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:16px 18px!important;
+  background:#fff!important;
+  border:1px solid #e3d7f5!important;
+  border-radius:14px!important;
+  box-shadow:0 2px 10px rgba(65,44,97,.045)!important;
+  position:static!important;
+  transform:none!important;
+}
+html body:has(.profile-view-page) .profile-daily-head{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  min-height:24px!important;
+}
+html body:has(.profile-view-page) .profile-daily-head span{
+  font-size:14px!important;
+  font-weight:900!important;
+  color:#55308f!important;
+}
+html body:has(.profile-view-page) .profile-daily-head button{
+  padding:6px 10px!important;
+  border-radius:8px!important;
+  background:#f2eafb!important;
+  color:#6335b3!important;
+  font-weight:800!important;
+}
+html body:has(.profile-view-page) .profile-daily-current{
+  margin-top:12px!important;
+  padding-top:12px!important;
+  border-top:1px solid #eee6f7!important;
+}
+html body:has(.profile-view-page) .profile-daily-current img{
+  width:58px!important;
+  height:58px!important;
+  border-radius:10px!important;
+}
+html body:has(.profile-view-page) .profile-daily-current strong{
+  font-size:15px!important;
+  color:#183b60!important;
+}
+html body:has(.profile-view-page) .profile-daily-current small{
+  font-size:11px!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs{
+  margin-top:10px!important;
+  height:50px!important;
+  min-height:50px!important;
+  padding:0 14px!important;
+  background:#fff!important;
+  border:1px solid #e1e8f0!important;
+  border-radius:12px!important;
+  box-shadow:0 1px 5px rgba(27,55,90,.035)!important;
+  overflow:hidden!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs button{height:50px!important}
+@media(max-width:900px){
+  html body:has(.profile-view-page) .profile-view-header{grid-template-columns:minmax(260px,330px) minmax(0,1fr)!important;gap:14px!important;padding:16px!important}
+  html body:has(.profile-view-page) .profile-view-identity{padding-left:112px!important}
+  html body:has(.profile-view-page) .profile-view-avatar-wrap{left:14px!important;width:102px!important;height:102px!important;top:-48px!important}
+  html body:has(.profile-view-page) .profile-view-avatar{width:102px!important;height:102px!important}
+}
+@media(max-width:720px){
+  html body:has(.profile-view-page) .profile-view-header{grid-template-columns:1fr!important;grid-template-rows:auto auto!important;min-height:0!important}
+  html body:has(.profile-view-page) .profile-view-identity{grid-column:1!important;grid-row:1!important;padding:54px 16px 16px!important}
+  html body:has(.profile-view-page) .profile-view-avatar-wrap{left:16px!important;top:-46px!important;width:92px!important;height:92px!important}
+  html body:has(.profile-view-page) .profile-view-avatar{width:92px!important;height:92px!important}
+  html body:has(.profile-view-page) .profile-daily-song-card{grid-column:1!important;grid-row:2!important}
+}
+@media(max-width:560px){
+  html body:has(.profile-view-page) .profile-view-header{padding:12px 10px!important;gap:10px!important}
+  html body:has(.profile-view-page) .profile-view-identity{padding:52px 14px 14px!important}
+  html body:has(.profile-view-page) .profile-view-name-row h1{font-size:24px!important}
+  html body:has(.profile-view-page) .profile-daily-song-card{padding:14px!important}
+}
