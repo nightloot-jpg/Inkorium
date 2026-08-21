@@ -55,9 +55,8 @@ async function load(profileId: string) {
 }
 
 function finalRow(track: Track, favoriteIds: Set<string>, own: boolean) {
-  const ownTrack = own && track.user_id === undefined ? true : own && track.user_id === track.user_id;
   const active = favoriteIds.has(track.id);
-  return `<div class="profile-music-final-row"><img src="${esc(coverFor(track))}" alt=""><div><strong>${esc(track.title)}</strong><small>${esc(track.artist || 'Artista desconocido')}${track.album ? ` · ${esc(track.album)}` : ''}</small></div><div class="profile-music-final-actions"><button type="button" data-final-play="${esc(track.id)}" aria-label="Reproducir">▶</button>${own ? `<button type="button" class="${active ? 'active' : ''}" data-favorite-id="${esc(track.id)}" aria-label="Favorito">♥</button>${ownTrack ? `<button type="button" data-edit-track="${esc(track.id)}" aria-label="Editar">✎</button>` : ''}` : ''}</div></div>`;
+  return `<div class="profile-music-final-row"><img src="${esc(coverFor(track))}" alt=""><div><strong>${esc(track.title)}</strong><small>${esc(track.artist || 'Artista desconocido')}${track.album ? ` · ${esc(track.album)}` : ''}</small></div><div class="profile-music-final-actions"><button type="button" data-final-play="${esc(track.id)}" aria-label="Reproducir">▶</button>${own ? `<button type="button" class="${active ? 'active' : ''}" data-favorite-id="${esc(track.id)}" aria-label="Favorito">♥</button><button type="button" data-edit-track="${esc(track.id)}" aria-label="Editar">✎</button>` : ''}</div></div>`;
 }
 
 function playlistCard(p: Playlist, own: boolean) {
@@ -81,6 +80,8 @@ async function reorganize(root: HTMLElement) {
     const current = player().currentSong;
     const favoriteArtists = Array.from(new Map(data.favorites.filter(track => track.artist).map(track => [track.artist!, track])).values()).slice(0, 8);
     const own = resolved.own;
+    const today = new Date().toISOString().slice(0, 10);
+    const todayEntry = data.diary.find(entry => entry.entry_date === today) || null;
 
     tab.dataset.finalized = '1';
     tab.innerHTML = `<div class="profile-music-final">
@@ -105,11 +106,22 @@ async function reorganize(root: HTMLElement) {
           <div class="profile-music-final-diary">${data.diary.length ? data.diary.slice(0, 8).map(diaryRow).join('') : '<div class="profile-music-final-empty">Todavía no hay páginas en tu diario.</div>'}</div>
         </section>
         <section class="profile-music-final-card">
-          <div class="profile-music-final-head"><div><h2>🎧 Canción del día</h2><p class="profile-music-final-card-sub">La que has elegido para hoy.</p></div><button type="button" class="profile-music-final-link" data-music-action="day">${data.diary[0] && data.diary[0].entry_date === new Date().toISOString().slice(0, 10) ? 'Cambiar' : 'Elegir'}</button></div>
-          ${data.diary[0] && data.diary[0].entry_date === new Date().toISOString().slice(0, 10) ? diaryRow(data.diary[0]) : '<div class="profile-music-final-empty">Aún no has elegido la canción de hoy.</div>'}
+          <div class="profile-music-final-head"><div><h2>🎧 Canción del día</h2><p class="profile-music-final-card-sub">La que has elegido para hoy.</p></div><button type="button" class="profile-music-final-link" data-music-action="day">${todayEntry ? 'Cambiar' : 'Elegir canción del día'}</button></div>
+          ${todayEntry ? diaryRow(todayEntry) : '<div class="profile-music-final-empty">Aún no has elegido la canción de hoy.</div>'}
         </section>
       </aside>
     </div>`;
+
+    // Capture the daily-song action before the legacy music-tab handler sees it.
+    tab.addEventListener('click', event => {
+      const target = event.target as HTMLElement;
+      const dayAction = target.closest<HTMLElement>('[data-music-action="day"]');
+      if (!dayAction) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const headerButton = document.querySelector<HTMLElement>('.profile-view-page .profile-daily-song-card [data-pick]');
+      if (headerButton) headerButton.click();
+    }, true);
 
     tab.addEventListener('click', event => {
       const target = event.target as HTMLElement;
