@@ -5,6 +5,7 @@ import { MusicView } from './music/MusicView';
 import { VideoView } from './videos/VideoView';
 import { EventsView } from './events/EventsView';
 import { ProfileView } from './profile/ProfileView';
+import './profile/profile-reference-shell-fix.css';
 
 const BRIDGE_ID = 'inkorium-route-content-bridge';
 const ROUTE_PAGES = new Set(['inicio','perfil','mensajes','personas','musica','buscar','fotos','videos','eventos']);
