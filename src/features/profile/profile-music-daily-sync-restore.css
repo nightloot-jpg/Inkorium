@@ -1,0 +1,9 @@
+/* Restore the two-view music header used by the profile Music tab. */
+html body:has(.profile-view-page) .profile-music-daily-sync-restore-switcher{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;box-sizing:border-box;background:#fff;border:1px solid #dfe6ee;border-radius:0!important;padding:14px 16px;margin:0 0 16px}
+html body:has(.profile-view-page) .profile-music-daily-sync-restore-copy{display:flex;flex-direction:column;gap:3px}
+html body:has(.profile-view-page) .profile-music-daily-sync-restore-copy span{font-size:10px;font-weight:900;letter-spacing:.1em;color:#8b78b7}
+html body:has(.profile-view-page) .profile-music-daily-sync-restore-copy strong{font-size:17px;color:#17385c}
+html body:has(.profile-view-page) .profile-music-daily-sync-restore-actions{display:flex;align-items:center;border:1px solid #e6def2;background:#f4f1fa;border-radius:0!important;padding:3px}
+html body:has(.profile-view-page) .profile-music-daily-sync-restore-actions button{border:0;border-radius:0!important;background:transparent;color:#61748a;padding:9px 14px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+html body:has(.profile-view-page) .profile-music-daily-sync-restore-actions button.active{background:#fff;color:#6a35c2;box-shadow:0 0 0 1px #e3d8f2 inset}
+@media(max-width:700px){html body:has(.profile-view-page) .profile-music-daily-sync-restore-switcher{align-items:stretch;flex-direction:column}.profile-music-daily-sync-restore-actions{width:100%}.profile-music-daily-sync-restore-actions button{flex:1}}
