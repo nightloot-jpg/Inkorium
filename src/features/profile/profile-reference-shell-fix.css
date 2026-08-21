@@ -1,2 +1,0 @@
-/* The profile route is mounted outside the feed shell, so it must never inherit the 320px feed rail. */
-body:has(.profile-view-page) .inkorium-route-bridge{left:0!important;right:0!important;top:57px!important;bottom:0!important;}
