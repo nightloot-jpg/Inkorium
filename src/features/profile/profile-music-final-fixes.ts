@@ -1,3 +1,4 @@
+import { supabase } from '../../lib/supabase';
 import { usePlayerStore } from '../../lib/store';
 import './profile-music-final-fixes.css';
 
@@ -59,24 +60,41 @@ function syncDailySong() {
   musicTab()?.click();
 }
 
-function playDailyCard(event: Event) {
-  const target = event.target as HTMLElement;
-  const card = target.closest<HTMLElement>('.profile-music-final-side .profile-music-final-card');
-  if (!card || !card.querySelector('h2')?.textContent?.includes('Canción del día')) return;
-  if (target.closest('button,a,input,select,textarea')) return;
+async function playDailyFromCard(card: HTMLElement) {
+  const playButton = card.querySelector<HTMLElement>('[data-diary-play]');
+  const trackId = playButton?.dataset.diaryPlay;
+  if (!trackId) return;
 
-  const playButton = card.querySelector<HTMLButtonElement>('[data-diary-play]');
-  if (playButton) {
-    event.preventDefault();
-    playButton.click();
-  }
+  const { data, error } = await supabase
+    .from('music_tracks')
+    .select('id,title,artist,cover_url,youtube_id,source_type')
+    .eq('id', trackId)
+    .maybeSingle();
+
+  if (error || !data) return;
+
+  player().playSong({
+    type: data.source_type === 'youtube' ? 'youtube_song' : 'local_song',
+    video_id: data.youtube_id || undefined,
+    title: data.title,
+    artist: data.artist || undefined,
+    channel_title: data.artist || undefined,
+    thumbnail: data.cover_url || (data.youtube_id ? `https://i.ytimg.com/vi/${data.youtube_id}/hqdefault.jpg` : undefined),
+  } as any, false);
 }
 
 function bindClicks() {
   const root = document.querySelector<HTMLElement>(MUSIC_ROOT);
   if (!root || root.dataset.finalFixesBound === '1') return;
   root.dataset.finalFixesBound = '1';
-  root.addEventListener('click', playDailyCard, true);
+  root.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    const card = target.closest<HTMLElement>('.profile-music-final-side .profile-music-final-card');
+    if (!card || !card.querySelector('h2')?.textContent?.includes('Canción del día')) return;
+    if (target.closest('button,a,input,select,textarea')) return;
+    event.preventDefault();
+    void playDailyFromCard(card);
+  }, true);
 }
 
 function boot() {
@@ -88,7 +106,6 @@ function boot() {
   observer.observe(document.body, { childList: true, subtree: true });
   addSwitcher();
   bindClicks();
-
   window.addEventListener('inkorium:daily-song-changed', syncDailySong);
 }
 
