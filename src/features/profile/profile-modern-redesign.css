@@ -1,26 +1,125 @@
-/* Inkorium profile: clean 2026 visual system. Cover is image-only; identity sits below it. */
+/* Inkorium profile: clean 2026 visual system. Cover is image-only; identity and music are separate widgets. */
 html body:has(.profile-view-page) .profile-view-page{width:100%!important;max-width:1496px!important;margin:0 auto!important;padding:24px 24px 48px!important;background:#f4f7fb!important;color:#17385c!important}
 html body:has(.profile-view-page) .profile-view-cover{height:180px!important;border:0!important;border-radius:18px 18px 0 0!important;background-size:cover!important;background-position:center!important;overflow:hidden!important}
 html body:has(.profile-view-page) .profile-view-cover-placeholder{height:100%!important;background:linear-gradient(135deg,#eaf0f8,#dfe9f5)!important}
-html body:has(.profile-view-page) .profile-view-header{position:relative!important;display:grid!important;grid-template-columns:124px minmax(260px,1fr) minmax(360px,520px)!important;align-items:center!important;column-gap:28px!important;min-height:176px!important;height:auto!important;padding:20px 28px 22px 28px!important;background:#fff!important;border:1px solid #e1e8f0!important;border-top:0!important;border-radius:0 0 16px 16px!important;overflow:visible!important;box-shadow:0 2px 8px rgba(27,55,90,.04)!important}
-html body:has(.profile-view-page) .profile-view-avatar-wrap{position:relative!important;left:auto!important;top:auto!important;width:124px!important;height:124px!important;margin:-72px 0 0!important;z-index:4!important}
-html body:has(.profile-view-page) .profile-view-avatar{width:124px!important;height:124px!important;border:5px solid #fff!important;box-shadow:0 3px 12px rgba(27,55,90,.18)!important}
-html body:has(.profile-view-page) .profile-view-identity{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;width:auto!important;min-width:0!important;padding:0!important;margin:0!important;gap:0!important}
-html body:has(.profile-view-page) .profile-view-name-row{display:flex!important;align-items:center!important;gap:8px!important;margin:0!important;min-height:36px!important}
-html body:has(.profile-view-page) .profile-view-name-row h1{margin:0!important;font-size:30px!important;line-height:1.1!important;letter-spacing:-.4px!important;color:#102a45!important;position:static!important}
+
+/* Header is a clean two-widget layout: identity left, music right. */
+html body:has(.profile-view-page) .profile-view-header{
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:minmax(330px,360px) minmax(0,1fr)!important;
+  grid-template-rows:auto auto!important;
+  align-items:center!important;
+  column-gap:18px!important;
+  row-gap:0!important;
+  min-height:156px!important;
+  height:auto!important;
+  padding:16px 16px 16px 18px!important;
+  background:transparent!important;
+  border:0!important;
+  overflow:visible!important;
+  box-shadow:none!important;
+}
+html body:has(.profile-view-page) .profile-view-header::before{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;
+  top:0!important;
+  bottom:0!important;
+  width:360px!important;
+  background:#fff!important;
+  border:1px solid #e1e8f0!important;
+  border-radius:14px!important;
+  box-shadow:0 2px 8px rgba(27,55,90,.045)!important;
+  z-index:0!important;
+}
+html body:has(.profile-view-page) .profile-view-avatar-wrap{
+  grid-column:1!important;
+  grid-row:1 / span 2!important;
+  position:relative!important;
+  left:auto!important;
+  top:auto!important;
+  width:104px!important;
+  height:104px!important;
+  margin:0!important;
+  z-index:3!important;
+  align-self:center!important;
+  justify-self:start!important;
+}
+html body:has(.profile-view-page) .profile-view-avatar{width:104px!important;height:104px!important;border:4px solid #fff!important;box-shadow:0 4px 14px rgba(27,55,90,.16)!important}
+html body:has(.profile-view-page) .profile-view-identity{
+  grid-column:1!important;
+  grid-row:1!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  width:auto!important;
+  min-width:0!important;
+  padding:0 14px 0 120px!important;
+  margin:0!important;
+  gap:0!important;
+  align-self:end!important;
+  position:relative!important;
+  z-index:2!important;
+}
+html body:has(.profile-view-page) .profile-view-name-row{display:flex!important;align-items:center!important;gap:7px!important;margin:0!important;min-height:34px!important}
+html body:has(.profile-view-page) .profile-view-name-row h1{margin:0!important;font-size:27px!important;line-height:1.05!important;letter-spacing:-.45px!important;color:#102a45!important;position:static!important}
 html body:has(.profile-view-page) .profile-view-handle{display:none!important}
-html body:has(.profile-view-page) .profile-view-status-row{display:flex!important;align-items:center!important;gap:7px!important;margin:7px 0 0!important;height:22px!important}
-html body:has(.profile-view-page) .profile-view-status-select,.profile-view-status-label{font-size:13px!important;font-weight:700!important;color:#566e86!important}
-html body:has(.profile-view-page) .profile-view-bio{display:flex!important;align-items:center!important;gap:6px!important;width:auto!important;max-width:620px!important;margin:9px 0 0!important;padding:0!important;background:transparent!important;border:0!important;color:#425a72!important;font-size:15px!important;line-height:1.4!important;position:static!important}
-html body:has(.profile-view-page) .profile-daily-song-card{width:100%!important;max-width:none!important;margin:0!important;padding:14px 16px!important;border:1px solid #e6d9f8!important;border-radius:12px!important;background:linear-gradient(180deg,#fcf9ff,#faf7ff)!important;box-shadow:none!important;color:#17385c!important}
-html body:has(.profile-view-page) .profile-daily-head{font-size:13px!important}
-html body:has(.profile-view-page) .profile-daily-head span{font-weight:800!important}
-html body:has(.profile-view-page) .profile-daily-current img{width:48px!important;height:48px!important;border-radius:8px!important}
-html body:has(.profile-view-page) .profile-daily-current strong{font-size:13px!important}
-html body:has(.profile-view-page) .profile-daily-current small{font-size:11px!important}
-html body:has(.profile-view-page) .profile-view-tabs{display:flex!important;align-items:stretch!important;gap:8px!important;height:52px!important;min-height:52px!important;margin:12px 0 0!important;padding:0 14px!important;background:#fff!important;border:1px solid #e1e8f0!important;border-radius:12px!important;overflow:hidden!important;box-shadow:0 1px 5px rgba(27,55,90,.035)!important}
-html body:has(.profile-view-page) .profile-view-tabs button{height:52px!important;padding:0 19px!important;border-bottom:2px solid transparent!important;font-size:14px!important;font-weight:800!important;color:#60768d!important}
+html body:has(.profile-view-page) .profile-view-status-row{display:flex!important;align-items:center!important;gap:7px!important;margin:5px 0 0!important;height:20px!important}
+html body:has(.profile-view-page) .profile-view-status-select,html body:has(.profile-view-page) .profile-view-status-label{font-size:12px!important;font-weight:750!important;color:#596f84!important}
+html body:has(.profile-view-page) .profile-view-bio{
+  grid-column:1!important;
+  grid-row:2!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  width:auto!important;
+  max-width:330px!important;
+  margin:8px 14px 0 120px!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  color:#6d7f92!important;
+  font-size:13px!important;
+  line-height:1.4!important;
+  position:relative!important;
+  z-index:2!important;
+}
+
+/* The music widget occupies the larger right-hand zone. */
+html body:has(.profile-view-page) .profile-daily-song-card{
+  grid-column:2!important;
+  grid-row:1 / span 2!important;
+  align-self:stretch!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:14px 17px!important;
+  border:1px solid #e3d7f5!important;
+  border-radius:14px!important;
+  background:linear-gradient(135deg,#fcf9ff 0%,#fff 78%)!important;
+  box-shadow:0 3px 12px rgba(65,44,97,.05)!important;
+  color:#17385c!important;
+  position:relative!important;
+  z-index:2!important;
+}
+html body:has(.profile-view-page) .profile-daily-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;min-height:22px!important;font-size:13px!important}
+html body:has(.profile-view-page) .profile-daily-head span{display:inline-flex!important;align-items:center!important;gap:7px!important;font-weight:900!important;color:#55308f!important}
+html body:has(.profile-view-page) .profile-daily-head button{padding:5px 10px!important;border:0!important;border-radius:8px!important;background:#f1e9fb!important;color:#6335b3!important;font-weight:800!important;cursor:pointer!important}
+html body:has(.profile-view-page) .profile-daily-current{display:flex!important;align-items:center!important;gap:11px!important;margin-top:10px!important;padding-top:10px!important;border-top:1px solid #eee6f7!important}
+html body:has(.profile-view-page) .profile-daily-current img{width:56px!important;height:56px!important;border-radius:10px!important;object-fit:cover!important;flex:0 0 auto!important}
+html body:has(.profile-view-page) .profile-daily-current strong{font-size:14px!important;line-height:1.25!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;color:#183b60!important}
+html body:has(.profile-view-page) .profile-daily-current small{margin-top:4px!important;font-size:11px!important;color:#7d90a4!important}
+html body:has(.profile-view-page) .profile-daily-song-card>p{margin:10px 0 0!important;color:#8192a3!important;font-size:12px!important}
+
+/* Tabs remain an independent bar. */
+html body:has(.profile-view-page) .profile-view-tabs{display:flex!important;align-items:stretch!important;gap:8px!important;height:48px!important;min-height:48px!important;margin:10px 0 0!important;padding:0 12px!important;background:#fff!important;border:1px solid #e1e8f0!important;border-radius:11px!important;overflow:hidden!important;box-shadow:0 1px 5px rgba(27,55,90,.035)!important}
+html body:has(.profile-view-page) .profile-view-tabs button{height:48px!important;padding:0 18px!important;border-bottom:2px solid transparent!important;font-size:14px!important;font-weight:800!important;color:#60768d!important}
 html body:has(.profile-view-page) .profile-view-tabs button.active{color:#5b2db5!important;border-bottom-color:#6a35c2!important}
+
+/* Content */
 html body:has(.profile-view-page) .profile-view-grid{display:grid!important;grid-template-columns:minmax(300px,340px) minmax(0,1fr) minmax(300px,340px)!important;gap:20px!important;margin-top:18px!important;align-items:start!important}
 html body:has(.profile-view-page) .profile-view-main,html body:has(.profile-view-page) .profile-view-side{display:contents!important}
 html body:has(.profile-view-page) .profile-view-card{background:#fff!important;border:1px solid #e1e8f0!important;border-radius:14px!important;box-shadow:0 2px 8px rgba(27,55,90,.035)!important;padding:18px!important;margin:0 0 18px!important}
@@ -42,27 +141,40 @@ html body:has(.profile-view-page) .profile-view-signatures{margin-top:12px!impor
 html body:has(.profile-view-page) .profile-view-signature{padding:11px 0!important}
 html body:has(.profile-view-page) .left-column{display:none!important}
 html body:has(.profile-view-page) .feed-layout{grid-template-columns:1fr!important;max-width:none!important}
-@media(max-width:1120px){html body:has(.profile-view-page) .profile-view-page{padding:18px 16px 36px!important}html body:has(.profile-view-page) .profile-view-grid{grid-template-columns:minmax(250px,300px) minmax(0,1fr)!important}html body:has(.profile-view-page) .profile-view-main>.profile-view-intro-card{grid-column:2!important}html body:has(.profile-view-page) .profile-view-side>.profile-view-card{grid-column:2!important}html body:has(.profile-view-page) .profile-about-card,html body:has(.profile-view-page) .profile-view-stats{grid-column:1!important}}
-@media(max-width:800px){html body:has(.profile-view-page) .profile-view-header{grid-template-columns:96px minmax(0,1fr)!important;column-gap:18px!important;min-height:210px!important;padding:18px 16px 20px!important}html body:has(.profile-view-page) .profile-view-avatar-wrap{width:96px!important;height:96px!important;margin:-54px 0 0!important}html body:has(.profile-view-page) .profile-view-avatar{width:96px!important;height:96px!important}html body:has(.profile-view-page) .profile-daily-song-card{grid-column:2!important;margin-top:14px!important}html body:has(.profile-view-page) .profile-view-grid{display:block!important}html body:has(.profile-view-page) .profile-view-card{margin-bottom:14px!important}}
-@media(max-width:560px){html body:has(.profile-view-page) .profile-view-page{padding:10px!important}html body:has(.profile-view-page) .profile-view-cover{height:140px!important;border-radius:12px 12px 0 0!important}html body:has(.profile-view-page) .profile-view-header{display:block!important;padding:50px 14px 18px!important;min-height:300px!important}html body:has(.profile-view-page) .profile-view-avatar-wrap{position:absolute!important;left:14px!important;top:-48px!important;margin:0!important}html body:has(.profile-view-page) .profile-view-identity{width:100%!important}html body:has(.profile-view-page) .profile-view-name-row h1{font-size:24px!important}html body:has(.profile-view-page) .profile-daily-song-card{margin-top:14px!important}html body:has(.profile-view-page) .profile-view-tabs{overflow-x:auto!important;scrollbar-width:none!important}html body:has(.profile-view-page) .profile-view-tabs::-webkit-scrollbar{display:none!important}}
 
-/* Header polish v2: three calm zones, no oversized daily-song panel. */
-html body:has(.profile-view-page) .profile-view-header{grid-template-columns:116px minmax(240px,1fr) minmax(420px,540px)!important;column-gap:24px!important;min-height:150px!important;padding:16px 24px 18px!important}
-html body:has(.profile-view-page) .profile-view-avatar-wrap{grid-column:1!important;grid-row:1!important;width:112px!important;height:112px!important;margin:-54px 0 0!important}
-html body:has(.profile-view-page) .profile-view-avatar{width:112px!important;height:112px!important;border-width:4px!important}
-html body:has(.profile-view-page) .profile-view-identity{grid-column:2!important;grid-row:1!important;align-self:center!important}
-html body:has(.profile-view-page) .profile-view-name-row h1{font-size:29px!important;letter-spacing:-.55px!important}
-html body:has(.profile-view-page) .profile-view-status-row{margin-top:6px!important;height:20px!important}
-html body:has(.profile-view-page) .profile-view-bio{grid-column:2!important;grid-row:2!important;margin:3px 0 0!important;font-size:14px!important;color:#6d7f92!important;max-width:480px!important}
-html body:has(.profile-view-page) .profile-daily-song-card{grid-column:3!important;grid-row:1 / span 2!important;align-self:center!important;margin:0!important;padding:12px 14px!important;border:1px solid #e3d7f5!important;border-radius:13px!important;background:linear-gradient(135deg,#fcf9ff 0%,#fff 78%)!important;box-shadow:0 4px 14px rgba(65,44,97,.055)!important}
-html body:has(.profile-view-page) .profile-daily-head{min-height:22px!important}
-html body:has(.profile-view-page) .profile-daily-head button{padding:4px 9px!important;border-radius:8px!important;background:#f2eafb!important}
-html body:has(.profile-view-page) .profile-daily-current{margin-top:8px!important;padding-top:8px!important}
-html body:has(.profile-view-page) .profile-daily-current img{width:50px!important;height:50px!important;border-radius:9px!important}
-html body:has(.profile-view-page) .profile-daily-current strong{font-size:13px!important}
-html body:has(.profile-view-page) .profile-daily-current small{font-size:10.5px!important}
-html body:has(.profile-view-page) .profile-view-tabs{margin-top:9px!important;height:48px!important;min-height:48px!important}
-html body:has(.profile-view-page) .profile-view-tabs button{height:48px!important;padding:0 17px!important}
-@media(max-width:1120px){html body:has(.profile-view-page) .profile-view-header{grid-template-columns:104px minmax(0,1fr) minmax(320px,420px)!important;column-gap:18px!important}html body:has(.profile-view-page) .profile-view-avatar-wrap{width:100px!important;height:100px!important;margin:-48px 0 0!important}html body:has(.profile-view-page) .profile-view-avatar{width:100px!important;height:100px!important}}
-@media(max-width:860px){html body:has(.profile-view-page) .profile-view-header{grid-template-columns:94px minmax(0,1fr)!important;min-height:206px!important}html body:has(.profile-view-page) .profile-view-avatar-wrap{grid-column:1!important;grid-row:1 / span 2!important;width:90px!important;height:90px!important;margin:-42px 0 0!important}html body:has(.profile-view-page) .profile-view-avatar{width:90px!important;height:90px!important}html body:has(.profile-view-page) .profile-view-identity{grid-column:2!important;grid-row:1!important}html body:has(.profile-view-page) .profile-view-bio{grid-column:2!important;grid-row:2!important}html body:has(.profile-view-page) .profile-daily-song-card{grid-column:2!important;grid-row:3!important;margin-top:9px!important}}
-@media(max-width:560px){html body:has(.profile-view-page) .profile-view-header{display:block!important;min-height:0!important;padding:52px 14px 15px!important}html body:has(.profile-view-page) .profile-view-avatar-wrap{position:absolute!important;left:14px!important;top:-42px!important;width:84px!important;height:84px!important;margin:0!important}html body:has(.profile-view-page) .profile-view-avatar{width:84px!important;height:84px!important}html body:has(.profile-view-page) .profile-view-name-row h1{font-size:24px!important}html body:has(.profile-view-page) .profile-view-bio{margin-top:3px!important}html body:has(.profile-view-page) .profile-daily-song-card{margin-top:10px!important}}
+@media(max-width:1120px){
+  html body:has(.profile-view-page) .profile-view-page{padding:18px 16px 36px!important}
+  html body:has(.profile-view-page) .profile-view-header{grid-template-columns:minmax(300px,320px) minmax(0,1fr)!important;column-gap:14px!important}
+  html body:has(.profile-view-page) .profile-view-header::before{width:320px!important}
+  html body:has(.profile-view-page) .profile-view-avatar-wrap{width:96px!important;height:96px!important}
+  html body:has(.profile-view-page) .profile-view-avatar{width:96px!important;height:96px!important}
+  html body:has(.profile-view-page) .profile-view-identity{padding-left:110px!important}
+  html body:has(.profile-view-page) .profile-view-bio{margin-left:110px!important}
+  html body:has(.profile-view-page) .profile-view-grid{grid-template-columns:minmax(250px,300px) minmax(0,1fr)!important}
+  html body:has(.profile-view-page) .profile-view-main>.profile-view-intro-card{grid-column:2!important}
+  html body:has(.profile-view-page) .profile-view-side>.profile-view-card{grid-column:2!important}
+  html body:has(.profile-view-page) .profile-about-card,html body:has(.profile-view-page) .profile-view-stats{grid-column:1!important}
+}
+@media(max-width:860px){
+  html body:has(.profile-view-page) .profile-view-header{grid-template-columns:92px minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;min-height:244px!important;padding:15px!important}
+  html body:has(.profile-view-page) .profile-view-header::before{width:100%!important;bottom:0!important}
+  html body:has(.profile-view-page) .profile-view-avatar-wrap{grid-column:1!important;grid-row:1 / span 2!important;width:86px!important;height:86px!important}
+  html body:has(.profile-view-page) .profile-view-avatar{width:86px!important;height:86px!important}
+  html body:has(.profile-view-page) .profile-view-identity{grid-column:2!important;grid-row:1!important;padding-left:0!important}
+  html body:has(.profile-view-page) .profile-view-bio{grid-column:2!important;grid-row:2!important;margin:3px 0 0!important}
+  html body:has(.profile-view-page) .profile-daily-song-card{grid-column:1 / -1!important;grid-row:3!important;margin-top:10px!important}
+}
+@media(max-width:560px){
+  html body:has(.profile-view-page) .profile-view-page{padding:10px!important}
+  html body:has(.profile-view-page) .profile-view-cover{height:140px!important;border-radius:12px 12px 0 0!important}
+  html body:has(.profile-view-page) .profile-view-header{display:block!important;min-height:0!important;padding:54px 14px 14px!important}
+  html body:has(.profile-view-page) .profile-view-header::before{border-radius:0 0 12px 12px!important}
+  html body:has(.profile-view-page) .profile-view-avatar-wrap{position:absolute!important;left:14px!important;top:-44px!important;width:84px!important;height:84px!important;margin:0!important}
+  html body:has(.profile-view-page) .profile-view-avatar{width:84px!important;height:84px!important}
+  html body:has(.profile-view-page) .profile-view-identity{width:100%!important;padding-left:0!important}
+  html body:has(.profile-view-page) .profile-view-name-row h1{font-size:24px!important}
+  html body:has(.profile-view-page) .profile-view-bio{margin-top:4px!important;max-width:none!important}
+  html body:has(.profile-view-page) .profile-daily-song-card{margin-top:12px!important}
+  html body:has(.profile-view-page) .profile-view-tabs{overflow-x:auto!important;scrollbar-width:none!important}
+  html body:has(.profile-view-page) .profile-view-tabs::-webkit-scrollbar{display:none!important}
+}
