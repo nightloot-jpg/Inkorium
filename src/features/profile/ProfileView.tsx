@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Camera, Image as ImageIcon, MapPin, Music2, Pencil, Play, Pause, Users, Video, X, Upload, Check, Circle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import { usePlayerStore } from "../../lib/store";
+import { useAuthStore, usePlayerStore } from "../../lib/store";
 import type { Session } from "@supabase/supabase-js";
 import "./profile-view.css";
 
@@ -13,7 +13,7 @@ type Profile = {
   city: string | null;
   avatar_url: string | null;
   banner_url: string | null;
-  user_status?: string | null;
+  user_status: string | null;
 };
 
 type ProfileViewProps = { session: Session; profile: Profile | null; profileId: string; username: string };
@@ -21,10 +21,20 @@ type UserPost = { id: string; content: string | null; created_at: string; media_
 type GalleryPhoto = { id: string; url: string; caption: string | null; created_at: string };
 type MediaTarget = "avatar" | "banner";
 type StatusValue = "conectado" | "ausente" | "desconectado";
-const STATUS_META: Record<StatusValue, { label: string; className: string }> = { conectado: { label: "Conectado", className: "online" }, ausente: { label: "Ausente", className: "away" }, desconectado: { label: "Desconectado", className: "offline" } };
-function normalizeStatus(value: string | null | undefined): StatusValue { return value === "ausente" || value === "desconectado" ? value : "conectado"; }
-function initials(name: string) { return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"; }
-function formatPlayerTime(seconds: number) { if (!Number.isFinite(seconds) || seconds < 0) return "0:00"; const total = Math.floor(seconds); return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`; }
+
+const STATUS_META: Record<StatusValue, { label: string; className: string }> = {
+  conectado: { label: "Conectado", className: "online" },
+  ausente: { label: "Ausente", className: "away" },
+  desconectado: { label: "Desconectado", className: "offline" },
+};
+
+const normalizeStatus = (value: string | null | undefined): StatusValue => value === "ausente" || value === "desconectado" ? value : "conectado";
+const initials = (name: string) => name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U";
+const formatPlayerTime = (seconds: number) => {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const total = Math.floor(seconds);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+};
 
 export function ProfileView({ session, profile, profileId, username }: ProfileViewProps) {
   const [posts, setPosts] = useState<UserPost[]>([]);
@@ -43,6 +53,8 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
   const [savingBio, setSavingBio] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
 
+  const globalProfile = useAuthStore((state) => state.profile);
+  const updateGlobalProfile = useAuthStore((state) => state.updateProfile);
   const currentSong = usePlayerStore((state) => state.currentSong);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const pendingPlay = usePlayerStore((state) => state.pendingPlay);
@@ -58,7 +70,7 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
   const handle = displayProfile?.username ? `@${displayProfile.username}` : `@${username}`;
   const avatar = displayProfile?.avatar_url || "";
   const banner = displayProfile?.banner_url || "";
-  const effectiveStatus = isOwnProfile ? status : normalizeStatus(displayProfile?.user_status);
+  const effectiveStatus = isOwnProfile ? normalizeStatus(globalProfile?.user_status ?? status) : normalizeStatus(displayProfile?.user_status);
   const statusMeta = STATUS_META[effectiveStatus];
 
   useEffect(() => {
@@ -66,15 +78,28 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
     setViewedProfileId(profileId);
     async function resolveProfile() {
       const { data, error } = await supabase.from("profiles").select("id, username, full_name, bio, city, avatar_url, banner_url, user_status").eq("id", profileId).maybeSingle();
-      if (!cancelled) { if (error) console.error("Error loading profile:", error); setViewedProfile((data || profile || null) as Profile | null); }
+      if (cancelled) return;
+      if (error) console.error("Error loading profile:", error);
+      const resolved = (data || profile || null) as Profile | null;
+      setViewedProfile(resolved);
+      if (profileId === session.user.id && resolved) {
+        setStatus(normalizeStatus(resolved.user_status));
+        updateGlobalProfile({ user_status: resolved.user_status });
+      }
     }
     void resolveProfile();
     return () => { cancelled = true; };
-  }, [profile, profileId]);
+  }, [profile, profileId, session.user.id, updateGlobalProfile]);
 
   useEffect(() => {
-    if (!isOwnProfile) { setStatus(normalizeStatus(displayProfile?.user_status)); setBioDraft(displayProfile?.bio || ""); }
-  }, [displayProfile?.user_status, displayProfile?.bio, isOwnProfile]);
+    if (isOwnProfile) {
+      if (globalProfile?.user_status) setStatus(normalizeStatus(globalProfile.user_status));
+      setBioDraft(globalProfile?.bio ?? displayProfile?.bio ?? "");
+      return;
+    }
+    setStatus(normalizeStatus(displayProfile?.user_status));
+    setBioDraft(displayProfile?.bio || "");
+  }, [displayProfile?.user_status, displayProfile?.bio, globalProfile?.user_status, globalProfile?.bio, isOwnProfile]);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,6 +129,7 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
     const { error } = await supabase.from("profiles").update({ [field]: url, updated_at: new Date().toISOString() }).eq("id", session.user.id);
     if (error) { window.alert(`No se pudo actualizar la imagen: ${error.message}`); return; }
     setViewedProfile((current) => current ? { ...current, [field]: url } : current);
+    updateGlobalProfile({ [field]: url } as any);
     setMediaTarget(null); setMediaPreview(null);
   };
 
@@ -128,8 +154,10 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
     setStatus(next); setSavingStatus(true);
     const { error } = await supabase.from("profiles").update({ user_status: next, updated_at: new Date().toISOString() }).eq("id", session.user.id);
     setSavingStatus(false);
-    if (error) window.alert(`No se pudo guardar el estado: ${error.message}`);
-    else setViewedProfile((current) => current ? { ...current, user_status: next } : current);
+    if (error) { window.alert(`No se pudo guardar el estado: ${error.message}`); return; }
+    setViewedProfile((current) => current ? { ...current, user_status: next } : current);
+    updateGlobalProfile({ user_status: next });
+    window.dispatchEvent(new CustomEvent("inkorium-user-status-updated", { detail: { userId: session.user.id, status: next } }));
   };
 
   const saveBio = async () => {
@@ -138,7 +166,7 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
     const { error } = await supabase.from("profiles").update({ bio: value || null, updated_at: new Date().toISOString() }).eq("id", session.user.id);
     setSavingBio(false);
     if (error) { window.alert(`No se pudo guardar la biografía: ${error.message}`); return; }
-    setViewedProfile((current) => current ? { ...current, bio: value || null } : current); setEditingBio(false);
+    setViewedProfile((current) => current ? { ...current, bio: value || null } : current); updateGlobalProfile({ bio: value || null }); setEditingBio(false);
   };
 
   const togglePlayback = () => { if (!currentSong) { openPlayer(); return; } if (isPlaying || pendingPlay) pause(); else resume(); };
@@ -162,12 +190,17 @@ export function ProfileView({ session, profile, profileId, username }: ProfileVi
       </div>
 
       <div className="profile-view-tabs" role="tablist">{["Inicio", "Música", "Fotos", "Vídeos", "Eventos", "Amigos"].map((tab) => <button key={tab} type="button" className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)}>{tab}</button>)}</div>
+
       <div className="profile-view-grid">
         <main className="profile-view-main">
           <div className="profile-view-card profile-view-intro-card"><div className="profile-view-card-title"><Music2 size={18} /> ¿Qué estás escuchando ahora?</div>{currentSong ? <div className="profile-view-listening profile-view-listening-active"><button type="button" className="profile-view-listening-main" onClick={openPlayer} aria-label="Abrir el reproductor global">{currentSong.thumbnail ? <img className="profile-view-listening-cover" src={currentSong.thumbnail} alt="" /> : <div className="profile-view-listening-cover profile-view-listening-cover-fallback"><Music2 size={20} /></div>}<span className="profile-view-listening-copy"><strong>{currentSong.title}</strong><small>{currentSong.artist || currentSong.channel_title || "Inkorium"}</small><span className="profile-view-listening-progress" aria-hidden="true"><span style={{ width: `${progress}%` }} /></span><small>{formatPlayerTime(currentTime)} / {formatPlayerTime(duration)}</small></span></button><button type="button" className="profile-view-listening-control" onClick={togglePlayback} aria-label={isPlaying || pendingPlay ? "Pausar" : "Reproducir"}>{isPlaying || pendingPlay ? <Pause size={18} /> : <Play size={18} />}</button></div> : <button type="button" className="profile-view-listening" onClick={openPlayer}>Nada reproduciéndose ahora. Abre el reproductor global para empezar a escuchar música.</button>}</div>
           <div className="profile-view-card"><div className="profile-view-section-head"><h2>Publicaciones</h2><span>{postCountLabel}</span></div>{loadingPosts ? <div className="profile-view-empty">Cargando publicaciones…</div> : posts.length === 0 ? <div className="profile-view-empty">Todavía no has publicado nada.</div> : <div className="profile-view-posts">{posts.map((post) => <article key={post.id} className="profile-view-post"><div className="profile-view-post-date">{new Date(post.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}</div>{post.content && <p>{post.content}</p>}{post.media_data?.type === "photo" && <img src={post.media_data.url} alt="Publicación" />}{post.media_data?.type === "video" && <div className="profile-view-media-label"><Video size={16} /> Vídeo compartido</div>}{post.media_data?.type === "youtube_song" && <div className="profile-view-media-label"><Music2 size={16} /> Música compartida</div>}{!post.content && !post.media_data && <p className="muted">Publicación sin texto.</p>}</article>)}</div>}</div>
         </main>
-        <aside className="profile-view-side"><div className="profile-view-card"><h2>Sobre mí</h2><p>{displayProfile?.bio || "Este perfil todavía no tiene una biografía."}</p>{displayProfile?.city && <div className="profile-view-side-row"><MapPin size={17} /> {displayProfile.city}</div>}</div><div className="profile-view-card"><h2>Tu Inkorium</h2><div className="profile-view-feature"><Music2 size={18} /><span><strong>Música destacada</strong><small>La canción que escuchas ahora</small></span></div><div className="profile-view-feature"><Camera size={18} /><span><strong>Fotos</strong><small>Comparte tus momentos</small></span></div><div className="profile-view-feature"><CalendarDays size={18} /><span><strong>Eventos</strong><small>Descubre y organiza planes</small></span></div></div><div className="profile-view-card profile-view-stats"><div><strong>{postCountLabel}</strong><span>Publicaciones</span></div><div><strong>0</strong><span>Amigos</span></div><div><strong>0</strong><span>Seguidores</span></div></div></aside>
+        <aside className="profile-view-side">
+          <div className="profile-view-card"><h2>Sobre mí</h2><p>{displayProfile?.bio || "Este perfil todavía no tiene una biografía."}</p>{displayProfile?.city && <div className="profile-view-side-row"><MapPin size={17} /> {displayProfile.city}</div>}</div>
+          <div className="profile-view-card"><h2>Tu Inkorium</h2><div className="profile-view-feature"><Music2 size={18} /><span><strong>Música destacada</strong><small>La canción que escuchas ahora</small></span></div><div className="profile-view-feature"><Camera size={18} /><span><strong>Fotos</strong><small>Comparte tus momentos</small></span></div><div className="profile-view-feature"><CalendarDays size={18} /><span><strong>Eventos</strong><small>Descubre y organiza planes</small></span></div></div>
+          <div className="profile-view-card profile-view-stats"><div><strong>{postCountLabel}</strong><span>Publicaciones</span></div><div><strong>0</strong><span>Amigos</span></div><div><strong>0</strong><span>Seguidores</span></div></div>
+        </aside>
       </div>
 
       {mediaTarget && <div className="profile-media-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.currentTarget === e.target) setMediaTarget(null); }}><div className="profile-media-modal" role="dialog" aria-modal="true" aria-labelledby="profile-media-title"><div className="profile-media-modal-head"><div><h2 id="profile-media-title">Cambiar {mediaTarget === "avatar" ? "foto de perfil" : "foto de portada"}</h2><p>Sube una imagen o elige una de tu galería de Inkorium.</p></div><button type="button" className="profile-media-close" onClick={() => setMediaTarget(null)} aria-label="Cerrar"><X size={20} /></button></div><div className="profile-media-actions"><label className="profile-media-upload"><Upload size={17} /> {uploading ? "Subiendo…" : "Subir una foto"}<input type="file" accept="image/*" disabled={uploading} onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleUpload(file); e.currentTarget.value = ""; }} /></label><span className="profile-media-or">o elige de tu galería</span></div>{mediaPreview && <img className="profile-media-preview" src={mediaPreview} alt="Vista previa" />}{loadingGallery ? <div className="profile-media-empty">Cargando galería…</div> : gallery.length ? <div className="profile-media-gallery">{gallery.map((photo) => <button key={photo.id} type="button" onClick={() => void chooseGalleryPhoto(photo)}><img src={photo.url} alt={photo.caption || "Foto"} /></button>)}</div> : <div className="profile-media-empty"><ImageIcon size={30} /><span>No tienes fotos en tu galería todavía.</span></div>}</div></div>}
