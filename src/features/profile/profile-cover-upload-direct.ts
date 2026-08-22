@@ -3,6 +3,7 @@ import './profile-cover-upload-direct.css';
 
 const MAX_BYTES = 60 * 1024 * 1024;
 const ACCEPTED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+let lastBannerUrl = '';
 
 function getCover(): HTMLButtonElement | null {
   return document.querySelector<HTMLButtonElement>('.profile-view-cover-button.editable');
@@ -25,6 +26,14 @@ function setStatus(cover: HTMLElement, message: string, kind: 'idle' | 'loading'
   host.hidden = !message;
 }
 
+function applyBannerToDom(cover: HTMLButtonElement, url: string) {
+  if (!url) return;
+  cover.style.backgroundImage = `url("${url}")`;
+  cover.style.backgroundSize = 'cover';
+  cover.style.backgroundPosition = 'center';
+  cover.querySelector('.profile-view-cover-placeholder')?.remove();
+}
+
 function makeInput(): HTMLInputElement {
   const input = document.createElement('input');
   input.type = 'file';
@@ -33,6 +42,23 @@ function makeInput(): HTMLInputElement {
   input.className = 'profile-cover-upload-input';
   document.body.appendChild(input);
   return input;
+}
+
+async function restorePersistedBanner() {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData.session?.user;
+    if (!user) return;
+    const { data, error } = await supabase.from('profiles').select('banner_url').eq('id', user.id).maybeSingle();
+    if (error) throw error;
+    const bannerUrl = data?.banner_url || '';
+    if (!bannerUrl) return;
+    lastBannerUrl = bannerUrl;
+    const cover = getCover();
+    if (cover) applyBannerToDom(cover, bannerUrl);
+  } catch (error) {
+    console.warn('[Inkorium] Could not restore persisted profile cover:', error);
+  }
 }
 
 async function uploadBanner(file: File, cover: HTMLButtonElement) {
@@ -70,8 +96,8 @@ async function uploadBanner(file: File, cover: HTMLButtonElement) {
       .eq('id', user.id);
     if (updateError) throw updateError;
 
-    cover.style.backgroundImage = `url("${bannerUrl}")`;
-    cover.querySelector('.profile-view-cover-placeholder')?.remove();
+    lastBannerUrl = bannerUrl;
+    applyBannerToDom(cover, bannerUrl);
     window.dispatchEvent(new CustomEvent('inkorium-profile-banner-updated', { detail: { userId: user.id, bannerUrl } }));
     setStatus(cover, 'Portada actualizada.', 'success');
     window.setTimeout(() => setStatus(cover, ''), 2200);
@@ -83,7 +109,10 @@ async function uploadBanner(file: File, cover: HTMLButtonElement) {
 
 function enhanceCover() {
   const cover = getCover();
-  if (!cover || cover.dataset.directCoverUpload === '1') return;
+  if (!cover) return;
+
+  if (lastBannerUrl) applyBannerToDom(cover, lastBannerUrl);
+  if (cover.dataset.directCoverUpload === '1') return;
   cover.dataset.directCoverUpload = '1';
 
   const input = makeInput();
@@ -103,11 +132,20 @@ function enhanceCover() {
   if (overlay) overlay.innerHTML = '<span aria-hidden="true">📷</span><span>Cambiar portada</span>';
 }
 
-function boot() {
+async function boot() {
+  await restorePersistedBanner();
   enhanceCover();
   const observer = new MutationObserver(() => enhanceCover());
   observer.observe(document.body, { childList: true, subtree: true });
-  window.addEventListener('inkorium-profile-route-ready', enhanceCover);
+  window.addEventListener('inkorium-profile-route-ready', () => { void restorePersistedBanner(); void Promise.resolve(enhanceCover()); });
+  window.addEventListener('inkorium-profile-banner-updated', event => {
+    const detail = (event as CustomEvent<{ bannerUrl?: string }>).detail;
+    if (detail?.bannerUrl) {
+      lastBannerUrl = detail.bannerUrl;
+      const cover = getCover();
+      if (cover) applyBannerToDom(cover, detail.bannerUrl);
+    }
+  });
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { void boot(); }, { once: true }); else void boot();
