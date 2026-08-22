@@ -1,0 +1,8 @@
+/* Diario musical como vista completa dentro de Música. */
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-main{display:none!important}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side{display:block!important;width:100%!important;max-width:none!important}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child{display:block!important;width:100%!important}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:last-child{display:none!important}
+html body:has(.profile-view-page) .profile-music-final.music-library-view .profile-music-final-main{display:block!important}
+html body:has(.profile-view-page) .profile-music-final.music-library-view .profile-music-final-side>.profile-music-final-card:first-child{display:none!important}
+html body:has(.profile-view-page) .profile-music-final.music-library-view .profile-music-final-side>.profile-music-final-card:last-child{display:block!important}
