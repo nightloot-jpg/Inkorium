@@ -1,14 +1,7 @@
 import { supabase } from '../../lib/supabase';
 import './profile-music-preferences-final.css';
 
-type FavoriteArtist = {
-  id: string;
-  artist_name: string;
-  youtube_channel_id: string | null;
-  youtube_video_id: string | null;
-  cover_url: string | null;
-};
-
+type FavoriteArtist = { id: string; artist_name: string; youtube_channel_id: string | null; youtube_video_id: string | null; cover_url: string | null };
 type Playlist = { id: string; name: string; cover_url: string | null; description: string | null; is_public?: boolean };
 
 const esc = (value: unknown) => String(value ?? '').replace(/[&<>\"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;' }[ch] || ch));
@@ -65,7 +58,7 @@ function artistCard(artist: FavoriteArtist) {
 
 async function openArtistManager(userId: string) {
   let artists = await loadArtists(userId);
-  const host = modal('Artistas favoritos', `<p class="profile-music-pref-help">Busca en YouTube y guarda los cantantes o artistas que quieres destacar en tu perfil.</p><div class="profile-music-pref-search"><input id="artistSearch" placeholder="Busca un artista..."/><button type="button" class="profile-music-pref-primary" id="artistSearchButton">Buscar</button></div><div id="artistResults" class="profile-music-pref-results"></div><div class="profile-music-pref-selected"><div class="profile-music-pref-selected-head"><strong>Mis artistas favoritos</strong><span id="artistCount"></span></div><div id="artistSelectedList">${artists.map(artistCard).join('') || '<div class="profile-music-pref-empty">Todavía no has elegido artistas.</div>'}</div></div>`);
+  const host = modal('Artistas favoritos', `<p class="profile-music-pref-help">Busca en YouTube y guarda los cantantes o artistas que quieres destacar en tu perfil.</p><div class="profile-music-pref-search"><input id="artistSearch" placeholder="Busca un artista..."/><button type="button" class="profile-music-pref-primary" id="artistSearchButton">Buscar</button></div><div id="artistResults" class="profile-music-pref-results"></div><div class="profile-music-pref-selected"><div class="profile-music-pref-selected-head"><strong>Mis artistas favoritos</strong><span id="artistCount"></span></div><div id="artistSelectedList"></div></div>`);
   const results = host.querySelector<HTMLElement>('#artistResults')!;
   const selected = host.querySelector<HTMLElement>('#artistSelectedList')!;
   const count = host.querySelector<HTMLElement>('#artistCount')!;
@@ -152,6 +145,11 @@ function hideDailySongAndDiaryAdd() {
   });
   const diary = root.querySelector<HTMLElement>('.profile-music-final-side');
   diary?.querySelectorAll<HTMLElement>('[data-music-action="add"]').forEach(button => button.remove());
+  if (root.querySelector('.profile-music-final.music-diary-view')) {
+    root.querySelectorAll<HTMLElement>('button').forEach(button => {
+      if (button.textContent?.trim().includes('Añadir música')) button.remove();
+    });
+  }
 }
 
 async function renderOverrides() {
@@ -164,15 +162,17 @@ async function renderOverrides() {
   if (!main) return;
 
   const artistSection = Array.from(main.querySelectorAll<HTMLElement>('section.profile-music-final-card')).find(section => section.querySelector('h2')?.textContent?.includes('Artistas favoritos'));
-  if (artistSection) {
+  if (artistSection && artistSection.dataset.prefSection !== 'artists') {
     const artists = await loadArtists(ctx.id);
+    artistSection.dataset.prefSection = 'artists';
     artistSection.innerHTML = `<div class="profile-music-final-head"><div><h2>🎤 Artistas favoritos</h2><p class="profile-music-final-card-sub">Los artistas que tú eliges, no los que el sistema adivina.</p></div>${ctx.own ? '<button type="button" class="profile-music-final-link" data-pref-action="artists">Gestionar</button>' : ''}</div><div class="profile-music-pref-artist-grid">${artists.map(artistCard).join('') || '<div class="profile-music-pref-empty">Aún no has elegido artistas favoritos.</div>'}</div>`;
   }
 
   const albumSection = Array.from(main.querySelectorAll<HTMLElement>('section.profile-music-final-card')).find(section => section.querySelector('h2')?.textContent?.includes('Álbumes destacados'));
-  if (albumSection) {
+  if (albumSection && albumSection.dataset.prefSection !== 'playlists') {
     const [playlists, featured] = await Promise.all([loadPlaylists(ctx.id), loadFeaturedPlaylistIds(ctx.id)]);
     const visible = playlists.filter(playlist => featured.has(playlist.id));
+    albumSection.dataset.prefSection = 'playlists';
     albumSection.innerHTML = `<div class="profile-music-final-head"><div><h2>💿 Álbumes favoritos</h2><p class="profile-music-final-card-sub">Elige tus playlists favoritas para destacarlas aquí.</p></div>${ctx.own ? '<button type="button" class="profile-music-final-link" data-pref-action="playlists">Seleccionar playlists</button>' : ''}</div><div class="profile-music-pref-playlist-grid">${visible.map(playlistCard).join('') || '<div class="profile-music-pref-empty">Todavía no has seleccionado ninguna playlist.</div>'}</div>`;
   }
 
@@ -199,6 +199,7 @@ function boot() {
   const observer = new MutationObserver(() => {
     const root = page();
     if (!root?.querySelector('.profile-music-final')) return;
+    if (root.querySelector<HTMLElement>('.profile-music-final-main section.profile-music-final-card[data-pref-section="artists"]') && root.querySelector<HTMLElement>('.profile-music-final-main section.profile-music-final-card[data-pref-section="playlists"]')) return;
     window.setTimeout(() => void renderOverrides(), 80);
   });
   observer.observe(document.body, { childList: true, subtree: true });
