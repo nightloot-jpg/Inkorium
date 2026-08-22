@@ -1,7 +1,7 @@
 import { supabase } from '../../lib/supabase';
 import './profile-cover-upload-direct.css';
 
-const MAX_BYTES = 10 * 1024 * 1024;
+const MAX_BYTES = 60 * 1024 * 1024;
 const ACCEPTED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 function getCover(): HTMLButtonElement | null {
@@ -41,7 +41,7 @@ async function uploadBanner(file: File, cover: HTMLButtonElement) {
     return;
   }
   if (file.size > MAX_BYTES) {
-    setStatus(cover, 'La portada no puede superar los 10 MB.', 'error');
+    setStatus(cover, 'La portada no puede superar los 60 MB.', 'error');
     return;
   }
 
