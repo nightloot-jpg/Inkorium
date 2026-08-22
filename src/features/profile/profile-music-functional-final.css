@@ -26,4 +26,6 @@ html body:has(.profile-view-page) .functional-check{display:flex!important;align
 html body:has(.profile-view-page) .functional-artist-option{display:grid!important;grid-template-columns:20px 40px 1fr!important;align-items:center;gap:9px!important;padding:10px 0;border-bottom:1px solid #e9eef3;margin:0!important;font-size:13px!important;color:#17385c!important}
 html body:has(.profile-view-page) .functional-artist-option img{width:40px;height:40px;object-fit:cover;border-radius:0!important}
 html body:has(.profile-view-page) .functional-artist-option input{accent-color:#6a35c2}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view [data-music-action="add"]{display:none!important}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view a[data-music-action="add"],html body:has(.profile-view-page) .profile-music-final.music-diary-view button[data-music-action="add"]{display:none!important}
 @media(max-width:600px){html body:has(.profile-view-page) .profile-music-functional-backdrop{padding:10px}html body:has(.profile-view-page) .functional-search{grid-template-columns:1fr}.functional-row{grid-template-columns:42px minmax(0,1fr);}.functional-row .functional-primary{grid-column:2;justify-self:start}.functional-row img{width:42px;height:42px}}
