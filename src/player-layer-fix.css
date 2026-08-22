@@ -1,13 +1,20 @@
 /* Global layer for the floating music player.
    The player keeps its existing positioning/drag behavior, but always renders above page UI. */
 
+/* The draggable wrapper itself has an inline z-index: 9000. Raising only the
+   child cannot escape that stacking context, so elevate the wrapper too. */
+.floating-player-wrapper {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+}
+
 .floating-music-player,
 .music-player-expanded,
 .player-empty-state {
   z-index: 2147483647 !important;
 }
 
-/* Keep the player controls in the same top-level layer. */
+.floating-player-wrapper > *,
 .floating-music-player > *,
 .music-player-expanded > *,
 .player-empty-state > * {
