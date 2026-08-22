@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/music-activity-dropdown-100
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -14,6 +17,8 @@ jobs:
     steps:
       - name: Checkout branch
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Patch MusicActivitySidebar
         run: |
@@ -102,4 +107,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/features/music/MusicView.tsx .github/workflows/patch-music-activity.yml
           git commit -m "feat: add expandable music activity history" || exit 0
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
