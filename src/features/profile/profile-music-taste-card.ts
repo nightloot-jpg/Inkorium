@@ -1,5 +1,4 @@
 import { supabase } from '../../lib/supabase';
-import { usePlayerStore } from '../../lib/store';
 import './profile-music-taste-card.css';
 
 type FavoriteArtist = {
@@ -13,22 +12,21 @@ type FavoriteArtist = {
 const MAX_ARTISTS = 8;
 const DISPLAY_ARTISTS = 5;
 const esc = (value: unknown) => String(value ?? '').replace(/[&<>\"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;' }[char] || char));
-const root = () => document.querySelector<HTMLElement>('.profile-view-page');
+const page = () => document.querySelector<HTMLElement>('.profile-view-page');
 
 async function resolveProfile() {
-  const page = root();
-  if (!page) return null;
+  const currentPage = page();
+  if (!currentPage) return null;
   const session = await supabase.auth.getSession();
   const ownId = session.data.session?.user?.id || '';
-  const handle = page.querySelector('.profile-view-handle')?.textContent?.trim().replace(/^@/, '') || '';
+  const handle = currentPage.querySelector('.profile-view-handle')?.textContent?.trim().replace(/^@/, '') || '';
   if (!handle) return { id: ownId, own: true };
   const { data } = await supabase.from('profiles').select('id').eq('username', handle).maybeSingle();
   return { id: data?.id || '', own: data?.id === ownId };
 }
 
 async function loadArtists(userId: string) {
-  const { data, error } = await supabase
-    .from('profile_music_favorite_artists')
+  const { data, error } = await supabase.from('profile_music_favorite_artists')
     .select('id,artist_name,youtube_channel_id,youtube_video_id,cover_url')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
@@ -45,7 +43,7 @@ function openModal(title: string, body: string) {
   closeModal();
   const host = document.createElement('div');
   host.className = 'profile-music-taste-modal-backdrop';
-  host.innerHTML = `<div class="profile-music-taste-modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+  host.innerHTML = `<div class="profile-music-taste-modal" role="dialog" aria-modal="true">
     <div class="profile-music-taste-modal-head"><div><strong>${esc(title)}</strong><small>Elige los artistas que quieres enseñar en tu perfil.</small></div><button type="button" data-taste-close aria-label="Cerrar">×</button></div>
     <div class="profile-music-taste-modal-body">${body}</div>
   </div>`;
@@ -57,14 +55,6 @@ function openModal(title: string, body: string) {
   return host;
 }
 
-function artistPill(artist: FavoriteArtist) {
-  const cover = artist.cover_url || '';
-  return `<button type="button" class="profile-music-taste-pill" data-taste-play="${esc(artist.youtube_video_id || '')}" data-taste-artist="${esc(artist.artist_name)}" title="${esc(artist.artist_name)}">
-    ${cover ? `<img src="${esc(cover)}" alt="">` : '<span class="profile-music-taste-pill-icon">♫</span>'}
-    <span>${esc(artist.artist_name)}</span>
-  </button>`;
-}
-
 function renderCard(card: HTMLElement, artists: FavoriteArtist[], own: boolean) {
   const visible = artists.slice(0, DISPLAY_ARTISTS);
   const remaining = Math.max(0, artists.length - visible.length);
@@ -74,14 +64,12 @@ function renderCard(card: HTMLElement, artists: FavoriteArtist[], own: boolean) 
   </div>
   <p class="profile-music-taste-sub">Tus artistas favoritos y sonidos principales.</p>
   <div class="profile-music-taste-pills">
-    ${visible.map(artistPill).join('') || '<span class="profile-music-taste-empty">Aún no has elegido artistas favoritos.</span>'}
+    ${visible.map(artist => `<span class="profile-music-taste-pill"><span>${esc(artist.artist_name)}</span></span>`).join('') || '<span class="profile-music-taste-empty">Aún no has elegido artistas favoritos.</span>'}
     ${remaining ? `<span class="profile-music-taste-more">+${remaining} más</span>` : ''}
   </div>`;
 }
 
 async function openManager(userId: string) {
-  const page = root();
-  if (!page) return;
   const session = await supabase.auth.getSession();
   if (session.data.session?.user?.id !== userId) return;
 
@@ -112,8 +100,7 @@ async function openManager(userId: string) {
     try {
       const key = import.meta.env.VITE_YOUTUBE_API_KEY;
       if (!key) throw new Error('Falta VITE_YOUTUBE_API_KEY');
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=channel&maxResults=10&key=${key}`;
-      const response = await fetch(url);
+      const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=channel&maxResults=10&key=${key}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data?.error?.message || 'No se pudo buscar en YouTube.');
       const items = (data.items || []).filter((item: any) => item.id?.channelId);
@@ -139,18 +126,13 @@ async function openManager(userId: string) {
     try {
       const artistName = button.dataset.artistName?.trim() || '';
       if (!artistName || artists.length >= MAX_ARTISTS) return;
-      const { data, error } = await supabase.from('profile_music_favorite_artists').insert({
-        user_id: userId,
-        artist_name: artistName,
-        youtube_channel_id: button.dataset.channelId || null,
-        cover_url: button.dataset.cover || null,
-      }).select('id,artist_name,youtube_channel_id,youtube_video_id,cover_url').single();
+      const { data, error } = await supabase.from('profile_music_favorite_artists').insert({ user_id: userId, artist_name: artistName, youtube_channel_id: button.dataset.channelId || null, cover_url: button.dataset.cover || null }).select('id,artist_name,youtube_channel_id,youtube_video_id,cover_url').single();
       if (error) throw error;
       artists = [data as FavoriteArtist, ...artists.filter(item => item.artist_name.toLowerCase() !== artistName.toLowerCase())].slice(0, MAX_ARTISTS);
       refreshSelected();
       button.textContent = 'Guardado';
       button.disabled = true;
-      await refreshCardForUser(userId);
+      await refreshCard(userId);
     } catch (error: any) {
       window.alert(error?.message || 'No se pudo guardar el artista.');
     }
@@ -164,58 +146,59 @@ async function openManager(userId: string) {
       if (error) throw error;
       artists = artists.filter(artist => artist.id !== button.dataset.tasteRemove);
       refreshSelected();
-      await refreshCardForUser(userId);
+      await refreshCard(userId);
     } catch (error: any) {
       window.alert(error?.message || 'No se pudo quitar el artista.');
     }
   });
 }
 
-async function refreshCardForUser(userId: string) {
-  const page = root();
-  const card = page?.querySelector<HTMLElement>('.profile-music-side .profile-music-side-card[data-taste-card]');
+async function refreshCard(userId: string) {
+  const card = page()?.querySelector<HTMLElement>('.profile-music-side .profile-music-side-card[data-taste-card]');
   if (!card) return;
   try {
-    const artists = await loadArtists(userId);
-    const session = await supabase.auth.getSession();
-    renderCard(card, artists, session.data.session?.user?.id === userId);
+    renderCard(card, await loadArtists(userId), (await supabase.auth.getSession()).data.session?.user?.id === userId);
   } catch {
-    // Keep the existing card visible if a refresh fails.
+    // Keep the current card if the preferences table is temporarily unavailable.
   }
 }
 
 async function enhanceCard(card: HTMLElement) {
-  if (card.dataset.tasteCard === 'ready') return;
+  if (card.dataset.tasteBound === '1') return;
   const context = await resolveProfile();
   if (!context?.id) return;
-  card.dataset.tasteCard = 'ready';
+  card.dataset.tasteBound = '1';
+  card.dataset.tasteCard = '1';
+
   try {
     renderCard(card, await loadArtists(context.id), context.own);
   } catch {
-    // If the optional preferences table is not available yet, leave the original card intact.
-    delete card.dataset.tasteCard;
-    return;
+    // The original card may already be rendered by profile-music-tab.ts. Keep it intact, but still bind Edit below.
   }
-  card.addEventListener('click', async event => {
-    const target = event.target as HTMLElement;
-    const edit = target.closest<HTMLElement>('[data-taste-edit]');
-    if (edit && context.own) {
+
+  const bindEdit = () => {
+    const edit = card.querySelector<HTMLElement>('[data-taste-edit], [data-music-action="taste"], .profile-music-link');
+    if (!edit || !context.own || edit.dataset.tasteEditBound === '1') return;
+    edit.dataset.tasteEditBound = '1';
+    edit.addEventListener('click', async event => {
       event.preventDefault();
-      event.stopPropagation();
-      await openManager(context.id);
-      return;
-    }
-    const play = target.closest<HTMLElement>('[data-taste-play]');
-    if (play?.dataset.tastePlay) {
-      const videoId = play.dataset.tastePlay;
-      usePlayerStore.getState().playSong({ type: 'youtube_song', video_id: videoId, title: play.dataset.tasteArtist || 'YouTube', artist: play.dataset.tasteArtist || undefined, channel_title: play.dataset.tasteArtist || undefined, thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` } as any, false);
-    }
-  });
+      event.stopImmediatePropagation();
+      try {
+        await openManager(context.id);
+      } catch (error: any) {
+        window.alert(error?.message || 'No se pudo abrir el editor de tu gusto musical.');
+      }
+    }, true);
+  };
+
+  bindEdit();
+  new MutationObserver(bindEdit).observe(card, { childList: true, subtree: true });
 }
 
 function scan() {
   document.querySelectorAll<HTMLElement>('.profile-music-side .profile-music-side-card').forEach(card => {
-    if (card.querySelector('.profile-music-side-title')?.textContent?.includes('Tu gusto musical')) void enhanceCard(card);
+    const title = card.querySelector('.profile-music-side-title')?.textContent?.trim() || '';
+    if (title.includes('Tu gusto musical')) void enhanceCard(card);
   });
 }
 
