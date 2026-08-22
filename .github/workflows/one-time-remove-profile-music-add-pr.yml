@@ -1,0 +1,36 @@
+name: One-time remove profile music add button (PR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  remove-button:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+      - name: Remove button and temporary workflow
+        run: |
+          python - <<'PY2'
+          from pathlib import Path
+          path = Path("src/features/profile/profile-music-tab.ts")
+          text = path.read_text(encoding="utf-8")
+          old = '<button class="profile-music-add" data-music-action="add"${edit}>＋ Añadir música</button>'
+          if old not in text:
+              raise SystemExit("Target button markup not found")
+          text = text.replace(old, "", 1)
+          path.write_text(text, encoding="utf-8")
+          PY2
+          rm -f .github/workflows/one-time-remove-profile-music-add-pr.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/profile/profile-music-tab.ts .github/workflows/one-time-remove-profile-music-add-pr.yml
+          git commit -m "Remove add music button from profile music"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
