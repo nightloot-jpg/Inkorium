@@ -9,10 +9,9 @@ function youtubeProxyBridge() {
       if (!/\.(tsx?|jsx?)$/.test(id) || id.includes("node_modules")) return null;
 
       let patched = code;
-      patched = patched.replaceAll(
-        "https://www.googleapis.com/youtube/v3/",
-        "https://zllwzmfsfzfedorljgtg.supabase.co/functions/v1/youtube-api/",
-      );
+      // Keep the original YouTube URL so youtube-api-proxy.ts can intercept it
+      // in the browser and forward the request to the authenticated Supabase
+      // Edge Function. Never inject the real API key into the client bundle.
       patched = patched.replaceAll(
         "import.meta.env.VITE_YOUTUBE_API_KEY",
         '"server-proxy"',
