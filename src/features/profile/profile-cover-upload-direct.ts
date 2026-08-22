@@ -3,6 +3,7 @@ import './profile-cover-upload-direct.css';
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const ACCEPTED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+let lastBannerUrl = '';
 
 function getCover(): HTMLButtonElement | null {
   return document.querySelector<HTMLButtonElement>('.profile-view-cover-button.editable');
@@ -23,6 +24,14 @@ function setStatus(cover: HTMLElement, message: string, kind: 'idle' | 'loading'
   host.textContent = message;
   host.dataset.kind = kind;
   host.hidden = !message;
+}
+
+function applyBannerToDom(cover: HTMLButtonElement, url: string) {
+  if (!url) return;
+  cover.style.backgroundImage = `url("${url}")`;
+  cover.style.backgroundSize = 'cover';
+  cover.style.backgroundPosition = 'center';
+  cover.querySelector('.profile-view-cover-placeholder')?.remove();
 }
 
 function makeInput(): HTMLInputElement {
@@ -70,8 +79,8 @@ async function uploadBanner(file: File, cover: HTMLButtonElement) {
       .eq('id', user.id);
     if (updateError) throw updateError;
 
-    cover.style.backgroundImage = `url("${bannerUrl}")`;
-    cover.querySelector('.profile-view-cover-placeholder')?.remove();
+    lastBannerUrl = bannerUrl;
+    applyBannerToDom(cover, bannerUrl);
     window.dispatchEvent(new CustomEvent('inkorium-profile-banner-updated', { detail: { userId: user.id, bannerUrl } }));
     setStatus(cover, 'Portada actualizada.', 'success');
     window.setTimeout(() => setStatus(cover, ''), 2200);
@@ -83,7 +92,10 @@ async function uploadBanner(file: File, cover: HTMLButtonElement) {
 
 function enhanceCover() {
   const cover = getCover();
-  if (!cover || cover.dataset.directCoverUpload === '1') return;
+  if (!cover) return;
+
+  if (lastBannerUrl) applyBannerToDom(cover, lastBannerUrl);
+  if (cover.dataset.directCoverUpload === '1') return;
   cover.dataset.directCoverUpload = '1';
 
   const input = makeInput();
