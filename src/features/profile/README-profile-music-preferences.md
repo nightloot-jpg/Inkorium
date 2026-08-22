@@ -1,1 +1,0 @@
-Profile music preferences follow-up is documented in the implementation branch.
