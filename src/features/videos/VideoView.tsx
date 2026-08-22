@@ -8,10 +8,17 @@ const border = '#dfe6ee';
 const text = '#1f2e40';
 const muted = '#718096';
 
-type SavedVideo = { id:string; youtube_video_id:string|null; title:string; thumbnail:string|null; channel:string|null; url:string|null; source:string; created_at:string };
+type SavedVideo = { id:string; youtube_video_id:string|null; title:string; thumbnail:string|null; channel:string|null; url:string|null; source:string; created_at:string; playbackUrl?:string|null };
 type YouTubeResult = { id:{videoId:string}; snippet:{title:string; channelTitle:string; thumbnails?:{high?:{url:string};medium?:{url:string};default?:{url:string}}} };
-
 type Tab = 'descubrir' | 'mis-videos' | 'subir';
+
+async function getR2PlaybackUrl(value: string | null): Promise<string | null> {
+  if (!value?.startsWith('r2://')) return value;
+  const key = value.slice('r2://'.length);
+  const { data, error } = await supabase.functions.invoke('r2-video', { body: { action: 'get', key } });
+  if (error || !data?.url) return null;
+  return data.url;
+}
 
 export function VideoView({ session }: { session:any; navigate:any }) {
   const [tab,setTab] = useState<Tab>('descubrir');
@@ -73,9 +80,27 @@ function VideoDiscover({session}:{session:any}){
 
 function SavedVideos({session}:{session:any}){
   const[videos,setVideos]=useState<SavedVideo[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState('');
-  async function load(){setLoading(true);setError('');const{data,error}=await supabase.from('user_videos').select('*').eq('user_id',session.user.id).order('created_at',{ascending:false});if(error)setError('No se pudieron cargar tus vídeos.');else setVideos((data||[]) as SavedVideo[]);setLoading(false)}
+  async function load(){
+    setLoading(true);setError('');
+    const{data,error}=await supabase.from('user_videos').select('*').eq('user_id',session.user.id).order('created_at',{ascending:false});
+    if(error){setError('No se pudieron cargar tus vídeos.');setLoading(false);return;}
+    const rows=(data||[]) as SavedVideo[];
+    const hydrated=await Promise.all(rows.map(async video=>({ ...video, playbackUrl: video.source==='upload' ? await getR2PlaybackUrl(video.url) : video.url })));
+    setVideos(hydrated);setLoading(false);
+  }
   useEffect(()=>{void load()},[session.user.id]);
-  async function remove(video:SavedVideo){const{error}=await supabase.from('user_videos').delete().eq('id',video.id).eq('user_id',session.user.id);if(!error){if(video.source==='upload'&&video.url){const marker='/storage/v1/object/public/videos/';const index=video.url.indexOf(marker);if(index>=0){const path=decodeURIComponent(video.url.slice(index+marker.length));await supabase.storage.from('videos').remove([path]);}}setVideos(prev=>prev.filter(v=>v.id!==video.id));}}
+  async function remove(video:SavedVideo){
+    if(video.source==='upload'&&video.url?.startsWith('r2://')){
+      const key=video.url.slice('r2://'.length);
+      await supabase.functions.invoke('r2-video',{body:{action:'delete',key}});
+    } else if(video.source==='upload'&&video.url){
+      const marker='/storage/v1/object/public/videos/';
+      const index=video.url.indexOf(marker);
+      if(index>=0){const path=decodeURIComponent(video.url.slice(index+marker.length));await supabase.storage.from('videos').remove([path]);}
+    }
+    const{error}=await supabase.from('user_videos').delete().eq('id',video.id).eq('user_id',session.user.id);
+    if(!error)setVideos(prev=>prev.filter(v=>v.id!==video.id));
+  }
   if(loading)return <div className="ink-video-panel" style={{padding:30,textAlign:'center',color:muted}}><Loader2 size={20}/></div>;
-  return <div className="ink-video-panel" style={{padding:16}}>{error&&<p style={{color:'#a52828'}}>{error}</p>}{videos.length===0&&!error?<div style={{padding:'48px 15px',textAlign:'center',color:muted}}><Video size={42} color="#b8c5d2"/><p style={{margin:'12px 0 0'}}>Todavía no has guardado ningún vídeo.</p></div>:<div className="ink-video-grid">{videos.map(video=><article className="ink-video-card" key={video.id}>{video.source==='upload'&&video.url?<video className="ink-video-thumb" src={video.url} controls preload="metadata"/>:<img className="ink-video-thumb" src={video.thumbnail||'/default-avatar.png'} alt=""/>}<div className="ink-video-body"><strong style={{display:'block',color:text,fontSize:14}}>{video.title}</strong><span style={{display:'block',marginTop:5,color:muted,fontSize:12}}>{video.channel|| (video.source==='upload'?'Vídeo subido por ti':'YouTube')}</span><div style={{display:'flex',gap:8,marginTop:10}}>{video.url&&<button onClick={()=>window.open(video.url,'_blank','noopener,noreferrer')}><ExternalLink size={14}/>Ver</button>}<button onClick={()=>remove(video)}><Trash2 size={14}/>Eliminar</button></div></div></article>)}</div>}</div>
+  return <div className="ink-video-panel" style={{padding:16}}>{error&&<p style={{color:'#a52828'}}>{error}</p>}{videos.length===0&&!error?<div style={{padding:'48px 15px',textAlign:'center',color:muted}}><Video size={42} color="#b8c5d2"/><p style={{margin:'12px 0 0'}}>Todavía no has guardado ningún vídeo.</p></div>:<div className="ink-video-grid">{videos.map(video=><article className="ink-video-card" key={video.id}>{video.source==='upload'&&video.playbackUrl?<video className="ink-video-thumb" src={video.playbackUrl} controls preload="metadata"/>:video.source==='upload'?<div className="ink-video-thumb" style={{display:'grid',placeItems:'center',color:muted}}>No se pudo obtener el vídeo</div>:<img className="ink-video-thumb" src={video.thumbnail||'/default-avatar.png'} alt=""/>}<div className="ink-video-body"><strong style={{display:'block',color:text,fontSize:14}}>{video.title}</strong><span style={{display:'block',marginTop:5,color:muted,fontSize:12}}>{video.channel|| (video.source==='upload'?'Vídeo subido por ti':'YouTube')}</span><div style={{display:'flex',gap:8,marginTop:10}}>{video.playbackUrl&&<button onClick={()=>window.open(video.playbackUrl!,'_blank','noopener,noreferrer')}><ExternalLink size={14}/>Ver</button>}<button onClick={()=>remove(video)}><Trash2 size={14}/>Eliminar</button></div></div></article>)}</div>}</div>
 }
