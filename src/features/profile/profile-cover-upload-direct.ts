@@ -28,10 +28,14 @@ function setStatus(cover: HTMLElement, message: string, kind: 'idle' | 'loading'
 
 function applyBannerToDom(cover: HTMLButtonElement, url: string) {
   if (!url) return;
+  const expected = `url("${url}")`;
+  const hasImage = cover.style.backgroundImage === expected || cover.style.backgroundImage.includes(url);
+  const placeholder = cover.querySelector('.profile-view-cover-placeholder');
+  if (hasImage && !placeholder) return;
   cover.style.backgroundImage = `url("${url}")`;
   cover.style.backgroundSize = 'cover';
   cover.style.backgroundPosition = 'center';
-  cover.querySelector('.profile-view-cover-placeholder')?.remove();
+  placeholder?.remove();
 }
 
 function makeInput(): HTMLInputElement {
@@ -135,9 +139,33 @@ function enhanceCover() {
 async function boot() {
   await restorePersistedBanner();
   enhanceCover();
-  const observer = new MutationObserver(() => enhanceCover());
-  observer.observe(document.body, { childList: true, subtree: true });
-  window.addEventListener('inkorium-profile-route-ready', () => { void restorePersistedBanner(); void Promise.resolve(enhanceCover()); });
+
+  const observer = new MutationObserver((mutations) => {
+    let relevant = false;
+    for (const mutation of mutations) {
+      if (mutation.type === 'childList') {
+        relevant = true;
+        break;
+      }
+      if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+        const target = mutation.target as HTMLElement | null;
+        if (target?.matches('.profile-view-cover-button.editable')) {
+          relevant = true;
+          break;
+        }
+      }
+    }
+    if (relevant) enhanceCover();
+  });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['style'],
+  });
+
+  const routeReady = () => { void restorePersistedBanner(); void Promise.resolve(enhanceCover()); };
+  window.addEventListener('inkorium-profile-route-ready', routeReady);
   window.addEventListener('inkorium-profile-banner-updated', event => {
     const detail = (event as CustomEvent<{ bannerUrl?: string }>).detail;
     if (detail?.bannerUrl) {
