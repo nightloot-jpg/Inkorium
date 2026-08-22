@@ -40,6 +40,16 @@ function createSwitcher(layout: HTMLElement): HTMLElement {
   return switcher;
 }
 
+function removeDiaryAddMusicActions(layout: HTMLElement) {
+  if (currentView !== 'diary') return;
+  const candidates = Array.from(layout.querySelectorAll<HTMLElement>('button, a, [role="button"]'));
+  candidates.forEach(element => {
+    const text = element.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
+    if (text === 'añadir música' || text === '＋ añadir música' || text === '+ añadir música') element.remove();
+  });
+  layout.querySelectorAll<HTMLElement>('[data-music-action="add"], [data-music-action="save"]').forEach(element => element.remove());
+}
+
 function applyView() {
   const layout = findLayout();
   if (!layout) return;
@@ -58,6 +68,8 @@ function applyView() {
   if (side) side.style.display = currentView === 'diary' ? 'block' : '';
   if (diaryCard) diaryCard.style.display = currentView === 'diary' ? 'block' : 'none';
   if (dailySongCard) dailySongCard.style.display = currentView === 'diary' ? 'none' : '';
+
+  removeDiaryAddMusicActions(layout);
 
   switcher.querySelectorAll<HTMLButtonElement>('[data-diary-view]').forEach(button => {
     const active = button.dataset.diaryView === currentView;
