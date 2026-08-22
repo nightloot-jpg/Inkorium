@@ -1,0 +1,47 @@
+/* Global layer for the floating music player.
+   Keep the player above navigation, page content, chat and modal layers. */
+
+body:has(.floating-music-player),
+body:has(.music-player-expanded),
+body:has(.player-empty-state) {
+  --inkorium-player-z: 2147483647;
+}
+
+.floating-music-player,
+.music-player-expanded,
+.player-empty-state {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  isolation: isolate;
+}
+
+/* The visual player itself must win over page-level stacking contexts. */
+.floating-music-player,
+.music-player-expanded,
+.player-empty-state,
+.floating-music-player * ,
+.music-player-expanded * ,
+.player-empty-state * {
+  z-index: 2147483647;
+}
+
+/* Keep the header/nav from creating an accidental higher layer. */
+.topbar,
+.feed-layout,
+.music-view,
+.music-shell,
+.music-main,
+.music-sidebar {
+  isolation: auto;
+}
+
+/* Chat remains below the music player, while staying interactive. */
+.chat,
+.chat-panel {
+  z-index: 2147483600 !important;
+}
+
+/* Expanded player needs its own top-level stacking context. */
+.music-player-expanded {
+  isolation: isolate !important;
+}
