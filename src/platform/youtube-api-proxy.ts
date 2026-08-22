@@ -6,7 +6,10 @@ function youtubeSearchProxy(input: RequestInfo | URL) {
     const original = new URL(url, window.location.origin);
     if (original.hostname !== 'www.googleapis.com' || original.pathname !== '/youtube/v3/search') return null;
 
-    const proxy = new URL('/api/youtube', window.location.origin);
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) return null;
+
+    const proxy = new URL(`${supabaseUrl.replace(/\/$/, '')}/functions/v1/youtube-api/search`);
     ['part', 'q', 'type', 'maxResults', 'pageToken', 'channelId'].forEach((key) => {
       const value = original.searchParams.get(key);
       if (value) proxy.searchParams.set(key, value);
