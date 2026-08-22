@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0",
+    "dev": "vite --config vite.config.security.ts",
+    "build": "vite build --config vite.config.security.ts",
+    "preview": "vite preview --config vite.config.security.ts --host 0.0.0.0",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
