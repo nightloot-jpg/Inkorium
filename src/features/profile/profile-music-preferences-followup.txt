@@ -1,1 +1,0 @@
-Follow-up functionality is included in the profile music preference branch.
