@@ -105,20 +105,66 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
 
 function MusicActivitySidebar() {
   const [activities, setActivities] = useState<any[]>([]);
+  const [expanded, setExpanded] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.from('music_activity').select('*, profiles:user_id(username, full_name, avatar_url), music_tracks:track_id(*)').order('created_at', { ascending: false }).limit(6);
-      if (!cancelled && data) setActivities(data);
+      const { data, error } = await supabase
+        .from('music_activity')
+        .select('*, profiles:user_id(username, full_name, avatar_url), music_tracks:track_id(*)')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (!cancelled && !error && data) setActivities(data);
+      if (error) console.error('No se pudo cargar la actividad musical:', error);
     })();
     return () => { cancelled = true; };
   }, []);
+
+  const visibleActivities = expanded ? activities : activities.slice(0, 6);
+
   return <div className="music-panel music-side-card">
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}><Music size={18} color={blue} /><strong style={{ color: text, fontSize: 17 }}>Actividad musical</strong></div>
-    {activities.length === 0 ? <p style={{ margin: '16px 0 4px', color: muted, fontStyle: 'italic', fontSize: 14 }}>No hay actividad reciente.</p> : activities.map((activity) => <div className="music-side-item" key={activity.id}>
-      <img className="music-avatar" src={activity.profiles?.avatar_url || '/default-avatar.png'} alt="" />
-      <div style={{ minWidth: 0, fontSize: 13 }}><strong style={{ color: text }}>{activity.profiles?.full_name || activity.profiles?.username || 'Usuario'}</strong><span style={{ color: '#5d7187' }}>{activity.action === 'listened' ? ' escuchó ' : activity.action === 'shared' ? ' compartió ' : activity.action === 'saved' ? ' guardó ' : ' creó una playlist '}</span><strong style={{ color: text }}>{activity.music_tracks?.title || 'una canción'}</strong><div style={{ color: '#9aa8b6', fontSize: 11, marginTop: 3 }}>{relativeTime(activity.created_at)}</div></div>
-    </div>)}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+      <button
+        type="button"
+        onClick={() => setExpanded((value) => !value)}
+        aria-expanded={expanded}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, padding: 0, border: 0, background: 'transparent', color: text, cursor: 'pointer', font: 'inherit', textAlign: 'left' }}
+      >
+        <Music size={18} color={blue} />
+        <strong style={{ fontSize: 17 }}>Actividad musical</strong>
+        <span aria-hidden="true" style={{ color: muted, fontSize: 14, marginLeft: 2 }}>{expanded ? '▴' : '▾'}</span>
+      </button>
+      {activities.length > 0 && <span style={{ color: muted, fontSize: 11, whiteSpace: 'nowrap' }}>{activities.length} actividades</span>}
+    </div>
+
+    {activities.length === 0 ? (
+      <p style={{ margin: '16px 0 4px', color: muted, fontStyle: 'italic', fontSize: 14 }}>No hay actividad reciente.</p>
+    ) : (
+      <>
+        <div style={{ maxHeight: expanded ? 520 : 'none', overflowY: expanded ? 'auto' : 'visible', paddingRight: expanded ? 5 : 0 }}>
+          {visibleActivities.map((activity) => <div className="music-side-item" key={activity.id}>
+            <img className="music-avatar" src={activity.profiles?.avatar_url || '/default-avatar.png'} alt="" />
+            <div style={{ minWidth: 0, fontSize: 13 }}>
+              <strong style={{ color: text }}>{activity.profiles?.full_name || activity.profiles?.username || 'Usuario'}</strong>
+              <span style={{ color: '#5d7187' }}>{activity.action === 'listened' ? ' escuchó ' : activity.action === 'shared' ? ' compartió ' : activity.action === 'saved' ? ' guardó ' : ' creó una playlist '}</span>
+              <strong style={{ color: text }}>{activity.music_tracks?.title || 'una canción'}</strong>
+              <div style={{ color: '#9aa8b6', fontSize: 11, marginTop: 3 }}>{relativeTime(activity.created_at)}</div>
+            </div>
+          </div>)}
+        </div>
+
+        {activities.length > 6 && (
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            style={{ width: '100%', marginTop: 8, padding: '8px 10px', border: '1px solid #d8e1eb', borderRadius: 5, background: '#f7f9fc', color: blue, fontWeight: 700, cursor: 'pointer' }}
+          >
+            {expanded ? 'Mostrar menos' : `Ver todas (${activities.length})`}
+          </button>
+        )}
+      </>
+    )}
   </div>;
 }
 
