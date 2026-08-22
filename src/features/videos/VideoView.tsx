@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Video, Loader2, ExternalLink, Trash2 } from 'lucide-react';
+import { Search, Plus, Video, Loader2, ExternalLink, Trash2, Upload } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { VideoUploader } from './VideoUploader';
 
 const blue = '#0750A7';
 const border = '#dfe6ee';
 const text = '#1f2e40';
 const muted = '#718096';
 
-type SavedVideo = { id:string; youtube_video_id:string|null; title:string; thumbnail:string|null; channel:string|null; url:string|null; created_at:string };
+type SavedVideo = { id:string; youtube_video_id:string|null; title:string; thumbnail:string|null; channel:string|null; url:string|null; source:string; created_at:string };
 type YouTubeResult = { id:{videoId:string}; snippet:{title:string; channelTitle:string; thumbnails?:{high?:{url:string};medium?:{url:string};default?:{url:string}}} };
 
+type Tab = 'descubrir' | 'mis-videos' | 'subir';
+
 export function VideoView({ session }: { session:any; navigate:any }) {
-  const [tab,setTab] = useState<'descubrir'|'mis-videos'>('descubrir');
+  const [tab,setTab] = useState<Tab>('descubrir');
   return <section className="content-view ink-video-view" style={{background:'#f3f6fa',minHeight:'100%',padding:'18px 20px'}}>
     <style>{`.
       feed-layout:has(.ink-video-view){grid-template-columns:minmax(190px,280px) minmax(0,1fr)!important}
@@ -41,13 +44,16 @@ export function VideoView({ session }: { session:any; navigate:any }) {
           <nav className="ink-video-tabs" aria-label="Secciones de vídeos">
             <button className={`ink-video-tab${tab==='descubrir'?' active':''}`} onClick={()=>setTab('descubrir')}><Video size={17}/>Descubrir</button>
             <button className={`ink-video-tab${tab==='mis-videos'?' active':''}`} onClick={()=>setTab('mis-videos')}><Plus size={17}/>Mis vídeos</button>
+            <button className={`ink-video-tab${tab==='subir'?' active':''}`} onClick={()=>setTab('subir')}><Upload size={17}/>Subir vídeo</button>
           </nav>
         </div>
-        <div style={{marginTop:14}}>{tab==='descubrir'?<VideoDiscover session={session}/>:<SavedVideos session={session}/>}</div>
+        <div style={{marginTop:14}}>
+          {tab==='descubrir' ? <VideoDiscover session={session}/> : tab==='mis-videos' ? <SavedVideos session={session}/> : <VideoUploader session={session} onUploaded={() => setTab('mis-videos')}/>} 
+        </div>
       </div>
       <aside className="ink-video-panel" style={{padding:18,height:'fit-content'}}>
         <strong style={{display:'block',color:text,fontSize:17,marginBottom:6}}>Vídeos en Inkorium</strong>
-        <p style={{margin:0,color:muted,fontSize:13,lineHeight:1.5}}>Busca vídeos de YouTube, ábrelos en su reproductor y guárdalos para tenerlos a mano en Inkorium.</p>
+        <p style={{margin:0,color:muted,fontSize:13,lineHeight:1.5}}>Busca vídeos de YouTube, ábrelos en su reproductor y guárdalos para tenerlos a mano en Inkorium. También puedes subir tus propios vídeos.</p>
       </aside>
     </div>
   </section>;
@@ -65,4 +71,11 @@ function VideoDiscover({session}:{session:any}){
   </div>;
 }
 
-function SavedVideos({session}:{session:any}){const[videos,setVideos]=useState<SavedVideo[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState('');async function load(){setLoading(true);setError('');const{data,error}=await supabase.from('user_videos').select('*').eq('user_id',session.user.id).order('created_at',{ascending:false});if(error)setError('No se pudieron cargar tus vídeos.');else setVideos((data||[]) as SavedVideo[]);setLoading(false)}useEffect(()=>{void load()},[session.user.id]);async function remove(id:string){const{error}=await supabase.from('user_videos').delete().eq('id',id).eq('user_id',session.user.id);if(!error)setVideos(prev=>prev.filter(v=>v.id!==id))}if(loading)return <div className="ink-video-panel" style={{padding:30,textAlign:'center',color:muted}}><Loader2 size={20}/></div>;return <div className="ink-video-panel" style={{padding:16}}>{error&&<p style={{color:'#a52828'}}>{error}</p>}{videos.length===0&&!error?<div style={{padding:'48px 15px',textAlign:'center',color:muted}}><Video size={42} color="#b8c5d2"/><p style={{margin:'12px 0 0'}}>Todavía no has guardado ningún vídeo.</p></div>:<div className="ink-video-grid">{videos.map(video=><article className="ink-video-card" key={video.id}><img className="ink-video-thumb" src={video.thumbnail||'/default-avatar.png'} alt=""/><div className="ink-video-body"><strong style={{display:'block',color:text,fontSize:14}}>{video.title}</strong><span style={{display:'block',marginTop:5,color:muted,fontSize:12}}>{video.channel||'YouTube'}</span><div style={{display:'flex',gap:8,marginTop:10}}>{video.youtube_video_id&&<button onClick={()=>window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`,'_blank','noopener,noreferrer')}><ExternalLink size={14}/>Ver</button>}<button onClick={()=>remove(video.id)}><Trash2 size={14}/>Eliminar</button></div></div></article>)}</div>}</div>}
+function SavedVideos({session}:{session:any}){
+  const[videos,setVideos]=useState<SavedVideo[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState('');
+  async function load(){setLoading(true);setError('');const{data,error}=await supabase.from('user_videos').select('*').eq('user_id',session.user.id).order('created_at',{ascending:false});if(error)setError('No se pudieron cargar tus vídeos.');else setVideos((data||[]) as SavedVideo[]);setLoading(false)}
+  useEffect(()=>{void load()},[session.user.id]);
+  async function remove(video:SavedVideo){const{error}=await supabase.from('user_videos').delete().eq('id',video.id).eq('user_id',session.user.id);if(!error){if(video.source==='upload'&&video.url){const marker='/storage/v1/object/public/videos/';const index=video.url.indexOf(marker);if(index>=0){const path=decodeURIComponent(video.url.slice(index+marker.length));await supabase.storage.from('videos').remove([path]);}}setVideos(prev=>prev.filter(v=>v.id!==video.id));}}
+  if(loading)return <div className="ink-video-panel" style={{padding:30,textAlign:'center',color:muted}}><Loader2 size={20}/></div>;
+  return <div className="ink-video-panel" style={{padding:16}}>{error&&<p style={{color:'#a52828'}}>{error}</p>}{videos.length===0&&!error?<div style={{padding:'48px 15px',textAlign:'center',color:muted}}><Video size={42} color="#b8c5d2"/><p style={{margin:'12px 0 0'}}>Todavía no has guardado ningún vídeo.</p></div>:<div className="ink-video-grid">{videos.map(video=><article className="ink-video-card" key={video.id}>{video.source==='upload'&&video.url?<video className="ink-video-thumb" src={video.url} controls preload="metadata"/>:<img className="ink-video-thumb" src={video.thumbnail||'/default-avatar.png'} alt=""/>}<div className="ink-video-body"><strong style={{display:'block',color:text,fontSize:14}}>{video.title}</strong><span style={{display:'block',marginTop:5,color:muted,fontSize:12}}>{video.channel|| (video.source==='upload'?'Vídeo subido por ti':'YouTube')}</span><div style={{display:'flex',gap:8,marginTop:10}}>{video.url&&<button onClick={()=>window.open(video.url,'_blank','noopener,noreferrer')}><ExternalLink size={14}/>Ver</button>}<button onClick={()=>remove(video)}><Trash2 size={14}/>Eliminar</button></div></div></article>)}</div>}</div>
+}
