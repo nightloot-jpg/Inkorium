@@ -1,17 +1,29 @@
-/* Diario musical como vista completa dentro de Música. */
-html body:has(.profile-view-page) .profile-music-diary-view-switcher{display:flex!important;align-items:center;justify-content:space-between;gap:16px;background:#fff;border:1px solid #dfe6ee;border-radius:0!important;padding:12px 16px;margin:0 0 16px 0;position:relative;z-index:20}
-html body:has(.profile-view-page) .profile-music-diary-view-copy{display:flex;flex-direction:column;gap:3px}
+/* Diario musical: composición limpia y editorial, alineada con la cabecera del perfil. */
+html body:has(.profile-view-page) .profile-music-diary-view-switcher{width:100%;box-sizing:border-box;display:flex!important;align-items:center;justify-content:space-between;gap:24px;margin:0 0 14px;padding:12px 14px;background:#fff;border:1px solid #dfe6ee;border-radius:0!important}
+html body:has(.profile-view-page) .profile-music-diary-view-copy{display:flex;align-items:baseline;gap:8px;min-width:0}
 html body:has(.profile-view-page) .profile-music-diary-view-copy span{font-size:10px;font-weight:900;letter-spacing:.1em;color:#8b78b7}
 html body:has(.profile-view-page) .profile-music-diary-view-copy strong{font-size:16px;color:#17385c}
-html body:has(.profile-view-page) .profile-music-diary-view-actions{display:flex;gap:4px;background:#f4f1fa;border:1px solid #e6def2;padding:3px;border-radius:0!important}
-html body:has(.profile-view-page) .profile-music-diary-view-actions button{border:0;border-radius:0!important;background:transparent;color:#61748a;padding:9px 13px;font-weight:800;font-size:12px;cursor:pointer}
-html body:has(.profile-view-page) .profile-music-diary-view-actions button.active{background:#fff;color:#6a35c2;box-shadow:0 0 0 1px #e3d8f2 inset}
+html body:has(.profile-view-page) .profile-music-diary-view-actions{display:flex;align-items:stretch;gap:0;background:#f5f2fa;border:1px solid #e5deef;padding:2px;border-radius:0!important}
+html body:has(.profile-view-page) .profile-music-diary-view-actions button{appearance:none;border:0;border-radius:0!important;background:transparent;color:#66788c;padding:8px 13px;font-size:12px;font-weight:850;cursor:pointer;line-height:1}
+html body:has(.profile-view-page) .profile-music-diary-view-actions button.active{background:#fff;color:#6a35c2;box-shadow:0 0 0 1px #ded4ec inset}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view{display:block!important;width:100%;grid-column:1/-1}
 html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-main{display:none!important}
 html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side{display:block!important;width:100%!important;max-width:none!important}
-html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child{display:block!important;width:100%!important}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child{display:grid!important;grid-template-columns:280px minmax(0,1fr);gap:0;width:100%!important;padding:0;overflow:hidden}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child .profile-music-final-head{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:28px 24px;margin:0;border-right:1px solid #e7edf3;min-height:100%;box-sizing:border-box}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child .profile-music-final-diary{padding:8px 24px;min-width:0}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child .profile-music-final-diary-entry{grid-template-columns:62px minmax(0,1fr) 34px;gap:14px;padding:16px 0}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child .profile-music-final-diary-entry-main{grid-template-columns:58px minmax(0,1fr);gap:12px}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child .profile-music-final-diary-entry-main img{width:58px;height:58px}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child .profile-music-final-diary-entry-main strong{font-size:14px}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child .profile-music-final-diary-entry-main small{font-size:11px;margin-top:5px}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child .profile-music-final-diary-day{font-size:24px}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child .profile-music-final-diary-play{width:34px;height:34px}
 html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:last-child{display:none!important}
 html body:has(.profile-view-page) .profile-music-final.music-library-view .profile-music-final-main{display:block!important}
 html body:has(.profile-view-page) .profile-music-final.music-library-view .profile-music-final-side>.profile-music-final-card:first-child{display:none!important}
 html body:has(.profile-view-page) .profile-music-final.music-library-view .profile-music-final-side>.profile-music-final-card:last-child{display:block!important}
+html body:has(.profile-view-page) .profile-music-daily-sync-switcher{display:none!important}
+html body:has(.profile-view-page) .profile-music-daily-sync-restore-switcher{display:none!important}
 html body:has(.profile-view-page) .profile-music-final .profile-music-diary-view-hidden{display:none!important}
-@media(max-width:700px){html body:has(.profile-view-page) .profile-music-diary-view-switcher{align-items:stretch;flex-direction:column}.profile-music-diary-view-actions{width:100%}.profile-music-diary-view-actions button{flex:1}}
+@media(max-width:900px){html body:has(.profile-view-page) .profile-music-diary-view-switcher{align-items:stretch;flex-direction:column}html body:has(.profile-view-page) .profile-music-diary-view-actions{width:100%}html body:has(.profile-view-page) .profile-music-diary-view-actions button{flex:1}html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child{grid-template-columns:1fr}html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child .profile-music-final-head{border-right:0;border-bottom:1px solid #e7edf3;min-height:auto}}
