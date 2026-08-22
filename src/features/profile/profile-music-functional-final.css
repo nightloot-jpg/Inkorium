@@ -1,0 +1,29 @@
+html body:has(.profile-view-page) .profile-music-functional-backdrop{position:fixed;inset:0;z-index:10000;background:rgba(16,24,39,.56);display:grid;place-items:center;padding:24px;box-sizing:border-box}
+html body:has(.profile-view-page) .profile-music-functional-modal{width:min(720px,100%);max-height:min(82vh,760px);overflow:auto;background:#fff;border:1px solid #dfe6ee;border-radius:0!important;box-shadow:0 20px 60px rgba(15,30,55,.22)}
+html body:has(.profile-view-page) .profile-music-functional-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #e9eef3}
+html body:has(.profile-view-page) .profile-music-functional-head h3{margin:0;color:#17385c;font-size:18px}
+html body:has(.profile-view-page) .profile-music-functional-head button{width:34px;height:34px;border:1px solid #d5dee8;border-radius:0!important;background:#fff;color:#63778c;font-size:20px;cursor:pointer}
+html body:has(.profile-view-page) .profile-music-functional-body{padding:18px}
+html body:has(.profile-view-page) .profile-music-functional-body label{display:grid;gap:6px;margin-bottom:14px;color:#36536f;font-size:12px;font-weight:800}
+html body:has(.profile-view-page) .profile-music-functional-body input[type=text],html body:has(.profile-view-page) .profile-music-functional-body input:not([type]),html body:has(.profile-view-page) .profile-music-functional-body textarea{width:100%;box-sizing:border-box;border:1px solid #d5dee8;border-radius:0!important;padding:10px 11px;font:inherit;background:#fff;color:#17385c}
+html body:has(.profile-view-page) .functional-help{margin:0 0 14px;color:#7890a8;font-size:13px;line-height:1.45}
+html body:has(.profile-view-page) .functional-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #e9eef3}
+html body:has(.profile-view-page) .functional-actions button,.functional-primary{border:1px solid #d5dee8;border-radius:0!important;background:#fff;color:#5d7288;padding:9px 13px;font-weight:800;cursor:pointer}
+html body:has(.profile-view-page) .functional-primary{border-color:#6a35c2;background:#6a35c2;color:#fff}
+html body:has(.profile-view-page) .functional-tabs{display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid #e7edf3}
+html body:has(.profile-view-page) .functional-tabs button{border:0;border-bottom:2px solid transparent;background:#fff;color:#6c7f93;padding:9px 14px;font-weight:800;cursor:pointer}
+html body:has(.profile-view-page) .functional-tabs button.active{border-bottom-color:#6a35c2;color:#6a35c2}
+html body:has(.profile-view-page) .functional-search{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:14px}
+html body:has(.profile-view-page) .functional-search input{border:1px solid #d5dee8;border-radius:0!important;padding:10px 11px;min-width:0}
+html body:has(.profile-view-page) .functional-list{display:flex;flex-direction:column;border-top:1px solid #e9eef3}
+html body:has(.profile-view-page) .functional-row{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:11px;align-items:center;padding:10px 0;border-bottom:1px solid #e9eef3}
+html body:has(.profile-view-page) .functional-row img{width:48px;height:48px;object-fit:cover;border-radius:0!important;background:#edf2f7}
+html body:has(.profile-view-page) .functional-row strong,html body:has(.profile-view-page) .functional-row small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html body:has(.profile-view-page) .functional-row strong{font-size:13px;color:#17385c}
+html body:has(.profile-view-page) .functional-row small{margin-top:3px;color:#8394a6;font-size:11px}
+html body:has(.profile-view-page) .functional-empty{padding:24px 8px;text-align:center;color:#8394a6;font-size:12px}
+html body:has(.profile-view-page) .functional-check{display:flex!important;align-items:center;grid-template-columns:none!important;gap:8px!important}
+html body:has(.profile-view-page) .functional-artist-option{display:grid!important;grid-template-columns:20px 40px 1fr!important;align-items:center;gap:9px!important;padding:10px 0;border-bottom:1px solid #e9eef3;margin:0!important;font-size:13px!important;color:#17385c!important}
+html body:has(.profile-view-page) .functional-artist-option img{width:40px;height:40px;object-fit:cover;border-radius:0!important}
+html body:has(.profile-view-page) .functional-artist-option input{accent-color:#6a35c2}
+@media(max-width:600px){html body:has(.profile-view-page) .profile-music-functional-backdrop{padding:10px}html body:has(.profile-view-page) .functional-search{grid-template-columns:1fr}.functional-row{grid-template-columns:42px minmax(0,1fr);}.functional-row .functional-primary{grid-column:2;justify-self:start}.functional-row img{width:42px;height:42px}}
