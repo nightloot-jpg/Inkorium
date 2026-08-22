@@ -1,6 +1,28 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+function youtubeProxyBridge() {
+  return {
+    name: "inkorium-youtube-proxy-bridge",
+    enforce: "pre" as const,
+    transform(code: string, id: string) {
+      if (!/\.(tsx?|jsx?)$/.test(id) || id.includes("node_modules")) return null;
+
+      let patched = code;
+      patched = patched.replaceAll(
+        "https://www.googleapis.com/youtube/v3/",
+        "https://zllwzmfsfzfedorljgtg.supabase.co/functions/v1/youtube-api/",
+      );
+      patched = patched.replaceAll(
+        "import.meta.env.VITE_YOUTUBE_API_KEY",
+        '"server-proxy"',
+      );
+
+      return patched === code ? null : { code: patched, map: null };
+    },
+  };
+}
+
 function profileCustomizationBridge() {
   return {
     name: "inkorium-profile-customization-bridge",
@@ -78,7 +100,10 @@ function inkoriumRouteBridge() {
 }
 
 export default defineConfig({
-  plugins: [profileCustomizationBridge(), react(), inkoriumRouteBridge()],
+  plugins: [youtubeProxyBridge(), profileCustomizationBridge(), react(), inkoriumRouteBridge()],
+  define: {
+    "import.meta.env.VITE_YOUTUBE_API_KEY": JSON.stringify("server-proxy"),
+  },
   server: { host: "0.0.0.0", port: 5173 },
   preview: { host: "0.0.0.0", port: 5173 },
 });
