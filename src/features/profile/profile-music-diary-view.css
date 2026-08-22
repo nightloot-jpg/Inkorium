@@ -26,4 +26,8 @@ html body:has(.profile-view-page) .profile-music-final.music-library-view .profi
 html body:has(.profile-view-page) .profile-music-daily-sync-switcher{display:none!important}
 html body:has(.profile-view-page) .profile-music-daily-sync-restore-switcher{display:none!important}
 html body:has(.profile-view-page) .profile-music-final .profile-music-diary-view-hidden{display:none!important}
+html body:has(.profile-view-page) .profile-music-final.music-diary-view [data-music-action="add"],
+html body:has(.profile-view-page) .profile-music-final.music-diary-view [data-music-action="save"],
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-primary,
+html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-add{display:none!important}
 @media(max-width:900px){html body:has(.profile-view-page) .profile-music-diary-view-switcher{align-items:stretch;flex-direction:column}html body:has(.profile-view-page) .profile-music-diary-view-actions{width:100%}html body:has(.profile-view-page) .profile-music-diary-view-actions button{flex:1}html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child{grid-template-columns:1fr}html body:has(.profile-view-page) .profile-music-final.music-diary-view .profile-music-final-side>.profile-music-final-card:first-child .profile-music-final-head{border-right:0;border-bottom:1px solid #e7edf3;min-height:auto}}
