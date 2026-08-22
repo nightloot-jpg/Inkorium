@@ -1,7 +1,7 @@
 import { supabase } from '../../lib/supabase';
 import './profile-cover-upload-direct.css';
 
-const MAX_BYTES = 10 * 1024 * 1024;
+const MAX_BYTES = 60 * 1024 * 1024;
 const ACCEPTED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 let lastBannerUrl = '';
 
@@ -44,13 +44,30 @@ function makeInput(): HTMLInputElement {
   return input;
 }
 
+async function restorePersistedBanner() {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData.session?.user;
+    if (!user) return;
+    const { data, error } = await supabase.from('profiles').select('banner_url').eq('id', user.id).maybeSingle();
+    if (error) throw error;
+    const bannerUrl = data?.banner_url || '';
+    if (!bannerUrl) return;
+    lastBannerUrl = bannerUrl;
+    const cover = getCover();
+    if (cover) applyBannerToDom(cover, bannerUrl);
+  } catch (error) {
+    console.warn('[Inkorium] Could not restore persisted profile cover:', error);
+  }
+}
+
 async function uploadBanner(file: File, cover: HTMLButtonElement) {
   if (!ACCEPTED.has(file.type)) {
     setStatus(cover, 'Formato no válido. Usa JPG, PNG, WEBP o GIF.', 'error');
     return;
   }
   if (file.size > MAX_BYTES) {
-    setStatus(cover, 'La portada no puede superar los 10 MB.', 'error');
+    setStatus(cover, 'La portada no puede superar los 60 MB.', 'error');
     return;
   }
 
@@ -115,11 +132,20 @@ function enhanceCover() {
   if (overlay) overlay.innerHTML = '<span aria-hidden="true">📷</span><span>Cambiar portada</span>';
 }
 
-function boot() {
+async function boot() {
+  await restorePersistedBanner();
   enhanceCover();
   const observer = new MutationObserver(() => enhanceCover());
   observer.observe(document.body, { childList: true, subtree: true });
-  window.addEventListener('inkorium-profile-route-ready', enhanceCover);
+  window.addEventListener('inkorium-profile-route-ready', () => { void restorePersistedBanner(); void Promise.resolve(enhanceCover()); });
+  window.addEventListener('inkorium-profile-banner-updated', event => {
+    const detail = (event as CustomEvent<{ bannerUrl?: string }>).detail;
+    if (detail?.bannerUrl) {
+      lastBannerUrl = detail.bannerUrl;
+      const cover = getCover();
+      if (cover) applyBannerToDom(cover, detail.bannerUrl);
+    }
+  });
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { void boot(); }, { once: true }); else void boot();
