@@ -1,0 +1,15 @@
+html body:has(.profile-view-page) .profile-music-diary-sync-list{display:flex;flex-direction:column;gap:0}
+html body:has(.profile-view-page) .profile-music-diary-sync-entry{display:grid;grid-template-columns:minmax(110px,1fr) 42px minmax(0,1.6fr) auto;align-items:center;gap:10px;padding:13px 0;border-top:1px solid #edf1f5}
+html body:has(.profile-view-page) .profile-music-diary-sync-entry:first-child{border-top:0}
+html body:has(.profile-view-page) .profile-music-diary-sync-date{display:flex;flex-direction:column;min-width:0}
+html body:has(.profile-view-page) .profile-music-diary-sync-date strong{font-size:11px;color:#17385c;text-transform:capitalize;line-height:1.35}
+html body:has(.profile-view-page) .profile-music-diary-sync-date span{margin-top:3px;font-size:10px;font-weight:800;color:#8b78b7}
+html body:has(.profile-view-page) .profile-music-diary-sync-song{display:grid;grid-template-columns:42px minmax(0,1fr);gap:9px;align-items:center;min-width:0}
+html body:has(.profile-view-page) .profile-music-diary-sync-song img{width:42px;height:42px;object-fit:cover;border-radius:0;background:#edf2f7}
+html body:has(.profile-view-page) .profile-music-diary-sync-song div{min-width:0}
+html body:has(.profile-view-page) .profile-music-diary-sync-song strong,html body:has(.profile-view-page) .profile-music-diary-sync-song small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html body:has(.profile-view-page) .profile-music-diary-sync-song strong{font-size:12px;color:#29435f}
+html body:has(.profile-view-page) .profile-music-diary-sync-song small{margin-top:3px;font-size:10px;color:#8293a5}
+html body:has(.profile-view-page) .profile-music-diary-sync-badge{justify-self:end;padding:5px 7px;border:1px solid #e2d8f3;background:#faf7ff;color:#6a35c2;font-size:9px;font-weight:800;white-space:nowrap}
+html body:has(.profile-view-page) .profile-music-diary-sync-empty{padding:20px 8px;text-align:center;color:#8293a5;font-size:12px;line-height:1.5}
+@media(max-width:700px){html body:has(.profile-view-page) .profile-music-diary-sync-entry{grid-template-columns:1fr auto}.profile-music-diary-sync-date{grid-column:1/-1}.profile-music-diary-sync-badge{display:none}}
