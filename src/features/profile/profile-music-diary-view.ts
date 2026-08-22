@@ -22,7 +22,7 @@ function createSwitcher(layout: HTMLElement): HTMLElement {
   switcher.setAttribute('role', 'tablist');
   switcher.innerHTML = `
     <div class="profile-music-diary-view-copy">
-      <span>ESPACIO MUSICAL</span>
+      <span>TU ESPACIO MUSICAL</span>
       <strong>Música</strong>
     </div>
     <div class="profile-music-diary-view-actions">
