@@ -59,10 +59,9 @@ function renderCard(card: HTMLElement, artists: FavoriteArtist[], own: boolean) 
   const visible = artists.slice(0, DISPLAY_ARTISTS);
   const remaining = Math.max(0, artists.length - visible.length);
   card.innerHTML = `<div class="profile-music-taste-head">
-    <div class="profile-music-taste-title">🎶 <span>Tu gusto musical</span></div>
+    <div class="profile-music-taste-title"><span>Tu gusto musical</span></div>
     ${own ? '<button type="button" class="profile-music-taste-edit" data-taste-edit>Editar</button>' : ''}
   </div>
-  <p class="profile-music-taste-sub">Tus artistas favoritos y sonidos principales.</p>
   <div class="profile-music-taste-pills">
     ${visible.map(artist => `<span class="profile-music-taste-pill"><span>${esc(artist.artist_name)}</span></span>`).join('') || '<span class="profile-music-taste-empty">Aún no has elegido artistas favoritos.</span>'}
     ${remaining ? `<span class="profile-music-taste-more">+${remaining} más</span>` : ''}
