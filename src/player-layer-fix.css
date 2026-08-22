@@ -1,0 +1,32 @@
+/* Global layer for the floating music player.
+   The player keeps its existing positioning/drag behavior, but always renders above page UI. */
+
+.floating-music-player,
+.music-player-expanded,
+.player-empty-state {
+  z-index: 2147483647 !important;
+}
+
+/* Keep the player controls in the same top-level layer. */
+.floating-music-player > *,
+.music-player-expanded > *,
+.player-empty-state > * {
+  position: relative;
+  z-index: 2147483647 !important;
+}
+
+/* Page content must never create a competing layer above the player. */
+.topbar,
+.feed-layout,
+.music-view,
+.music-shell,
+.music-main,
+.music-sidebar {
+  isolation: auto;
+}
+
+/* Chat stays usable, but below the music player. */
+.chat,
+.chat-panel {
+  z-index: 2147483600 !important;
+}
