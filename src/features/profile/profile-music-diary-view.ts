@@ -42,12 +42,17 @@ function createSwitcher(layout: HTMLElement): HTMLElement {
 
 function removeDiaryAddMusicActions(layout: HTMLElement) {
   if (currentView !== 'diary') return;
+
   const candidates = Array.from(layout.querySelectorAll<HTMLElement>('button, a, [role="button"]'));
   candidates.forEach(element => {
     const text = element.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
-    if (text === 'añadir música' || text === '＋ añadir música' || text === '+ añadir música') element.remove();
+    if (text === 'añadir música' || text === '＋ añadir música' || text === '+ añadir música') {
+      element.remove();
+    }
   });
-  layout.querySelectorAll<HTMLElement>('[data-music-action="add"], [data-music-action="save"]').forEach(element => element.remove());
+
+  layout.querySelectorAll<HTMLElement>('[data-music-action="add"], [data-music-action="save"]')
+    .forEach(element => element.remove());
 }
 
 function applyView() {
