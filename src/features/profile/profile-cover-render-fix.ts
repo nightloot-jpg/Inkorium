@@ -2,9 +2,15 @@ import { supabase } from "../../lib/supabase";
 
 const COVER_SELECTOR = ".profile-view-cover.profile-view-cover-final";
 const HEADER_SELECTOR = ".profile-view-header.profile-view-header-final";
+const INLINE_URL_RE = /url\((?:["']?)(.*?)(?:["']?)\)/i;
 
 function getProfileCover(): HTMLButtonElement | null {
   return document.querySelector<HTMLButtonElement>(COVER_SELECTOR);
+}
+
+function getInlineCoverUrl(cover: HTMLElement): string | null {
+  const match = cover.style.backgroundImage.match(INLINE_URL_RE);
+  return match?.[1] || null;
 }
 
 function renderCoverImage(cover: HTMLButtonElement, url: string) {
@@ -24,6 +30,12 @@ function renderCoverImage(cover: HTMLButtonElement, url: string) {
 async function syncCover() {
   const cover = getProfileCover();
   if (!cover) return false;
+
+  const inlineUrl = getInlineCoverUrl(cover);
+  if (inlineUrl) {
+    renderCoverImage(cover, inlineUrl);
+    return true;
+  }
 
   const sessionResult = await supabase.auth.getSession();
   const userId = sessionResult.data.session?.user?.id;
@@ -47,6 +59,7 @@ function normalizeHeader() {
   const identity = header.querySelector<HTMLElement>(".profile-view-identity");
   if (!avatar || !identity) return false;
 
+  header.classList.add("profile-view-header-final");
   header.classList.add("profile-cover-header-synced");
   identity.classList.add("profile-view-identity-final");
   return true;
@@ -81,7 +94,6 @@ function boot() {
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
-
   window.addEventListener("inkorium-profile-banner-updated", tryReconcile);
   window.addEventListener("pageshow", tryReconcile);
 }
