@@ -15,10 +15,6 @@ function context() {
 }
 
 async function resolveProfileId(username: string, fallback: string) {
-  if (fallback) {
-    const { data } = await supabase.from("profiles").select("id").eq("id", fallback).maybeSingle();
-    if (data?.id && context()?.username === username) return data.id;
-  }
   const { data } = await supabase.from("profiles").select("id").eq("username", username).maybeSingle();
   return data?.id || fallback;
 }
@@ -34,6 +30,7 @@ async function mount() {
   const { data } = await supabase.auth.getSession();
   const currentUserId = data.session?.user?.id || "";
   const profileId = await resolveProfileId(ctx.username, currentUserId);
+  if (!host?.isConnected) { active = false; return; }
   root = createRoot(host);
   root.render(<ProfilePhotosGallery profileId={profileId} username={ctx.username} own={!!currentUserId && profileId === currentUserId} />);
 }
@@ -64,7 +61,10 @@ function bind() {
 
 function boot() {
   bind();
-  const observer = new MutationObserver(bind);
+  const observer = new MutationObserver(() => {
+    bind();
+    if (active && !host?.isConnected) { active = false; root = null; host = null; setTimeout(() => void mount(), 0); }
+  });
   observer.observe(document.body, { childList: true, subtree: true });
   window.addEventListener("pageshow", bind);
 }
