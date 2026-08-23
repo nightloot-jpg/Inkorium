@@ -1,0 +1,1 @@
+Photos now upload directly to Cloudflare R2 through the `r2-media` Supabase Edge Function. The existing R2 credentials are reused. Set `R2_PUBLIC_BASE_URL` to the public/custom-domain base URL of the bucket so saved photo URLs are renderable by the app.
