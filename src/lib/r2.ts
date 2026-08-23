@@ -7,7 +7,7 @@ type R2UploadTicket = {
   expiresIn?: number;
 };
 
-export type R2Folder = 'photos' | 'covers' | 'avatars' | 'post-media' | 'music' | 'chat';
+export type R2Folder = 'photos' | 'covers' | 'avatars' | 'post-media' | 'videos' | 'music' | 'chat';
 
 export async function createR2UploadTicket(input: {
   functionName?: string;
