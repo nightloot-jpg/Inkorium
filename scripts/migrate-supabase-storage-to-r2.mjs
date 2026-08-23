@@ -34,8 +34,20 @@ async function listAll(bucket, prefix = '') {
   return all;
 }
 
+function encodePath(path) {
+  return path.split('/').map(encodeURIComponent).join('/');
+}
+
 function originalPublicUrl(bucket, path) {
-  return `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`;
+  return `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${encodePath(path)}`;
+}
+
+function oldPathMatches(bucket, value) {
+  if (!value || typeof value !== 'string') return null;
+  const marker = `/storage/v1/object/public/${bucket}/`;
+  const index = value.indexOf(marker);
+  if (index < 0) return null;
+  return decodeURIComponent(value.slice(index + marker.length));
 }
 
 async function copyObject(bucket, path) {
@@ -45,7 +57,7 @@ async function copyObject(bucket, path) {
   const body = Buffer.from(await data.arrayBuffer());
   const contentType = data.type || 'application/octet-stream';
   await r2.send(new PutObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: r2Key, Body: body, ContentType: contentType }));
-  const url = `${publicBase}/${r2Key.split('/').map(encodeURIComponent).join('/')}`;
+  const url = `${publicBase}/${encodePath(r2Key)}`;
   const oldUrl = originalPublicUrl(bucket, path);
   manifest.push({ bucket, path, r2Key, oldUrl, url, contentType, bytes: body.length });
   replacements.set(oldUrl, url);
@@ -78,10 +90,9 @@ async function updateRows(table, selectColumns, mapRow) {
   for (const row of data || []) {
     const patch = mapRow(row);
     if (!patch || Object.keys(patch).length === 0) continue;
-    const idField = row.id !== undefined ? 'id' : table === 'profiles' ? 'id' : null;
-    if (!idField) continue;
-    const { error: updateError } = await supabase.from(table).update(patch).eq(idField, row[idField]);
-    if (updateError) throw new Error(`No se pudo actualizar ${table}/${row[idField]}: ${updateError.message}`);
+    if (row.id === undefined) continue;
+    const { error: updateError } = await supabase.from(table).update(patch).eq('id', row.id);
+    if (updateError) throw new Error(`No se pudo actualizar ${table}/${row.id}: ${updateError.message}`);
   }
 }
 
@@ -93,19 +104,22 @@ async function migrateDatabase() {
 
   await updateRows('photos', 'id, storage_path, url', row => {
     const newUrl = replaceDeep(row.url);
-    let storagePath = row.storage_path;
-    if (storagePath && replacements.has(originalPublicUrl('photos', storagePath))) storagePath = `photos/${storagePath}`;
-    return { ...(newUrl !== row.url ? { url: newUrl } : {}), ...(storagePath !== row.storage_path ? { storage_path: storagePath } : {}) };
+    const oldPath = oldPathMatches('photos', row.url) || row.storage_path;
+    const newPath = oldPath && manifest.some(m => m.bucket === 'photos' && m.path === oldPath) ? `photos/${oldPath}` : row.storage_path;
+    return {
+      ...(newUrl !== row.url ? { url: newUrl } : {}),
+      ...(newPath !== row.storage_path ? { storage_path: newPath } : {}),
+    };
   });
 
   await updateRows('post_images', 'id, storage_path', row => {
-    const old = originalPublicUrl('post-media', row.storage_path);
-    return replacements.has(old) ? { storage_path: `post-media/${row.storage_path}` } : {};
+    const old = row.storage_path;
+    return old && manifest.some(m => m.bucket === 'post-media' && m.path === old) ? { storage_path: `post-media/${old}` } : {};
   });
 
   await updateRows('post_videos', 'id, storage_path, thumbnail_path', row => ({
-    ...(row.storage_path && replacements.has(originalPublicUrl('post-media', row.storage_path)) ? { storage_path: `post-media/${row.storage_path}` } : {}),
-    ...(row.thumbnail_path && replacements.has(originalPublicUrl('post-media', row.thumbnail_path)) ? { thumbnail_path: `post-media/${row.thumbnail_path}` } : {}),
+    ...(row.storage_path && manifest.some(m => m.bucket === 'post-media' && m.path === row.storage_path) ? { storage_path: `post-media/${row.storage_path}` } : {}),
+    ...(row.thumbnail_path && manifest.some(m => m.bucket === 'post-media' && m.path === row.thumbnail_path) ? { thumbnail_path: `post-media/${row.thumbnail_path}` } : {}),
   }));
 
   await updateRows('posts', 'id, media_data', row => {
@@ -153,9 +167,6 @@ async function migrateDatabase() {
       return patch;
     });
   }
-
-  const { error } = await supabase.from('system_migrations').upsert({ key: 'cloudflare_r2_storage_2026', completed_at: new Date().toISOString(), object_count: copied }, { onConflict: 'key' }).catch(() => ({ error: null }));
-  if (error) console.warn(`No se pudo registrar el marcador de migración: ${error.message}`);
 }
 
 await migrateStorage();
