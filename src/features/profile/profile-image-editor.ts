@@ -1,245 +1,33 @@
 import { supabase } from '../../lib/supabase';
+import { createR2UploadTicket, uploadToPresignedUrl } from '../../lib/r2';
 
 type Target = 'avatar' | 'banner';
-
-type EditorState = {
-  target: Target;
-  source: string;
-  sourceName?: string;
-  image: HTMLImageElement;
-  zoom: number;
-  rotation: number;
-  offsetX: number;
-  offsetY: number;
-  dragging: boolean;
-  dragStartX: number;
-  dragStartY: number;
-  startOffsetX: number;
-  startOffsetY: number;
-};
-
+type EditorState = { target: Target; source: string; sourceName?: string; image: HTMLImageElement; zoom: number; rotation: number; offsetX: number; offsetY: number; dragging: boolean; dragStartX: number; dragStartY: number; startOffsetX: number; startOffsetY: number; };
 const OVERLAY_ID = 'inkorium-profile-image-editor';
 const FRAME = { avatar: { width: 720, height: 720 }, banner: { width: 1400, height: 480 } };
-
-function getTargetFromModal(): Target {
-  const title = document.querySelector('.profile-media-modal h2')?.textContent?.toLowerCase() || '';
-  return title.includes('portada') ? 'banner' : 'avatar';
-}
-
-function ensureStyles() {
-  if (document.getElementById(`${OVERLAY_ID}-styles`)) return;
-  const style = document.createElement('style');
-  style.id = `${OVERLAY_ID}-styles`;
-  style.textContent = `
-    #${OVERLAY_ID}{position:fixed;inset:0;z-index:20050;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(15,28,45,.72)}
-    #${OVERLAY_ID} .pie-dialog{width:min(980px,100%);max-height:94vh;overflow:auto;background:#fff;border:1px solid #dce5ef;border-radius:16px;box-shadow:0 24px 80px rgba(6,20,38,.32);font-family:Arial,Helvetica,sans-serif;color:#17324f}
-    #${OVERLAY_ID} .pie-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 22px;border-bottom:1px solid #e9eef3}
-    #${OVERLAY_ID} .pie-head h2{margin:0;font-size:20px;color:#17324f}
-    #${OVERLAY_ID} .pie-head p{margin:5px 0 0;color:#71849a;font-size:13px}
-    #${OVERLAY_ID} .pie-close{width:36px;height:36px;border:1px solid #d8e2ec;border-radius:9px;background:#fff;color:#526b84;font-size:22px;line-height:1;cursor:pointer}
-    #${OVERLAY_ID} .pie-body{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px;padding:20px}
-    #${OVERLAY_ID} .pie-stage{display:flex;align-items:center;justify-content:center;min-height:420px;padding:18px;background:#eef3f8;border-radius:12px;border:1px solid #dce5ef}
-    #${OVERLAY_ID} canvas{display:block;max-width:100%;max-height:58vh;border-radius:10px;box-shadow:0 8px 30px rgba(15,30,48,.15);background:#dfe7ef;touch-action:none;cursor:grab}
-    #${OVERLAY_ID} canvas.dragging{cursor:grabbing}
-    #${OVERLAY_ID} .pie-controls{display:flex;flex-direction:column;gap:14px;padding:4px}
-    #${OVERLAY_ID} .pie-control{padding:14px;border:1px solid #e3e9ef;border-radius:11px;background:#fbfcfe}
-    #${OVERLAY_ID} .pie-control h3{margin:0 0 10px;font-size:13px;color:#26425e}
-    #${OVERLAY_ID} .pie-range{width:100%}
-    #${OVERLAY_ID} .pie-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    #${OVERLAY_ID} .pie-buttons button{height:38px;border:1px solid #d4deea;border-radius:8px;background:#fff;color:#476079;font-weight:700;cursor:pointer}
-    #${OVERLAY_ID} .pie-note{font-size:12px;color:#7890a6;line-height:1.45}
-    #${OVERLAY_ID} .pie-footer{display:flex;justify-content:flex-end;gap:9px;padding:16px 22px;border-top:1px solid #e9eef3}
-    #${OVERLAY_ID} .pie-footer button{padding:10px 16px;border-radius:9px;font-weight:800;cursor:pointer}
-    #${OVERLAY_ID} .pie-cancel{border:1px solid #d4deea;background:#fff;color:#536d84}
-    #${OVERLAY_ID} .pie-save{border:1px solid #6a35c2;background:#6a35c2;color:#fff}
-    @media(max-width:780px){#${OVERLAY_ID}{padding:10px}#${OVERLAY_ID} .pie-body{grid-template-columns:1fr}#${OVERLAY_ID} .pie-stage{min-height:320px}#${OVERLAY_ID} canvas{max-height:48vh}}
-  `;
-  document.head.appendChild(style);
-}
-
-function sourceFromFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error || new Error('No se pudo leer la imagen'));
-    reader.readAsDataURL(file);
-  });
-}
-
-function getCanvasSize(target: Target) {
-  return FRAME[target];
-}
-
-function createEditor(target: Target, source: string, sourceName?: string) {
-  document.getElementById(OVERLAY_ID)?.remove();
-  ensureStyles();
-
-  const image = new Image();
-  image.onload = () => buildEditor({ target, source, sourceName, image, zoom: 1, rotation: 0, offsetX: 0, offsetY: 0, dragging: false, dragStartX: 0, dragStartY: 0, startOffsetX: 0, startOffsetY: 0 });
-  image.onerror = () => window.alert('No se pudo cargar la imagen para editarla.');
-  if (!source.startsWith('data:')) image.crossOrigin = 'anonymous';
-  image.src = source;
-}
-
+function getTargetFromModal(): Target { const title = document.querySelector('.profile-media-modal h2')?.textContent?.toLowerCase() || ''; return title.includes('portada') ? 'banner' : 'avatar'; }
+function ensureStyles() { if (document.getElementById(`${OVERLAY_ID}-styles`)) return; const style = document.createElement('style'); style.id = `${OVERLAY_ID}-styles`; style.textContent = `#${OVERLAY_ID}{position:fixed;inset:0;z-index:20050;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(15,28,45,.72)}#${OVERLAY_ID} .pie-dialog{width:min(980px,100%);max-height:94vh;overflow:auto;background:#fff;border:1px solid #dce5ef;border-radius:16px;box-shadow:0 24px 80px rgba(6,20,38,.32);font-family:Arial,Helvetica,sans-serif;color:#17324f}#${OVERLAY_ID} .pie-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 22px;border-bottom:1px solid #e9eef3}#${OVERLAY_ID} .pie-head h2{margin:0;font-size:20px;color:#17324f}#${OVERLAY_ID} .pie-head p{margin:5px 0 0;color:#71849a;font-size:13px}#${OVERLAY_ID} .pie-close{width:36px;height:36px;border:1px solid #d8e2ec;border-radius:9px;background:#fff;color:#526b84;font-size:22px;line-height:1;cursor:pointer}#${OVERLAY_ID} .pie-body{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px;padding:20px}#${OVERLAY_ID} .pie-stage{display:flex;align-items:center;justify-content:center;min-height:420px;padding:18px;background:#eef3f8;border-radius:12px;border:1px solid #dce5ef}#${OVERLAY_ID} canvas{display:block;max-width:100%;max-height:58vh;border-radius:10px;box-shadow:0 8px 30px rgba(15,30,48,.15);background:#dfe7ef;touch-action:none;cursor:grab}#${OVERLAY_ID} canvas.dragging{cursor:grabbing}#${OVERLAY_ID} .pie-controls{display:flex;flex-direction:column;gap:14px;padding:4px}#${OVERLAY_ID} .pie-control{padding:14px;border:1px solid #e3e9ef;border-radius:11px;background:#fbfcfe}#${OVERLAY_ID} .pie-control h3{margin:0 0 10px;font-size:13px;color:#26425e}#${OVERLAY_ID} .pie-range{width:100%}#${OVERLAY_ID} .pie-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}#${OVERLAY_ID} .pie-buttons button{height:38px;border:1px solid #d4deea;border-radius:8px;background:#fff;color:#476079;font-weight:700;cursor:pointer}#${OVERLAY_ID} .pie-note{font-size:12px;color:#7890a6;line-height:1.45}#${OVERLAY_ID} .pie-footer{display:flex;justify-content:flex-end;gap:9px;padding:16px 22px;border-top:1px solid #e9eef3}#${OVERLAY_ID} .pie-footer button{padding:10px 16px;border-radius:9px;font-weight:800;cursor:pointer}#${OVERLAY_ID} .pie-cancel{border:1px solid #d4deea;background:#fff;color:#536d84}#${OVERLAY_ID} .pie-save{border:1px solid #6a35c2;background:#6a35c2;color:#fff}@media(max-width:780px){#${OVERLAY_ID}{padding:10px}#${OVERLAY_ID} .pie-body{grid-template-columns:1fr}#${OVERLAY_ID} .pie-stage{min-height:320px}#${OVERLAY_ID} canvas{max-height:48vh}}`; document.head.appendChild(style); }
+function sourceFromFile(file: File): Promise<string> { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error || new Error('No se pudo leer la imagen')); reader.readAsDataURL(file); }); }
+function createEditor(target: Target, source: string, sourceName?: string) { document.getElementById(OVERLAY_ID)?.remove(); ensureStyles(); const image = new Image(); image.onload = () => buildEditor({ target, source, sourceName, image, zoom: 1, rotation: 0, offsetX: 0, offsetY: 0, dragging: false, dragStartX: 0, dragStartY: 0, startOffsetX: 0, startOffsetY: 0 }); image.onerror = () => window.alert('No se pudo cargar la imagen para editarla.'); image.src = source; }
 function buildEditor(state: EditorState) {
-  const size = getCanvasSize(state.target);
-  const overlay = document.createElement('div');
-  overlay.id = OVERLAY_ID;
-  overlay.innerHTML = `
-    <div class="pie-dialog" role="dialog" aria-modal="true" aria-label="Editor de imagen">
-      <div class="pie-head">
-        <div><h2>${state.target === 'banner' ? 'Ajustar foto de portada' : 'Ajustar foto de perfil'}</h2><p>Recorta y mueve la imagen hasta dejarla exactamente como quieres.</p></div>
-        <button type="button" class="pie-close" aria-label="Cerrar">×</button>
-      </div>
-      <div class="pie-body">
-        <div class="pie-stage"><canvas width="${size.width}" height="${size.height}"></canvas></div>
-        <div class="pie-controls">
-          <div class="pie-control"><h3>Zoom</h3><input class="pie-range" type="range" min="1" max="3" step="0.01" value="1"></div>
-          <div class="pie-control"><h3>Girar</h3><div class="pie-buttons"><button type="button" data-rotate="-90">↶ 90°</button><button type="button" data-rotate="90">↷ 90°</button></div></div>
-          <div class="pie-control"><h3>Recorte</h3><div class="pie-note">Arrastra la imagen dentro del marco. La proporción se mantiene ${state.target === 'banner' ? 'para portada' : 'en cuadrado'}.</div></div>
-        </div>
-      </div>
-      <div class="pie-footer"><button type="button" class="pie-cancel">Cancelar</button><button type="button" class="pie-save">Guardar imagen</button></div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  const canvas = overlay.querySelector('canvas') as HTMLCanvasElement;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  const draw = () => {
-    const w = canvas.width;
-    const h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#dfe7ef';
-    ctx.fillRect(0, 0, w, h);
-
-    const imgRatio = state.image.width / state.image.height;
-    const frameRatio = w / h;
-    let baseW: number;
-    let baseH: number;
-    if (imgRatio > frameRatio) {
-      baseH = h;
-      baseW = h * imgRatio;
-    } else {
-      baseW = w;
-      baseH = w / imgRatio;
-    }
-
-    const scale = state.zoom;
-    const drawW = baseW * scale;
-    const drawH = baseH * scale;
-    ctx.save();
-    ctx.translate(w / 2 + state.offsetX, h / 2 + state.offsetY);
-    ctx.rotate((state.rotation * Math.PI) / 180);
-    ctx.drawImage(state.image, -drawW / 2, -drawH / 2, drawW, drawH);
-    ctx.restore();
-  };
-
-  const range = overlay.querySelector('.pie-range') as HTMLInputElement;
-  range.addEventListener('input', () => { state.zoom = Number(range.value); draw(); });
-
-  overlay.querySelectorAll<HTMLButtonElement>('[data-rotate]').forEach(btn => btn.addEventListener('click', () => {
-    state.rotation = (state.rotation + Number(btn.dataset.rotate || 0) + 360) % 360;
-    draw();
-  }));
-
-  canvas.addEventListener('pointerdown', e => {
-    state.dragging = true;
-    state.dragStartX = e.clientX;
-    state.dragStartY = e.clientY;
-    state.startOffsetX = state.offsetX;
-    state.startOffsetY = state.offsetY;
-    canvas.classList.add('dragging');
-    canvas.setPointerCapture(e.pointerId);
+  const size = FRAME[state.target];
+  const overlay = document.createElement('div'); overlay.id = OVERLAY_ID; overlay.innerHTML = `<div class="pie-dialog" role="dialog" aria-modal="true" aria-label="Editor de imagen"><div class="pie-head"><div><h2>${state.target === 'banner' ? 'Ajustar foto de portada' : 'Ajustar foto de perfil'}</h2><p>Recorta y mueve la imagen hasta dejarla exactamente como quieres.</p></div><button type="button" class="pie-close" aria-label="Cerrar">×</button></div><div class="pie-body"><div class="pie-stage"><canvas width="${size.width}" height="${size.height}"></canvas></div><div class="pie-controls"><div class="pie-control"><h3>Zoom</h3><input class="pie-range" type="range" min="1" max="3" step="0.01" value="1"></div><div class="pie-control"><h3>Girar</h3><div class="pie-buttons"><button type="button" data-rotate="-90">↶ 90°</button><button type="button" data-rotate="90">↷ 90°</button></div></div><div class="pie-control"><h3>Recorte</h3><div class="pie-note">Arrastra la imagen dentro del marco. La proporción se mantiene ${state.target === 'banner' ? 'para portada' : 'en cuadrado'}.</div></div></div></div><div class="pie-footer"><button type="button" class="pie-cancel">Cancelar</button><button type="button" class="pie-save">Guardar imagen</button></div></div>`; document.body.appendChild(overlay);
+  const canvas = overlay.querySelector('canvas') as HTMLCanvasElement; const ctx = canvas.getContext('2d'); if (!ctx) return;
+  const draw = () => { const w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);ctx.fillStyle='#dfe7ef';ctx.fillRect(0,0,w,h);const imgRatio=state.image.width/state.image.height,frameRatio=w/h;let baseW:number,baseH:number;if(imgRatio>frameRatio){baseH=h;baseW=h*imgRatio}else{baseW=w;baseH=w/imgRatio}const scale=state.zoom,drawW=baseW*scale,drawH=baseH*scale;ctx.save();ctx.translate(w/2+state.offsetX,h/2+state.offsetY);ctx.rotate((state.rotation*Math.PI)/180);ctx.drawImage(state.image,-drawW/2,-drawH/2,drawW,drawH);ctx.restore();};
+  const range=overlay.querySelector('.pie-range') as HTMLInputElement; range.addEventListener('input',()=>{state.zoom=Number(range.value);draw();});
+  overlay.querySelectorAll<HTMLButtonElement>('[data-rotate]').forEach(btn=>btn.addEventListener('click',()=>{state.rotation=(state.rotation+Number(btn.dataset.rotate||0)+360)%360;draw();}));
+  canvas.addEventListener('pointerdown',e=>{state.dragging=true;state.dragStartX=e.clientX;state.dragStartY=e.clientY;state.startOffsetX=state.offsetX;state.startOffsetY=state.offsetY;canvas.classList.add('dragging');canvas.setPointerCapture(e.pointerId);});
+  canvas.addEventListener('pointermove',e=>{if(!state.dragging)return;state.offsetX=state.startOffsetX+(e.clientX-state.dragStartX)*(canvas.width/canvas.clientWidth);state.offsetY=state.startOffsetY+(e.clientY-state.dragStartY)*(canvas.height/canvas.clientHeight);draw();});
+  const stopDrag=()=>{state.dragging=false;canvas.classList.remove('dragging');}; canvas.addEventListener('pointerup',stopDrag);canvas.addEventListener('pointercancel',stopDrag);
+  overlay.querySelector<HTMLButtonElement>('.pie-close')?.addEventListener('click',()=>overlay.remove()); overlay.querySelector<HTMLButtonElement>('.pie-cancel')?.addEventListener('click',()=>overlay.remove()); overlay.addEventListener('mousedown',e=>{if(e.target===overlay)overlay.remove();});
+  overlay.querySelector<HTMLButtonElement>('.pie-save')?.addEventListener('click',async()=>{
+    const saveButton=overlay.querySelector<HTMLButtonElement>('.pie-save');if(!saveButton)return;saveButton.disabled=true;saveButton.textContent='Guardando…';
+    try { draw(); const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,'image/jpeg',0.92)); if(!blob)throw new Error('No se pudo generar la imagen recortada'); const {data:sessionData}=await supabase.auth.getSession();const userId=sessionData.session?.user?.id;if(!userId)throw new Error('La sesión ha caducado');
+      const ticket=await createR2UploadTicket({folder:state.target==='avatar'?'avatars':'covers',file:new File([blob],`${state.target}.jpg`,{type:'image/jpeg'})}); await uploadToPresignedUrl(ticket.uploadUrl,blob,'image/jpeg'); const url=ticket.url;if(!url)throw new Error('Falta R2_PUBLIC_BASE_URL para mostrar la imagen'); const field=state.target==='avatar'?'avatar_url':'banner_url'; const {error:profileError}=await supabase.from('profiles').update({[field]:url,updated_at:new Date().toISOString()}).eq('id',userId);if(profileError)throw profileError;overlay.remove();window.location.reload();
+    } catch(error:any){console.error('[Inkorium profile image editor]',error);window.alert(`No se pudo guardar la imagen: ${error?.message||'Error desconocido'}`);saveButton.disabled=false;saveButton.textContent='Guardar imagen';}
   });
-  canvas.addEventListener('pointermove', e => {
-    if (!state.dragging) return;
-    state.offsetX = state.startOffsetX + (e.clientX - state.dragStartX) * (canvas.width / canvas.clientWidth);
-    state.offsetY = state.startOffsetY + (e.clientY - state.dragStartY) * (canvas.height / canvas.clientHeight);
-    draw();
-  });
-  const stopDrag = () => { state.dragging = false; canvas.classList.remove('dragging'); };
-  canvas.addEventListener('pointerup', stopDrag);
-  canvas.addEventListener('pointercancel', stopDrag);
-
-  overlay.querySelector<HTMLButtonElement>('.pie-close')?.addEventListener('click', () => overlay.remove());
-  overlay.querySelector<HTMLButtonElement>('.pie-cancel')?.addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('mousedown', e => { if (e.target === overlay) overlay.remove(); });
-  overlay.querySelector<HTMLButtonElement>('.pie-save')?.addEventListener('click', async () => {
-    const saveButton = overlay.querySelector<HTMLButtonElement>('.pie-save');
-    if (!saveButton) return;
-    saveButton.disabled = true;
-    saveButton.textContent = 'Guardando…';
-
-    try {
-      draw();
-      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
-      if (!blob) throw new Error('No se pudo generar la imagen recortada');
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user?.id;
-      if (!userId) throw new Error('La sesión ha caducado');
-
-      const extension = 'jpg';
-      const path = `${userId}/${state.target}-edited-${crypto.randomUUID()}.${extension}`;
-      const { error: uploadError } = await supabase.storage.from('profile-media').upload(path, blob, { upsert: false, contentType: 'image/jpeg', cacheControl: '3600' });
-      if (uploadError) throw uploadError;
-      const { data: publicUrlData } = supabase.storage.from('profile-media').getPublicUrl(path);
-      const url = publicUrlData.publicUrl;
-      const field = state.target === 'avatar' ? 'avatar_url' : 'banner_url';
-      const { error: profileError } = await supabase.from('profiles').update({ [field]: url, updated_at: new Date().toISOString() }).eq('id', userId);
-      if (profileError) throw profileError;
-      overlay.remove();
-      window.location.reload();
-    } catch (error: any) {
-      console.error('[Inkorium profile image editor]', error);
-      window.alert(`No se pudo guardar la imagen: ${error?.message || 'Error desconocido'}`);
-      saveButton.disabled = false;
-      saveButton.textContent = 'Guardar imagen';
-    }
-  });
-
   draw();
 }
-
-async function handleGalleryImage(source: string) {
-  try {
-    const response = await fetch(source, { mode: 'cors' });
-    if (!response.ok) throw new Error('No se pudo obtener la imagen');
-    const blob = await response.blob();
-    const dataUrl = await sourceFromFile(new File([blob], 'gallery-image.jpg', { type: blob.type || 'image/jpeg' }));
-    createEditor(getTargetFromModal(), dataUrl, 'gallery-image.jpg');
-  } catch (error) {
-    console.error('[Inkorium gallery editor]', error);
-    createEditor(getTargetFromModal(), source);
-  }
-}
-
-function installInterceptors() {
-  document.addEventListener('click', event => {
-    const target = event.target as HTMLElement | null;
-    const button = target?.closest('.profile-media-gallery button') as HTMLButtonElement | null;
-    if (!button) return;
-    const image = button.querySelector('img')?.getAttribute('src');
-    if (!image) return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    void handleGalleryImage(image);
-  }, true);
-
-  document.addEventListener('change', event => {
-    const input = event.target as HTMLInputElement | null;
-    if (!input || !input.matches('.profile-media-upload input[type=file]')) return;
-    const file = input.files?.[0];
-    if (!file) return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    void sourceFromFile(file).then(dataUrl => createEditor(getTargetFromModal(), dataUrl, file.name));
-  }, true);
-}
-
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installInterceptors, { once: true });
-else installInterceptors();
+async function handleGalleryImage(source:string){try{const response=await fetch(source,{mode:'cors'});if(!response.ok)throw new Error('No se pudo obtener la imagen');const blob=await response.blob();const dataUrl=await sourceFromFile(new File([blob],'gallery-image.jpg',{type:blob.type||'image/jpeg'}));createEditor(getTargetFromModal(),dataUrl,'gallery-image.jpg');}catch(error){console.error('[Inkorium gallery editor]',error);createEditor(getTargetFromModal(),source);}}
+function installInterceptors(){document.addEventListener('click',event=>{const target=event.target as HTMLElement|null;const button=target?.closest('.profile-media-gallery button') as HTMLButtonElement|null;if(!button)return;const image=button.querySelector('img')?.getAttribute('src');if(!image)return;event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();void handleGalleryImage(image);},true);document.addEventListener('change',event=>{const input=event.target as HTMLInputElement|null;if(!input||!input.matches('.profile-media-upload input[type=file]'))return;const file=input.files?.[0];if(!file)return;event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();void sourceFromFile(file).then(dataUrl=>createEditor(getTargetFromModal(),dataUrl,file.name));},true);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installInterceptors,{once:true});else installInterceptors();
