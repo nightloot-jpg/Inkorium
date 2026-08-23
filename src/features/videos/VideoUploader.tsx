@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Loader2, Upload, Video, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { createR2UploadTicket, deleteR2Object, uploadToPresignedUrl } from '../../lib/r2';
 
 const MAX_SIZE = 1024 * 1024 * 1024; // 1 GiB
 const ALLOWED_TYPES = new Set(['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']);
@@ -64,27 +65,9 @@ export function VideoUploader({ session, onUploaded }: Props) {
     let key = '';
 
     try {
-      const { data: ticket, error: ticketError } = await supabase.functions.invoke('r2-video', {
-        body: {
-          action: 'upload',
-          fileName: file.name,
-          contentType: file.type,
-          size: file.size,
-        },
-      });
-      if (ticketError) throw new Error(ticketError.message || 'No se pudo preparar la subida a Cloudflare R2.');
-      if (!ticket?.uploadUrl || !ticket?.key) throw new Error(ticket?.error || 'Cloudflare R2 no devolvió una URL de subida.');
-
+      const ticket = await createR2UploadTicket({ folder: 'videos', file });
       key = ticket.key;
-      const uploadResponse = await fetch(ticket.uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file,
-      });
-      if (!uploadResponse.ok) {
-        const detail = await uploadResponse.text().catch(() => '');
-        throw new Error(detail || `No se pudo subir el vídeo a Cloudflare R2 (${uploadResponse.status}).`);
-      }
+      await uploadToPresignedUrl(ticket.uploadUrl, file, file.type);
 
       const { error: dbError } = await supabase.from('user_videos').insert({
         user_id: userId,
@@ -97,7 +80,7 @@ export function VideoUploader({ session, onUploaded }: Props) {
         source: 'upload',
       });
       if (dbError) {
-        await supabase.functions.invoke('r2-video', { body: { action: 'delete', key } });
+        await deleteR2Object(key);
         throw new Error(dbError.message || 'No se pudo guardar el vídeo.');
       }
 
@@ -107,6 +90,7 @@ export function VideoUploader({ session, onUploaded }: Props) {
       setDescription('');
       onUploaded?.();
     } catch (caught) {
+      if (key) await deleteR2Object(key).catch(() => undefined);
       console.error('[VIDEO_UPLOAD_R2]', caught);
       setError(caught instanceof Error ? caught.message : 'No se pudo subir el vídeo.');
     } finally {

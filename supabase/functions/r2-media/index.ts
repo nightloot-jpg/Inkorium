@@ -15,14 +15,12 @@ const ALLOWED_IMAGES = new Set(["image/jpeg", "image/png", "image/webp", "image/
 const ALLOWED_VIDEO = new Set(["video/mp4", "video/webm", "video/ogg", "video/quicktime"]);
 const ALLOWED_AUDIO = new Set(["audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/webm"]);
 
-// New uploads use the normalized folders below. The legacy prefixes are also
-// accepted for get/delete so objects copied by the historical migration remain
-// accessible without ever falling back to Supabase Storage.
 const ALLOWED_FOLDERS = new Map<string, Set<string>>([
   ["photos", ALLOWED_IMAGES],
   ["covers", ALLOWED_IMAGES],
   ["avatars", ALLOWED_IMAGES],
   ["post-media", new Set([...ALLOWED_IMAGES, ...ALLOWED_VIDEO])],
+  ["videos", ALLOWED_VIDEO],
   ["music", ALLOWED_AUDIO],
 ]);
 const OWNED_PREFIXES = [
@@ -30,8 +28,9 @@ const OWNED_PREFIXES = [
   "covers",
   "avatars",
   "post-media",
-  "music",
   "videos",
+  "music",
+  "chat",
   "profile-media",
   "music-media",
 ];
@@ -94,7 +93,7 @@ Deno.serve(async (req: Request) => {
       if (!allowedTypes.has(contentType)) return json({ error: "Tipo de archivo no compatible para esta carpeta." }, 400);
       const maxSize = folder === "music"
         ? MAX_AUDIO_SIZE
-        : folder === "post-media" && contentType.startsWith("video/")
+        : (folder === "videos" || folder === "post-media") && contentType.startsWith("video/")
           ? MAX_VIDEO_SIZE
           : MAX_IMAGE_SIZE;
       if (!Number.isFinite(size) || size <= 0 || size > maxSize) {
