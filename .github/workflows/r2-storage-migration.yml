@@ -20,9 +20,10 @@ jobs:
         with:
           bun-version: latest
       - run: bun add @aws-sdk/client-s3 @supabase/supabase-js
-      - run: bun run scripts/migrate-supabase-storage-to-r2.mjs
+      - name: Migrate Supabase Storage objects to R2
+        run: bun run scripts/migrate-supabase-storage-to-r2.mjs
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: https://zllwzmfsfzfedorljgtg.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
