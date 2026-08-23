@@ -1,0 +1,54 @@
+/* Inkorium · Tuenti-inspired full-width desktop feed */
+.feed-app .feed-layout {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 18px 24px 36px;
+  grid-template-columns: 230px minmax(560px, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
+}
+.feed-app .feed-layout > .left-column,
+.feed-app .feed-layout > .stream,
+.feed-app .feed-layout > .right-column { min-width: 0; }
+.feed-app .feed-layout > .stream { width: 100%; }
+.feed-app .feed-layout > .left-column,
+.feed-app .feed-layout > .right-column { position: sticky; top: 64px; }
+.feed-app .composer,
+.feed-app .post,
+.feed-app .profile-card,
+.feed-app .side-menu,
+.feed-app .friends,
+.feed-app .right-card,
+.feed-app .calendar {
+  border-color: #d9e0e7;
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(24, 50, 75, .05);
+}
+.feed-app .composer,
+.feed-app .post { width: 100%; }
+.feed-app .composer { margin-bottom: 14px; }
+.feed-app .post { margin-top: 14px; }
+@media (min-width: 1500px) {
+  .feed-app .feed-layout {
+    grid-template-columns: 250px minmax(700px, 1fr) 320px;
+    gap: 24px;
+    padding-inline: 32px;
+  }
+}
+@media (max-width: 1200px) {
+  .feed-app .feed-layout {
+    grid-template-columns: 215px minmax(0, 1fr) 270px;
+    gap: 16px;
+    padding-inline: 18px;
+  }
+}
+@media (max-width: 1050px) {
+  .feed-app .feed-layout { grid-template-columns: 195px minmax(0, 1fr); }
+  .feed-app .feed-layout > .right-column { display: none; }
+}
+@media (max-width: 720px) {
+  .feed-app .feed-layout { display: block; padding: 8px 10px 24px; }
+  .feed-app .feed-layout > .left-column,
+  .feed-app .feed-layout > .right-column { display: none; }
+}
