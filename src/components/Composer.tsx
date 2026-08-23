@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from "react-dom";
 import { supabase } from '../lib/supabase';
+import { uploadImageToR2 } from '../lib/r2Upload';
 import * as tus from "tus-js-client";
 import { v4 as uuidv4 } from "uuid";
 import { Session } from '@supabase/supabase-js';
@@ -399,16 +400,14 @@ export function Composer({
     let poll_id: string | undefined = undefined;
     
     if (mode === "photo" && photoFile) {
-        const extension = photoFile.name.split(".").pop()?.toLowerCase() || "jpg";
-        const path = `${session.user.id}/post-${Date.now()}.${extension}`;
-        const { error: uploadError } = await supabase.storage.from("post-media").upload(path, photoFile, { cacheControl: "3600", upsert: true, contentType: photoFile.type });
-        if (uploadError) {
-          setError("Error al subir foto: " + uploadError.message);
+        try {
+          const { url } = await uploadImageToR2(photoFile, "posts");
+          media_data = { type: "photo", url };
+        } catch (uploadError: any) {
+          setError("Error al subir foto: " + (uploadError?.message || "Error desconocido"));
           setPublishing(false);
           return;
         }
-        const { data: publicData } = supabase.storage.from("post-media").getPublicUrl(path);
-        media_data = { type: "photo", url: publicData.publicUrl };
     } else if (mode === "video" && videoFile) {
         if (videoFile.size > 1024 * 1024 * 1024) { // 1GB
             setError("El vídeo supera el límite máximo de 1 GB.");

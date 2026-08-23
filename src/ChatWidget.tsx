@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
+import { uploadImageToR2 } from "./lib/r2Upload";
 import "./chat-realtime.css";
 
 type UserStatus = "conectado" | "ausente" | "desconectado";
@@ -478,15 +479,12 @@ export function ChatWidget({ session, navigate }: { session: Session; navigate: 
       console.warn("[Chat] image too large");
       return;
     }
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const path = `${myId}/chat/${crypto.randomUUID()}-${safeName}`;
-    const { error } = await supabase.storage.from("photos").upload(path, file, { contentType: file.type, upsert: false });
-    if (error) {
+    try {
+      const { url } = await uploadImageToR2(file, "chat");
+      await insertMessage(id, "image", url);
+    } catch (error) {
       console.error("[Chat] upload image", error);
-      return;
     }
-    const { data } = supabase.storage.from("photos").getPublicUrl(path);
-    await insertMessage(id, "image", data.publicUrl);
   }, [insertMessage, myId]);
 
   const shareMusic = useCallback((id: string, track: MusicTrack) => {
