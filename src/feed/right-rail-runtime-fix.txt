@@ -1,1 +1,0 @@
-The FeedEnhancements runtime must be loaded by index.html so the right rail is actually mounted into .feed-layout.
