@@ -1,0 +1,323 @@
+/* Composer UI recovery for the R2 media uploader.
+   The Composer component uses the classes below, while the legacy feed CSS
+   only styles the old .composer/.composer-tools markup. */
+
+.composer-container {
+  width: 100%;
+  padding: 20px 22px 14px;
+  border: 1px solid #e3e8ef;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(24, 43, 68, .04), 0 5px 18px rgba(24, 43, 68, .045);
+}
+
+.composer-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.composer-avatar {
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d8e0ea;
+  border-radius: 50%;
+  color: #2364a7;
+  background: #edf4fb;
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.composer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.composer-avatar .initials { line-height: 1; }
+
+.composer-input {
+  flex: 1;
+  width: 100%;
+  min-height: 46px;
+  max-height: 180px;
+  resize: none;
+  padding: 11px 13px;
+  border: 1px solid #e0e6ed;
+  border-radius: 8px;
+  outline: none;
+  color: #25374b;
+  background: #f7f9fc;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.45;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+
+.composer-input::placeholder { color: #8795a5; }
+.composer-input:focus {
+  border-color: #9bb8dc;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(93, 145, 219, .10);
+}
+
+.composer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #edf0f4;
+}
+
+.composer-modes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.composer-modes > button,
+.composer-more-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: #5d6f82;
+  background: transparent;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.composer-modes > button:hover,
+.composer-more-button:hover,
+.composer-modes > button.active {
+  color: #4f79b4;
+  background: #eef4fb;
+}
+
+.composer-more { position: relative; }
+.composer-more-menu {
+  min-width: 210px;
+  padding: 6px;
+  border: 1px solid #dfe5ec;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(20, 36, 58, .16);
+}
+.composer-more-menu button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 6px;
+  color: #33475c;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.composer-more-menu button:hover { background: #f2f5f9; }
+
+.new-composer-privacy { position: relative; }
+.privacy-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #dfe5ec;
+  border-radius: 7px;
+  color: #56697d;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+.privacy-trigger:hover { background: #f7f9fb; }
+.privacy-dropdown {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 30;
+  min-width: 145px;
+  padding: 5px;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(20, 36, 58, .16);
+}
+.privacy-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 9px;
+  border-radius: 6px;
+  color: #42566b;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.privacy-dropdown button:hover { background: #f1f5f9; }
+
+.composer-publish,
+.composer-bottom .publish-button,
+.composer-bottom button[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 7px;
+  color: #fff;
+  background: #5d91db;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter .15s, opacity .15s;
+}
+.composer-publish:hover,
+.composer-bottom .publish-button:hover,
+.composer-bottom button[type="submit"]:hover { filter: brightness(.96); }
+.composer-publish:disabled,
+.composer-bottom .publish-button:disabled,
+.composer-bottom button[type="submit"]:disabled { opacity: .55; cursor: wait; }
+
+.composer-extended {
+  margin: 12px 0 2px 58px;
+  padding: 12px;
+  border: 1px solid #e2e8ef;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.file-upload-box {
+  min-height: 100px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed #b9c8d9;
+  border-radius: 8px;
+  background: #fff;
+}
+.file-upload-box input[type="file"] { display: none; }
+.file-upload-box label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border: 1px solid #d4dee9;
+  border-radius: 7px;
+  color: #4d6680;
+  background: #fff;
+  cursor: pointer;
+}
+.file-upload-box label:hover { background: #f3f7fb; }
+
+.composer-photo-preview,
+.composer-video-preview { position: relative; overflow: hidden; border-radius: 8px; background: #111; }
+.composer-photo-preview img { display: block; }
+.composer-photo-preview > button,
+.composer-video-preview > button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(0, 0, 0, .62);
+  cursor: pointer;
+}
+
+.youtube-search { display: flex; gap: 7px; margin: 0; }
+.youtube-search input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #d9e1e9;
+  border-radius: 7px;
+  outline: none;
+  background: #fff;
+}
+.youtube-search button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  border-radius: 7px;
+  color: #fff;
+  background: #5d91db;
+}
+.youtube-results { display: grid; gap: 5px; margin-top: 8px; max-height: 260px; overflow-y: auto; }
+.youtube-results > button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px;
+  border-radius: 7px;
+  color: #30465d;
+  background: #fff;
+  text-align: left;
+}
+.youtube-results > button:hover { background: #edf3f9; }
+.youtube-results img { width: 82px; height: 46px; object-fit: cover; border-radius: 4px; }
+.youtube-results span { display: grid; gap: 3px; min-width: 0; }
+.youtube-results strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.youtube-results small { color: #8492a1; }
+
+.composer-error {
+  margin: 10px 0 0 58px;
+  padding: 8px 10px;
+  border: 1px solid #f0c8c8;
+  border-radius: 7px;
+  color: #a43d3d;
+  background: #fff4f4;
+  font-size: 13px;
+}
+
+.mention-picker {
+  margin: 8px 0 0 58px;
+  padding: 8px;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(20, 36, 58, .10);
+}
+.mention-picker-search { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid #e0e6ed; border-radius: 6px; }
+.mention-picker-search input { flex: 1; min-width: 0; border: 0; outline: 0; }
+.mention-picker-item { display: block; width: 100%; padding: 8px; border-radius: 6px; color: #33495f; background: transparent; text-align: left; }
+.mention-picker-item:hover { background: #f2f5f8; }
+
+@media (max-width: 700px) {
+  .composer-container { padding: 15px; }
+  .composer-bottom { align-items: flex-end; }
+  .composer-modes { flex-wrap: wrap; }
+  .composer-extended,
+  .composer-error,
+  .mention-picker { margin-left: 0; }
+  .privacy-trigger { font-size: 12px; }
+}
+
+@media (max-width: 460px) {
+  .composer-top { gap: 8px; }
+  .composer-avatar { flex-basis: 38px; width: 38px; height: 38px; }
+  .composer-input { min-height: 40px; font-size: 14px; }
+  .composer-bottom { flex-wrap: wrap; }
+  .composer-publish,
+  .composer-bottom .publish-button,
+  .composer-bottom button[type="submit"] { margin-left: auto; }
+}
