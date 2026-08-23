@@ -1,0 +1,4 @@
+/* Square profile header treatment. Keeps the banner dimensions while removing rounded container corners. */
+html body:has(.profile-view-page) .profile-view-cover { border-radius: 0 !important; }
+html body:has(.profile-view-page) .profile-view-header { border-radius: 0 !important; }
+html body:has(.profile-view-page) .profile-view-tabs { border-radius: 0 !important; }
