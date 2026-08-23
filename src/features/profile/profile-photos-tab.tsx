@@ -5,13 +5,14 @@ import { ProfilePhotosGallery } from "./ProfilePhotosGallery";
 
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
+let hiddenGrid: HTMLElement | null = null;
 let active = false;
 
 function context() {
   const page = document.querySelector<HTMLElement>(".profile-view-page");
-  const main = page?.querySelector<HTMLElement>(".profile-view-main");
+  const grid = page?.querySelector<HTMLElement>(".profile-view-grid");
   const username = page?.querySelector(".profile-view-name-row h1")?.textContent?.trim() || "usuario";
-  return page && main ? { page, main, username } : null;
+  return page && grid ? { page, grid, username } : null;
 }
 
 async function resolveProfileId(username: string, fallback: string) {
@@ -23,14 +24,15 @@ async function mount() {
   const ctx = context();
   if (!ctx || active) return;
   active = true;
-  ctx.main.style.display = "none";
+  hiddenGrid = ctx.grid;
+  hiddenGrid.style.display = "none";
   host = document.createElement("div");
   host.className = "profile-photos-host";
-  ctx.main.parentElement?.appendChild(host);
+  hiddenGrid.parentElement?.insertBefore(host, hiddenGrid.nextSibling);
   const { data } = await supabase.auth.getSession();
   const currentUserId = data.session?.user?.id || "";
   const profileId = await resolveProfileId(ctx.username, currentUserId);
-  if (!host?.isConnected) { active = false; return; }
+  if (!host?.isConnected) { active = false; hiddenGrid = null; return; }
   root = createRoot(host);
   root.render(<ProfilePhotosGallery profileId={profileId} username={ctx.username} own={!!currentUserId && profileId === currentUserId} />);
 }
@@ -42,8 +44,8 @@ function unmount() {
   root = null;
   host?.remove();
   host = null;
-  const ctx = context();
-  if (ctx) ctx.main.style.display = "";
+  if (hiddenGrid) hiddenGrid.style.display = "";
+  hiddenGrid = null;
 }
 
 function bind() {
@@ -63,7 +65,14 @@ function boot() {
   bind();
   const observer = new MutationObserver(() => {
     bind();
-    if (active && !host?.isConnected) { active = false; root = null; host = null; setTimeout(() => void mount(), 0); }
+    if (active && !host?.isConnected) {
+      const grid = context()?.grid;
+      active = false;
+      root = null;
+      host = null;
+      hiddenGrid = grid || hiddenGrid;
+      window.setTimeout(() => void mount(), 0);
+    }
   });
   observer.observe(document.body, { childList: true, subtree: true });
   window.addEventListener("pageshow", bind);
