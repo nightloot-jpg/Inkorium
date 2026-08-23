@@ -1,7 +1,7 @@
 import { supabase } from "../../lib/supabase";
 
-const COVER_SELECTOR = ".profile-view-cover.profile-view-cover-final";
-const HEADER_SELECTOR = ".profile-view-header.profile-view-header-final";
+const COVER_SELECTOR = ".profile-view-cover.profile-view-cover-button";
+const HEADER_SELECTOR = ".profile-view-header";
 const INLINE_URL_RE = /url\((?:["']?)(.*?)(?:["']?)\)/i;
 
 function getProfileCover(): HTMLButtonElement | null {
@@ -30,6 +30,7 @@ function renderCoverImage(cover: HTMLButtonElement, url: string) {
 async function syncCover() {
   const cover = getProfileCover();
   if (!cover) return false;
+  cover.classList.add("profile-view-cover-final");
 
   const inlineUrl = getInlineCoverUrl(cover);
   if (inlineUrl) {
@@ -90,7 +91,7 @@ function boot() {
       observer.disconnect();
       return;
     }
-    if (document.querySelector(COVER_SELECTOR)) tryReconcile();
+    if (document.querySelector(COVER_SELECTOR) || document.querySelector(HEADER_SELECTOR)) tryReconcile();
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
