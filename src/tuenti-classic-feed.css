@@ -1,6 +1,5 @@
-/* Inkorium · Tuenti Classic visual layer
- * Visual-only theme. It deliberately leaves React components, routes,
- * Supabase data, media URLs and existing functionality untouched.
+/* Inkorium Feed · exact supplied composition layer
+ * This file is scoped to the feed and intentionally preserves data/routes/components.
  */
 :root {
   --tuenti-blue: #2f6fae;
@@ -10,460 +9,408 @@
   --tuenti-text: #333f4c;
   --tuenti-muted: #788797;
   --tuenti-bg: #eef1f4;
-  --tuenti-white: #ffffff;
+  --tuenti-white: #fff;
 }
 
 .feed-app {
   min-height: 100vh;
+  width: 100%;
   color: var(--tuenti-text);
   background: var(--tuenti-bg);
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Classic Tuenti-style header: compact, flat, unmistakably social. */
 .feed-app .topbar {
-  height: 48px;
-  padding: 0;
+  height: 56px;
+  padding: 0 36px;
   gap: 0;
-  background: var(--tuenti-blue-dark);
-  border-bottom: 1px solid #1d4b79;
-  box-shadow: 0 1px 2px rgba(0,0,0,.18);
+  background: linear-gradient(90deg, #2b75bd 0%, #1d5f9f 100%);
+  border-bottom: 1px solid #1a4e82;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
 }
 
 .feed-app .topbar .brand {
-  flex: 0 0 175px;
-  height: 48px;
+  flex: 0 0 176px;
+  height: 56px;
   margin: 0;
-  padding: 0 18px;
-  gap: 7px;
-  font-size: 20px;
-  letter-spacing: -.025em;
-  background: var(--tuenti-blue);
+  padding: 0;
+  gap: 8px;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -.03em;
+  background: transparent;
 }
 
 .feed-app .topbar .brand-mark {
-  width: 23px;
-  height: 23px;
+  width: 28px;
+  height: 28px;
 }
 
 .feed-app .top-nav {
-  height: 48px;
+  height: 56px;
   gap: 0;
 }
 
 .feed-app .top-nav a {
-  min-width: 76px;
-  height: 48px;
-  padding: 0 14px;
-  border-left: 1px solid rgba(255,255,255,.06);
-  color: #eef6fd;
-  font-size: 13px;
+  min-width: 79px;
+  height: 56px;
+  padding: 0 17px;
+  color: #f0f7ff;
+  border-left: 1px solid rgba(255,255,255,.05);
+  font-size: 15px;
   font-weight: 700;
 }
 
-.feed-app .top-nav a:hover {
-  background: rgba(255,255,255,.08);
-}
-
 .feed-app .top-nav a.active {
-  border-bottom: 3px solid #fff;
-  background: rgba(0,0,0,.12);
+  border-bottom: 4px solid #fff;
+  background: rgba(255,255,255,.14);
 }
 
 .feed-app .search {
-  height: 30px;
-  max-width: 360px;
-  margin-left: 14px;
-  padding: 6px 12px;
-  border: 1px solid rgba(0,0,0,.2);
+  flex: 1;
+  max-width: 520px;
+  height: 40px;
+  margin-left: auto;
+  margin-right: 18px;
+  padding: 0 18px;
+  border: 0;
   border-radius: 3px;
-  color: #344b61;
+  color: #4e5f72;
   background: #fff;
-  box-shadow: inset 0 1px 1px rgba(0,0,0,.08);
-  font-size: 12px;
-}
-
-.feed-app .search::placeholder {
-  color: #9aa7b3;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.08);
+  font-size: 14px;
 }
 
 .feed-app .top-actions {
-  gap: 14px;
-  padding-right: 12px;
-  font-size: 18px;
+  gap: 18px;
+  padding-right: 0;
+  font-size: 21px;
 }
 
 .feed-app .user-chip {
-  min-height: 30px;
+  min-height: 40px;
+  padding-left: 16px;
   padding-right: 8px;
-  border-left: 1px solid rgba(255,255,255,.18);
-  font-size: 12px;
+  border-left: 1px solid rgba(255,255,255,.25);
+  font-size: 14px;
 }
 
-/* Three-column Tuenti-era layout, centered and intentionally compact. */
 .feed-app .feed-layout {
-  grid-template-columns: 205px minmax(480px, 680px) 220px;
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr) 360px;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 22px 36px 40px;
   gap: 16px;
-  max-width: 1150px;
-  margin: 14px auto;
-  padding: 0 12px 30px;
   align-items: start;
 }
 
-.feed-app .panel {
-  border: 1px solid var(--tuenti-border);
-  border-radius: 3px;
-  background: var(--tuenti-white);
-  box-shadow: 0 1px 2px rgba(32,55,75,.06);
+.feed-app .feed-layout > .left-column,
+.feed-app .feed-layout > .stream,
+.feed-app .feed-layout > .right-column {
+  min-width: 0;
+  width: 100%;
 }
 
-/* Left profile card. */
+.feed-app .feed-layout > .left-column,
+.feed-app .feed-layout > .right-column {
+  position: sticky;
+  top: 70px;
+  align-self: start;
+}
+
+.feed-app .panel,
+.feed-app .composer,
+.feed-app .post,
+.feed-app .profile-card,
+.feed-app .side-menu,
+.feed-app .friends,
+.feed-app .right-card,
+.feed-app .calendar {
+  border: 1px solid #d9dfe6;
+  border-radius: 3px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(24, 45, 68, .08);
+}
+
+/* Left column */
 .feed-app .profile-card {
   align-items: flex-start;
-  gap: 11px;
-  padding: 14px;
-  border-radius: 3px;
+  min-height: 128px;
+  gap: 14px;
+  padding: 18px;
 }
 
-.feed-app .profile-card div:last-child {
-  gap: 5px;
-  min-width: 0;
+.feed-app .profile-card .avatar {
+  width: 58px;
+  height: 58px;
+  flex-basis: 58px;
+  border-radius: 2px;
 }
 
 .feed-app .profile-card strong {
-  color: #2b4d6b;
-  font-size: 15px;
+  color: #0d5da9;
+  font-size: 17px;
 }
 
 .feed-app .profile-card span,
 .feed-app .profile-card em {
-  font-size: 12px;
-}
-
-.feed-app .profile-card a,
-.feed-app .friends a,
-.feed-app .right-card a {
-  color: var(--tuenti-blue);
-  font-size: 12px;
-}
-
-.feed-app .profile-card .avatar {
-  flex-basis: 58px;
-  width: 58px;
-  height: 58px;
-  border-radius: 3px;
-  background: #edf3f8;
-}
-
-.feed-app .side-menu {
-  gap: 0;
-  margin-top: 10px;
-  padding: 6px;
-}
-
-.feed-app .side-menu a {
-  gap: 10px;
-  min-height: 36px;
-  padding: 8px 10px;
-  border-radius: 2px;
-  color: #425466;
   font-size: 13px;
 }
 
-.feed-app .side-menu a span {
-  width: 18px;
-  color: #6f8295;
-  font-size: 16px;
+.feed-app .side-menu {
+  margin-top: 12px;
+  padding: 9px;
+}
+
+.feed-app .side-menu a {
+  min-height: 40px;
+  padding: 9px 12px;
+  gap: 12px;
+  border-radius: 3px;
+  font-size: 15px;
 }
 
 .feed-app .side-menu a.selected {
-  color: #244f79;
-  background: var(--tuenti-blue-light);
-  font-weight: 700;
+  background: #eaf2f9;
+  color: #0b5da9;
 }
 
 .feed-app .friends {
-  margin-top: 10px;
-  padding: 13px;
+  margin-top: 12px;
+  padding: 16px 18px;
 }
 
-.feed-app .friends > strong,
-.feed-app .right-card > strong,
-.feed-app .calendar > strong {
-  color: #53687b;
-  font-size: 12px;
+/* Center */
+.feed-app .stream {
+  width: 100%;
+  min-width: 0;
 }
 
-/* Center stream. */
 .feed-app .composer {
-  padding: 12px 14px 9px;
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 18px 18px 12px;
 }
 
 .feed-app .composer-row {
-  gap: 10px;
+  gap: 12px;
 }
 
 .feed-app .composer-row .avatar {
-  flex-basis: 42px;
-  width: 42px;
-  height: 42px;
-  border-radius: 3px;
+  width: 52px;
+  height: 52px;
+  flex-basis: 52px;
+  border-radius: 50%;
 }
 
 .feed-app .composer-row input {
-  height: 42px;
-  padding: 0 11px;
-  border: 1px solid #cbd4dc;
-  border-radius: 2px;
-  color: #516474;
+  width: 100%;
+  height: 54px;
+  padding: 0 14px;
+  border: 1px solid #cbd5df;
+  border-radius: 3px;
   background: #fff;
-  font-size: 14px;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,.04);
-}
-
-.feed-app .composer-row input::placeholder {
-  color: #8c99a6;
+  color: #4d5d6d;
+  font-size: 18px;
 }
 
 .feed-app .composer-tools {
   justify-content: flex-start;
-  gap: 0;
-  padding: 8px 2px 6px;
-  border-bottom: 1px solid #e1e6eb;
+  gap: 13px;
+  padding: 14px 2px 12px;
+  border-bottom: 1px solid #e2e7ec;
 }
 
 .feed-app .composer-tools button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 30px;
-  color: #597187;
-  border-right: 1px solid #e5e9ed;
-  font-size: 15px;
-}
-
-.feed-app .composer-tools button:hover {
-  color: var(--tuenti-blue);
-  background: #f1f5f8;
+  width: 30px;
+  height: 28px;
+  color: #5a7086;
+  background: transparent;
+  font-size: 18px;
 }
 
 .feed-app .composer-footer {
-  gap: 10px;
-  padding-top: 7px;
+  padding-top: 9px;
 }
 
 .feed-app .publish {
-  padding: 7px 16px !important;
-  border: 1px solid #245b8f !important;
+  padding: 10px 21px !important;
   border-radius: 3px !important;
-  background: var(--tuenti-blue) !important;
-  box-shadow: inset 0 1px rgba(255,255,255,.15);
-  font-size: 12px;
+  background: #3a7bbd !important;
 }
 
-/* Posts: simple white cards, thin separators, small metadata. */
 .feed-app .post {
-  margin-top: 12px;
-  border-radius: 3px;
+  width: 100%;
+  margin-top: 14px;
+  overflow: hidden;
 }
 
 .feed-app .post-head {
-  gap: 9px;
-  padding: 12px 14px 7px;
+  gap: 10px;
+  padding: 14px 16px 10px;
 }
 
 .feed-app .post-head .avatar {
-  flex-basis: 40px;
-  width: 40px;
-  height: 40px;
-  border-radius: 3px;
-}
-
-.feed-app .post-head > div:nth-child(2) {
-  gap: 2px;
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+  border-radius: 2px;
 }
 
 .feed-app .post-head strong {
-  color: #2b5680;
-  font-size: 13px;
+  color: #0d5da9;
+  font-size: 16px;
 }
 
 .feed-app .post-head span {
-  color: #8b98a4;
-  font-size: 11px;
-}
-
-.feed-app .more {
-  color: #8795a2;
-  font-size: 16px;
+  color: #8292a2;
+  font-size: 12px;
 }
 
 .feed-app .post-text {
   margin: 0;
-  padding: 6px 14px 12px;
-  color: #394b5c;
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.feed-app .post-actions {
-  gap: 18px;
-  padding: 8px 14px;
-  border-top: 1px solid #e7ebef;
-  background: #fafbfc;
-}
-
-.feed-app .post-actions button {
-  gap: 5px;
-  color: #5b7287;
-  font-size: 12px;
-}
-
-.feed-app .post-actions button:hover {
-  color: var(--tuenti-blue);
-}
-
-.feed-app .post-actions span {
-  color: #9aa5af;
-  font-size: 11px;
-}
-
-/* Right column: classic utility boxes. */
-.feed-app .right-card,
-.feed-app .calendar {
-  padding: 13px;
-}
-
-.feed-app .right-card {
-  margin-bottom: 10px;
-}
-
-.feed-app .right-card > a {
-  top: 13px;
-  right: 13px;
-}
-
-.feed-app .right-card p {
-  margin: 14px 0 7px;
-  color: #778796;
-  font-size: 12px;
-}
-
-.feed-app .event {
-  gap: 9px;
-  margin: 12px 0;
-}
-
-.feed-app .event-image {
-  flex-basis: 48px;
-  height: 42px;
-  border-radius: 3px;
-  font-size: 19px;
-}
-
-.feed-app .event p {
-  margin-top: 4px;
-  font-size: 11px;
-}
-
-.feed-app .outline {
-  padding: 5px 10px;
-  border-color: #8aa9c2;
-  color: var(--tuenti-blue);
-  font-size: 11px;
-}
-
-.feed-app .calendar h3 {
-  margin: 15px 0;
-  color: #4e6376;
+  padding: 0 16px 12px;
   font-size: 15px;
 }
 
-.feed-app .days {
-  gap: 8px 3px;
-  margin-top: 12px;
-}
-
-.feed-app .days i {
-  width: 24px;
-  height: 24px;
-  font-size: 11px;
-}
-
-.feed-app .days .today {
-  color: #fff;
-  border: 0;
-  background: var(--tuenti-blue);
-}
-
-/* Media inside posts should feel native to the old feed, not like a dashboard. */
+/* Media should fill the entire middle card width with square corners. */
 .feed-app .post img,
 .feed-app .post video {
+  width: 100%;
+  max-width: 100%;
   border-radius: 0 !important;
 }
 
-.feed-app .post > div {
-  scrollbar-color: #c3ced8 transparent;
+.feed-app .post-actions {
+  padding: 10px 16px;
+  gap: 18px;
+  background: #fff;
 }
 
-/* Keep the chat, but make it visually belong to the same era. */
-.feed-app .chat {
-  right: 16px;
-  padding: 9px 15px;
-  border: 1px solid #245b8f;
-  border-radius: 3px 3px 0 0;
-  background: var(--tuenti-blue);
+/* Right rail */
+.feed-app .right-column .right-card,
+.feed-app .right-column .calendar {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 18px;
+}
+
+.feed-app .right-column .right-card > strong,
+.feed-app .right-column .calendar > strong {
+  display: block;
+  margin-bottom: 12px;
+  color: #40566c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.feed-app .right-column .event {
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.feed-app .right-column .event-image {
+  width: 66px;
+  height: 66px;
+  flex-basis: 66px;
+  border-radius: 2px;
+}
+
+.feed-app .inkorium-right-column .right-card {
+  margin-bottom: 12px;
+  padding: 18px;
+}
+
+.feed-app .inkorium-right-column .inkorium-person-row {
+  padding: 9px 0;
+}
+
+.feed-app .inkorium-right-column .inkorium-person-avatar {
+  width: 48px;
+  height: 48px;
+  flex-basis: 48px;
+  border-radius: 2px;
+}
+
+.feed-app .inkorium-right-column .inkorium-person-copy strong {
+  color: #0d5da9;
+  font-size: 14px;
+}
+
+.feed-app .inkorium-right-column .inkorium-person-copy span {
+  color: #7c8b9b;
   font-size: 12px;
 }
 
-/* Compact screens retain the Tuenti hierarchy instead of overflowing. */
-@media (max-width: 1050px) {
-  .feed-app .topbar .brand {
-    flex-basis: 145px;
-  }
-  .feed-app .top-nav a {
-    min-width: auto;
-    padding: 0 9px;
-  }
-  .feed-app .search {
-    max-width: 250px;
-  }
+.feed-app .inkorium-right-column .inkorium-badge {
+  padding: 7px 12px;
+  border: 1px solid #d1d9e1;
+  border-radius: 3px;
+  background: #fff;
+  color: #526375;
+}
+
+.feed-app .inkorium-right-column .inkorium-event-thumb {
+  width: 72px;
+  height: 72px;
+  flex-basis: 72px;
+  border-radius: 2px;
+}
+
+.feed-app .inkorium-right-column .inkorium-event-copy strong {
+  color: #0d5da9;
+  font-size: 14px;
+}
+
+.feed-app .inkorium-right-column .inkorium-event-copy span {
+  color: #728194;
+  font-size: 12px;
+}
+
+/* Prevent inherited fixed/max widths from collapsing the central feed. */
+.feed-app .feed-layout .stream,
+.feed-app .feed-layout .stream > *,
+.feed-app .feed-layout .stream .composer,
+.feed-app .feed-layout .stream .post {
+  max-width: none;
+}
+
+@media (min-width: 1500px) {
   .feed-app .feed-layout {
-    grid-template-columns: 190px minmax(420px, 1fr);
-    max-width: 920px;
+    grid-template-columns: 272px minmax(720px, 1fr) 360px;
+    gap: 16px;
   }
-  .feed-app .feed-layout > :last-child {
-    display: none;
+}
+
+@media (max-width: 1250px) {
+  .feed-app .feed-layout {
+    grid-template-columns: 242px minmax(0, 1fr) 318px;
+    padding-inline: 20px;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .feed-app .feed-layout {
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+  .feed-app .feed-layout > .right-column,
+  .feed-app .inkorium-right-column {
+    display: none !important;
   }
 }
 
 @media (max-width: 720px) {
-  .feed-app .topbar {
-    overflow-x: auto;
-  }
-  .feed-app .topbar .brand {
-    flex-basis: 125px;
-    padding-inline: 10px;
-  }
-  .feed-app .top-nav a {
-    padding: 0 8px;
-    font-size: 12px;
-  }
-  .feed-app .search,
-  .feed-app .top-actions .user-chip {
-    display: none;
-  }
   .feed-app .feed-layout {
     display: block;
-    margin: 8px auto;
-    padding-inline: 8px;
+    padding: 10px 8px 24px;
   }
-  .feed-app .feed-layout > :first-child {
-    margin-bottom: 8px;
-  }
-  .feed-app .feed-layout > :first-child .side-menu,
-  .feed-app .feed-layout > :first-child .friends {
-    display: none;
+  .feed-app .feed-layout > .left-column,
+  .feed-app .feed-layout > .right-column {
+    display: none !important;
   }
 }

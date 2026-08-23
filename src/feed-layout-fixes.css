@@ -1,5 +1,5 @@
-/* Feed layout hardening.
- * Keep the three desktop rails explicit so the right rail stays visible.
+/* Feed layout hardening. Exact desktop target proportions are owned by
+ * tuenti-classic-feed.css, loaded after this file in index.html.
  */
 html,
 body,
@@ -18,72 +18,23 @@ body {
   overflow-x: clip;
 }
 
-.feed-layout {
-  width: 100%;
-  max-width: 1700px;
+.feed-layout,
+.feed-layout > .left-column,
+.feed-layout > .stream,
+.feed-layout > .right-column {
   min-width: 0;
-  margin: 18px auto;
-  padding: 0 38px;
-  grid-template-columns: 237px minmax(0, 1fr) 311px;
-  gap: 28px;
-  align-items: start;
 }
 
 .feed-layout > .left-column,
 .feed-layout > .stream,
 .feed-layout > .right-column {
-  min-width: 0;
   width: auto;
 }
 
-.feed-layout > .left-column,
-.feed-layout > .right-column {
-  display: block;
-}
-
 .stream {
-  min-width: 0;
-  max-width: 100%;
+  max-width: none;
 }
 
-@media (max-width: 1320px) {
-  .feed-layout {
-    grid-template-columns: 237px minmax(0, 1fr) 280px;
-    gap: 22px;
-    padding-inline: 24px;
-  }
-}
-
-@media (max-width: 1100px) {
-  .feed-layout {
-    width: 100%;
-    max-width: 100%;
-    grid-template-columns: 143px minmax(0, 1fr);
-    gap: 18px;
-    padding: 0 18px;
-  }
-
-  .feed-layout > .right-column {
-    display: none;
-  }
-}
-
-@media (max-width: 720px) {
-  .feed-layout {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    padding: 0 12px;
-  }
-
-  .feed-layout > .left-column,
-  .feed-layout > .right-column {
-    display: none;
-  }
-}
-
-/* ChatWidget is rendered outside the feed grid. Keep its root non-invasive
- * while allowing its existing chat CSS to receive pointer events. */
 .tuenti-chat-root {
   position: fixed;
   inset: 0;
