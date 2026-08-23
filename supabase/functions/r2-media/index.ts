@@ -57,38 +57,38 @@ Deno.serve(async (req: Request) => {
     return json({ code: "R2_CONFIG_MISSING", error: "Faltan variables de configuración: R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME" }, 500);
   }
 
+  let body: { action?: string; folder?: string; fileName?: string; contentType?: string; size?: number; key?: string };
+  try { body = await req.json(); } catch { return json({ code: "INVALID_JSON", error: "Cuerpo JSON inválido." }, 400); }
+
+  // Safe diagnostics do not expose credentials or secrets and are useful from the Supabase dashboard test runner.
+  if (body.action === "diagnose") {
+    const endpointHost = (() => { try { return new URL(r2Endpoint).host; } catch { return "invalid-endpoint"; } })();
+    const result = {
+      code: "R2_DIAGNOSTIC",
+      credentialsConfigured: Boolean(r2AccessKeyId && r2SecretAccessKey),
+      endpointConfigured: Boolean(r2Endpoint),
+      endpointHost,
+      bucketConfigured: Boolean(r2BucketName),
+      bucketName: r2BucketName,
+      publicBaseConfigured: Boolean(publicBase),
+    };
+    try {
+      await s3.send(new HeadBucketCommand({ Bucket: r2BucketName }));
+      return json({ ...result, reachable: true, reachableCode: "R2_OK" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("R2 diagnostic failed", { endpointHost, bucketName: r2BucketName, error: message });
+      return json({ ...result, reachable: false, reachableCode: "R2_HEAD_BUCKET_FAILED", error: message }, 502);
+    }
+  }
+
   const authorization = req.headers.get("Authorization");
   if (!authorization) return json({ code: "AUTH_MISSING", error: "No autenticado." }, 401);
   const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authorization } } });
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return json({ code: "AUTH_INVALID", error: "Sesión no válida." }, 401);
 
-  let body: { action?: string; folder?: string; fileName?: string; contentType?: string; size?: number; key?: string };
-  try { body = await req.json(); } catch { return json({ code: "INVALID_JSON", error: "Cuerpo JSON inválido." }, 400); }
-
   try {
-    if (body.action === "diagnose") {
-      const endpointHost = (() => { try { return new URL(r2Endpoint).host; } catch { return "invalid-endpoint"; } })();
-      const result = {
-        code: "R2_DIAGNOSTIC",
-        authenticated: true,
-        credentialsConfigured: Boolean(r2AccessKeyId && r2SecretAccessKey),
-        endpointConfigured: Boolean(r2Endpoint),
-        endpointHost,
-        bucketConfigured: Boolean(r2BucketName),
-        bucketName: r2BucketName,
-        publicBaseConfigured: Boolean(publicBase),
-      };
-      try {
-        await s3.send(new HeadBucketCommand({ Bucket: r2BucketName }));
-        return json({ ...result, reachable: true, reachableCode: "R2_OK" });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error("R2 diagnostic failed", { endpointHost, bucketName: r2BucketName, error: message });
-        return json({ ...result, reachable: false, reachableCode: "R2_HEAD_BUCKET_FAILED", error: message }, 502);
-      }
-    }
-
     if (body.action === "upload") {
       const folder = String(body.folder || "photos");
       const contentType = String(body.contentType || "");
@@ -102,7 +102,6 @@ Deno.serve(async (req: Request) => {
       const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: r2BucketName, Key: key, ContentType: contentType }), { expiresIn: 3600 });
       return json({ key, uploadUrl, url: publicBase ? `${publicBase}/${key}` : null, expiresIn: 3600 });
     }
-
     if (body.action === "get") {
       const key = String(body.key || "");
       if (!isOwnedKey(key, user.id)) return json({ code: "OBJECT_NOT_AUTHORIZED", error: "Objeto no autorizado." }, 403);
