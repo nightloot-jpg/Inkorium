@@ -1,0 +1,17 @@
+/* Final override: the profile banner must stay rectangular after the real image is rendered. */
+html body:has(.profile-view-page) .profile-view-cover,
+html body:has(.profile-view-page) .profile-view-cover.profile-view-cover-final,
+html body:has(.profile-view-page) .profile-view-cover-image,
+html body:has(.profile-view-page) .profile-view-header,
+html body:has(.profile-view-page) .profile-view-tabs {
+  border-radius: 0 !important;
+}
+
+html body:has(.profile-view-page) .profile-view-cover {
+  overflow: hidden !important;
+}
+
+html body:has(.profile-view-page) .profile-view-cover-image {
+  border-radius: 0 !important;
+  clip-path: none !important;
+}
