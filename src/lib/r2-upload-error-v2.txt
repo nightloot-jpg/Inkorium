@@ -1,1 +1,0 @@
-The r2-media Edge Function now returns structured error codes for configuration, MIME, auth, and R2 signing failures. Client-side R2 helpers parse the function response so upload errors are no longer hidden behind the generic FunctionsHttpError message.
