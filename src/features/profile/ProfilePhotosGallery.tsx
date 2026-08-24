@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Album, CalendarDays, ChevronLeft, ChevronRight, Heart, ImagePlus, MessageCircle, Plus, Sparkles, Upload, X } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import "../../profile-photos-v2.css";
 
 type Photo = { id: string; url: string; caption: string | null; created_at: string; album_id: string | null; visibility: string };
 type AlbumRow = { id: string; name: string; description: string | null; cover_photo_url: string | null; created_at: string };
@@ -109,10 +110,10 @@ export function ProfilePhotosGallery({ profileId, username, own }: { profileId: 
       };
     });
 
-    const monthMoments: Moment[] = Array.from(monthGroups.entries()).map(([key, group]) => {
+    const monthMoments: Moment[] = Array.from(monthGroups.entries()).map(([, group]) => {
       const ordered = [...group].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       return {
-        id: `month-${key}`,
+        id: `month-${ordered[0].created_at.slice(0, 7)}`,
         title: monthText(ordered[0].created_at),
         subtitle: `${ordered.length} ${ordered.length === 1 ? "foto" : "fotos"}`,
         date: ordered[0].created_at,
@@ -249,16 +250,16 @@ export function ProfilePhotosGallery({ profileId, username, own }: { profileId: 
 
     {loading ? <div className="profile-photos-v2-empty">Cargando recuerdos…</div> : !photos.length ? <div className="profile-photos-v2-empty"><ImagePlus size={34}/><strong>Aún no hay fotos</strong><span>{own ? "Añade una foto y empieza a construir tu historia." : "Este perfil todavía no ha publicado fotos."}</span>{own && <label className="profile-photos-v2-empty-action">Añadir la primera<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={event => { const file = event.target.files?.[0]; event.currentTarget.value = ""; if (file) void uploadPhoto(file); }}/></label>}</div> : <>
       {view === "all" && <div className="profile-photos-v2-content">
-        {activePhoto !== undefined && <div className="profile-photos-v2-feature">
+        <div className="profile-photos-v2-feature">
           <button className="profile-photos-v2-feature-image" onClick={() => void openPhoto(visiblePhotos, 0)}>
             <img src={visiblePhotos[0].url} alt={visiblePhotos[0].caption || "Foto destacada"}/>
             <span className="profile-photos-v2-feature-shade" />
             <span className="profile-photos-v2-feature-badge"><Sparkles size={14}/> Momento destacado</span>
             <span className="profile-photos-v2-feature-copy"><strong>{visiblePhotos[0].caption || `Recuerdo de ${monthText(visiblePhotos[0].created_at)}`}</strong><small>{dateText(visiblePhotos[0].created_at)} · abre para ver el momento</small></span>
           </button>
-        </div>}
+        </div>
 
-        <div className="profile-photos-v2-section-head"><div><h3>Últimas fotos</h3><span>Las imágenes que más cerca están de hoy.</span></div><select value={sort} onChange={event => setSort(event.target.value as "newest" | "oldest")} aria-label="Ordenar fotos"><option value="newest">Más recientes</option><option value="oldest">Más antiguas</option></select></div>
+        <div className="profile-photos-v2-section-head"><div><h3>{albumId ? (albums.find(album => album.id === albumId)?.name || "Álbum") : "Últimas fotos"}</h3><span>{albumId ? "Las fotos de esta colección." : "Las imágenes que más cerca están de hoy."}</span></div><select value={sort} onChange={event => setSort(event.target.value as "newest" | "oldest")} aria-label="Ordenar fotos"><option value="newest">Más recientes</option><option value="oldest">Más antiguas</option></select></div>
         {albumId && <div className="profile-photos-v2-filter-pill"><Album size={14}/> {albums.find(album => album.id === albumId)?.name || "Álbum"}<button onClick={() => setAlbumId(null)} aria-label="Quitar filtro">×</button></div>}
         <div className="profile-photos-v2-grid">{visiblePhotos.slice(0, 12).map((photo, index) => <button key={photo.id} className="profile-photos-v2-tile" onClick={() => void openPhoto(visiblePhotos, index)}><img src={photo.url} alt={photo.caption || "Foto"}/><span>{dateText(photo.created_at)}</span></button>)}</div>
 
