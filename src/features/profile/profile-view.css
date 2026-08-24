@@ -905,3 +905,20 @@ html body:has(.profile-view-page) .profile-view-empty {
 .profile-view-signature-card{min-height:420px}
 @media(max-width:1050px){.profile-view-home-grid{grid-template-columns:minmax(220px,.8fr) minmax(0,1.2fr)}.profile-view-right-column{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.profile-view-right-column .profile-view-card{height:100%}}
 @media(max-width:700px){.profile-view-home-grid{grid-template-columns:1fr}.profile-view-right-column{grid-column:auto;display:flex}.profile-view-signature-card{min-height:0}}
+
+/* Guestbook avatars: never let the source image inherit page/media sizing. */
+html body:has(.profile-view-page) .profile-view-signature-author img{
+  width:42px!important;
+  height:42px!important;
+  min-width:42px!important;
+  min-height:42px!important;
+  max-width:42px!important;
+  max-height:42px!important;
+  flex:0 0 42px!important;
+  display:block!important;
+  object-fit:cover!important;
+  border-radius:50%!important;
+  border:0!important;
+  margin:0!important;
+  padding:0!important;
+}
