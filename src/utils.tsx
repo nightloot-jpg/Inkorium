@@ -1,3 +1,8 @@
+import React,{useEffect,useState} from "react";
+import {supabase} from "./lib/supabase";
+
+const userDisplayNameCache=new Map<string,string>();
+
 export function getDisplayName(profile: { full_name?: string | null; username?: string | null } | null, email?: string): string {
   if (profile?.full_name) return profile.full_name;
   if (profile?.username) return profile.username;
@@ -37,6 +42,22 @@ export function parseISO8601Duration(duration: string): string {
 }
 
 export function UserLink({ userId, name, avatarUrl, navigate, onClick }: { userId: string; name: string; avatarUrl?: string | null; navigate: (page: string, params?: Record<string, any>) => void; onClick?: () => void }) {
+  const [displayName,setDisplayName]=useState(()=>userDisplayNameCache.get(userId)||name||"Usuario");
+
+  useEffect(()=>{
+    let active=true;
+    const cached=userDisplayNameCache.get(userId);
+    if(cached){setDisplayName(cached);return()=>{active=false}};
+    setDisplayName(name||"Usuario");
+    void supabase.from("profiles").select("full_name").eq("id",userId).maybeSingle().then(({data})=>{
+      if(!active)return;
+      const resolved=data?.full_name?.trim()||"Usuario";
+      userDisplayNameCache.set(userId,resolved);
+      setDisplayName(resolved);
+    });
+    return()=>{active=false};
+  },[userId,name]);
+
   return (
     <div
       className="user-link"
@@ -50,9 +71,9 @@ export function UserLink({ userId, name, avatarUrl, navigate, onClick }: { userI
       onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
     >
       <div className="avatar tiny" style={{ flexShrink: 0, width: "24px", height: "24px" }}>
-        {avatarUrl ? <img src={avatarUrl} alt={name} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} /> : name[0]?.toUpperCase()}
+        {avatarUrl ? <img src={avatarUrl} alt={displayName} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} /> : displayName[0]?.toUpperCase()}
       </div>
-      <strong style={{ fontSize: "0.95em" }}>{name}</strong>
+      <strong style={{ fontSize: "0.95em" }}>{displayName}</strong>
     </div>
   );
 }
