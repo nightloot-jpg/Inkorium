@@ -1,0 +1,19 @@
+/* Narrow corrective layer for the current Profile visual baseline. */
+html body:has(.profile-view-page){background:#f3f6fa!important;color:#14253b!important}
+html body:has(.profile-view-page) .profile-view-page{max-width:1180px!important;margin:0 auto!important;padding:18px 16px 40px!important;background:#f3f6fa!important;color:#14253b!important}
+html body:has(.profile-view-page) .profile-view-cover{background:#dfe8f2 center/cover no-repeat!important;border-color:#dfe6ee!important;box-shadow:none!important}
+html body:has(.profile-view-page) .profile-view-header{background:#fff!important;border-color:#dfe6ee!important;color:#14253b!important;box-shadow:none!important}
+html body:has(.profile-view-page) .profile-view-name-row h1{color:#132a45!important}
+html body:has(.profile-view-page) .profile-view-handle{color:#6a7d92!important}
+html body:has(.profile-view-page) .profile-view-status-select,html body:has(.profile-view-page) .profile-view-status-label{color:#536b84!important}
+html body:has(.profile-view-page) .profile-view-bio{color:#3e5167!important}
+html body:has(.profile-view-page) .profile-view-tabs{background:#fff!important;border-color:#dfe6ee!important}
+html body:has(.profile-view-page) .profile-view-tabs button{color:#566b82!important}
+html body:has(.profile-view-page) .profile-view-tabs button.active{color:#5b2db5!important;border-bottom-color:#6a35c2!important}
+html body:has(.profile-view-page) .profile-view-card{background:#fff!important;border-color:#dfe6ee!important;color:#14253b!important;box-shadow:0 1px 3px rgba(27,55,90,.035)!important}
+html body:has(.profile-view-page) .profile-view-card h2,html body:has(.profile-view-page) .profile-view-section-head h2{color:#17385c!important}
+html body:has(.profile-view-page) .profile-view-empty,html body:has(.profile-view-page) .profile-view-event-empty{color:#8191a3!important}
+html body:has(.profile-view-page) .profile-view-listening,html body:has(.profile-view-page) .profile-view-events-empty{background:#f3f7fb!important;color:#728398!important}
+html body:has(.profile-view-page) .profile-view-side{color:#14253b!important}
+@media (max-width:900px){html body:has(.profile-view-page) .profile-view-side{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}}
+@media (max-width:640px){html body:has(.profile-view-page) .profile-view-side{display:block!important}}
