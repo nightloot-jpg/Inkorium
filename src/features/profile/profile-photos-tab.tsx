@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { supabase } from "../../lib/supabase";
 import { ProfilePhotosGallery } from "./ProfilePhotosGallery";
+import "./profile-fotos-header-fix.css";
 
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
@@ -14,7 +15,17 @@ function context() {
   const page = document.querySelector<HTMLElement>(".profile-view-page");
   const grid = page?.querySelector<HTMLElement>(".profile-view-grid");
   const username = page?.querySelector(".profile-view-name-row h1")?.textContent?.trim() || "usuario";
-  return page && grid ? { page, grid, username } : null;
+  const tab = Array.from(page?.querySelectorAll<HTMLButtonElement>(".profile-view-tabs button") || [])
+    .find(button => button.textContent?.trim().toLowerCase() === "fotos");
+  return page && grid ? { page, grid, username, tab } : null;
+}
+
+function photosTabIsActive(ctx = context()) {
+  return !!ctx?.tab && (
+    ctx.tab.classList.contains("active") ||
+    ctx.tab.getAttribute("aria-current") === "page" ||
+    ctx.tab.getAttribute("aria-selected") === "true"
+  );
 }
 
 async function resolveProfileId(username: string, fallback: string) {
@@ -24,15 +35,13 @@ async function resolveProfileId(username: string, fallback: string) {
 
 async function mount() {
   const ctx = context();
-  if (!ctx || active) return;
+  if (!ctx || active || !photosTabIsActive(ctx)) return;
   active = true;
 
   contextGrid = ctx.grid;
   originalGridDisplay = ctx.grid.style.display;
   originalChildDisplays = new Map();
 
-  // Fotos ocupa exactamente el mismo contenedor que Inicio.
-  // Ocultamos solo los widgets de Inicio, no el grid completo.
   Array.from(ctx.grid.children).forEach(child => {
     const element = child as HTMLElement;
     originalChildDisplays.set(element, element.style.display);
@@ -46,7 +55,6 @@ async function mount() {
   host.style.display = "block";
   host.style.width = "100%";
   host.style.minWidth = "0";
-
   ctx.grid.prepend(host);
 
   const { data } = await supabase.auth.getSession();
@@ -76,7 +84,6 @@ function unmount() {
 
   root?.unmount();
   root = null;
-
   host?.remove();
   host = null;
 
@@ -94,42 +101,31 @@ function unmount() {
   originalGridDisplay = "";
 }
 
-function bind() {
-  document.querySelectorAll<HTMLButtonElement>(".profile-view-tabs button").forEach(button => {
-    if (button.dataset.profilePhotosBound === "1") return;
-    button.dataset.profilePhotosBound = "1";
-
-    button.addEventListener(
-      "click",
-      () => {
-        window.setTimeout(() => {
-          if (button.textContent?.trim() === "Fotos") void mount();
-          else unmount();
-        }, 0);
-      },
-      true,
-    );
-  });
+function sync() {
+  const ctx = context();
+  if (!ctx) return;
+  const shouldShowPhotos = photosTabIsActive(ctx);
+  if (shouldShowPhotos) {
+    void mount();
+  } else if (active) {
+    unmount();
+  }
 }
 
 function boot() {
-  bind();
+  document.addEventListener("click", event => {
+    const button = (event.target as Element | null)?.closest<HTMLButtonElement>(".profile-view-tabs button");
+    if (!button) return;
+    window.setTimeout(sync, 0);
+  }, true);
 
   const observer = new MutationObserver(() => {
-    bind();
-
-    if (active && !host?.isConnected) {
-      const grid = context()?.grid;
-      active = false;
-      root = null;
-      host = null;
-      contextGrid = grid || contextGrid;
-      window.setTimeout(() => void mount(), 0);
-    }
+    sync();
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
-  window.addEventListener("pageshow", bind);
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "aria-current", "aria-selected"] });
+  window.addEventListener("pageshow", sync);
+  window.setTimeout(sync, 0);
 }
 
 if (document.readyState === "loading") {
