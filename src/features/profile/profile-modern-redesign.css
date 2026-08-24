@@ -37,3 +37,24 @@ html body:has(.profile-view-page) .profile-view-friends-placeholder span{height:
 html body:has(.profile-view-page) .profile-view-event-line{margin-top:8px!important;color:#e7d6bf!important;font-size:13px!important}
 @media(max-width:760px){html body:has(.profile-view-page) .profile-view-page{padding:10px!important}html body:has(.profile-view-page) .profile-view-grid{grid-template-columns:1fr!important}html body:has(.profile-view-page) .profile-view-header{padding-left:114px!important}html body:has(.profile-view-page) .profile-view-avatar-wrap{left:12px!important;width:88px!important;height:88px!important;top:-48px!important}html body:has(.profile-view-page) .profile-view-avatar{width:88px!important;height:88px!important}}
 @media(max-width:560px){html body:has(.profile-view-page) .profile-view-cover{height:120px!important}html body:has(.profile-view-page) .profile-view-header{padding:54px 12px 12px!important;min-height:130px!important}html body:has(.profile-view-page) .profile-view-avatar-wrap{left:12px!important;top:-42px!important;width:80px!important;height:80px!important}html body:has(.profile-view-page) .profile-view-avatar{width:80px!important;height:80px!important}html body:has(.profile-view-page) .profile-view-identity{padding:0!important}}
+
+
+/* Inicio: guestbook replaces the publications widget. */
+html body:has(.profile-view-page) .profile-view-signature-card{padding:14px 16px!important}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head h2{display:flex!important;align-items:center!important;gap:7px!important}
+html body:has(.profile-view-page) .profile-view-signature-form{padding:10px 0 12px!important;border-bottom:1px solid #303030!important}
+html body:has(.profile-view-page) .profile-view-signature-form textarea{display:block!important;width:100%!important;min-height:72px!important;resize:vertical!important;box-sizing:border-box!important;background:#121212!important;border:1px solid #343434!important;border-radius:8px!important;color:#eee!important;padding:10px 12px!important;font:inherit!important;font-size:13px!important;outline:none!important}
+html body:has(.profile-view-page) .profile-view-signature-form textarea:focus{border-color:#4d8cff!important}
+html body:has(.profile-view-page) .profile-view-signature-actions{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;margin-top:8px!important}
+html body:has(.profile-view-page) .profile-view-signature-actions span{font-size:11px!important;color:#7f756b!important}
+html body:has(.profile-view-page) .profile-view-signature-actions button{display:inline-flex!important;align-items:center!important;gap:6px!important;height:32px!important;padding:0 13px!important;border:1px solid #4a4a4a!important;border-radius:8px!important;background:#1b1b1b!important;color:#f0dfc8!important;font-size:12px!important;font-weight:700!important;cursor:pointer!important}
+html body:has(.profile-view-page) .profile-view-signature-actions button:disabled{opacity:.45!important;cursor:not-allowed!important}
+html body:has(.profile-view-page) .profile-view-signatures{margin-top:2px!important}
+html body:has(.profile-view-page) .profile-view-signature{padding:13px 0!important;border-bottom:1px solid #292929!important}
+html body:has(.profile-view-page) .profile-view-signature:last-child{border-bottom:0!important}
+html body:has(.profile-view-page) .profile-view-signature-author{display:flex!important;align-items:center!important;gap:9px!important}
+html body:has(.profile-view-page) .profile-view-signature-author img,html body:has(.profile-view-page) .profile-view-signature-avatar{width:34px!important;height:34px!important;border-radius:50%!important;object-fit:cover!important;flex:0 0 auto!important}
+html body:has(.profile-view-page) .profile-view-signature-avatar{display:grid!important;place-items:center!important;background:#26384d!important;color:#dbe8f5!important;font-weight:800!important;font-size:13px!important}
+html body:has(.profile-view-page) .profile-view-signature-author strong{display:block!important;color:#e9dccb!important;font-size:13px!important}
+html body:has(.profile-view-page) .profile-view-signature-author small{display:block!important;margin-top:2px!important;color:#81776c!important;font-size:10px!important}
+html body:has(.profile-view-page) .profile-view-signature p{margin:8px 0 0 43px!important;color:#d8ccbd!important;font-size:13px!important;line-height:1.45!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important}
