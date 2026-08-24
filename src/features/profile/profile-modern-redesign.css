@@ -88,3 +88,73 @@ html body:has(.profile-view-page) .profile-view-signature-avatar{display:grid!im
 html body:has(.profile-view-page) .profile-view-signature-author strong{display:block!important;color:#e9dccb!important;font-size:13px!important}
 html body:has(.profile-view-page) .profile-view-signature-author small{display:block!important;margin-top:2px!important;color:#81776c!important;font-size:10px!important}
 html body:has(.profile-view-page) .profile-view-signature p{margin:8px 0 0 43px!important;color:#d8ccbd!important;font-size:13px!important;line-height:1.45!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important}
+
+
+/* Libro de firmas: integrado con el fondo claro del perfil. */
+html body:has(.profile-view-page) .profile-view-signature-card{
+  background:#fff!important;
+  border:1px solid #dfe5ec!important;
+  border-radius:3px!important;
+  box-shadow:0 1px 2px rgba(31,55,79,.04)!important;
+  color:#243b53!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head{
+  padding-bottom:11px!important;
+  border-bottom:1px solid #e8edf2!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head h2{
+  color:#263f5b!important;
+  font-weight:700!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head span{
+  color:#7d8fa3!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea{
+  background:#f7f9fb!important;
+  border:1px solid #d7e0e9!important;
+  color:#314b67!important;
+  border-radius:5px!important;
+  box-shadow:inset 0 1px 2px rgba(32,55,78,.03)!important;
+  font-family:inherit!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea::placeholder{
+  color:#8293a5!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea:focus{
+  background:#fff!important;
+  border-color:#7fa9d3!important;
+  box-shadow:0 0 0 2px rgba(52,112,177,.10)!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions{
+  margin-top:8px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions span{
+  color:#91a0af!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions button{
+  background:#3478c5!important;
+  border:1px solid #2d6dad!important;
+  border-radius:4px!important;
+  box-shadow:0 1px 2px rgba(38,86,130,.12)!important;
+  transition:background .15s ease,transform .15s ease!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions button:hover:not(:disabled){
+  background:#2869b1!important;
+  transform:translateY(-1px)!important;
+}
+html body:has(.profile-view-page) .profile-view-empty{
+  color:#8292a2!important;
+  padding:30px 12px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature{
+  border-bottom:1px solid #edf1f5!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-author strong{
+  color:#29425e!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-author small{
+  color:#8a99a8!important;
+}
+html body:has(.profile-view-page) .profile-view-signature p{
+  color:#526b83!important;
+}
