@@ -1,0 +1,11 @@
+/* Profile browser-scroll follow-up: keep the global navigation visible while the document scrolls. */
+html body:has(.profile-view-page) .feed-app > header{
+  position:sticky!important;
+  top:0!important;
+  z-index:4000!important;
+}
+
+html body:has(.profile-view-page) .feed-app > header .topbar{
+  position:relative!important;
+  z-index:4001!important;
+}
