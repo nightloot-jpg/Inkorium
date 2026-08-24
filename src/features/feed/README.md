@@ -1,0 +1,1 @@
+Feed extracted from main.tsx. Legacy route state remains for the next cleanup step.
