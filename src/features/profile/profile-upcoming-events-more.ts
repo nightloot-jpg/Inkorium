@@ -75,20 +75,21 @@ function navigateToEvents() {
   window.dispatchEvent(new CustomEvent("inkorium-route-change", { detail: { page: "eventos" } }));
 }
 
-function findProfileSide(page: HTMLElement): HTMLElement | null {
+function findProfileSide(page: HTMLElement): { side: HTMLElement; listeningCard: HTMLElement | null } | null {
   const listening = page.querySelector<HTMLElement>(".profile-view-listening");
-  const listeningCard = listening?.closest<HTMLElement>(".profile-view-card");
-  if (listeningCard?.parentElement) return listeningCard.parentElement;
+  const listeningCard = listening?.closest<HTMLElement>(".profile-view-card") || null;
+  if (listeningCard?.parentElement) return { side: listeningCard.parentElement, listeningCard };
   const grid = page.querySelector<HTMLElement>(".profile-view-grid");
-  return grid?.lastElementChild as HTMLElement | null;
+  const side = grid?.lastElementChild as HTMLElement | null;
+  return side ? { side, listeningCard: null } : null;
 }
 
 function ensureEventsCard(page: HTMLElement): HTMLElement | null {
   const existing = page.querySelector<HTMLElement>(".profile-view-events-card");
   if (existing) return existing;
 
-  const side = findProfileSide(page);
-  if (!side) return null;
+  const target = findProfileSide(page);
+  if (!target) return null;
 
   const card = document.createElement("div");
   card.className = "profile-view-card profile-view-events-card";
@@ -99,7 +100,13 @@ function ensureEventsCard(page: HTMLElement): HTMLElement | null {
     </div>
     <div class="profile-view-events-empty">No hay próximos eventos.</div>
   `;
-  side.appendChild(card);
+
+  if (target.listeningCard?.parentElement === target.side) {
+    target.listeningCard.insertAdjacentElement("afterend", card);
+  } else {
+    target.side.appendChild(card);
+  }
+
   card.querySelector<HTMLButtonElement>(".profile-view-events-more")?.addEventListener("click", navigateToEvents);
   return card;
 }
