@@ -1,12 +1,18 @@
-/* One route surface for bridged pages. The legacy shell remains only as the global header. */
-html body.inkorium-route-bridge-active {
+/* The RouteContentBridge owns bridged internal pages. The legacy feed remains only as the global shell/header. */
+html body.inkorium-route-bridge-active,
+html body[data-inkorium-route-owner="bridge"] {
   overflow: hidden !important;
 }
 
+/* Legacy page content must never compete with the bridged route. */
+html body[data-inkorium-route-owner="bridge"] #root .feed-app > :not(header),
 html body.inkorium-route-bridge-active #root .feed-app > :not(header) {
   display: none !important;
+  pointer-events: none !important;
 }
 
+/* Keep the global shell/header available while the bridge owns the page body. */
+html body[data-inkorium-route-owner="bridge"] #root .feed-app > header,
 html body.inkorium-route-bridge-active #root .feed-app > header {
   display: block !important;
   position: fixed !important;
@@ -17,6 +23,7 @@ html body.inkorium-route-bridge-active #root .feed-app > header {
   z-index: 11000 !important;
 }
 
+html body[data-inkorium-route-owner="bridge"] #inkorium-route-content-bridge,
 html body.inkorium-route-bridge-active #inkorium-route-content-bridge {
   position: fixed !important;
   top: 42px !important;
@@ -34,34 +41,45 @@ html body.inkorium-route-bridge-active #inkorium-route-content-bridge {
   box-sizing: border-box !important;
 }
 
+html body[data-inkorium-route-owner="bridge"] #inkorium-route-content-bridge > *,
 html body.inkorium-route-bridge-active #inkorium-route-content-bridge > * {
   min-height: 100%;
 }
 
-/* Keep the global header visually in sync with the route rendered by the bridge. */
-html body.inkorium-route-bridge-active #root .feed-app > header .top-nav > * {
+/* One owner for the active global navigation state. */
+html body[data-inkorium-route-owner="bridge"] #inkorium-route-content-bridge {
+  isolation: isolate;
+}
+
+html body.inkorium-route-bridge-active #root .feed-app > header .top-nav > *,
+html body[data-inkorium-route-owner="bridge"] #root .feed-app > header .top-nav > * {
   background: transparent !important;
   box-shadow: none !important;
   border-bottom-color: transparent !important;
 }
 
 /* Inicio */
+html body[data-inkorium-route-owner="bridge"]:has(#inkorium-route-content-bridge[data-route-page="inicio"]) #root .feed-app > header .top-nav > :nth-child(1),
 html body.inkorium-route-bridge-active:has(#inkorium-route-content-bridge[data-route-page="inicio"]) #root .feed-app > header .top-nav > :nth-child(1),
 /* Perfil */
+html body[data-inkorium-route-owner="bridge"]:has(#inkorium-route-content-bridge[data-route-page="perfil"]) #root .feed-app > header .top-nav > :nth-child(2),
 html body.inkorium-route-bridge-active:has(#inkorium-route-content-bridge[data-route-page="perfil"]) #root .feed-app > header .top-nav > :nth-child(2),
 /* Personas */
+html body[data-inkorium-route-owner="bridge"]:has(#inkorium-route-content-bridge[data-route-page="personas"]) #root .feed-app > header .top-nav > :nth-child(4),
 html body.inkorium-route-bridge-active:has(#inkorium-route-content-bridge[data-route-page="personas"]) #root .feed-app > header .top-nav > :nth-child(4),
 /* Música */
+html body[data-inkorium-route-owner="bridge"]:has(#inkorium-route-content-bridge[data-route-page="musica"]) #root .feed-app > header .top-nav > :nth-child(5),
 html body.inkorium-route-bridge-active:has(#inkorium-route-content-bridge[data-route-page="musica"]) #root .feed-app > header .top-nav > :nth-child(5),
-/* Fotos */
-html body.inkorium-route-bridge-active:has(#inkorium-route-content-bridge[data-route-page="fotos"]) #root .feed-app > header .top-nav > :nth-child(6),
+/* Vídeos */
+html body[data-inkorium-route-owner="bridge"]:has(#inkorium-route-content-bridge[data-route-page="videos"]) #root .feed-app > header .top-nav > :nth-child(6),
 /* Eventos */
-html body.inkorium-route-bridge-active:has(#inkorium-route-content-bridge[data-route-page="eventos"]) #root .feed-app > header .top-nav > :nth-child(7) {
+html body[data-inkorium-route-owner="bridge"]:has(#inkorium-route-content-bridge[data-route-page="eventos"]) #root .feed-app > header .top-nav > :nth-child(7) {
   background: rgba(255, 255, 255, 0.10) !important;
   box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 @media (max-width: 900px) {
+  html body[data-inkorium-route-owner="bridge"] #inkorium-route-content-bridge,
   html body.inkorium-route-bridge-active #inkorium-route-content-bridge {
     top: 42px !important;
   }
