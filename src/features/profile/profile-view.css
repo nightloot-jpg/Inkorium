@@ -303,3 +303,432 @@ html body:has(.profile-view-page) .profile-view-empty{
     grid-row:auto!important;
   }
 }
+
+
+/* =========================================================
+   PROFILE / INICIO · VISUAL REFERENCE MATCH
+   Desktop: 3 columns
+   left = About + Stats | center = Guestbook | right = Listening + Events
+   ========================================================= */
+html body:has(.profile-view-page) .profile-view-page{
+  width:100%!important;
+  max-width:1540px!important;
+  margin:0 auto!important;
+  padding:0 31px 42px!important;
+  background:#101010!important;
+  color:#f1f1f1!important;
+}
+html body:has(.profile-view-page) .profile-view-cover{
+  height:225px!important;
+  min-height:225px!important;
+  margin:0!important;
+  border:1px solid #303030!important;
+  border-bottom:0!important;
+  border-radius:0!important;
+  background-color:#171717!important;
+  background-position:center!important;
+  background-size:cover!important;
+}
+html body:has(.profile-view-page) .profile-view-header{
+  height:133px!important;
+  min-height:133px!important;
+  padding:0 30px 14px 252px!important;
+  background:#111!important;
+  border:1px solid #303030!important;
+  border-top:0!important;
+  border-bottom:1px solid #303030!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+html body:has(.profile-view-page) .profile-view-avatar-wrap{
+  position:absolute!important;
+  left:39px!important;
+  top:-64px!important;
+  width:158px!important;
+  height:158px!important;
+  margin:0!important;
+}
+html body:has(.profile-view-page) .profile-view-avatar{
+  width:158px!important;
+  height:158px!important;
+  border:3px solid #191919!important;
+  border-radius:13px!important;
+  box-shadow:none!important;
+}
+html body:has(.profile-view-page) .profile-view-identity{
+  padding-top:22px!important;
+}
+html body:has(.profile-view-page) .profile-view-name-row{
+  gap:7px!important;
+}
+html body:has(.profile-view-page) .profile-view-name-row h1{
+  font-size:25px!important;
+  line-height:1.1!important;
+  color:#f4f4f4!important;
+}
+html body:has(.profile-view-page) .profile-view-verified{
+  width:19px!important;
+  height:19px!important;
+  background:#1685e5!important;
+}
+html body:has(.profile-view-page) .profile-view-handle{
+  display:none!important;
+}
+html body:has(.profile-view-page) .profile-view-status-row{
+  margin-top:9px!important;
+}
+html body:has(.profile-view-page) .profile-view-status-select,
+html body:has(.profile-view-page) .profile-view-status-label{
+  color:#d4d4d4!important;
+  font-size:13px!important;
+}
+html body:has(.profile-view-page) .profile-view-status-dot.away{
+  color:#e5aa00!important;
+}
+html body:has(.profile-view-page) .profile-view-bio{
+  margin:10px 0 0!important;
+  color:#c8c8c8!important;
+  font-size:14px!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs{
+  height:51px!important;
+  min-height:51px!important;
+  margin:0!important;
+  padding:0 17px!important;
+  gap:5px!important;
+  background:#111!important;
+  border:1px solid #303030!important;
+  border-top:0!important;
+  border-radius:0 0 9px 9px!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs button{
+  height:51px!important;
+  padding:0 20px!important;
+  border-bottom:2px solid transparent!important;
+  color:#ededed!important;
+  font-size:14px!important;
+  font-weight:500!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs button.active{
+  color:#1593ff!important;
+  border-bottom-color:#1593ff!important;
+}
+
+/* Three-column body */
+html body:has(.profile-view-page) .profile-view-grid{
+  display:grid!important;
+  grid-template-columns:minmax(260px,340px) minmax(520px,1fr) minmax(280px,400px)!important;
+  gap:16px!important;
+  align-items:start!important;
+  margin-top:18px!important;
+}
+html body:has(.profile-view-page) .profile-view-main,
+html body:has(.profile-view-page) .profile-view-side{
+  display:contents!important;
+}
+html body:has(.profile-view-page) .profile-view-card{
+  margin:0 0 16px!important;
+  padding:18px 20px!important;
+  background:#151515!important;
+  border:1px solid #303030!important;
+  border-radius:10px!important;
+  box-shadow:none!important;
+  color:#eee!important;
+}
+html body:has(.profile-view-page) .profile-view-about-card{
+  grid-column:1!important;
+  grid-row:1!important;
+}
+html body:has(.profile-view-page) .profile-view-stats-card{
+  grid-column:1!important;
+  grid-row:2!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card{
+  grid-column:2!important;
+  grid-row:1 / span 2!important;
+  padding:18px 20px!important;
+}
+html body:has(.profile-view-page) .profile-view-intro-card{
+  grid-column:3!important;
+  grid-row:1!important;
+}
+html body:has(.profile-view-page) .profile-view-events-card{
+  grid-column:3!important;
+  grid-row:2!important;
+}
+
+/* Card typography */
+html body:has(.profile-view-page) .profile-view-section-head{
+  margin:0 0 15px!important;
+  padding:0!important;
+  border:0!important;
+}
+html body:has(.profile-view-page) .profile-view-section-head h2,
+html body:has(.profile-view-page) .profile-view-card-title{
+  display:flex!important;
+  align-items:center!important;
+  gap:9px!important;
+  margin:0!important;
+  color:#f2f2f2!important;
+  font-size:17px!important;
+  font-weight:800!important;
+}
+html body:has(.profile-view-page) .profile-view-section-head h2 svg,
+html body:has(.profile-view-page) .profile-view-card-title svg{
+  color:#eee!important;
+}
+html body:has(.profile-view-page) .profile-view-section-head span{
+  color:#858585!important;
+  font-size:12px!important;
+}
+
+/* About */
+html body:has(.profile-view-page) .profile-view-about-grid{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:12px!important;
+}
+html body:has(.profile-view-page) .profile-view-about-grid div{
+  display:flex!important;
+  align-items:flex-start!important;
+  gap:7px!important;
+  color:#ededed!important;
+  font-size:14px!important;
+  line-height:1.35!important;
+}
+html body:has(.profile-view-page) .profile-view-about-grid svg{
+  flex:0 0 auto!important;
+  color:#d0d0d0!important;
+}
+html body:has(.profile-view-page) .profile-view-about-card .profile-view-section-head button{
+  width:24px!important;
+  height:24px!important;
+  display:grid!important;
+  place-items:center!important;
+  border:0!important;
+  background:#f4f4f4!important;
+  color:#222!important;
+  border-radius:0!important;
+}
+
+/* Stats */
+html body:has(.profile-view-page) .profile-view-stats-list{
+  display:flex!important;
+  flex-direction:column!important;
+}
+html body:has(.profile-view-page) .profile-view-stats-list div{
+  min-height:40px!important;
+  display:grid!important;
+  grid-template-columns:21px 1fr auto!important;
+  align-items:center!important;
+  gap:9px!important;
+  border:0!important;
+  color:#e8e8e8!important;
+  font-size:14px!important;
+}
+html body:has(.profile-view-page) .profile-view-stats-list svg{
+  color:#cfcfcf!important;
+}
+html body:has(.profile-view-page) .profile-view-stats-list strong{
+  color:#e4e4e4!important;
+  font-weight:500!important;
+}
+html body:has(.profile-view-page) .profile-view-more-button{
+  width:100%!important;
+  height:39px!important;
+  margin-top:12px!important;
+  border:1px solid #303030!important;
+  border-radius:7px!important;
+  background:#151515!important;
+  color:#eee!important;
+}
+
+/* Listening */
+html body:has(.profile-view-page) .profile-view-intro-card{
+  min-height:177px!important;
+}
+html body:has(.profile-view-page) .profile-view-intro-card .profile-view-listening{
+  margin-top:13px!important;
+  padding:0!important;
+  min-height:82px!important;
+  border:1px solid #292929!important;
+  border-radius:9px!important;
+  background:#111!important;
+  color:#cfcfcf!important;
+  overflow:hidden!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-active{
+  min-height:80px!important;
+  padding:10px!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-copy strong{
+  color:#f1f1f1!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-copy small{
+  color:#d1d1d1!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-progress{
+  background:#292929!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-progress span{
+  background:#168cff!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-control{
+  background:#171717!important;
+  border:1px solid #8b8b8b!important;
+  color:#fff!important;
+}
+
+/* Events */
+html body:has(.profile-view-page) .profile-view-events-card{
+  min-height:311px!important;
+}
+html body:has(.profile-view-page) .profile-view-events-card .profile-view-section-head button{
+  color:#1693ff!important;
+  border:0!important;
+  background:none!important;
+  font-size:13px!important;
+  cursor:pointer!important;
+}
+html body:has(.profile-view-page) .profile-view-event-empty{
+  min-height:180px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  color:#888!important;
+}
+html body:has(.profile-view-page) .profile-view-event-line{
+  color:#e5e5e5!important;
+}
+
+/* Guestbook */
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head{
+  margin-bottom:12px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head{
+  padding-bottom:12px!important;
+  border-bottom:1px solid #303030!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form{
+  padding:0 0 12px!important;
+  border-bottom:1px solid #303030!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea,
+html body:has(.profile-view-page) .profile-view-signature-input{
+  width:100%!important;
+  min-height:62px!important;
+  height:62px!important;
+  resize:none!important;
+  padding:11px!important;
+  background:#151515!important;
+  border:1px solid #343434!important;
+  border-radius:6px!important;
+  color:#eee!important;
+  font-size:13px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea::placeholder,
+html body:has(.profile-view-page) .profile-view-signature-input::placeholder{
+  color:#7f7f7f!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions{
+  margin-top:10px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions span{
+  color:#e0e0e0!important;
+  font-size:13px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions button{
+  padding:9px 15px!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:#6b35c5!important;
+  color:#fff!important;
+  font-size:13px!important;
+  font-weight:700!important;
+}
+html body:has(.profile-view-page) .profile-view-signatures{
+  margin-top:0!important;
+  border-top:0!important;
+}
+html body:has(.profile-view-page) .profile-view-signature{
+  min-height:84px!important;
+  padding:12px 4px!important;
+  border-bottom:1px solid #303030!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-avatar{
+  width:42px!important;
+  height:42px!important;
+  flex-basis:42px!important;
+  border-radius:50%!important;
+  background:#252525!important;
+  color:#ddd!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-meta{
+  color:#aaa!important;
+  font-size:11px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature p{
+  color:#eee!important;
+  font-size:13px!important;
+}
+html body:has(.profile-view-page) .profile-view-empty{
+  padding:28px 10px!important;
+  color:#888!important;
+}
+
+/* Exact spacing / proportions of reference */
+html body:has(.profile-view-page) .profile-view-grid > .profile-view-card:nth-child(n){
+  align-self:start!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card{
+  min-height:484px!important;
+}
+html body:has(.profile-view-page) .profile-view-about-card,
+html body:has(.profile-view-page) .profile-view-stats-card,
+html body:has(.profile-view-page) .profile-view-intro-card,
+html body:has(.profile-view-page) .profile-view-events-card{
+  width:100%!important;
+}
+
+@media(max-width:1100px){
+  html body:has(.profile-view-page) .profile-view-page{padding:0 18px 30px!important}
+  html body:has(.profile-view-page) .profile-view-grid{
+    grid-template-columns:minmax(230px,.8fr) minmax(430px,1.4fr)!important;
+  }
+  html body:has(.profile-view-page) .profile-view-signature-card{grid-column:2!important;grid-row:1 / span 3!important}
+  html body:has(.profile-view-page) .profile-view-about-card{grid-column:1!important;grid-row:1!important}
+  html body:has(.profile-view-page) .profile-view-stats-card{grid-column:1!important;grid-row:2!important}
+  html body:has(.profile-view-page) .profile-view-intro-card{grid-column:1!important;grid-row:3!important}
+  html body:has(.profile-view-page) .profile-view-events-card{grid-column:1!important;grid-row:4!important}
+}
+@media(max-width:760px){
+  html body:has(.profile-view-page) .profile-view-page{padding:0 10px 25px!important}
+  html body:has(.profile-view-page) .profile-view-cover{height:150px!important;min-height:150px!important}
+  html body:has(.profile-view-page) .profile-view-header{
+    height:140px!important;
+    min-height:140px!important;
+    padding:56px 16px 12px 126px!important;
+  }
+  html body:has(.profile-view-page) .profile-view-avatar-wrap{
+    left:14px!important;
+    top:-47px!important;
+    width:94px!important;
+    height:94px!important;
+  }
+  html body:has(.profile-view-page) .profile-view-avatar{
+    width:94px!important;
+    height:94px!important;
+  }
+  html body:has(.profile-view-page) .profile-view-grid{
+    grid-template-columns:1fr!important;
+  }
+  html body:has(.profile-view-page) .profile-view-about-card,
+  html body:has(.profile-view-page) .profile-view-stats-card,
+  html body:has(.profile-view-page) .profile-view-signature-card,
+  html body:has(.profile-view-page) .profile-view-intro-card,
+  html body:has(.profile-view-page) .profile-view-events-card{
+    grid-column:1!important;
+    grid-row:auto!important;
+  }
+  html body:has(.profile-view-page) .profile-view-signature-card{min-height:0!important}
+}
