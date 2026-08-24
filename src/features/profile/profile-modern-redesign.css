@@ -158,3 +158,250 @@ html body:has(.profile-view-page) .profile-view-signature-author small{
 html body:has(.profile-view-page) .profile-view-signature p{
   color:#526b83!important;
 }
+
+
+/* Inicio final: réplica visual del perfil oscuro de referencia. */
+html body:has(.profile-view-page){
+  background:#101112!important;
+}
+html body:has(.profile-view-page) .profile-view-page{
+  max-width:1500px!important;
+  padding:0 30px 40px!important;
+  background:#101112!important;
+  color:#f4f4f4!important;
+}
+html body:has(.profile-view-page) .profile-view-cover{
+  height:225px!important;
+  border:1px solid #292b2e!important;
+  border-bottom:0!important;
+  border-radius:0!important;
+  background-color:#18191b!important;
+  background-position:center!important;
+}
+html body:has(.profile-view-page) .profile-view-header{
+  min-height:132px!important;
+  padding:18px 28px 18px 250px!important;
+  background:linear-gradient(135deg,#17191b,#111213)!important;
+  border:1px solid #303236!important;
+  border-radius:0!important;
+}
+html body:has(.profile-view-page) .profile-view-avatar-wrap{
+  left:38px!important;
+  top:-66px!important;
+  width:158px!important;
+  height:158px!important;
+}
+html body:has(.profile-view-page) .profile-view-avatar{
+  width:158px!important;
+  height:158px!important;
+  border:2px solid #d9dde2!important;
+  border-radius:14px!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.35)!important;
+}
+html body:has(.profile-view-page) .profile-view-name-row h1{
+  color:#fff!important;
+  font-size:24px!important;
+  letter-spacing:-.3px!important;
+}
+html body:has(.profile-view-page) .profile-view-status-select,
+html body:has(.profile-view-page) .profile-view-status-label{
+  color:#c7cbd0!important;
+}
+html body:has(.profile-view-page) .profile-view-bio{
+  color:#b8bdc3!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs{
+  height:50px!important;
+  min-height:50px!important;
+  padding:0 32px!important;
+  background:#111315!important;
+  border:1px solid #303236!important;
+  border-top:0!important;
+  border-radius:0 0 8px 8px!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs button{
+  height:50px!important;
+  color:#d7d9dc!important;
+  font-size:14px!important;
+  padding:0 20px!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs button.active{
+  color:#3f9cff!important;
+  border-bottom-color:#3f9cff!important;
+}
+html body:has(.profile-view-page) .profile-view-grid{
+  grid-template-columns:minmax(280px,.72fr) minmax(520px,1.5fr) minmax(300px,.78fr)!important;
+  gap:16px!important;
+  margin-top:18px!important;
+}
+html body:has(.profile-view-page) .profile-view-main,
+html body:has(.profile-view-page) .profile-view-side{
+  display:contents!important;
+}
+html body:has(.profile-view-page) .profile-view-card{
+  background:linear-gradient(145deg,#17191b,#141516)!important;
+  border:1px solid #2d3034!important;
+  border-radius:9px!important;
+  box-shadow:0 4px 18px rgba(0,0,0,.12)!important;
+  color:#eee!important;
+  margin:0!important;
+  padding:18px 22px!important;
+}
+html body:has(.profile-view-page) .profile-view-about-card{grid-column:1!important;grid-row:1!important}
+html body:has(.profile-view-page) .profile-view-stats-card{grid-column:1!important;grid-row:2!important}
+html body:has(.profile-view-page) .profile-view-signature-card{grid-column:2!important;grid-row:1 / span 2!important}
+html body:has(.profile-view-page) .profile-view-intro-card{grid-column:3!important;grid-row:1!important;display:block!important}
+html body:has(.profile-view-page) .profile-view-events-card{grid-column:3!important;grid-row:2!important}
+html body:has(.profile-view-page) .profile-view-section-head{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  margin:0 0 13px!important;
+}
+html body:has(.profile-view-page) .profile-view-section-head h2,
+html body:has(.profile-view-page) .profile-view-card-title{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  margin:0!important;
+  color:#f4f4f4!important;
+  font-size:16px!important;
+}
+html body:has(.profile-view-page) .profile-view-about-grid{
+  gap:10px!important;
+}
+html body:has(.profile-view-page) .profile-view-about-grid div{
+  color:#d7d9dc!important;
+}
+html body:has(.profile-view-page) .profile-view-about-grid svg{
+  color:#bfc5cc!important;
+}
+html body:has(.profile-view-page) .profile-view-stats-list{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:0!important;
+}
+html body:has(.profile-view-page) .profile-view-stats-list div{
+  display:grid!important;
+  grid-template-columns:20px 1fr auto!important;
+  align-items:center!important;
+  gap:9px!important;
+  min-height:40px!important;
+  border-bottom:1px solid #292c30!important;
+  color:#d9dcdf!important;
+  font-size:13px!important;
+}
+html body:has(.profile-view-page) .profile-view-stats-list div:last-child{border-bottom:0!important}
+html body:has(.profile-view-page) .profile-view-stats-list svg{color:#aeb5bd!important}
+html body:has(.profile-view-page) .profile-view-stats-list strong{font-weight:500!important;color:#f0f1f2!important}
+html body:has(.profile-view-page) .profile-view-more-button{
+  width:100%!important;
+  height:36px!important;
+  margin-top:14px!important;
+  background:transparent!important;
+  border:1px solid #30343a!important;
+  border-radius:6px!important;
+  color:#ddd!important;
+  cursor:pointer!important;
+}
+html body:has(.profile-view-page) .profile-view-listening{
+  min-height:0!important;
+  padding:0!important;
+  background:transparent!important;
+  color:#aaa!important;
+  text-align:left!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-active{
+  display:flex!important;
+  align-items:center!important;
+  gap:12px!important;
+  padding:0!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-main{
+  display:flex!important;
+  align-items:center!important;
+  gap:12px!important;
+  flex:1!important;
+  min-width:0!important;
+  background:transparent!important;
+  border:0!important;
+  color:#fff!important;
+  text-align:left!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-cover{
+  width:64px!important;
+  height:64px!important;
+  border-radius:6px!important;
+  object-fit:cover!important;
+  flex:none!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-copy strong{color:#eee!important;font-size:14px!important}
+html body:has(.profile-view-page) .profile-view-listening-copy small{color:#aaa!important}
+html body:has(.profile-view-page) .profile-view-listening-control{
+  width:38px!important;height:38px!important;border-radius:50%!important;
+  background:transparent!important;border:1px solid #73777c!important;color:#eee!important;
+}
+html body:has(.profile-view-page) .profile-view-events-card .profile-view-section-head button{
+  background:none!important;border:0!important;color:#3f9cff!important;font-size:12px!important;cursor:pointer!important;
+}
+html body:has(.profile-view-page) .profile-view-event-empty{
+  min-height:90px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  color:#777d84!important;
+  font-size:13px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card{
+  background:linear-gradient(145deg,#17191b,#141516)!important;
+  border-color:#2d3034!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head{
+  border-bottom:1px solid #292c30!important;
+  padding-bottom:13px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head h2{color:#f4f4f4!important}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head span{color:#8c9299!important}
+html body:has(.profile-view-page) .profile-view-signature-form{
+  border-bottom:1px solid #292c30!important;
+  padding:0 0 12px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea{
+  min-height:54px!important;
+  height:54px!important;
+  background:#121416!important;
+  border:1px solid #30343a!important;
+  border-radius:6px!important;
+  color:#eee!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions button{
+  background:#6131b6!important;
+  border:0!important;
+  border-radius:6px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature{
+  padding:15px 2px!important;
+  border-bottom:1px solid #292c30!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-author strong{color:#eee!important}
+html body:has(.profile-view-page) .profile-view-signature-author small{color:#7f858c!important}
+html body:has(.profile-view-page) .profile-view-signature p{color:#d0d3d6!important}
+html body:has(.profile-view-page) .profile-view-empty{color:#727980!important}
+@media(max-width:1050px){
+  html body:has(.profile-view-page) .profile-view-grid{grid-template-columns:minmax(230px,.8fr) minmax(420px,1.5fr)!important}
+  html body:has(.profile-view-page) .profile-view-signature-card{grid-column:2!important;grid-row:1 / span 3!important}
+  html body:has(.profile-view-page) .profile-view-intro-card{grid-column:1!important;grid-row:3!important}
+  html body:has(.profile-view-page) .profile-view-events-card{grid-column:1!important;grid-row:4!important}
+}
+@media(max-width:760px){
+  html body:has(.profile-view-page) .profile-view-page{padding:0 10px 30px!important}
+  html body:has(.profile-view-page) .profile-view-cover{height:150px!important}
+  html body:has(.profile-view-page) .profile-view-header{padding:58px 18px 16px!important}
+  html body:has(.profile-view-page) .profile-view-avatar-wrap{left:18px!important;top:-55px!important}
+  html body:has(.profile-view-page) .profile-view-grid{grid-template-columns:1fr!important}
+  html body:has(.profile-view-page) .profile-view-about-card,
+  html body:has(.profile-view-page) .profile-view-stats-card,
+  html body:has(.profile-view-page) .profile-view-signature-card,
+  html body:has(.profile-view-page) .profile-view-intro-card,
+  html body:has(.profile-view-page) .profile-view-events-card{grid-column:1!important;grid-row:auto!important}
+}
