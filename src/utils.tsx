@@ -78,6 +78,68 @@ export function UserLink({ userId, name, avatarUrl, navigate, onClick }: { userI
   );
 }
 
+function applySidebarAvatar(profile: { full_name?: string | null; avatar_url?: string | null } | null) {
+  const avatar = document.querySelector<HTMLElement>(".feed-layout .profile-card .profile-avatar");
+  if (!avatar || !profile) return;
+  const avatarUrl = profile.avatar_url?.trim() || "";
+  const initial = (profile.full_name?.trim()?.charAt(0) || "U").toUpperCase();
+  if (avatar.dataset.inkoriumAvatar === avatarUrl && avatar.dataset.inkoriumAvatarInitial === initial) return;
+  avatar.dataset.inkoriumAvatar = avatarUrl;
+  avatar.dataset.inkoriumAvatarInitial = initial;
+  avatar.replaceChildren();
+  if (avatarUrl) {
+    const img = document.createElement("img");
+    img.src = avatarUrl;
+    img.alt = profile.full_name?.trim() || "Perfil";
+    img.className = "inkorium-feed-profile-avatar-image";
+    img.addEventListener("error", () => {
+      avatar.replaceChildren();
+      avatar.textContent = initial;
+      delete avatar.dataset.inkoriumAvatar;
+    }, { once: true });
+    avatar.appendChild(img);
+  } else {
+    avatar.textContent = initial;
+  }
+}
+
+let sidebarAvatarProfile: { full_name?: string | null; avatar_url?: string | null } | null = null;
+let sidebarAvatarObserverInstalled = false;
+
+function installSidebarAvatarSync() {
+  if (sidebarAvatarObserverInstalled || typeof document === "undefined") return;
+  sidebarAvatarObserverInstalled = true;
+
+  const apply = () => applySidebarAvatar(sidebarAvatarProfile);
+  const observer = new MutationObserver(apply);
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+  apply();
+
+  void supabase.auth.getSession().then(async ({ data }) => {
+    const userId = data.session?.user.id;
+    if (!userId) return;
+    const { data: profile } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", userId).maybeSingle();
+    sidebarAvatarProfile = profile ?? null;
+    apply();
+  });
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (!session || event === "SIGNED_OUT") {
+      sidebarAvatarProfile = null;
+      apply();
+      return;
+    }
+    if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") {
+      void supabase.from("profiles").select("full_name, avatar_url").eq("id", session.user.id).maybeSingle().then(({ data: profile }) => {
+        sidebarAvatarProfile = profile ?? null;
+        apply();
+      });
+    }
+  });
+}
+
+installSidebarAvatarSync();
+
 // main.tsx references UserLink without importing it. Expose the component on the
 // global object so the repaired legacy JSX can resolve it at runtime.
 (globalThis as any).UserLink = UserLink;
