@@ -129,3 +129,78 @@ html body:has(.profile-view-page) .profile-view-home-grid .profile-view-about-ca
     display:block;
   }
 }
+
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-about-row{
+  min-width:0;
+}
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-about-click-row{
+  width:100%;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#334b63;
+  font:inherit;
+  font-size:14px;
+  line-height:1.4;
+  text-align:left;
+  cursor:pointer;
+}
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-about-click-row > span{
+  min-width:0;
+  flex:1;
+}
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-inline-pencil{
+  flex:0 0 auto;
+  opacity:.55;
+}
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-about-row.is-editing{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-inline-input{
+  min-width:0;
+  flex:1;
+  height:34px;
+  padding:0 9px;
+  border:1px solid #b9c9da;
+  border-radius:7px;
+  background:#fff;
+  color:#243d58;
+  font:inherit;
+  font-size:14px;
+  outline:none;
+  box-sizing:border-box;
+}
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-inline-input:focus{
+  border-color:#6689ad;
+  box-shadow:0 0 0 2px rgba(102,137,173,.12);
+}
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-inline-action{
+  width:30px;
+  height:30px;
+  flex:0 0 30px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border-radius:6px;
+  cursor:pointer;
+}
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-inline-action.save{
+  border:1px solid #cbd8e5;
+  background:#f7fafc;
+  color:#315a80;
+}
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-inline-action.cancel{
+  border:1px solid #e0e5eb;
+  background:#fff;
+  color:#708197;
+}
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-inline-action:disabled{
+  opacity:.55;
+  cursor:default;
+}
