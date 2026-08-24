@@ -1,0 +1,17 @@
+/* Keep the account menu above profile/media widgets. */
+.feed-app > header .popover.user-menu{
+  position:fixed !important;
+  top:50px !important;
+  right:12px !important;
+  z-index:2147483647 !important;
+  max-height:calc(100vh - 62px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+@media (max-width:620px){
+  .feed-app > header .popover.user-menu{
+    top:48px !important;
+    right:8px !important;
+    width:min(214px,calc(100vw - 16px));
+  }
+}
