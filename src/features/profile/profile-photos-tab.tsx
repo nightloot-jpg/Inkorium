@@ -5,8 +5,10 @@ import { ProfilePhotosGallery } from "./ProfilePhotosGallery";
 
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
-let hiddenGrid: HTMLElement | null = null;
 let active = false;
+let contextGrid: HTMLElement | null = null;
+let originalGridDisplay = "";
+let originalChildDisplays = new Map<HTMLElement, string>();
 
 function context() {
   const page = document.querySelector<HTMLElement>(".profile-view-page");
@@ -24,58 +26,114 @@ async function mount() {
   const ctx = context();
   if (!ctx || active) return;
   active = true;
-  hiddenGrid = ctx.grid;
-  hiddenGrid.style.display = "none";
+
+  contextGrid = ctx.grid;
+  originalGridDisplay = ctx.grid.style.display;
+  originalChildDisplays = new Map();
+
+  // Fotos ocupa exactamente el mismo contenedor que Inicio.
+  // Ocultamos solo los widgets de Inicio, no el grid completo.
+  Array.from(ctx.grid.children).forEach(child => {
+    const element = child as HTMLElement;
+    originalChildDisplays.set(element, element.style.display);
+    element.style.display = "none";
+  });
+
+  ctx.grid.classList.add("profile-view-photos-active");
+
   host = document.createElement("div");
   host.className = "profile-photos-host";
-  hiddenGrid.parentElement?.insertBefore(host, hiddenGrid.nextSibling);
+  host.style.display = "block";
+  host.style.width = "100%";
+  host.style.minWidth = "0";
+
+  ctx.grid.prepend(host);
+
   const { data } = await supabase.auth.getSession();
   const currentUserId = data.session?.user?.id || "";
   const profileId = await resolveProfileId(ctx.username, currentUserId);
-  if (!host?.isConnected) { active = false; hiddenGrid = null; return; }
+
+  if (!host?.isConnected) {
+    active = false;
+    contextGrid = null;
+    originalChildDisplays.clear();
+    return;
+  }
+
   root = createRoot(host);
-  root.render(<ProfilePhotosGallery profileId={profileId} username={ctx.username} own={!!currentUserId && profileId === currentUserId} />);
+  root.render(
+    <ProfilePhotosGallery
+      profileId={profileId}
+      username={ctx.username}
+      own={!!currentUserId && profileId === currentUserId}
+    />
+  );
 }
 
 function unmount() {
   if (!active) return;
   active = false;
+
   root?.unmount();
   root = null;
+
   host?.remove();
   host = null;
-  if (hiddenGrid) hiddenGrid.style.display = "";
-  hiddenGrid = null;
+
+  if (contextGrid) {
+    contextGrid.classList.remove("profile-view-photos-active");
+    contextGrid.style.display = originalGridDisplay;
+  }
+
+  for (const [element, display] of originalChildDisplays.entries()) {
+    if (element.isConnected) element.style.display = display;
+  }
+
+  originalChildDisplays.clear();
+  contextGrid = null;
+  originalGridDisplay = "";
 }
 
 function bind() {
   document.querySelectorAll<HTMLButtonElement>(".profile-view-tabs button").forEach(button => {
     if (button.dataset.profilePhotosBound === "1") return;
     button.dataset.profilePhotosBound = "1";
-    button.addEventListener("click", () => {
-      window.setTimeout(() => {
-        if (button.textContent?.trim() === "Fotos") void mount();
-        else unmount();
-      }, 0);
-    }, true);
+
+    button.addEventListener(
+      "click",
+      () => {
+        window.setTimeout(() => {
+          if (button.textContent?.trim() === "Fotos") void mount();
+          else unmount();
+        }, 0);
+      },
+      true,
+    );
   });
 }
 
 function boot() {
   bind();
+
   const observer = new MutationObserver(() => {
     bind();
+
     if (active && !host?.isConnected) {
       const grid = context()?.grid;
       active = false;
       root = null;
       host = null;
-      hiddenGrid = grid || hiddenGrid;
+      contextGrid = grid || contextGrid;
       window.setTimeout(() => void mount(), 0);
     }
   });
+
   observer.observe(document.body, { childList: true, subtree: true });
   window.addEventListener("pageshow", bind);
 }
 
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, { once: true }); else boot();
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", boot, { once: true });
+} else {
+  boot();
+}
