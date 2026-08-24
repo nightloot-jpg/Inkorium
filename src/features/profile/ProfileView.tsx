@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Camera, Gamepad2, MapPin, Music2, Pencil, Play, Pause, X, Upload, Check, Circle, BookOpen, Send } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuthStore, usePlayerStore } from "../../lib/store";
