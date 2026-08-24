@@ -1,0 +1,20 @@
+/* Preserve the real topbar layout while the bridged profile route is active. */
+html body.inkorium-route-bridge-active #root .feed-app > header {
+  display: flex !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+html body.inkorium-route-bridge-active #root .feed-app > header .topbar {
+  display: flex !important;
+  align-items: center !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  width: 100% !important;
+  overflow: visible !important;
+}
