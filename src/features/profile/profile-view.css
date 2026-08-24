@@ -40,3 +40,118 @@ html body:has(.profile-view-page) .profile-view-signature-author strong{font-siz
 html body:has(.profile-view-page) .profile-view-signature-author small{font-size:10px!important;line-height:1.2!important;color:#7f776d!important}
 html body:has(.profile-view-page) .profile-view-signature p{grid-column:1 / -1!important;margin:0!important;padding-left:41px!important;color:#c9c0b6!important;font-size:12px!important;line-height:1.45!important}
 @media(max-width:640px){html body:has(.profile-view-page) .profile-view-signature{grid-template-columns:32px minmax(0,1fr)!important}.profile-view-signature p{padding-left:0!important}}
+\n/* PROFILE VIEW · LIGHT WEB STYLE
+   Restore the light Inkorium/Tuenti visual language. */
+html body:has(.profile-view-page) .profile-view-page{
+  background:#f3f6fa!important;
+  color:#243b53!important;
+}
+html body:has(.profile-view-page) .profile-view-cover{
+  background-color:#e8eef5!important;
+  border-color:#dbe3eb!important;
+}
+html body:has(.profile-view-page) .profile-view-header{
+  background:#fff!important;
+  border-color:#dbe3eb!important;
+  color:#243b53!important;
+  box-shadow:0 1px 3px rgba(31,55,79,.05)!important;
+}
+html body:has(.profile-view-page) .profile-view-avatar{
+  border-color:#fff!important;
+  box-shadow:0 4px 14px rgba(31,55,79,.12)!important;
+}
+html body:has(.profile-view-page) .profile-view-name-row h1{
+  color:#173b60!important;
+}
+html body:has(.profile-view-page) .profile-view-handle{
+  color:#718399!important;
+}
+html body:has(.profile-view-page) .profile-view-status-select,
+html body:has(.profile-view-page) .profile-view-status-label{
+  color:#526b83!important;
+}
+html body:has(.profile-view-page) .profile-view-bio{
+  color:#61778c!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs{
+  background:#fff!important;
+  border-color:#dbe3eb!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs button{
+  color:#5d7187!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs button.active{
+  color:#2879c7!important;
+  border-bottom-color:#2879c7!important;
+}
+html body:has(.profile-view-page) .profile-view-card{
+  background:#fff!important;
+  border-color:#dce4ec!important;
+  color:#29435d!important;
+  box-shadow:0 1px 4px rgba(31,55,79,.055)!important;
+}
+html body:has(.profile-view-page) .profile-view-card h2,
+html body:has(.profile-view-page) .profile-view-section-head h2,
+html body:has(.profile-view-page) .profile-view-card-title{
+  color:#173b60!important;
+}
+html body:has(.profile-view-page) .profile-view-section-head span{
+  color:#7890a8!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card{
+  background:#fff!important;
+  border-color:#dce4ec!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea{
+  background:#fff!important;
+  border:1px solid #cfd9e5!important;
+  color:#24384e!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea::placeholder{
+  color:#7890a8!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions span{
+  color:#7890a8!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions button{
+  background:#76a8dc!important;
+  border:1px solid #76a8dc!important;
+  color:#fff!important;
+}
+html body:has(.profile-view-page) .profile-view-signatures{
+  border-top:1px solid #edf1f5!important;
+}
+html body:has(.profile-view-page) .profile-view-signature{
+  border-bottom:1px solid #edf1f5!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-avatar{
+  background:#e9f1f8!important;
+  color:#2879c7!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-author strong{
+  color:#173b60!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-author small{
+  color:#8192a3!important;
+}
+html body:has(.profile-view-page) .profile-view-signature p{
+  color:#314963!important;
+}
+html body:has(.profile-view-page) .profile-view-empty{
+  color:#8191a3!important;
+}
+html body:has(.profile-view-page) .profile-view-listening{
+  background:#f3f7fb!important;
+  color:#728398!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-copy strong{
+  color:#17385c!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-copy small{
+  color:#70849a!important;
+}
+html body:has(.profile-view-page) .profile-view-events-card .profile-view-section-head button{
+  background:#fff!important;
+  border:1px solid #cfd9e5!important;
+  color:#29435d!important;
+}\n
