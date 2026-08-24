@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 
+const NOTIFICATIONS_Z_INDEX = 2147483647;
+
 export function NotificationsPortal({
   isOpen,
   onClose,
@@ -18,25 +20,19 @@ export function NotificationsPortal({
   const updatePosition = () => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      let top = rect.bottom;
-
-      // Right alignment based on the button position
-      // Let's place it aligned to the right edge of the button, since the popover has a top right alignment normally
+      const top = rect.bottom;
       const right = window.innerWidth - rect.right;
 
-      // Calculate taking into account margins/safespaces
       setPosition({
-        top: top + 4, // match small gap
-        left: 0, // not used
-        right: Math.max(right - 10, 10), // Add a little offset so it looks centered to the icon or right-aligned correctly, keep it on screen
+        top: top + 4,
+        left: 0,
+        right: Math.max(right - 10, 10),
       });
     }
   };
 
   useLayoutEffect(() => {
-    if (isOpen) {
-      updatePosition();
-    }
+    if (isOpen) updatePosition();
   }, [isOpen, triggerRef]);
 
   useEffect(() => {
@@ -54,24 +50,19 @@ export function NotificationsPortal({
     }
 
     let rafId: number;
-    function handleScroll() {
-       if (rafId) cancelAnimationFrame(rafId);
-       rafId = requestAnimationFrame(updatePosition);
-    }
-
-    function handleResize() {
-       if (rafId) cancelAnimationFrame(rafId);
-       rafId = requestAnimationFrame(updatePosition);
+    function schedulePositionUpdate() {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(updatePosition);
     }
 
     document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('scroll', handleScroll, true);
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', schedulePositionUpdate, true);
+    window.addEventListener('resize', schedulePositionUpdate);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', schedulePositionUpdate, true);
+      window.removeEventListener('resize', schedulePositionUpdate);
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, [isOpen, onClose, triggerRef]);
@@ -81,11 +72,15 @@ export function NotificationsPortal({
   return createPortal(
     <div
       ref={portalRef}
+      className="notifications-portal-layer"
       style={{
         position: 'fixed',
         top: position.top,
         right: position.right,
-        zIndex: 9999, // Ensure it's over everything.
+        left: 'auto',
+        zIndex: NOTIFICATIONS_Z_INDEX,
+        isolation: 'isolate',
+        pointerEvents: 'auto',
       }}
     >
       {children}
