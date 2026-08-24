@@ -1,6 +1,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { EventsView } from "./EventsView";
+import "../../auth/SignupNames";
 
 const HOST_ID = "inkorium-events-fallback";
 const SYNC_INTERVAL_MS = 250;
