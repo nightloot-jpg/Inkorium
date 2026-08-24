@@ -1,180 +1,39 @@
-/* Inkorium profile: clean 2026 visual system. Cover is image-only; identity and music are separate widgets. */
-html body:has(.profile-view-page) .profile-view-page{width:100%!important;max-width:1496px!important;margin:0 auto!important;padding:24px 24px 48px!important;background:#f4f7fb!important;color:#17385c!important}
-html body:has(.profile-view-page) .profile-view-cover{height:180px!important;border:0!important;border-radius:18px 18px 0 0!important;background-size:cover!important;background-position:center!important;overflow:hidden!important}
-html body:has(.profile-view-page) .profile-view-cover-placeholder{height:100%!important;background:linear-gradient(135deg,#eaf0f8,#dfe9f5)!important}
-
-/* Header is a clean two-widget layout: identity left, music right. */
-html body:has(.profile-view-page) .profile-view-header{
-  position:relative!important;
-  display:grid!important;
-  grid-template-columns:minmax(330px,360px) minmax(0,1fr)!important;
-  grid-template-rows:auto auto!important;
-  align-items:center!important;
-  column-gap:18px!important;
-  row-gap:0!important;
-  min-height:156px!important;
-  height:auto!important;
-  padding:16px 16px 16px 18px!important;
-  background:transparent!important;
-  border:0!important;
-  overflow:visible!important;
-  box-shadow:none!important;
-}
-html body:has(.profile-view-page) .profile-view-header::before{
-  content:""!important;
-  position:absolute!important;
-  left:0!important;
-  top:0!important;
-  bottom:0!important;
-  width:360px!important;
-  background:#fff!important;
-  border:1px solid #e1e8f0!important;
-  border-radius:14px!important;
-  box-shadow:0 2px 8px rgba(27,55,90,.045)!important;
-  z-index:0!important;
-}
-html body:has(.profile-view-page) .profile-view-avatar-wrap{
-  grid-column:1!important;
-  grid-row:1 / span 2!important;
-  position:relative!important;
-  left:auto!important;
-  top:auto!important;
-  width:104px!important;
-  height:104px!important;
-  margin:0!important;
-  z-index:3!important;
-  align-self:center!important;
-  justify-self:start!important;
-}
-html body:has(.profile-view-page) .profile-view-avatar{width:104px!important;height:104px!important;border:4px solid #fff!important;box-shadow:0 4px 14px rgba(27,55,90,.16)!important}
-html body:has(.profile-view-page) .profile-view-identity{
-  grid-column:1!important;
-  grid-row:1!important;
-  display:flex!important;
-  flex-direction:column!important;
-  align-items:flex-start!important;
-  justify-content:center!important;
-  width:auto!important;
-  min-width:0!important;
-  padding:0 14px 0 120px!important;
-  margin:0!important;
-  gap:0!important;
-  align-self:end!important;
-  position:relative!important;
-  z-index:2!important;
-}
-html body:has(.profile-view-page) .profile-view-name-row{display:flex!important;align-items:center!important;gap:7px!important;margin:0!important;min-height:34px!important}
-html body:has(.profile-view-page) .profile-view-name-row h1{margin:0!important;font-size:27px!important;line-height:1.05!important;letter-spacing:-.45px!important;color:#102a45!important;position:static!important}
+/* Inkorium profile: clean Inicio layout */
+html body:has(.profile-view-page) .profile-view-page{width:100%!important;max-width:1180px!important;margin:0 auto!important;padding:18px 16px 40px!important;background:#151515!important;color:#eee!important}
+html body:has(.profile-view-page) .profile-view-cover{height:150px!important;border:1px solid #303030!important;border-bottom:0!important;border-radius:10px 10px 0 0!important;background-size:cover!important;background-position:center!important;overflow:hidden!important}
+html body:has(.profile-view-page) .profile-view-header{height:auto!important;min-height:112px!important;padding:14px 18px 14px 132px!important;background:#151515!important;border:1px solid #303030!important;border-top:0!important;border-radius:0!important;box-shadow:none!important;color:#eee!important;position:relative!important}
+html body:has(.profile-view-page) .profile-view-avatar-wrap{position:absolute!important;left:18px!important;top:-58px!important;width:98px!important;height:98px!important;margin:0!important}
+html body:has(.profile-view-page) .profile-view-avatar{width:98px!important;height:98px!important;border:3px solid #151515!important;border-radius:10px!important;box-shadow:none!important}
+html body:has(.profile-view-page) .profile-view-identity{padding:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;color:#eee!important}
+html body:has(.profile-view-page) .profile-view-name-row h1{font-size:23px!important;color:#f0e5d6!important}
 html body:has(.profile-view-page) .profile-view-handle{display:none!important}
-html body:has(.profile-view-page) .profile-view-status-row{display:flex!important;align-items:center!important;gap:7px!important;margin:5px 0 0!important;height:20px!important}
-html body:has(.profile-view-page) .profile-view-status-select,html body:has(.profile-view-page) .profile-view-status-label{font-size:12px!important;font-weight:750!important;color:#596f84!important}
-html body:has(.profile-view-page) .profile-view-bio{
-  grid-column:1!important;
-  grid-row:2!important;
-  display:flex!important;
-  align-items:center!important;
-  gap:6px!important;
-  width:auto!important;
-  max-width:330px!important;
-  margin:8px 14px 0 120px!important;
-  padding:0!important;
-  background:transparent!important;
-  border:0!important;
-  color:#6d7f92!important;
-  font-size:13px!important;
-  line-height:1.4!important;
-  position:relative!important;
-  z-index:2!important;
-}
-
-/* The music widget occupies the larger right-hand zone. */
-html body:has(.profile-view-page) .profile-daily-song-card{
-  grid-column:2!important;
-  grid-row:1 / span 2!important;
-  align-self:stretch!important;
-  width:100%!important;
-  max-width:none!important;
-  min-width:0!important;
-  margin:0!important;
-  padding:14px 17px!important;
-  border:1px solid #e3d7f5!important;
-  border-radius:14px!important;
-  background:linear-gradient(135deg,#fcf9ff 0%,#fff 78%)!important;
-  box-shadow:0 3px 12px rgba(65,44,97,.05)!important;
-  color:#17385c!important;
-  position:relative!important;
-  z-index:2!important;
-}
-html body:has(.profile-view-page) .profile-daily-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;min-height:22px!important;font-size:13px!important}
-html body:has(.profile-view-page) .profile-daily-head span{display:inline-flex!important;align-items:center!important;gap:7px!important;font-weight:900!important;color:#55308f!important}
-html body:has(.profile-view-page) .profile-daily-head button{padding:5px 10px!important;border:0!important;border-radius:8px!important;background:#f1e9fb!important;color:#6335b3!important;font-weight:800!important;cursor:pointer!important}
-html body:has(.profile-view-page) .profile-daily-current{display:flex!important;align-items:center!important;gap:11px!important;margin-top:10px!important;padding-top:10px!important;border-top:1px solid #eee6f7!important}
-html body:has(.profile-view-page) .profile-daily-current img{width:56px!important;height:56px!important;border-radius:10px!important;object-fit:cover!important;flex:0 0 auto!important}
-html body:has(.profile-view-page) .profile-daily-current strong{font-size:14px!important;line-height:1.25!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;overflow:hidden!important;color:#183b60!important}
-html body:has(.profile-view-page) .profile-daily-current small{margin-top:4px!important;font-size:11px!important;color:#7d90a4!important}
-html body:has(.profile-view-page) .profile-daily-song-card>p{margin:10px 0 0!important;color:#8192a3!important;font-size:12px!important}
-
-/* Tabs remain an independent bar. */
-html body:has(.profile-view-page) .profile-view-tabs{display:flex!important;align-items:stretch!important;gap:8px!important;height:48px!important;min-height:48px!important;margin:10px 0 0!important;padding:0 12px!important;background:#fff!important;border:1px solid #e1e8f0!important;border-radius:11px!important;overflow:hidden!important;box-shadow:0 1px 5px rgba(27,55,90,.035)!important}
-html body:has(.profile-view-page) .profile-view-tabs button{height:48px!important;padding:0 18px!important;border-bottom:2px solid transparent!important;font-size:14px!important;font-weight:800!important;color:#60768d!important}
-html body:has(.profile-view-page) .profile-view-tabs button.active{color:#5b2db5!important;border-bottom-color:#6a35c2!important}
-
-/* Content */
-html body:has(.profile-view-page) .profile-view-grid{display:grid!important;grid-template-columns:minmax(300px,340px) minmax(0,1fr) minmax(300px,340px)!important;gap:20px!important;margin-top:18px!important;align-items:start!important}
-html body:has(.profile-view-page) .profile-view-main,html body:has(.profile-view-page) .profile-view-side{display:contents!important}
-html body:has(.profile-view-page) .profile-view-card{background:#fff!important;border:1px solid #e1e8f0!important;border-radius:14px!important;box-shadow:0 2px 8px rgba(27,55,90,.035)!important;padding:18px!important;margin:0 0 18px!important}
-html body:has(.profile-view-page) .profile-view-main>.profile-view-intro-card{grid-column:3!important;grid-row:1!important}
-html body:has(.profile-view-page) .profile-view-main>.profile-view-card:has(.profile-view-section-head){grid-column:2!important;grid-row:1 / span 3!important}
-html body:has(.profile-view-page) .profile-about-card{grid-column:1!important;grid-row:1!important}
-html body:has(.profile-view-page) .profile-view-stats{grid-column:1!important;grid-row:2!important}
-html body:has(.profile-view-page) .profile-view-stats::before{content:'Actividad'!important;display:block!important;margin:0 0 6px!important;color:#17385c!important;font-size:17px!important;font-weight:800!important}
-html body:has(.profile-view-page) .profile-view-section-head h2,html body:has(.profile-view-page) .profile-view-card h2{font-size:18px!important;color:#17385c!important}
-html body:has(.profile-view-page) .profile-view-post{padding:18px 0!important}
-html body:has(.profile-view-page) .profile-view-post img{border-radius:10px!important}
-html body:has(.profile-view-page) .profile-view-listening{margin-top:10px!important;border-radius:10px!important;background:#f5f8fc!important}
-html body:has(.profile-view-page) .profile-view-signature-card{grid-column:1!important;background:#fff!important;border:1px solid #e1e8f0!important;border-radius:14px!important;padding:18px!important;box-shadow:0 2px 8px rgba(27,55,90,.035)!important}
-html body:has(.profile-view-page) .profile-view-signature-head h2{font-size:17px!important}
-html body:has(.profile-view-page) .profile-view-signature-input{min-height:70px!important;border:1px solid #d7e0ea!important;border-radius:10px!important;padding:10px 12px!important;font-size:14px!important;box-shadow:none!important}
-html body:has(.profile-view-page) .profile-view-signature-actions{justify-content:flex-end!important;margin-top:8px!important}
-html body:has(.profile-view-page) .profile-view-signature-actions button{padding:8px 14px!important;border-radius:9px!important;background:#6a35c2!important;color:#fff!important}
-html body:has(.profile-view-page) .profile-view-signatures{margin-top:12px!important}
-html body:has(.profile-view-page) .profile-view-signature{padding:11px 0!important}
-html body:has(.profile-view-page) .left-column{display:none!important}
-html body:has(.profile-view-page) .feed-layout{grid-template-columns:1fr!important;max-width:none!important}
-
-@media(max-width:1120px){
-  html body:has(.profile-view-page) .profile-view-page{padding:18px 16px 36px!important}
-  html body:has(.profile-view-page) .profile-view-header{grid-template-columns:minmax(300px,320px) minmax(0,1fr)!important;column-gap:14px!important}
-  html body:has(.profile-view-page) .profile-view-header::before{width:320px!important}
-  html body:has(.profile-view-page) .profile-view-avatar-wrap{width:96px!important;height:96px!important}
-  html body:has(.profile-view-page) .profile-view-avatar{width:96px!important;height:96px!important}
-  html body:has(.profile-view-page) .profile-view-identity{padding-left:110px!important}
-  html body:has(.profile-view-page) .profile-view-bio{margin-left:110px!important}
-  html body:has(.profile-view-page) .profile-view-grid{grid-template-columns:minmax(250px,300px) minmax(0,1fr)!important}
-  html body:has(.profile-view-page) .profile-view-main>.profile-view-intro-card{grid-column:2!important}
-  html body:has(.profile-view-page) .profile-view-side>.profile-view-card{grid-column:2!important}
-  html body:has(.profile-view-page) .profile-about-card,html body:has(.profile-view-page) .profile-view-stats{grid-column:1!important}
-}
-@media(max-width:860px){
-  html body:has(.profile-view-page) .profile-view-header{grid-template-columns:92px minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;min-height:244px!important;padding:15px!important}
-  html body:has(.profile-view-page) .profile-view-header::before{width:100%!important;bottom:0!important}
-  html body:has(.profile-view-page) .profile-view-avatar-wrap{grid-column:1!important;grid-row:1 / span 2!important;width:86px!important;height:86px!important}
-  html body:has(.profile-view-page) .profile-view-avatar{width:86px!important;height:86px!important}
-  html body:has(.profile-view-page) .profile-view-identity{grid-column:2!important;grid-row:1!important;padding-left:0!important}
-  html body:has(.profile-view-page) .profile-view-bio{grid-column:2!important;grid-row:2!important;margin:3px 0 0!important}
-  html body:has(.profile-view-page) .profile-daily-song-card{grid-column:1 / -1!important;grid-row:3!important;margin-top:10px!important}
-}
-@media(max-width:560px){
-  html body:has(.profile-view-page) .profile-view-page{padding:10px!important}
-  html body:has(.profile-view-page) .profile-view-cover{height:140px!important;border-radius:12px 12px 0 0!important}
-  html body:has(.profile-view-page) .profile-view-header{display:block!important;min-height:0!important;padding:54px 14px 14px!important}
-  html body:has(.profile-view-page) .profile-view-header::before{border-radius:0 0 12px 12px!important}
-  html body:has(.profile-view-page) .profile-view-avatar-wrap{position:absolute!important;left:14px!important;top:-44px!important;width:84px!important;height:84px!important;margin:0!important}
-  html body:has(.profile-view-page) .profile-view-avatar{width:84px!important;height:84px!important}
-  html body:has(.profile-view-page) .profile-view-identity{width:100%!important;padding-left:0!important}
-  html body:has(.profile-view-page) .profile-view-name-row h1{font-size:24px!important}
-  html body:has(.profile-view-page) .profile-view-bio{margin-top:4px!important;max-width:none!important}
-  html body:has(.profile-view-page) .profile-daily-song-card{margin-top:12px!important}
-  html body:has(.profile-view-page) .profile-view-tabs{overflow-x:auto!important;scrollbar-width:none!important}
-  html body:has(.profile-view-page) .profile-view-tabs::-webkit-scrollbar{display:none!important}
-}
+html body:has(.profile-view-page) .profile-view-status-row{margin-top:3px!important;height:18px!important}
+html body:has(.profile-view-page) .profile-view-status-select,html body:has(.profile-view-page) .profile-view-status-label{font-size:12px!important;color:#b9ad9d!important}
+html body:has(.profile-view-page) .profile-view-bio{font-size:12px!important;color:#b4a897!important;margin:5px 0 0!important;max-width:560px!important}
+html body:has(.profile-view-page) .profile-view-tabs{display:flex!important;align-items:stretch!important;gap:6px!important;height:42px!important;min-height:42px!important;margin:0!important;padding:0 8px!important;background:#151515!important;border:1px solid #303030!important;border-top:0!important;border-radius:0 0 10px 10px!important;overflow-x:auto!important}
+html body:has(.profile-view-page) .profile-view-tabs button{height:42px!important;padding:0 14px!important;font-size:13px!important;color:#d2c3af!important;border-bottom:2px solid transparent!important}
+html body:has(.profile-view-page) .profile-view-tabs button.active{color:#4d8cff!important;border-bottom-color:#4d8cff!important}
+html body:has(.profile-view-page) .profile-view-grid{display:grid!important;grid-template-columns:minmax(0,1.65fr) minmax(260px,.85fr)!important;gap:16px!important;margin-top:18px!important;align-items:start!important}
+html body:has(.profile-view-page) .profile-view-main,html body:has(.profile-view-page) .profile-view-side{display:block!important;min-width:0!important}
+html body:has(.profile-view-page) .profile-view-card{background:#171717!important;border:1px solid #333!important;border-radius:12px!important;box-shadow:none!important;color:#eee!important;margin-bottom:14px!important;padding:14px 16px!important}
+html body:has(.profile-view-page) .profile-view-main>.profile-view-intro-card{display:none!important}
+html body:has(.profile-view-page) .profile-view-section-head{margin:0 0 8px!important}
+html body:has(.profile-view-page) .profile-view-section-head h2,html body:has(.profile-view-page) .profile-view-card h2,html body:has(.profile-view-page) .profile-view-card-title{font-size:16px!important;color:#f0e5d6!important}
+html body:has(.profile-view-page) .profile-view-section-head span{font-size:12px!important;color:#8f806f!important}
+html body:has(.profile-view-page) .profile-view-composer-card{padding:12px 14px!important;margin-bottom:14px!important}
+html body:has(.profile-view-page) .profile-view-composer-label{font-size:13px!important;color:#e4d5c2!important;margin-bottom:8px!important}
+html body:has(.profile-view-page) .profile-view-composer-row{gap:8px!important}
+html body:has(.profile-view-page) .profile-view-composer-row input{height:34px!important;background:#171717!important;border-color:#333!important;color:#eee!important}
+html body:has(.profile-view-page) .profile-view-composer-row button{height:34px!important;padding:0 14px!important;background:#171717!important;border-color:#4a4a4a!important;color:#f0dfc8!important;font-size:12px!important}
+html body:has(.profile-view-page) .profile-view-post{padding:12px 0!important;border-top-color:#303030!important}
+html body:has(.profile-view-page) .profile-view-post:first-child{border-top:0!important}
+html body:has(.profile-view-page) .profile-view-post-date{font-size:11px!important;color:#8c8173!important}
+html body:has(.profile-view-page) .profile-view-post p,html body:has(.profile-view-page) .profile-view-post-content{font-size:13px!important;color:#e6d9c7!important}
+html body:has(.profile-view-page) .profile-view-post img{max-height:300px!important;border-radius:8px!important}
+html body:has(.profile-view-page) .profile-view-post-actions{display:flex!important;gap:12px!important;margin-top:8px!important;color:#aa9b89!important;font-size:12px!important}
+html body:has(.profile-view-page) .profile-view-listening{margin-top:6px!important;padding:10px!important;border-radius:8px!important;background:#121212!important;color:#d0c0aa!important;font-size:12px!important}
+html body:has(.profile-view-page) .profile-view-friends-placeholder{grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin-top:8px!important}
+html body:has(.profile-view-page) .profile-view-friends-placeholder span{height:46px!important;border-radius:7px!important}
+html body:has(.profile-view-page) .profile-view-event-line{margin-top:8px!important;color:#e7d6bf!important;font-size:13px!important}
+@media(max-width:760px){html body:has(.profile-view-page) .profile-view-page{padding:10px!important}html body:has(.profile-view-page) .profile-view-grid{grid-template-columns:1fr!important}html body:has(.profile-view-page) .profile-view-header{padding-left:114px!important}html body:has(.profile-view-page) .profile-view-avatar-wrap{left:12px!important;width:88px!important;height:88px!important;top:-48px!important}html body:has(.profile-view-page) .profile-view-avatar{width:88px!important;height:88px!important}}
+@media(max-width:560px){html body:has(.profile-view-page) .profile-view-cover{height:120px!important}html body:has(.profile-view-page) .profile-view-header{padding:54px 12px 12px!important;min-height:130px!important}html body:has(.profile-view-page) .profile-view-avatar-wrap{left:12px!important;top:-42px!important;width:80px!important;height:80px!important}html body:has(.profile-view-page) .profile-view-avatar{width:80px!important;height:80px!important}html body:has(.profile-view-page) .profile-view-identity{padding:0!important}}
