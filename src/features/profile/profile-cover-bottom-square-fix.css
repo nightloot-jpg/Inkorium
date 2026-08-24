@@ -1,0 +1,55 @@
+/* Final profile cover geometry: keep the banner fully visible and square on every edge. */
+html body:has(.profile-view-page) .profile-view-cover.profile-view-cover-final{
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  height:285px!important;
+  min-height:285px!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:1px solid #dfe6ee!important;
+  border-radius:0!important;
+  background:#dfe8f2!important;
+}
+html body:has(.profile-view-page) .profile-view-cover-image{
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+  border:0!important;
+  border-radius:0!important;
+  clip-path:none!important;
+  z-index:1!important;
+}
+html body:has(.profile-view-page) .profile-view-cover-placeholder{
+  position:absolute!important;
+  inset:0!important;
+  z-index:1!important;
+}
+html body:has(.profile-view-page) .profile-view-header.profile-view-header-final{
+  position:relative!important;
+  z-index:3!important;
+  border-radius:0!important;
+  border-top:0!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs{
+  border-radius:0!important;
+}
+@media(max-width:900px){
+  html body:has(.profile-view-page) .profile-view-cover.profile-view-cover-final{
+    height:250px!important;
+    min-height:250px!important;
+  }
+}
+@media(max-width:700px){
+  html body:has(.profile-view-page) .profile-view-cover.profile-view-cover-final{
+    height:210px!important;
+    min-height:210px!important;
+  }
+}
