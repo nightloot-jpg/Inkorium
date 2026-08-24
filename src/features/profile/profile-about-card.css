@@ -102,19 +102,6 @@ html body:has(.profile-view-page) .profile-view-home-grid .profile-view-stats-li
   justify-self:end;
 }
 
-html body:has(.profile-view-page) .profile-view-home-grid .profile-view-stats-card::after{
-  content:"Ver más";
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  height:38px;
-  margin-top:16px;
-  border:1px solid #e1e7ed;
-  border-radius:7px;
-  background:#fff;
-  color:#435b73;
-  font-size:13px;
-}
 
 html body:has(.profile-view-page) .profile-view-home-grid .profile-view-stats-card{
   padding:16px !important;
