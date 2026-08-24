@@ -897,3 +897,11 @@ html body:has(.profile-view-page) .profile-view-empty {
     grid-row:auto!important;
   }
 }
+
+.profile-view-home-grid{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr) minmax(260px,320px);gap:16px;align-items:start}
+.profile-view-left-column,.profile-view-center-column,.profile-view-right-column{display:flex;flex-direction:column;gap:16px;min-width:0}
+.profile-view-left-column .profile-view-card,.profile-view-center-column .profile-view-card,.profile-view-right-column .profile-view-card{margin:0;width:100%}
+.profile-view-center-column{min-height:1px}
+.profile-view-signature-card{min-height:420px}
+@media(max-width:1050px){.profile-view-home-grid{grid-template-columns:minmax(220px,.8fr) minmax(0,1.2fr)}.profile-view-right-column{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.profile-view-right-column .profile-view-card{height:100%}}
+@media(max-width:700px){.profile-view-home-grid{grid-template-columns:1fr}.profile-view-right-column{grid-column:auto;display:flex}.profile-view-signature-card{min-height:0}}
