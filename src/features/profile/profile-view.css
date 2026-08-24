@@ -858,3 +858,42 @@ html body:has(.profile-view-page) .profile-view-signature p {
 html body:has(.profile-view-page) .profile-view-empty {
   color:#8292a2!important;
 }
+
+
+/* Inicio del perfil: composición fija en tres columnas.
+   Izquierda = Sobre mí + Estadísticas, centro = Libro de firmas,
+   derecha = Ahora escuchando + Próximos eventos. */
+@media (min-width:1101px){
+  html body:has(.profile-view-page) .profile-view-grid{
+    grid-template-columns:minmax(280px,320px) minmax(520px,1fr) minmax(280px,320px)!important;
+    grid-template-areas:
+      "about signatures listening"
+      "stats signatures events";
+    align-items:start!important;
+  }
+  html body:has(.profile-view-page) .profile-view-about-card{
+    grid-area:about!important;
+    grid-column:auto!important;
+    grid-row:auto!important;
+  }
+  html body:has(.profile-view-page) .profile-view-stats-card{
+    grid-area:stats!important;
+    grid-column:auto!important;
+    grid-row:auto!important;
+  }
+  html body:has(.profile-view-page) .profile-view-signature-card{
+    grid-area:signatures!important;
+    grid-column:auto!important;
+    grid-row:auto!important;
+  }
+  html body:has(.profile-view-page) .profile-view-intro-card{
+    grid-area:listening!important;
+    grid-column:auto!important;
+    grid-row:auto!important;
+  }
+  html body:has(.profile-view-page) .profile-view-events-card{
+    grid-area:events!important;
+    grid-column:auto!important;
+    grid-row:auto!important;
+  }
+}
