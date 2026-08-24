@@ -1,0 +1,25 @@
+/* Profile-only stylesheet entrypoint.
+ * Keep profile-specific global patches out of index.html so they load with ProfileView.
+ * Order intentionally mirrors the previous index.html order.
+ */
+@import "./profile-final-fixes.css";
+@import "./profile-daily-song.css";
+@import "./profile-daily-song-polish.css";
+@import "./profile-daily-song-access-fix.css";
+@import "./profile-daily-song-click-fix.css";
+@import "./profile-square-widgets.css";
+@import "./profile-daily-song-profile-action.css";
+@import "./profile-music-final.css";
+@import "./profile-music-daily-sync.css";
+@import "./profile-music-diary-view.css";
+@import "./profile-music-diary-sync.css";
+@import "./profile-music-functional-final.css";
+@import "./profile-music-preferences-final.css";
+@import "./profile-music-taste-card.css";
+@import "./profile-music-layout.css";
+@import "./profile-cover-header-fix.css";
+@import "./profile-cover-square.css";
+@import "./profile-cover-true-square.css";
+@import "./profile-cover-bottom-square-fix.css";
+@import "./profile-photos-tab.css";
+@import "./profile-browser-scroll-fix.css";
