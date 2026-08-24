@@ -31,8 +31,6 @@ async function mount() {
   originalGridDisplay = ctx.grid.style.display;
   originalChildDisplays = new Map();
 
-  // Fotos ocupa exactamente el mismo contenedor que Inicio.
-  // Ocultamos solo los widgets de Inicio, no el grid completo.
   Array.from(ctx.grid.children).forEach(child => {
     const element = child as HTMLElement;
     originalChildDisplays.set(element, element.style.display);
@@ -46,6 +44,7 @@ async function mount() {
   host.style.display = "block";
   host.style.width = "100%";
   host.style.minWidth = "0";
+  host.style.gridColumn = "1 / -1";
 
   ctx.grid.prepend(host);
 
