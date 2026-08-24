@@ -405,3 +405,84 @@ html body:has(.profile-view-page) .profile-view-empty{color:#727980!important}
   html body:has(.profile-view-page) .profile-view-intro-card,
   html body:has(.profile-view-page) .profile-view-events-card{grid-column:1!important;grid-row:auto!important}
 }
+
+
+/* Variante clara: mismo diseño de referencia, adaptado al blanco de Inkorium. */
+html body:has(.profile-view-page),
+html body:has(.profile-view-page) .profile-view-page{
+  background:#f3f6fa!important;
+  color:#243b53!important;
+}
+html body:has(.profile-view-page) .profile-view-cover{
+  background-color:#e7edf4!important;
+  border-color:#d9e1ea!important;
+}
+html body:has(.profile-view-page) .profile-view-header{
+  background:#fff!important;
+  border-color:#d9e1ea!important;
+  box-shadow:0 1px 3px rgba(30,55,80,.05)!important;
+}
+html body:has(.profile-view-page) .profile-view-name-row h1{color:#173452!important}
+html body:has(.profile-view-page) .profile-view-status-select,
+html body:has(.profile-view-page) .profile-view-status-label{color:#50677e!important}
+html body:has(.profile-view-page) .profile-view-bio{color:#63798e!important}
+html body:has(.profile-view-page) .profile-view-tabs{
+  background:#fff!important;
+  border-color:#d9e1ea!important;
+}
+html body:has(.profile-view-page) .profile-view-tabs button{color:#526a82!important}
+html body:has(.profile-view-page) .profile-view-tabs button.active{color:#2879c7!important;border-bottom-color:#2879c7!important}
+html body:has(.profile-view-page) .profile-view-card{
+  background:#fff!important;
+  border-color:#dce4ec!important;
+  box-shadow:0 1px 3px rgba(31,58,83,.06)!important;
+  color:#29435d!important;
+}
+html body:has(.profile-view-page) .profile-view-section-head h2,
+html body:has(.profile-view-page) .profile-view-card-title{color:#243f59!important}
+html body:has(.profile-view-page) .profile-view-about-grid div{color:#526b83!important}
+html body:has(.profile-view-page) .profile-view-about-grid svg{color:#71879b!important}
+html body:has(.profile-view-page) .profile-view-stats-list div{border-color:#edf1f5!important;color:#526b83!important}
+html body:has(.profile-view-page) .profile-view-stats-list svg{color:#71879b!important}
+html body:has(.profile-view-page) .profile-view-stats-list strong{color:#304a63!important}
+html body:has(.profile-view-page) .profile-view-more-button{
+  background:#fff!important;
+  border-color:#dce4ec!important;
+  color:#526b83!important;
+}
+html body:has(.profile-view-page) .profile-view-events-card .profile-view-section-head button{color:#2879c7!important}
+html body:has(.profile-view-page) .profile-view-event-empty{color:#8a9aaa!important}
+html body:has(.profile-view-page) .profile-view-signature-card{
+  background:#fff!important;
+  border-color:#dce4ec!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head{
+  border-color:#edf1f5!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head h2{color:#243f59!important}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head span{color:#8798a8!important}
+html body:has(.profile-view-page) .profile-view-signature-form{border-color:#edf1f5!important}
+html body:has(.profile-view-page) .profile-view-signature-form textarea{
+  background:#f8fafc!important;
+  border-color:#d7e0e9!important;
+  color:#314b67!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea::placeholder{color:#8293a5!important}
+html body:has(.profile-view-page) .profile-view-signature-actions span{color:#8b9aaa!important}
+html body:has(.profile-view-page) .profile-view-signature-actions button{
+  background:#3478c5!important;
+  border-color:#2d6dad!important;
+}
+html body:has(.profile-view-page) .profile-view-signature{border-color:#edf1f5!important}
+html body:has(.profile-view-page) .profile-view-signature-author strong{color:#29425e!important}
+html body:has(.profile-view-page) .profile-view-signature-author small{color:#8a99a8!important}
+html body:has(.profile-view-page) .profile-view-signature p{color:#526b83!important}
+html body:has(.profile-view-page) .profile-view-empty{color:#8292a2!important}
+html body:has(.profile-view-page) .profile-view-listening{color:#687d91!important}
+html body:has(.profile-view-page) .profile-view-listening-main{color:#29425e!important}
+html body:has(.profile-view-page) .profile-view-listening-copy strong{color:#29425e!important}
+html body:has(.profile-view-page) .profile-view-listening-copy small{color:#7b8d9e!important}
+html body:has(.profile-view-page) .profile-view-listening-control{
+  border-color:#9baab8!important;
+  color:#526b83!important;
+}
