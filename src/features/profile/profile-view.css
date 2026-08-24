@@ -897,3 +897,74 @@ html body:has(.profile-view-page) .profile-view-empty {
     grid-row:auto!important;
   }
 }
+
+
+/* PROFILE INICIO · COLUMNAS ESTRUCTURALES
+   Izquierda: Sobre mí + Estadísticas
+   Centro: Libro de firmas (solo al visitar otro perfil)
+   Derecha: Escuchando ahora + Próximos eventos */
+html body:has(.profile-view-page) .profile-view-grid{
+  display:grid!important;
+  grid-template-columns:minmax(260px,320px) minmax(520px,1fr) minmax(280px,320px)!important;
+  grid-template-areas:"left center right"!important;
+  gap:16px!important;
+  align-items:start!important;
+}
+html body:has(.profile-view-page) .profile-view-left-column{
+  grid-area:left!important;
+  display:flex!important;
+  flex-direction:column!important;
+  min-width:0!important;
+  gap:16px!important;
+}
+html body:has(.profile-view-page) .profile-view-center-column{
+  grid-area:center!important;
+  display:flex!important;
+  flex-direction:column!important;
+  min-width:0!important;
+}
+html body:has(.profile-view-page) .profile-view-right-column{
+  grid-area:right!important;
+  display:flex!important;
+  flex-direction:column!important;
+  min-width:0!important;
+  gap:16px!important;
+}
+html body:has(.profile-view-page) .profile-view-left-column .profile-view-card,
+html body:has(.profile-view-page) .profile-view-right-column .profile-view-card,
+html body:has(.profile-view-page) .profile-view-center-column .profile-view-card{
+  width:100%!important;
+  margin:0!important;
+}
+html body:has(.profile-view-page) .profile-view-left-column .profile-view-about-card,
+html body:has(.profile-view-page) .profile-view-left-column .profile-view-stats-card{
+  grid-area:auto!important;
+}
+html body:has(.profile-view-page) .profile-view-center-column .profile-view-signature-card{
+  grid-area:auto!important;
+  min-height:484px!important;
+}
+html body:has(.profile-view-page) .profile-view-right-column .profile-view-intro-card,
+html body:has(.profile-view-page) .profile-view-right-column .profile-view-events-card{
+  grid-area:auto!important;
+}
+@media(max-width:1100px){
+  html body:has(.profile-view-page) .profile-view-grid{
+    grid-template-columns:minmax(230px,.8fr) minmax(430px,1.4fr)!important;
+    grid-template-areas:"left center" "right center"!important;
+  }
+  html body:has(.profile-view-page) .profile-view-right-column{
+    grid-area:right!important;
+  }
+}
+@media(max-width:760px){
+  html body:has(.profile-view-page) .profile-view-grid{
+    grid-template-columns:1fr!important;
+    grid-template-areas:"left" "center" "right"!important;
+  }
+  html body:has(.profile-view-page) .profile-view-left-column,
+  html body:has(.profile-view-page) .profile-view-center-column,
+  html body:has(.profile-view-page) .profile-view-right-column{
+    width:100%!important;
+  }
+}
