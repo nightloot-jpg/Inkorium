@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { useAuthStore } from "./lib/store";
 import { supabase } from "./lib/supabase";
 import { Feed, type ProfileData } from "./features/feed/Feed";
+import "./features/RouteContentBridge";
 
 async function bootstrap() {
   const { data } = await supabase.auth.getSession();
