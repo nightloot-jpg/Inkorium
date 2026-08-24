@@ -102,13 +102,41 @@ html body:has(.profile-view-page) .profile-view-home-grid .profile-view-stats-li
   justify-self:end;
 }
 
-
 html body:has(.profile-view-page) .profile-view-home-grid .profile-view-stats-card{
   padding:16px !important;
 }
 
 html body:has(.profile-view-page) .profile-view-home-grid .profile-view-about-card{
   padding:16px !important;
+}
+
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-more-button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:54px;
+  margin-top:20px;
+  padding:0 18px;
+  border:1px solid #d9e1ea;
+  border-radius:10px;
+  background:#fff;
+  color:#17385c;
+  font-size:14px;
+  font-weight:500;
+  line-height:1;
+  cursor:pointer;
+  transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;
+}
+
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-more-button:hover{
+  background:#f8fafc;
+  border-color:#cbd6e2;
+  box-shadow:0 1px 2px rgba(27,55,90,.04);
+}
+
+html body:has(.profile-view-page) .profile-view-home-grid .profile-view-more-button:active{
+  background:#f3f6fa;
 }
 
 @media (max-width:900px){
