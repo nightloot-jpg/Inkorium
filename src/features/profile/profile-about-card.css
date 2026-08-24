@@ -1,5 +1,3 @@
-@import "./profile-reset-styles.css";
-
 /* Light profile home sidebar, matching the requested reference while preserving layout/functionality. */
 html body:has(.profile-view-page) .profile-view-home-grid .profile-view-left-column{
   width:100%;
