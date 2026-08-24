@@ -1,0 +1,46 @@
+/* Profile pages should use one browser-level vertical scrollbar, not a nested app/profile scroller. */
+html:has(.profile-view-page),
+html:has(.profile-view-page) body,
+html:has(.profile-view-page) #root {
+  min-height: 100%;
+  height: auto !important;
+}
+
+html:has(.profile-view-page) {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+html:has(.profile-view-page) body {
+  overflow-y: visible !important;
+  overflow-x: hidden !important;
+}
+
+html:has(.profile-view-page) #root {
+  overflow: visible !important;
+}
+
+/* Remove nested scroll containers commonly introduced by profile/app shells. */
+html:has(.profile-view-page) .profile-view-page,
+html:has(.profile-view-page) .profile-view-page * {
+  scrollbar-width: auto;
+}
+
+html:has(.profile-view-page) .profile-view-page {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* The page itself is the scroll surface. */
+html:has(.profile-view-page) .profile-view-cover,
+html:has(.profile-view-page) .profile-view-header,
+html:has(.profile-view-page) .profile-view-tabs,
+html:has(.profile-view-page) .profile-view-grid {
+  overflow: visible;
+}
+
+/* Keep dialogs/lightboxes independently scrollable when they are open. */
+html:has(.profile-view-page) .profile-media-modal,
+html:has(.profile-view-page) .profile-photos-v2-lightbox {
+  overflow: auto !important;
+}
