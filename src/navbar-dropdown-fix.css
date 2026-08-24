@@ -1,11 +1,46 @@
-/* Header dropdown visibility fix */
+/* Header dropdown visibility + polished square account menu */
 .feed-app .topbar { position: relative !important; z-index: 2147483646 !important; isolation: isolate; overflow: visible !important; }
 .feed-app .top-actions { position: relative !important; z-index: 2147483647 !important; }
-.feed-app .user-menu { position: fixed !important; top: 54px !important; right: 12px !important; z-index: 2147483647 !important; width: 220px; max-height: calc(100vh - 66px); overflow-y: auto; display: grid; gap: 9px; padding: 18px; border: 1px solid #d6e0ea; border-radius: 8px; color: #445568; background: #fff; box-shadow: 0 14px 36px rgba(24,55,91,.22),0 2px 8px rgba(24,55,91,.1); }
-.feed-app .user-menu strong { display:block; margin-bottom:4px; color:#314b67; font-size:13px; }
-.feed-app .user-menu button { width:100%; padding:8px 10px; border-radius:6px; color:#35516d; background:transparent; text-align:left; }
+.feed-app .user-menu {
+  position: fixed !important;
+  top: 54px !important;
+  right: 12px !important;
+  z-index: 2147483647 !important;
+  width: 220px;
+  max-height: calc(100vh - 66px);
+  overflow-y: auto;
+  display: grid;
+  gap: 9px;
+  padding: 14px;
+  border: 1px solid #d6e0ea;
+  border-radius: 6px;
+  color: #445568;
+  background: #fff;
+  box-shadow: 0 14px 36px rgba(24,55,91,.22),0 2px 8px rgba(24,55,91,.1);
+}
+.feed-app .user-menu strong { display:block; margin:1px 4px 4px; padding-bottom:10px; border-bottom:1px solid #e6ebf0; color:#314b67; font-size:13px; }
+.feed-app .user-menu button { width:100%; padding:8px 10px; border-radius:4px; color:#35516d; background:transparent; text-align:left; }
 .feed-app .user-menu button:hover { background:#f1f5f9; color:var(--brand-a); }
 .feed-app .user-menu hr { width:100%; margin:2px 0; border:0; border-top:1px solid #e6ebf0; }
 .feed-app .user-menu span { color:#8190a0; font-size:11px; }
-.feed-app .themes { display:flex; flex-wrap:wrap; gap:10px; padding:2px 4px 4px; }
-@media (max-width:720px) { .feed-app .user-menu { top:50px !important; right:8px !important; width:min(220px,calc(100vw - 16px)); } }
+.feed-app .user-menu .themes { display:flex; flex-wrap:wrap; gap:8px; padding:2px 4px 4px; }
+.feed-app .user-menu .theme-dot {
+  width:28px !important;
+  height:28px !important;
+  flex:0 0 28px;
+  padding:0 !important;
+  border:2px solid #fff !important;
+  border-radius:50% !important;
+  box-shadow:0 0 0 1px #c7d2df !important;
+  cursor:pointer;
+}
+.feed-app .user-menu .theme-dot.blue { background:#0750a7 !important; }
+.feed-app .user-menu .theme-dot.violet { background:#673ab7 !important; }
+.feed-app .user-menu .theme-dot.green { background:#138a72 !important; }
+.feed-app .user-menu .theme-dot.sunset { background:#d66c3b !important; }
+.feed-app .user-menu .theme-dot.rose { background:#c2255c !important; }
+.feed-app .user-menu .theme-dot.teal { background:#0e8a9a !important; }
+.feed-app .user-menu .theme-dot.selected { box-shadow:0 0 0 2px #fff,0 0 0 4px var(--brand-a) !important; }
+@media (max-width:720px) {
+  .feed-app .user-menu { top:50px !important; right:8px !important; width:min(220px,calc(100vw - 16px)); }
+}
