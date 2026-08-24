@@ -17,5 +17,6 @@ html body:has(.profile-view-page) .profile-view-tabs button.active{color:#5b2db5
 html body:has(.profile-view-page) .profile-view-grid.profile-view-photos-active{display:block!important;width:100%!important;min-width:0!important;margin-top:16px!important}
 html body:has(.profile-view-page) .profile-view-grid.profile-view-photos-active>.profile-photos-host{display:block!important;width:100%!important;min-width:0!important}
 html body:has(.profile-view-page) .profile-view-grid.profile-view-photos-active .profile-photos-v2{width:100%!important;max-width:none!important;margin:0!important}
+.profile-view-grid.profile-view-photos-active{align-items:start!important}
 @media(max-width:900px){html body:has(.profile-view-page) .profile-view-header{padding-left:160px!important}html body:has(.profile-view-page) .profile-view-avatar-wrap{left:20px!important}}
 @media(max-width:640px){html body:has(.profile-view-page) .profile-view-header{display:block!important;min-height:180px!important;padding:64px 16px 18px!important}html body:has(.profile-view-page) .profile-view-avatar-wrap{left:16px!important;top:-48px!important}html body:has(.profile-view-page) .profile-view-avatar{width:96px!important;height:96px!important}}
