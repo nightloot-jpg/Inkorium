@@ -1,6 +1,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { EventsView } from "./EventsView";
+import "../../auth/SignupNames";
 
 const HOST_ID = "inkorium-events-fallback";
 const SYNC_INTERVAL_MS = 250;
@@ -113,10 +114,6 @@ export function mountEventsFallback() {
   const timer = window.setInterval(sync, SYNC_INTERVAL_MS);
 
   sync();
-
-  // Keep the fallback's listeners alive for the lifetime of the document.
-  // The module is loaded once from boot.tsx, so this timer is intentionally
-  // tied to the page lifetime rather than a React component lifecycle.
   void timer;
 }
 
