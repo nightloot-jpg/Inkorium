@@ -1,25 +1,18 @@
 import { useDebounce } from "react-use";
-import React, { StrictMode, useEffect, useState, useCallback, useRef, type ChangeEvent, type FormEvent } from "react";
-import { useAuthStore, usePlayerStore, type ProfileData as StoreProfileData, type PlayerItem } from "../../lib/store";
-import { FloatingMusicPlayer, formatTime } from "../../components_player";
-import { MusicView } from "../music/MusicView";
-import { createRoot } from "react-dom/client";
-import { createPortal } from "react-dom";
+import React, { useEffect, useState, useRef } from "react";
+import { useAuthStore, usePlayerStore } from "../../lib/store";
+import { FloatingMusicPlayer } from "../../components_player";
 import { NotificationsPortal } from "../../components/NotificationsPortal";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
-import Cropper from 'react-easy-crop';
-import { getCroppedImg } from "../../lib/cropImage";
 import { getDisplayName, formatPostTime } from "../../utils";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, MoreVertical, Minus, Plus, Upload, Move, X, Bell, Search, Image, Video, Music, BarChart3, Newspaper, List, ChevronDown, ChevronLeft, ChevronRight, Users, Globe, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send, Calendar, MapPin, Loader2, BadgeCheck, Palette, Shuffle, Repeat, Camera } from "lucide-react";
+import { Bell, ChevronDown, Heart, MessageCircle, Share2, MoreHorizontal, Copy, Send, Calendar, MapPin } from "lucide-react";
 import "../../styles.css";
 import { YoutubePlaylist } from '../../YoutubePlaylist';
 import { SingleSongPlayer } from '../../components/SingleSongPlayer';
 import { Composer } from '../../components/Composer';
 import { PhotosPage } from '../../components/PhotosPage';
 import { ChatWidget } from '../../ChatWidget';
-import { PeopleView } from '../../PeopleView';
-import { EventsView } from '../events/EventsView';
 import '../../feed/FeedEnhancements';
 
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
@@ -34,7 +27,7 @@ function CommentsSection({ postId, session, navigate }: { postId: string; sessio
   const [loading, setLoading] = useState(!!import.meta.env.VITE_YOUTUBE_API_KEY);
   useEffect(() => { let cancelled = false; async function loadComments() { const { data, error } = await supabase.from("comments").select("id, content, created_at, author_id, profiles!comments_author_id_fkey(username, full_name, avatar_url)").eq("post_id", postId).order("created_at", { ascending: true }); if (!cancelled && !error && data) setComments(data); if (!cancelled) setLoading(false); } loadComments(); return () => { cancelled = true; }; }, [postId]);
   async function postComment() { if (!newComment.trim()) return; const txt = newComment.trim(); setNewComment(""); const { data, error } = await supabase.from("comments").insert({ post_id: postId, author_id: session.user.id, content: txt }).select("id, content, created_at, author_id, profiles!comments_author_id_fkey(username, full_name, avatar_url)").single(); if (!error && data) setComments((prev) => [...prev, data]); }
-  return <div className="post-comments">{loading ? <p style={{fontSize:"0.85em",color:"var(--text-light)"}}>Cargando comentarios...</p> : <div className="comment-list">{comments.map(c => { const author=c.profiles; const name=author.username || author.full_name || "Usuario"; return <div key={c.id} className="comment-item"><UserLink userId={c.author_id} name={name} avatarUrl={author.avatar_url} navigate={navigate} /><div style={{flex:1}}><div className="comment-content">{c.content}</div><div className="comment-meta">{formatPostTime(c.created_at)}</div></div></div>; })}</div>}<div className="comment-input-area"><input type="text" placeholder="Escribe un comentario..." value={newComment} onChange={(e)=>setNewComment(e.target.value)} onKeyDown={(e)=>{if(e.key==='Enter')postComment();}}/><button onClick={postComment} disabled={!newComment.trim()}><Send size={14}/></button></div></div>;
+  return <div className="post-comments">{loading ? <p style={{fontSize:"0.85em",color:"var(--text-light)"}}>Cargando comentarios...</p> : <div className="comment-list">{comments.map(c => { const author=c.profiles; const name=author.username || author.full_name || "Usuario"; return <div key={c.id} className="comment-item"><button onClick={()=>navigate("perfil",{userId:c.author_id})} style={{border:0,background:'none',padding:0,cursor:'pointer',fontWeight:700}}>{name}</button><div style={{flex:1}}><div className="comment-content">{c.content}</div><div className="comment-meta">{formatPostTime(c.created_at)}</div></div></div>; })}</div>}<div className="comment-input-area"><input type="text" placeholder="Escribe un comentario..." value={newComment} onChange={(e)=>setNewComment(e.target.value)} onKeyDown={(e)=>{if(e.key==='Enter')postComment();}}/><button onClick={postComment} disabled={!newComment.trim()}><Send size={14}/></button></div></div>;
 }
 function ShareMenu({ post, session, onClose }: { post: Post; session: Session; onClose: () => void }) { const shareUrl = `${window.location.origin}/post/${post.id}`; async function shareToFeed(){onClose(); await supabase.from("posts").insert({author_id:session.user.id,content:"",visibility:"public",shared_post_id:post.shared_post_id||post.id}); window.location.reload();} return <div className="share-menu-popover" style={{right:16}}><strong>Compartir</strong><button onClick={shareToFeed}><Share2 size={16}/> Compartir en mi feed</button><div style={{height:1,background:"var(--border)",margin:"4px 0"}}/><strong style={{marginTop:4}}>Compartir fuera de Inkorium</strong><button onClick={()=>{window.open(`https://api.whatsapp.com/send?text=Mira esta publicación en Inkorium: ${encodeURIComponent(shareUrl)}`);onClose();}}>WhatsApp</button><button onClick={()=>{window.open(`sms:?body=Mira esta publicación en Inkorium: ${encodeURIComponent(shareUrl)}`);onClose();}}>Mensajes</button><button onClick={()=>{navigator.clipboard.writeText(shareUrl);alert("Enlace copiado al portapapeles");onClose();}}><Copy size={16}/> Copiar enlace</button>{navigator.share&&<button onClick={()=>{navigator.share({title:'Publicación en Inkorium',text:'Mira esta publicación en Inkorium',url:shareUrl});onClose();}}>Otras opciones nativas...</button>}</div>; }
 const BG_GRADIENTS:Record<string,string>={note:'linear-gradient(135deg,#fef9c3,#fde68a)',ocean:'linear-gradient(135deg,#38bdf8,#0ea5e9)',sunset:'linear-gradient(135deg,#fb923c,#ef4444)',purple:'linear-gradient(135deg,#a78bfa,#7c3aed)',forest:'linear-gradient(135deg,#34d399,#059669)',slate:'linear-gradient(135deg,#64748b,#1e293b)'};
@@ -45,21 +38,29 @@ function PollView({pollId,session}:{pollId:string,session:Session}){const[option
 export function Feed({session,profile:initialProfile}:{session:Session,profile:ProfileData|null}) {
   const profile = useAuthStore(state => state.profile) || initialProfile;
   const username = getDisplayName(profile, session.user.email);
-  const [history,setHistory] = useState<{page:Page,params?:Record<string,any>}[]>(() => {
-    const saved=sessionStorage.getItem("inkorium-history");
-    if(saved){try{return JSON.parse(saved);}catch(e){}}
-    return [{page:(sessionStorage.getItem("inkorium-page") as Page)||"inicio"}];
-  });
-  const currentRoute=history[history.length-1];
-  const page=currentRoute.page;
+  const [page,setPage] = useState<Page>(() => (sessionStorage.getItem('inkorium-page') as Page) || 'inicio');
+  const [routeParams,setRouteParams] = useState<Record<string,any>|undefined>(() => { try { const raw=sessionStorage.getItem('inkorium-route-params'); const value=raw?JSON.parse(raw):undefined; return value&&typeof value==='object'?value:undefined; } catch { return undefined; } });
+
   const navigate=(newPage:Page,params?:Record<string,any>)=>{
-    setHistory(prev=>{
-      const next=[...prev,{page:newPage,params}];
-      sessionStorage.setItem("inkorium-history",JSON.stringify(next));
-      sessionStorage.setItem("inkorium-page",newPage);
-      return next;
-    });
+    if(params&&Object.keys(params).length) sessionStorage.setItem('inkorium-route-params',JSON.stringify(params));
+    else sessionStorage.removeItem('inkorium-route-params');
+    sessionStorage.setItem('inkorium-page',newPage);
+    setPage(newPage);
+    setRouteParams(params);
+    window.dispatchEvent(new CustomEvent('inkorium-route-change',{detail:{page:newPage,params}}));
   };
+
+  useEffect(()=>{
+    const syncRoute=(event:Event)=>{
+      const detail=(event as CustomEvent).detail;
+      const nextPage=typeof detail==='string'?detail:detail?.page;
+      setPage((nextPage||sessionStorage.getItem('inkorium-page')||'inicio') as Page);
+      try { const raw=sessionStorage.getItem('inkorium-route-params'); const value=raw?JSON.parse(raw):undefined; setRouteParams(value&&typeof value==='object'?value:undefined); } catch { setRouteParams(undefined); }
+    };
+    window.addEventListener('inkorium-route-change',syncRoute);
+    return()=>window.removeEventListener('inkorium-route-change',syncRoute);
+  },[]);
+
   const [posts,setPosts]=useState<Post[]>([]);
   const [liked,setLiked]=useState<string[]>([]);
   const [feedError,setFeedError]=useState("");
@@ -76,11 +77,7 @@ export function Feed({session,profile:initialProfile}:{session:Session,profile:P
 
   useEffect(()=>{
     let cancelled=false;
-    async function loadNotifications(){
-      const{data,error}=await supabase.from('notifications').select('*, actor:actor_id(id, username, full_name, avatar_url)').order('created_at',{ascending:false}).limit(20);
-      if(cancelled)return;
-      if(!error&&data){setNotificationItems(data as NotificationData[]);setUnreadCount(data.filter((n:any)=>!n.is_read).length);}
-    }
+    async function loadNotifications(){const{data,error}=await supabase.from('notifications').select('*, actor:actor_id(id, username, full_name, avatar_url)').order('created_at',{ascending:false}).limit(20);if(cancelled)return;if(!error&&data){setNotificationItems(data as NotificationData[]);setUnreadCount(data.filter((n:any)=>!n.is_read).length);}}
     void loadNotifications();
     const channel=supabase.channel('realtime_notifications').on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:`user_id=eq.${session.user.id}`},()=>{void loadNotifications();}).subscribe();
     return()=>{cancelled=true;supabase.removeChannel(channel);};
@@ -92,94 +89,9 @@ export function Feed({session,profile:initialProfile}:{session:Session,profile:P
   const[theme,setThemeState]=useState<string>(()=>{const saved=typeof window!=="undefined"?localStorage.getItem("inkorium-theme"):null;return saved&&(THEME_OPTIONS as readonly string[]).includes(saved)?saved:"blue";});
   const setTheme=(value:string)=>{setThemeState(value);try{localStorage.setItem("inkorium-theme",value);}catch(e){}};
 
-  useEffect(()=>{
-    let cancelled=false;
-    async function loadPosts(){
-      const[{data:postsData,error:postsError},{data:likesData}]=await Promise.all([
-        supabase.from("posts").select("id, content, created_at, author_id, target_profile_id, shared_post_id, media_data, poll_id, post_likes(count), comments(count), original_post:shared_post_id(content, created_at, author_id, profiles!posts_author_id_fkey(username, full_name, avatar_url))").eq("visibility","public").is("group_id",null).is("target_profile_id",null).order("created_at",{ascending:false}).limit(30),
-        supabase.from("post_likes").select("post_id").eq("user_id",session.user.id)
-      ]);
-      if(cancelled)return;
-      if(postsError){setFeedError(postsError.message);return;}
-      const rows=postsData??[];
-      const authorIds=[...new Set(rows.map((row:any)=>row.author_id).filter(Boolean))];
-      const{data:profiles,error:profilesError}=authorIds.length?await supabase.from("profiles").select("id, username, full_name, avatar_url").in("id",authorIds):{data:[],error:null};
-      if(cancelled)return;
-      if(profilesError)setFeedError(profilesError.message);
-      const profileMap=new Map((profiles??[]).map((item:any)=>[item.id,item]));
-      setPosts(rows.map((row:any)=>({id:row.id,text:row.content??"",time:formatPostTime(row.created_at),likes:row.post_likes?.[0]?.count??0,authorName:profileMap.has(row.author_id)?getDisplayName(profileMap.get(row.author_id)||null,undefined):(row.author_id===session.user.id?username:"usuario"),authorAvatarUrl:profileMap.get(row.author_id)?.avatar_url||(row.author_id===session.user.id?profile?.avatar_url:null),media_data:row.media_data,author_id:row.author_id,target_profile_id:row.target_profile_id,shared_post_id:row.shared_post_id,originalPost:row.original_post?{text:row.original_post.content||"",authorName:row.original_post.profiles?.username||row.original_post.profiles?.full_name||"Usuario",authorAvatarUrl:row.original_post.profiles?.avatar_url||null,time:formatPostTime(row.original_post.created_at),author_id:row.original_post.author_id}:undefined,commentsCount:row.comments?.[0]?.count||0})));
-      setLiked((likesData??[]).map((l:any)=>l.post_id));
-    }
-    void loadPosts();
-    return()=>{cancelled=true;};
-  },[session.user.id,username]);
-
+  useEffect(()=>{let cancelled=false;async function loadPosts(){const[{data:postsData,error:postsError},{data:likesData}]=await Promise.all([supabase.from("posts").select("id, content, created_at, author_id, target_profile_id, shared_post_id, media_data, poll_id, post_likes(count), comments(count), original_post:shared_post_id(content, created_at, author_id, profiles!posts_author_id_fkey(username, full_name, avatar_url))").eq("visibility","public").is("group_id",null).is("target_profile_id",null).order("created_at",{ascending:false}).limit(30),supabase.from("post_likes").select("post_id").eq("user_id",session.user.id)]);if(cancelled)return;if(postsError){setFeedError(postsError.message);return;}const rows=postsData??[];const authorIds=[...new Set(rows.map((row:any)=>row.author_id).filter(Boolean))];const{data:profiles,error:profilesError}=authorIds.length?await supabase.from("profiles").select("id, username, full_name, avatar_url").in("id",authorIds):{data:[],error:null};if(cancelled)return;if(profilesError)setFeedError(profilesError.message);const profileMap=new Map((profiles??[]).map((item:any)=>[item.id,item]));setPosts(rows.map((row:any)=>({id:row.id,text:row.content??"",time:formatPostTime(row.created_at),likes:row.post_likes?.[0]?.count??0,authorName:profileMap.has(row.author_id)?getDisplayName(profileMap.get(row.author_id)||null,undefined):(row.author_id===session.user.id?username:"usuario"),authorAvatarUrl:profileMap.get(row.author_id)?.avatar_url||(row.author_id===session.user.id?profile?.avatar_url:null),media_data:row.media_data,author_id:row.author_id,target_profile_id:row.target_profile_id,shared_post_id:row.shared_post_id,originalPost:row.original_post?{text:row.original_post.content||"",authorName:row.original_post.profiles?.username||row.original_post.profiles?.full_name||"Usuario",authorAvatarUrl:row.original_post.profiles?.avatar_url||null,time:formatPostTime(row.original_post.created_at),author_id:row.original_post.author_id}:undefined,commentsCount:row.comments?.[0]?.count||0})));setLiked((likesData??[]).map((l:any)=>l.post_id));}void loadPosts();return()=>{cancelled=true;};},[session.user.id,username]);
   const deletePost=async(id:string,mediaData:any)=>{const success=deletePostHelper(id,mediaData,supabase);if(success)setPosts(posts=>posts.filter(p=>p.id!==id));setPostMenu(null);};
   async function toggleLike(id:string){const active=liked.includes(id);setLiked(active?liked.filter(item=>item!==id):[...liked,id]);setPosts(posts.map(post=>post.id===id?{...post,likes:post.likes+(active?-1:1)}:post));if(active)await supabase.from("post_likes").delete().eq("post_id",id).eq("user_id",session.user.id);else await supabase.from("post_likes").insert({post_id:id,user_id:session.user.id});}
 
-  return (
-    <div className={`feed-app theme-${theme}`}>
-      <FloatingMusicPlayer/>
-      <header className="topbar">
-        <button className="brand-button" onClick={()=>navigate("inicio")}><Brand/></button>
-        <nav className="top-nav">
-          {([["inicio","Inicio"],["perfil","Perfil"],["mensajes","Mensajes"],["personas","Personas"],["musica","Musica"],["fotos","Fotos"],["eventos","Eventos"]] as [Page,string][]).map(([id,label])=><button className={page===id?"active":""} onClick={()=>{if(id==="mensajes"){window.dispatchEvent(new CustomEvent("open-chat-panel"));return;}navigate(id);}} key={id}>{label}</button>)}
-        </nav>
-        <form className="search-form" onSubmit={event=>{event.preventDefault();navigate("buscar");}}><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Buscar personas, musica, videos..."/></form>
-        <div className="top-actions">
-          <button className="icon-button" ref={notificationsButtonRef} onClick={()=>setNotifications(!notifications)} aria-label="Notificaciones"><div className="bell-container"><Bell size={20} strokeWidth={2.5}/>{unreadCount>0&&<span className="notification-badge">{unreadCount>99?'99+':unreadCount}</span>}</div></button>
-          <button className="icon-button" onClick={()=>playerState.isOpen?playerState.closePlayer():playerState.openPlayer()} aria-label="Reproductor">♫</button>
-          <button className="user-chip" onClick={()=>setUserMenu(!userMenu)}><span className="avatar small">{username[0].toUpperCase()}</span>{username}<ChevronDown size={14}/></button>
-        </div>
-        <NotificationsPortal isOpen={notifications} onClose={()=>setNotifications(false)} triggerRef={notificationsButtonRef}>
-          <div className="popover notifications" style={{position:"static",boxShadow:"0 8px 24px #18375b35"}}><strong>NOTIFICACIONES</strong><div className="notifications-list">{notificationItems.length===0?<div className="empty-notifications"><Bell size={24} style={{opacity:.5,margin:"0 auto 8px",display:"block"}}/><p>No tienes notificaciones nuevas.</p></div>:notificationItems.map(notif=>{const actorName=getDisplayName(notif.actor as any,undefined);let text="ha interactuado contigo";if(notif.type==='like')text="Le ha gustado tu publicación";else if(notif.type==='comment')text="Ha comentado tu publicación";else if(notif.type==='friend_request')text="Te ha enviado una solicitud";return <div key={notif.id} className={`notification-item ${notif.is_read?'read':'unread'}`} onClick={()=>!notif.is_read&&void markRead(notif.id)}><UserLink userId={notif.actor?.id||""} name={actorName} avatarUrl={notif.actor?.avatar_url} navigate={navigate}/><div className="notification-content"><span><br/>{text}</span><small>{formatPostTime(notif.created_at)}</small></div>{!notif.is_read&&<div className="unread-dot"/>}</div>;})}</div>{notificationItems.length>0&&<button onClick={()=>void markAllRead()}>Marcar todo como leído</button>}</div>
-        </NotificationsPortal>
-        {userMenu&&<div className="popover user-menu"><strong>{username}</strong><button onClick={()=>navigate("perfil")}>Mi perfil</button><button onClick={()=>navigate("mensajes")}>Mis mensajes</button><hr/><span>Color de la web</span><div className="themes">{THEME_OPTIONS.map(option=><button key={option} className={`theme-dot ${option}${theme===option?" selected":""}`} title={option} aria-label={`Tema ${option}`} onClick={()=>setTheme(option)}/>)}</div><button onClick={()=>void supabase.auth.signOut()}>Cerrar sesion</button></div>}
-      </header>
-
-      {page==="fotos" ? <PhotosPage session={session} profileId={currentRoute.params?.userId} navigate={navigate}/> : page==="eventos" ? <EventsView session={session} username={username} onExit={()=>navigate("inicio")}/> : (
-        <div className="feed-layout">
-          <aside className="left-column">
-            <section className="profile-card panel">
-              <div className="avatar profile-avatar">{username[0].toUpperCase()}</div>
-              <div><strong>{username}</strong><span>Mas rapido</span><em>● En linea</em><button onClick={()=>navigate("perfil")}>Ver mi perfil »</button></div>
-            </section>
-            <nav className="side-menu panel">
-              {[["⌂","Novedades","inicio"],["▧","Fotos","fotos"],["▹","Videos","videos"],["♫","Musica","musica"],["□","Eventos","eventos"],["♧","Grupos","personas"],["⚑","Paginas","personas"],["▥","Encuestas","buscar"],["▱","Guardados","buscar"],["⚙","Configuracion","personas"]].map(([icon,label,id],index)=><button className={page===id&&index===0?"selected":""} onClick={()=>navigate(id as Page)} key={label}><span>{icon}</span>{label}</button>)}
-            </nav>
-            <section className="friends panel">
-              <strong>AMIGOS CONECTADOS (1)</strong>
-              <div>
-                <span className="avatar tiny">B</span>
-                <button onClick={()=>navigate("personas")}>bg9222361</button>
-                <i/>
-              </div>
-              <button className="see-all" onClick={()=>navigate("personas")}>Ver todos »</button>
-            </section>
-          </aside>
-
-          <main className="stream">
-            {page==="inicio"&&<>
-              <Composer session={session} profile={profile} onPublish={newPost=>setPosts(current=>[newPost,...current])}/>
-              {posts.length===0&&!feedError&&<p className="empty-feed">Todavia no hay publicaciones.</p>}
-              {posts.map(post=><article className="post panel" key={post.id}>
-                <div className="post-head">
-                  <div style={{position:"absolute",top:12,right:12}}>{post.author_id===session.user.id&&<button className="post-menu-toggle" onClick={()=>setPostMenu(postMenu===post.id?null:post.id)}><MoreHorizontal size={16}/></button>}{postMenu===post.id&&post.author_id===session.user.id&&<div className="popover" style={{top:24,right:0,minWidth:150,zIndex:10}}><button onClick={()=>deletePost(post.id,post.media_data)} style={{color:"var(--error-color,#d32f2f)",textAlign:"left",width:"100%"}}>🗑 Eliminar publicación</button></div>}</div>
-                  <UserLink userId={post.author_id} name={post.authorName||username} avatarUrl={post.authorAvatarUrl} navigate={navigate}/>
-                  <div>{post.target_profile_id&&post.target_profile_id!==post.author_id?<span className="signature-meta" style={{display:"block",fontSize:"0.85em",color:"var(--text-light)"}}>dejó un mensaje en el tablón de {post.targetName||"alguien"}</span>:null}<span>{post.time} · ◉</span></div>
-                </div>
-                {post.shared_post_id&&post.originalPost&&<div style={{fontSize:"0.85em",color:"var(--text-light)",marginBottom:8,marginLeft:16}}>Compartió una publicación de <strong>{post.originalPost.authorName}</strong></div>}
-                {post.media_data?.type!=="background"&&post.text&&<p className="post-text">{post.text}</p>}
-                <PostMedia media={post.media_data} pollId={post.poll_id} session={session} text={post.text}/>
-                {post.shared_post_id&&post.originalPost&&<div className="shared-post-ref"><div className="post-head"><strong>{post.originalPost.authorName}</strong><span style={{fontSize:"0.85em",color:"var(--text-light)"}}>{post.originalPost.time}</span></div><p className="post-text">{post.originalPost.text}</p></div>}
-                <div className="post-actions" style={{position:"relative"}}><button onClick={()=>void toggleLike(post.id)} className={liked.includes(post.id)?"is-liked":""}><Heart size={16} fill={liked.includes(post.id)?"currentColor":"none"}/> Me gusta</button><button onClick={()=>setOpenComments(post.id===openComments?null:post.id)}><MessageCircle size={16}/> Comentar {post.commentsCount?`(${post.commentsCount})`:''}</button><button onClick={()=>setShareMenu(post.id===shareMenu?null:post.id)}><Share2 size={16}/> Compartir</button><span style={{marginLeft:"auto",display:"flex",alignItems:"center",fontSize:"0.85em",color:"var(--text-light)"}}><Heart size={14} style={{display:"inline",verticalAlign:"middle",marginRight:4,opacity:.7}}/> {post.likes}</span>{shareMenu===post.id&&<ShareMenu post={post} session={session} onClose={()=>setShareMenu(null)}/>}</div>
-                {openComments===post.id&&<CommentsSection postId={post.id} session={session} navigate={navigate}/>} 
-              </article>)}
-            </>}
-          </main>
-        </div>
-      )}
-      <ChatWidget session={session} navigate={navigate}/>
-    </div>
-  );
+  return (<div className={`feed-app theme-${theme}`}><FloatingMusicPlayer/><header className="topbar"><button className="brand-button" onClick={()=>navigate("inicio")}><Brand/></button><nav className="top-nav">{([["inicio","Inicio"],["perfil","Perfil"],["mensajes","Mensajes"],["personas","Personas"],["musica","Musica"],["fotos","Fotos"],["eventos","Eventos"]] as [Page,string][]).map(([id,label])=><button className={page===id?"active":""} onClick={()=>{if(id==="mensajes"){window.dispatchEvent(new CustomEvent("open-chat-panel"));return;}navigate(id);}} key={id}>{label}</button>)}</nav><form className="search-form" onSubmit={event=>{event.preventDefault();navigate("buscar");}}><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Buscar personas, musica, videos..."/></form><div className="top-actions"><button className="icon-button" ref={notificationsButtonRef} onClick={()=>setNotifications(!notifications)} aria-label="Notificaciones"><div className="bell-container"><Bell size={20} strokeWidth={2.5}/>{unreadCount>0&&<span className="notification-badge">{unreadCount>99?'99+':unreadCount}</span>}</div></button><button className="icon-button" onClick={()=>playerState.isOpen?playerState.closePlayer():playerState.openPlayer()} aria-label="Reproductor">♫</button><button className="user-chip" onClick={()=>setUserMenu(!userMenu)}><span className="avatar small">{username[0].toUpperCase()}</span>{username}<ChevronDown size={14}/></button></div><NotificationsPortal isOpen={notifications} onClose={()=>setNotifications(false)} triggerRef={notificationsButtonRef}><div className="popover notifications" style={{position:"static",boxShadow:"0 8px 24px #18375b35"}}><strong>NOTIFICACIONES</strong><div className="notifications-list">{notificationItems.length===0?<div className="empty-notifications"><Bell size={24} style={{opacity:.5,margin:"0 auto 8px",display:"block"}}/><p>No tienes notificaciones nuevas.</p></div>:notificationItems.map(notif=>{const actorName=getDisplayName(notif.actor as any,undefined);let text="ha interactuado contigo";if(notif.type==='like')text="Le ha gustado tu publicación";else if(notif.type==='comment')text="Ha comentado tu publicación";else if(notif.type==='friend_request')text="Te ha enviado una solicitud";return <div key={notif.id} className={`notification-item ${notif.is_read?'read':'unread'}`} onClick={()=>!notif.is_read&&void markRead(notif.id)}><div className="notification-content"><span>{actorName} {text}</span><small>{formatPostTime(notif.created_at)}</small></div>{!notif.is_read&&<div className="unread-dot"/>}</div>;})}</div>{notificationItems.length>0&&<button onClick={()=>void markAllRead()}>Marcar todo como leído</button>}</div></NotificationsPortal>{userMenu&&<div className="popover user-menu"><strong>{username}</strong><button onClick={()=>navigate("perfil")}>Mi perfil</button><button onClick={()=>navigate("mensajes")}>Mis mensajes</button><hr/><span>Color de la web</span><div className="themes">{THEME_OPTIONS.map(option=><button key={option} className={`theme-dot ${option}${theme===option?" selected":""}`} title={option} aria-label={`Tema ${option}`} onClick={()=>setTheme(option)}/>)}</div><button onClick={()=>void supabase.auth.signOut()}>Cerrar sesion</button></div>}</header>{page==="fotos"?<PhotosPage session={session} profileId={routeParams?.userId} navigate={navigate}/>:<div className="feed-layout"><aside className="left-column"><section className="profile-card panel"><div className="avatar profile-avatar">{username[0].toUpperCase()}</div><div><strong>{username}</strong><span>Mas rapido</span><em>● En linea</em><button onClick={()=>navigate("perfil")}>Ver mi perfil »</button></div></section><nav className="side-menu panel">{[["⌂","Novedades","inicio"],["▧","Fotos","fotos"],["▹","Videos","videos"],["♫","Musica","musica"],["□","Eventos","eventos"],["♧","Grupos","personas"],["⚑","Paginas","personas"],["▥","Encuestas","buscar"],["▱","Guardados","buscar"],["⚙","Configuracion","personas"]].map(([icon,label,id],index)=><button className={page===id&&index===0?"selected":""} onClick={()=>navigate(id as Page)} key={label}><span>{icon}</span>{label}</button>)}</nav><section className="friends panel"><strong>AMIGOS CONECTADOS (1)</strong><div><span className="avatar tiny">B</span><button onClick={()=>navigate("personas")}>bg9222361</button><i/></div><button className="see-all" onClick={()=>navigate("personas")}>Ver todos »</button></section></aside><main className="stream">{page==="inicio"&&<><Composer session={session} profile={profile} onPublish={newPost=>setPosts(current=>[newPost,...current])}/>{posts.length===0&&!feedError&&<p className="empty-feed">Todavia no hay publicaciones.</p>}{posts.map(post=><article className="post panel" key={post.id}><div className="post-head"><div style={{position:"absolute",top:12,right:12}}>{post.author_id===session.user.id&&<button className="post-menu-toggle" onClick={()=>setPostMenu(postMenu===post.id?null:post.id)}><MoreHorizontal size={16}/></button>}{postMenu===post.id&&post.author_id===session.user.id&&<div className="popover" style={{top:24,right:0,minWidth:150,zIndex:10}}><button onClick={()=>deletePost(post.id,post.media_data)} style={{color:"var(--error-color,#d32f2f)",textAlign:"left",width:"100%"}}>🗑 Eliminar publicación</button></div>}</div><UserLink userId={post.author_id} name={post.authorName||username} avatarUrl={post.authorAvatarUrl} navigate={navigate}/><div>{post.target_profile_id&&post.target_profile_id!==post.author_id?<span className="signature-meta" style={{display:"block",fontSize:"0.85em",color:"var(--text-light)"}}>dejó un mensaje en el tablón de {post.targetName||"alguien"}</span>:null}<span>{post.time} · ◉</span></div></div>{post.shared_post_id&&post.originalPost&&<div style={{fontSize:"0.85em",color:"var(--text-light)",marginBottom:8,marginLeft:16}}>Compartió una publicación de <strong>{post.originalPost.authorName}</strong></div>}{post.media_data?.type!=="background"&&post.text&&<p className="post-text">{post.text}</p>}<PostMedia media={post.media_data} pollId={post.poll_id} session={session} text={post.text}/>{post.shared_post_id&&post.originalPost&&<div className="shared-post-ref"><div className="post-head"><strong>{post.originalPost.authorName}</strong><span style={{fontSize:"0.85em",color:"var(--text-light)"}}>{post.originalPost.time}</span></div><p className="post-text">{post.originalPost.text}</p></div>}<div className="post-actions" style={{position:"relative"}}><button onClick={()=>void toggleLike(post.id)} className={liked.includes(post.id)?"is-liked":""}><Heart size={16} fill={liked.includes(post.id)?"currentColor":"none"}/> Me gusta</button><button onClick={()=>setOpenComments(post.id===openComments?null:post.id)}><MessageCircle size={16}/> Comentar {post.commentsCount?`(${post.commentsCount})`:''}</button><button onClick={()=>setShareMenu(post.id===shareMenu?null:post.id)}><Share2 size={16}/> Compartir</button><span style={{marginLeft:"auto",display:"flex",alignItems:"center",fontSize:"0.85em",color:"var(--text-light)"}}><Heart size={14} style={{display:"inline",verticalAlign:"middle",marginRight:4,opacity:.7}}/> {post.likes}</span>{shareMenu===post.id&&<ShareMenu post={post} session={session} onClose={()=>setShareMenu(null)}/>}</div>{openComments===post.id&&<CommentsSection postId={post.id} session={session} navigate={navigate}/>}</article>)}</>}</main></div>}<ChatWidget session={session} navigate={navigate}/></div>);
 }
