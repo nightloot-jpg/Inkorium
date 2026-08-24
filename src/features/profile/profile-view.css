@@ -732,3 +732,129 @@ html body:has(.profile-view-page) .profile-view-events-card{
   }
   html body:has(.profile-view-page) .profile-view-signature-card{min-height:0!important}
 }
+
+
+/* PROFILE INICIO · WIDGETS CLAROS
+   Mantiene el layout de 3 columnas y adapta todos los widgets al tema blanco. */
+html body:has(.profile-view-page) .profile-view-card,
+html body:has(.profile-view-page) .profile-view-signature-card,
+html body:has(.profile-view-page) .profile-view-about-card,
+html body:has(.profile-view-page) .profile-view-stats-card,
+html body:has(.profile-view-page) .profile-view-intro-card,
+html body:has(.profile-view-page) .profile-view-events-card {
+  background:#fff!important;
+  background-image:none!important;
+  border:1px solid #dce4ec!important;
+  border-radius:9px!important;
+  box-shadow:0 1px 4px rgba(35,58,82,.06)!important;
+  color:#29435d!important;
+}
+html body:has(.profile-view-page) .profile-view-card h2,
+html body:has(.profile-view-page) .profile-view-section-head h2,
+html body:has(.profile-view-page) .profile-view-card-title {
+  color:#243f59!important;
+}
+html body:has(.profile-view-page) .profile-view-section-head span {
+  color:#8798a8!important;
+}
+html body:has(.profile-view-page) .profile-view-about-grid div,
+html body:has(.profile-view-page) .profile-view-stats-list div {
+  color:#526b83!important;
+}
+html body:has(.profile-view-page) .profile-view-about-grid svg,
+html body:has(.profile-view-page) .profile-view-stats-list svg {
+  color:#71879b!important;
+}
+html body:has(.profile-view-page) .profile-view-stats-list div {
+  border-bottom-color:#edf1f5!important;
+}
+html body:has(.profile-view-page) .profile-view-stats-list strong {
+  color:#304a63!important;
+}
+html body:has(.profile-view-page) .profile-view-more-button {
+  background:#fff!important;
+  border:1px solid #dce4ec!important;
+  color:#526b83!important;
+}
+html body:has(.profile-view-page) .profile-view-listening {
+  background:#f7f9fb!important;
+  border:1px solid #e2e8ee!important;
+  border-radius:8px!important;
+  color:#687d91!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-main {
+  color:#29425e!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-copy strong {
+  color:#29425e!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-copy small {
+  color:#7b8d9e!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-progress {
+  background:#dce5ed!important;
+}
+html body:has(.profile-view-page) .profile-view-listening-control {
+  background:#fff!important;
+  border:1px solid #9baab8!important;
+  color:#526b83!important;
+}
+html body:has(.profile-view-page) .profile-view-events-card .profile-view-section-head button {
+  color:#2879c7!important;
+}
+html body:has(.profile-view-page) .profile-view-event-empty {
+  color:#8a9aaa!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head {
+  border-bottom:1px solid #edf1f5!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head h2 {
+  color:#243f59!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-card .profile-view-section-head span {
+  color:#8798a8!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form {
+  border-bottom:1px solid #edf1f5!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea {
+  background:#f8fafc!important;
+  border:1px solid #d7e0e9!important;
+  color:#314b67!important;
+  border-radius:6px!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea::placeholder {
+  color:#8293a5!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-form textarea:focus {
+  background:#fff!important;
+  border-color:#7fa9d3!important;
+  box-shadow:0 0 0 2px rgba(52,112,177,.10)!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions span {
+  color:#8b9aaa!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions button {
+  background:#3478c5!important;
+  border:1px solid #2d6dad!important;
+  color:#fff!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-actions button:hover:not(:disabled) {
+  background:#2869b1!important;
+}
+html body:has(.profile-view-page) .profile-view-signatures,
+html body:has(.profile-view-page) .profile-view-signature {
+  border-color:#edf1f5!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-author strong {
+  color:#29425e!important;
+}
+html body:has(.profile-view-page) .profile-view-signature-author small {
+  color:#8a99a8!important;
+}
+html body:has(.profile-view-page) .profile-view-signature p {
+  color:#526b83!important;
+}
+html body:has(.profile-view-page) .profile-view-empty {
+  color:#8292a2!important;
+}
