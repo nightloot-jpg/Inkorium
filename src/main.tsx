@@ -7,6 +7,7 @@ import type { ProfileData } from "./features/feed/Feed";
 import "./features/RouteContentBridge";
 import "./components/composer-2026.css";
 import "./features/feed/feed-post-media-2026.css";
+import "./features/feed/feed-comments-2026.css";
 
 async function bootstrap() {
   const { data } = await supabase.auth.getSession();
