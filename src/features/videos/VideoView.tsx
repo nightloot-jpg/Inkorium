@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Plus, Video, Loader2, ExternalLink, Trash2, Upload } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { getR2SignedUrl, deleteR2Object } from '../../lib/r2';
 import { VideoUploader } from './VideoUploader';
 
 const blue = '#0750A7';
@@ -15,9 +16,11 @@ type Tab = 'descubrir' | 'mis-videos' | 'subir';
 async function getR2PlaybackUrl(value: string | null): Promise<string | null> {
   if (!value?.startsWith('r2://')) return value;
   const key = value.slice('r2://'.length);
-  const { data, error } = await supabase.functions.invoke('r2-video', { body: { action: 'get', key } });
-  if (error || !data?.url) return null;
-  return data.url;
+  try {
+    return await getR2SignedUrl(key);
+  } catch {
+    return null;
+  }
 }
 
 export function VideoView({ session }: { session:any; navigate:any }) {
@@ -92,7 +95,7 @@ function SavedVideos({session}:{session:any}){
   async function remove(video:SavedVideo){
     if(video.source==='upload'&&video.url?.startsWith('r2://')){
       const key=video.url.slice('r2://'.length);
-      await supabase.functions.invoke('r2-video',{body:{action:'delete',key}});
+      await deleteR2Object(key).catch(() => undefined);
     } else if(video.source==='upload'&&video.url){
       const marker='/storage/v1/object/public/videos/';
       const index=video.url.indexOf(marker);
