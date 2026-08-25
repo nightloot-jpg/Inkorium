@@ -6,6 +6,8 @@ import { FeedShell } from "./features/feed/FeedShell";
 import type { ProfileData } from "./features/feed/Feed";
 import "./features/RouteContentBridge";
 import "./features/route-content-bridge.css";
+import "./features/route-content-bridge-events-navbar-fix-2026.css";
+import "./features/events/events-route-rebuild-2026.css";
 import "./components/composer-2026.css";
 import "./features/feed/feed-post-media-2026.css";
 import "./features/feed/feed-comments-2026.css";
@@ -30,7 +32,6 @@ import "./chat-media-2026.css";
 import "./features/events/events-2026.css";
 import "./features/events/events-detail-create-2026.css";
 import "./features/events/events-integrated-shell-2026.css";
-import "./features/route-content-bridge-events-navbar-fix-2026.css";
 
 async function bootstrap() {
   const { data } = await supabase.auth.getSession();
