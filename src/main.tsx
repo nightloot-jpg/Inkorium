@@ -29,6 +29,7 @@ import "./chat-media-2026.css";
 import "./features/events/events-2026.css";
 import "./features/events/events-detail-create-2026.css";
 import "./features/events/events-integrated-shell-2026.css";
+import "./features/route-content-bridge-events-navbar-fix-2026.css";
 
 async function bootstrap() {
   const { data } = await supabase.auth.getSession();
