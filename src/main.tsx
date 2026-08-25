@@ -5,11 +5,8 @@ import { supabase } from "./lib/supabase";
 import { FeedShell } from "./features/feed/FeedShell";
 import type { ProfileData } from "./features/feed/Feed";
 import "./features/RouteContentBridge";
-import "./features/events/events-native-mount";
 import "./features/route-content-bridge.css";
 import "./features/route-content-bridge-header-stable-2026.css";
-import "./features/route-content-bridge-events-navbar-fix-2026.css";
-import "./features/events/events-route-rebuild-2026.css";
 import "./components/composer-2026.css";
 import "./features/feed/feed-post-media-2026.css";
 import "./features/feed/feed-comments-2026.css";
@@ -31,9 +28,24 @@ import "./features/videos/videos-player-library-2026.css";
 import "./features/videos/videos-uploader-2026.css";
 import "./chat-2026.css";
 import "./chat-media-2026.css";
-import "./features/events/events-2026.css";
-import "./features/events/events-detail-create-2026.css";
-import "./features/events/events-integrated-shell-2026.css";
+import "./features/remove-events-nav-2026.css";
+
+function normalizeLegacyEventsRoute() {
+  const hash = window.location.hash.replace(/^#/, "").replace(/\/+$/, "").trim().toLowerCase();
+  const path = window.location.pathname.replace(/\/+$/, "").split("/").pop()?.toLowerCase() || "";
+  const stored = sessionStorage.getItem("inkorium-page")?.trim().toLowerCase() || "";
+  const isLegacyEventsRoute = hash === "eventos" || path === "eventos" || stored === "eventos";
+  if (!isLegacyEventsRoute) return;
+
+  sessionStorage.setItem("inkorium-page", "inicio");
+  sessionStorage.removeItem("inkorium-route-params");
+
+  if (hash === "eventos" || path === "eventos") {
+    window.history.replaceState({}, "", "/feed");
+  }
+}
+
+normalizeLegacyEventsRoute();
 
 async function bootstrap() {
   const { data } = await supabase.auth.getSession();
