@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Images } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore, usePlayerStore } from '../../lib/store';
-import type { GalleryPhoto, MediaTarget, ProfileStats, ProfileViewProps, Signature, StatusValue } from './types/profile.types';
+import type { GalleryPhoto, MediaTarget, ProfileViewProps, StatusValue } from './types/profile.types';
 import { useProfile } from './hooks/useProfile';
+import { useProfileStats } from './hooks/useProfileStats';
+import { useProfileSignatures } from './hooks/useProfileSignatures';
 import { ProfileHeader } from './components/ProfileHeader';
 import { ProfileTabs, type ProfileTab } from './components/ProfileTabs';
 import { ProfileHome } from './components/home/ProfileHome';
@@ -32,11 +34,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const [editingCity, setEditingCity] = useState(false);
   const [cityDraft, setCityDraft] = useState(initialProfile?.city || '');
   const [savingCity, setSavingCity] = useState(false);
-  const [signatures, setSignatures] = useState<Signature[]>([]);
-  const [loadingSignatures, setLoadingSignatures] = useState(true);
   const [signatureDraft, setSignatureDraft] = useState('');
-  const [savingSignature, setSavingSignature] = useState(false);
-  const [profileStats, setProfileStats] = useState<ProfileStats>({ friends_count: 0, followers_count: 0, following_count: 0, albums_count: 0 });
   const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
   const [loadingGallery, setLoadingGallery] = useState(false);
 
@@ -59,47 +57,20 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const effectiveStatus = isOwnProfile ? normalizeStatus(globalProfile?.user_status ?? status) : normalizeStatus(displayProfile?.user_status);
   const statusMeta = STATUS_META[effectiveStatus];
 
+  const { stats: profileStats } = useProfileStats(profileId);
+  const currentAuthor = globalProfile ? {
+    username: globalProfile.username ?? null,
+    full_name: globalProfile.full_name ?? null,
+    avatar_url: globalProfile.avatar_url ?? null,
+  } : undefined;
+  const { signatures, loading: loadingSignatures, saving: savingSignature, submit: submitSignature } = useProfileSignatures(profileId, session.user.id, currentAuthor);
+
   useEffect(() => {
     setStatus(normalizeStatus(displayProfile?.user_status));
     setBioDraft(displayProfile?.bio || '');
     setHashtagDraft(displayProfile?.profile_hashtag || '');
     setCityDraft(displayProfile?.city || '');
   }, [displayProfile?.bio, displayProfile?.city, displayProfile?.profile_hashtag, displayProfile?.user_status]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoadingSignatures(true);
-    async function loadSignatures() {
-      const { data, error } = await supabase.from('profile_signatures').select('id, content, created_at, author_id').eq('profile_id', profileId).order('created_at', { ascending: false }).limit(30);
-      if (cancelled) return;
-      if (error) { console.error('Error loading profile signatures:', error); setSignatures([]); setLoadingSignatures(false); return; }
-      const rows = (data || []) as Signature[];
-      const authorIds = Array.from(new Set(rows.map(row => row.author_id).filter(Boolean)));
-      const authors: Record<string, Signature['author']> = {};
-      if (authorIds.length) {
-        const { data: profiles } = await supabase.from('profiles').select('id, username, full_name, avatar_url').in('id', authorIds);
-        for (const author of profiles || []) authors[(author as { id: string }).id] = author as Signature['author'];
-      }
-      setSignatures(rows.map(row => ({ ...row, author: authors[row.author_id] || null })));
-      setLoadingSignatures(false);
-    }
-    void loadSignatures();
-    return () => { cancelled = true; };
-  }, [profileId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadProfileStats() {
-      const { data, error } = await supabase.rpc('get_profile_stats', { target_user_id: profileId }).maybeSingle();
-      if (cancelled) return;
-      if (error) { console.error('Error loading profile stats:', error); return; }
-      if (data) setProfileStats({ friends_count: Number(data.friends_count ?? 0), followers_count: Number(data.followers_count ?? 0), following_count: Number(data.following_count ?? 0), albums_count: Number(data.albums_count ?? 0) });
-    }
-    void loadProfileStats();
-    const handleFocus = () => void loadProfileStats();
-    window.addEventListener('focus', handleFocus);
-    return () => { cancelled = true; window.removeEventListener('focus', handleFocus); };
-  }, [profileId]);
 
   useEffect(() => {
     if (activeTab !== 'Fotos') return;
@@ -156,16 +127,10 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
     finally { setSavingCity(false); }
   };
 
-  const submitSignature = async () => {
-    const content = signatureDraft.trim().slice(0, 500);
-    if (!content || savingSignature) return;
-    setSavingSignature(true);
-    const { data, error } = await supabase.from('profile_signatures').insert({ profile_id: profileId, author_id: session.user.id, content }).select('id, content, created_at, author_id').single();
-    setSavingSignature(false);
-    if (error) { window.alert(`No se pudo dejar la firma: ${error.message}`); return; }
-    const author = { username: globalProfile?.username ?? null, full_name: globalProfile?.full_name ?? null, avatar_url: globalProfile?.avatar_url ?? null };
-    setSignatures(current => [{ ...(data as Signature), author }, ...current]);
-    setSignatureDraft('');
+  const handleSubmitSignature = async () => {
+    const success = await submitSignature(signatureDraft);
+    if (success) setSignatureDraft('');
+    else if (signatureDraft.trim()) window.alert('No se pudo dejar la firma. Inténtalo de nuevo.');
   };
 
   const togglePlayback = () => {
@@ -223,12 +188,19 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
           onCityDraftChange={setCityDraft}
           onSaveCity={() => void saveCity()}
           onCancelCity={() => { setEditingCity(false); setCityDraft(displayProfile.city || ''); }}
+          editingBio={editingBio}
+          bioDraft={bioDraft}
+          savingBio={savingBio}
+          onStartBioEdit={() => { if (isOwnProfile) setEditingBio(true); }}
+          onBioDraftChange={setBioDraft}
+          onSaveBio={() => void saveBio()}
+          onCancelBio={() => setEditingBio(false)}
           signatures={signatures}
           loadingSignatures={loadingSignatures}
           signatureDraft={signatureDraft}
           savingSignature={savingSignature}
           onSignatureDraftChange={setSignatureDraft}
-          onSubmitSignature={() => void submitSignature()}
+          onSubmitSignature={() => void handleSubmitSignature()}
           profileStats={profileStats}
           currentSong={currentSong}
           onTogglePlayback={togglePlayback}
