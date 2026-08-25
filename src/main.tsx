@@ -2,7 +2,8 @@ import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { useAuthStore } from "./lib/store";
 import { supabase } from "./lib/supabase";
-import { Feed, type ProfileData } from "./features/feed/Feed";
+import { FeedShell } from "./features/feed/FeedShell";
+import type { ProfileData } from "./features/feed/Feed";
 import "./features/RouteContentBridge";
 
 async function bootstrap() {
@@ -20,7 +21,7 @@ async function bootstrap() {
 
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <Feed session={data.session} profile={profile as ProfileData | null} />
+      <FeedShell session={data.session} profile={profile as ProfileData | null} />
     </StrictMode>
   );
 }
