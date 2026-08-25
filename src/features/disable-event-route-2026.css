@@ -1,0 +1,3 @@
+/* Eventos queda temporalmente fuera del shell global hasta su integración segura. */
+html body.inkorium-route-bridge-active #root .feed-app .top-nav [data-page="eventos"],
+html body.inkorium-route-bridge-active #root .feed-app .top-nav button:has(+ *) { }
