@@ -1,8 +1,29 @@
+import { supabase } from '../../lib/supabase';
+
 const PROFILE_EVENTS_SCRIPT_ID = "inkorium-profile-events-more-script";
 const PROFILE_EVENTS_STYLE_ID = "inkorium-profile-events-more-style";
 
 function normalizeText(value: string | null | undefined): string {
   return (value || "").replace(/\s+/g, " ").trim();
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function formatEventDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function installStyles() {
@@ -24,7 +45,7 @@ function installStyles() {
       align-items: center !important;
       justify-content: space-between !important;
       gap: 12px !important;
-      margin-bottom: 8px !important;
+      margin-bottom: 10px !important;
     }
     .profile-view-events-card .profile-view-section-head h2 {
       margin: 0 !important;
@@ -37,6 +58,43 @@ function installStyles() {
       font-size: 14px !important;
       line-height: 1.45 !important;
       padding-top: 2px !important;
+    }
+    .profile-view-events-list {
+      display: grid !important;
+      gap: 8px !important;
+    }
+    .profile-view-event-row {
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      padding: 8px 0 !important;
+      border-top: 1px solid #edf1f5 !important;
+    }
+    .profile-view-event-row:first-child { border-top: 0 !important; }
+    .profile-view-event-date {
+      min-width: 72px !important;
+      color: #5b2db5 !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      text-transform: capitalize !important;
+    }
+    .profile-view-event-copy { min-width: 0 !important; flex: 1 !important; }
+    .profile-view-event-copy strong {
+      display: block !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      color: #1d3956 !important;
+      font-size: 13px !important;
+    }
+    .profile-view-event-copy span {
+      display: block !important;
+      margin-top: 2px !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      color: #718096 !important;
+      font-size: 11px !important;
     }
     .profile-view-events-more {
       width: 32px !important;
@@ -84,6 +142,52 @@ function findProfileSide(page: HTMLElement): { side: HTMLElement; listeningCard:
   return side ? { side, listeningCard: null } : null;
 }
 
+async function getUpcomingEvents(page: HTMLElement) {
+  const handle = normalizeText(page.querySelector(".profile-view-handle")?.textContent).replace(/^@/, "");
+  if (!handle) return [];
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", handle)
+    .maybeSingle();
+
+  if (!profile?.id) return [];
+
+  const { data } = await supabase
+    .from("events")
+    .select("id, name, location_name, start_time")
+    .eq("creator_id", profile.id)
+    .gte("start_time", new Date().toISOString())
+    .order("start_time", { ascending: true })
+    .limit(3);
+
+  return data || [];
+}
+
+async function renderEvents(card: HTMLElement, page: HTMLElement) {
+  const target = card.querySelector<HTMLElement>(".profile-view-events-content");
+  if (!target) return;
+
+  target.innerHTML = `<div class="profile-view-events-empty">Cargando próximos eventos…</div>`;
+  const events = await getUpcomingEvents(page);
+
+  if (!events.length) {
+    target.innerHTML = `<div class="profile-view-events-empty">No hay próximos eventos.</div>`;
+    return;
+  }
+
+  target.innerHTML = `<div class="profile-view-events-list">${events.map((event: any) => `
+    <div class="profile-view-event-row">
+      <div class="profile-view-event-date">${escapeHtml(formatEventDate(event.start_time))}</div>
+      <div class="profile-view-event-copy">
+        <strong>${escapeHtml(event.name)}</strong>
+        <span>${escapeHtml(event.location_name || "Ubicación por confirmar")}</span>
+      </div>
+    </div>
+  `).join("")}</div>`;
+}
+
 function ensureEventsCard(page: HTMLElement): HTMLElement | null {
   const existing = page.querySelector<HTMLElement>(".profile-view-events-card");
   if (existing) return existing;
@@ -98,7 +202,7 @@ function ensureEventsCard(page: HTMLElement): HTMLElement | null {
       <h2>Próximos eventos</h2>
       <button type="button" class="profile-view-events-more" aria-label="Ver todos los eventos" title="Ver todos los eventos">+</button>
     </div>
-    <div class="profile-view-events-empty">No hay próximos eventos.</div>
+    <div class="profile-view-events-content"><div class="profile-view-events-empty">Cargando próximos eventos…</div></div>
   `;
 
   if (target.listeningCard?.parentElement === target.side) {
@@ -108,6 +212,7 @@ function ensureEventsCard(page: HTMLElement): HTMLElement | null {
   }
 
   card.querySelector<HTMLButtonElement>(".profile-view-events-more")?.addEventListener("click", navigateToEvents);
+  void renderEvents(card, page);
   return card;
 }
 
