@@ -1,0 +1,27 @@
+/* Mensajes 2026: capa visual sobre el chat existente */
+.tuenti-chat-window{border-color:#d7e2ec;border-radius:12px;box-shadow:0 18px 46px rgba(25,52,79,.18)}
+.tuenti-chat-header{height:54px;padding:0 10px 0 12px}
+.tuenti-header-avatar{width:36px;height:36px;flex-basis:36px}
+.tuenti-header-name{font-size:13px;letter-spacing:-.01em}
+.tuenti-header-btn{width:25px;height:25px;border-radius:6px}
+.tuenti-chat-messages{padding:14px 13px 9px;background:#f4f7fa}
+.tuenti-message{max-width:82%;margin-bottom:9px}
+.tuenti-bubble{padding:8px 10px;border-radius:13px;font-size:13px;box-shadow:0 1px 2px rgba(25,52,79,.06)}
+.tuenti-message.mine .tuenti-bubble{background:#2f79c8}
+.tuenti-time{color:#8c9bac;font-size:9px}
+.tuenti-chat-input{min-height:82px;padding:7px 8px 8px;border-top-width:1px;background:#fff}
+.tuenti-input-toolbar{height:24px}
+.tuenti-toolbar-btn{width:27px;height:24px;border-radius:6px}
+.tuenti-input-form{margin-top:5px}
+.tuenti-input{height:37px;border-width:1px;border-radius:8px;font-size:12px;background:#f9fbfd}
+.tuenti-send-btn{width:34px;height:34px;border-radius:8px}
+.tuenti-emoji-picker,.tuenti-music-picker{border-color:#d7e0ea;border-radius:10px;box-shadow:0 12px 28px rgba(25,52,79,.16)}
+.tuenti-contact-panel{right:24px;bottom:68px;width:330px;border-color:#d7e0ea;border-radius:10px;box-shadow:0 18px 42px rgba(25,52,79,.18)}
+.tuenti-panel-header{height:50px}
+.tuenti-panel-search{margin:9px;border-color:#d6e0e9;background:#f8fafc}
+.tuenti-contact-row{padding:8px 9px;border-radius:8px}
+.tuenti-contact-row:hover{background:#eef4f9}
+.tuenti-contact-name{font-size:12px}
+.tuenti-panel-add-contact{min-height:44px}
+.tuenti-chat-minimized{height:40px;border-radius:8px 8px 0 0;box-shadow:0 8px 20px rgba(25,52,79,.18)}
+@media(max-width:640px){.tuenti-contact-panel{right:10px;bottom:62px}.tuenti-chat-window{border-radius:10px}.tuenti-chat-messages{padding:12px 10px 8px}}
