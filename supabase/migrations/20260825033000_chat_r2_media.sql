@@ -1,3 +1,0 @@
--- Chat media authorization is handled by the r2-media Edge Function.
--- This migration intentionally documents no schema change.
--- The function checks chat_participants for both upload and signed GET access.
