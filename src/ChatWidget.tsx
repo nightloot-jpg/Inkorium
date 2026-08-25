@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
+import { getR2SignedUrl, uploadToPresignedUrl } from "./lib/r2";
 import "./chat-realtime.css";
 
 type UserStatus = "conectado" | "ausente" | "desconectado";
@@ -84,10 +85,32 @@ function parseMessageContent(message: ChatMessage) {
   }
 }
 
+function ChatImage({ value }: { value: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (/^https?:\/\//i.test(value)) {
+      setSrc(value);
+      return () => { active = false; };
+    }
+
+    setSrc(null);
+    void getR2SignedUrl(value)
+      .then((url) => { if (active) setSrc(url); })
+      .catch((error) => console.error("[Chat] signed image url", error));
+
+    return () => { active = false; };
+  }, [value]);
+
+  if (!src) return <span className="tuenti-loading">Cargando foto...</span>;
+  return <img className="tuenti-chat-image" src={src} alt="Foto enviada" loading="lazy" />;
+}
+
 function MessageBody({ message }: { message: ChatMessage }) {
   const parsed = parseMessageContent(message);
   if (parsed.kind === "image") {
-    return <img className="tuenti-chat-image" src={String(parsed.value)} alt="Foto enviada" loading="lazy" />;
+    return <ChatImage value={String(parsed.value)} />;
   }
   if (parsed.kind === "music") {
     const track = parsed.value as { title?: string; artist?: string; coverUrl?: string; audioUrl?: string };
@@ -473,21 +496,37 @@ export function ChatWidget({ session, navigate }: { session: Session; navigate: 
   const sendMessage = useCallback((id: string, content: string) => void insertMessage(id, "text", content), [insertMessage]);
 
   const uploadImage = useCallback(async (id: string, file: File) => {
-    if (!file.type.startsWith("image/")) return;
+    const current = windows[id];
+    if (!current?.channelId || !file.type.startsWith("image/")) return;
     if (file.size > MAX_IMAGE_SIZE) {
       console.warn("[Chat] image too large");
       return;
     }
+
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const path = `${myId}/chat/${crypto.randomUUID()}-${safeName}`;
-    const { error } = await supabase.storage.from("photos").upload(path, file, { contentType: file.type, upsert: false });
-    if (error) {
-      console.error("[Chat] upload image", error);
+    const { data, error } = await supabase.functions.invoke("r2-media", {
+      body: {
+        action: "upload",
+        folder: "chat",
+        channelId: current.channelId,
+        fileName: safeName,
+        contentType: file.type,
+        size: file.size,
+      },
+    });
+
+    if (error || !data?.uploadUrl || !data?.key) {
+      console.error("[Chat] R2 upload ticket", error || data?.error);
       return;
     }
-    const { data } = supabase.storage.from("photos").getPublicUrl(path);
-    await insertMessage(id, "image", data.publicUrl);
-  }, [insertMessage, myId]);
+
+    try {
+      await uploadToPresignedUrl(data.uploadUrl as string, file, file.type);
+      await insertMessage(id, "image", data.key as string);
+    } catch (uploadError) {
+      console.error("[Chat] R2 image upload", uploadError);
+    }
+  }, [insertMessage, windows]);
 
   const shareMusic = useCallback((id: string, track: MusicTrack) => {
     const content = JSON.stringify({ kind: "music", trackId: track.id, title: track.title, artist: track.artist, coverUrl: track.cover_url, audioUrl: track.audio_url });
