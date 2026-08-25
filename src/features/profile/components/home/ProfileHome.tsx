@@ -1,7 +1,17 @@
 import { BookOpen, Heart, Images, Music2, Send, UserRound, Users } from 'lucide-react';
-import type { ProfileStats, Signature } from '../../types/profile.types';
+import type { Profile, ProfileStats, Signature } from '../../types/profile.types';
+import { ProfileAbout } from './ProfileAbout';
 
 type Props = {
+  profile: Profile;
+  isOwnProfile: boolean;
+  editingCity: boolean;
+  cityDraft: string;
+  savingCity: boolean;
+  onStartCityEdit: () => void;
+  onCityDraftChange: (value: string) => void;
+  onSaveCity: () => void;
+  onCancelCity: () => void;
   signatures: Signature[];
   loadingSignatures: boolean;
   signatureDraft: string;
@@ -13,10 +23,11 @@ type Props = {
   onTogglePlayback: () => void;
 };
 
-export function ProfileHome({ signatures, loadingSignatures, signatureDraft, savingSignature, onSignatureDraftChange, onSubmitSignature, profileStats, currentSong, onTogglePlayback }: Props) {
+export function ProfileHome({ profile, isOwnProfile, editingCity, cityDraft, savingCity, onStartCityEdit, onCityDraftChange, onSaveCity, onCancelCity, signatures, loadingSignatures, signatureDraft, savingSignature, onSignatureDraftChange, onSubmitSignature, profileStats, currentSong, onTogglePlayback }: Props) {
   return (
     <div className="profile-view-grid">
       <main className="profile-view-main">
+        <ProfileAbout profile={profile} isOwnProfile={isOwnProfile} editingCity={editingCity} cityDraft={cityDraft} savingCity={savingCity} onStartCityEdit={onStartCityEdit} onCityDraftChange={onCityDraftChange} onSaveCity={onSaveCity} onCancelCity={onCancelCity} />
         <div className="profile-view-card profile-view-signature-card">
           <div className="profile-view-section-head"><h2><BookOpen size={17} /> Libro de firmas</h2><span>{signatures.length}</span></div>
           <div className="profile-view-signature-form">
