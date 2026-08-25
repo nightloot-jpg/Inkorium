@@ -34,10 +34,10 @@
 
 .feed-app .feed-layout {
   width: min(1180px, calc(100% - 24px));
-  margin: 14px auto 30px;
+  margin: 12px auto 24px;
   display: grid;
   grid-template-columns: 184px minmax(0, 1fr) 286px;
-  gap: 14px;
+  gap: 12px;
   align-items: start;
 }
 
@@ -69,7 +69,7 @@
 .feed-app .stream {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .feed-app .post {
@@ -121,12 +121,35 @@
 
 .feed-app .feed-right-rail {
   position: sticky;
-  top: 58px;
+  top: 56px;
+}
+
+.feed-app .feed-right-rail,
+.feed-app .left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feed-app .feed-rail-card,
+.feed-app .profile-card,
+.feed-app .side-menu,
+.feed-app .friends,
+.feed-app .composer {
+  margin: 0;
+}
+
+.feed-app button,
+.feed-app a,
+.feed-app input {
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media (max-width: 1080px) {
   .feed-app .feed-layout {
+    width: min(920px, calc(100% - 20px));
     grid-template-columns: 170px minmax(0, 1fr);
+    gap: 10px;
   }
 
   .feed-app .right-column {
@@ -136,14 +159,23 @@
 
 @media (max-width: 760px) {
   .feed-app .feed-layout {
-    width: min(100%, calc(100% - 12px));
-    margin: 8px auto 18px;
+    width: min(100%, calc(100% - 10px));
+    margin: 6px auto 14px;
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }
 
-  .feed-app .left-column {
+  .feed-app .left-column,
+  .feed-app .right-column {
     display: none;
+  }
+
+  .feed-app .stream {
+    gap: 8px;
+  }
+
+  .feed-app .post-head {
+    padding: 10px 11px 8px;
   }
 
   .feed-app .topbar {
