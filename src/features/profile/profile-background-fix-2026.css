@@ -1,0 +1,3 @@
+/* Restore the profile canvas to the app's light surface. */
+html body:has(.profile-view-page){background:#f3f6fa!important;color:#14253b!important}
+html body:has(.profile-view-page) .profile-view-page{background:#f3f6fa!important;color:#14253b!important}
