@@ -25,6 +25,7 @@ import "./features/videos/videos-2026.css";
 import "./features/videos/videos-player-library-2026.css";
 import "./features/videos/videos-uploader-2026.css";
 import "./chat-2026.css";
+import "./chat-media-2026.css";
 
 async function bootstrap() {
   const { data } = await supabase.auth.getSession();
