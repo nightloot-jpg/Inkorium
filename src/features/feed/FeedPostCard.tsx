@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { Heart, MessageCircle, MoreHorizontal, Share2 } from 'lucide-react';
+import './feed-post-card-2026.css';
 
 export type FeedPostCardData = {
   id: string;
@@ -63,12 +64,12 @@ export function FeedPostCard({
   renderComments,
 }: Props) {
   return (
-    <article className="post panel">
-      <div className="post-head">
-        <div style={{ position: 'absolute', top: 12, right: 12 }}>
+    <article className="post panel feed-post-card">
+      <div className="post-head feed-post-card__head">
+        <div className="feed-post-card__menu">
           {post.author_id === session.user.id && (
             <button
-              className="post-menu-toggle"
+              className="post-menu-toggle feed-post-card__menu-button"
               onClick={onPostMenu}
               aria-label={`Opciones de la publicación de ${post.authorName || username}`}
             >
@@ -76,10 +77,10 @@ export function FeedPostCard({
             </button>
           )}
           {postMenuOpen && post.author_id === session.user.id && (
-            <div className="popover" style={{ top: 24, right: 0, minWidth: 150, zIndex: 10 }}>
+            <div className="popover feed-post-card__menu-popover">
               <button
                 onClick={onDelete}
-                style={{ color: 'var(--error-color,#d32f2f)', textAlign: 'left', width: '100%' }}
+                className="feed-post-card__delete"
               >
                 🗑 Eliminar publicación
               </button>
@@ -87,14 +88,11 @@ export function FeedPostCard({
           )}
         </div>
 
-        {renderUser}
+        <div className="feed-post-card__user">{renderUser}</div>
 
-        <div>
+        <div className="feed-post-card__meta">
           {post.target_profile_id && post.target_profile_id !== post.author_id ? (
-            <span
-              className="signature-meta"
-              style={{ display: 'block', fontSize: '0.85em', color: 'var(--text-light)' }}
-            >
+            <span className="signature-meta feed-post-card__signature">
               dejó un mensaje en el tablón de {post.targetName || 'alguien'}
             </span>
           ) : null}
@@ -103,30 +101,28 @@ export function FeedPostCard({
       </div>
 
       {post.shared_post_id && post.originalPost && (
-        <div style={{ fontSize: '0.85em', color: 'var(--text-light)', marginBottom: 8, marginLeft: 16 }}>
+        <div className="feed-post-card__shared-label">
           Compartió una publicación de <strong>{post.originalPost.authorName}</strong>
         </div>
       )}
 
       {post.media_data?.type !== 'background' && post.text && (
-        <p className="post-text">{post.text}</p>
+        <p className="post-text feed-post-card__text">{post.text}</p>
       )}
 
       {renderMedia}
 
       {post.shared_post_id && post.originalPost && (
-        <div className="shared-post-ref">
-          <div className="post-head">
+        <div className="shared-post-ref feed-post-card__shared-post">
+          <div className="post-head feed-post-card__shared-head">
             <strong>{post.originalPost.authorName}</strong>
-            <span style={{ fontSize: '0.85em', color: 'var(--text-light)' }}>
-              {post.originalPost.time}
-            </span>
+            <span>{post.originalPost.time}</span>
           </div>
           <p className="post-text">{post.originalPost.text}</p>
         </div>
       )}
 
-      <div className="post-actions" style={{ position: 'relative' }}>
+      <div className="post-actions feed-post-card__actions">
         <button onClick={onLike} className={liked ? 'is-liked' : ''}>
           <Heart size={16} fill={liked ? 'currentColor' : 'none'} /> Me gusta
         </button>
@@ -136,16 +132,8 @@ export function FeedPostCard({
         <button onClick={onShare}>
           <Share2 size={16} /> Compartir
         </button>
-        <span
-          style={{
-            marginLeft: 'auto',
-            display: 'flex',
-            alignItems: 'center',
-            fontSize: '0.85em',
-            color: 'var(--text-light)',
-          }}
-        >
-          <Heart size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4, opacity: 0.7 }} />
+        <span className="feed-post-card__likes">
+          <Heart size={14} />
           {post.likes}
         </span>
         {shareOpen ? renderShareMenu : null}
