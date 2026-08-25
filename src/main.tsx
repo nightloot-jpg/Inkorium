@@ -6,6 +6,7 @@ import { FeedShell } from "./features/feed/FeedShell";
 import type { ProfileData } from "./features/feed/Feed";
 import "./features/RouteContentBridge";
 import "./features/events/events-native-mount";
+import "./features/events/events-side-nav-entry-2026";
 import "./features/route-content-bridge.css";
 import "./features/route-content-bridge-header-stable-2026.css";
 import "./features/route-content-bridge-events-navbar-fix-2026.css";
