@@ -1,0 +1,35 @@
+import { useCallback, useEffect, useState } from 'react';
+import type { Signature } from '../types/profile.types';
+import { createProfileSignature, getProfileSignatures } from '../services/profile-signatures.service';
+
+type Author = Signature['author'];
+
+export function useProfileSignatures(profileId: string, currentUserId: string, currentAuthor?: Author) {
+  const [signatures, setSignatures] = useState<Signature[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try { setSignatures(await getProfileSignatures(profileId)); }
+    catch (error) { console.error('Error loading profile signatures:', error); setSignatures([]); }
+    finally { setLoading(false); }
+  }, [profileId]);
+
+  useEffect(() => { void reload(); }, [reload]);
+
+  const submit = useCallback(async (content: string) => {
+    const value = content.trim().slice(0, 500);
+    if (!value || saving) return false;
+    setSaving(true);
+    try {
+      const created = await createProfileSignature(profileId, currentUserId, value);
+      setSignatures(current => [{ ...created, author: currentAuthor || null }, ...current]);
+      return true;
+    } catch (error) {
+      console.error('Error creating profile signature:', error);
+      return false;
+    } finally { setSaving(false); }
+  }, [currentAuthor, currentUserId, profileId, saving]);
+
+  return { signatures, loading, saving, submit, reload };
+}
