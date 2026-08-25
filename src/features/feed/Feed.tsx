@@ -15,7 +15,6 @@ import { PhotosPage } from '../../components/PhotosPage';
 import { ChatWidget } from '../../ChatWidget';
 import { FeedPostCard } from './FeedPostCard';
 import { useFeedPosts } from './useFeedPosts';
-import '../../feed/FeedEnhancements';
 
 function Brand() { return <div className="brand"><img className="brand-mark" src="/inkorium-logo-white.svg" alt="" /><span>inkorium</span></div>; }
 type Post = { id: string; text: string; time: string; likes: number; authorName?: string; authorAvatarUrl?: string | null; author_id: string; target_profile_id?: string | null; targetName?: string; shared_post_id?: string | null; originalPost?: { text: string; authorName: string; authorAvatarUrl?: string | null; time: string; author_id: string; }; commentsCount?: number; media_data?: any; poll_id?: string; };
