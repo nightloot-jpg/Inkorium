@@ -1,5 +1,6 @@
 import { createRoot, type Root } from 'react-dom/client';
 import { FeedRightRail } from '../features/feed/feed-right-rail';
+import '../features/feed/feed-2026.css';
 
 const HOST_ID = 'inkorium-feed-right-rail';
 let root: Root | null = null;
