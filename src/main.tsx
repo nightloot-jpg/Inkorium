@@ -13,6 +13,7 @@ import "./features/feed/feed-right-rail-2026.css";
 import "./features/profile/profile-photos-2026.css";
 import "./features/profile/profile-photos-lightbox-2026.css";
 import "./features/profile/profile-albums-moments-2026.css";
+import "./features/profile/profile-home-2026.css";
 import "./features/music/music-2026.css";
 import "./features/music/music-library-playlists-2026.css";
 import "./features/music/music-upload-player-2026.css";
