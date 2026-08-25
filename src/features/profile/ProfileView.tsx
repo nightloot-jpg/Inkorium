@@ -14,6 +14,7 @@ import { useProfileMusicDiary } from './hooks/useProfileMusicDiary';
 import { useProfileDailySong } from './hooks/useProfileDailySong';
 import { useProfileMusicLibrary } from './hooks/useProfileMusicLibrary';
 import { useProfileMusicTaste } from './hooks/useProfileMusicTaste';
+import { useProfileMusicPreferences } from './hooks/useProfileMusicPreferences';
 import { ProfileHeader } from './components/ProfileHeader';
 import { ProfileTabs, type ProfileTab } from './components/ProfileTabs';
 import { ProfileHome } from './components/home/ProfileHome';
@@ -21,6 +22,7 @@ import { ProfileMusicDiary } from './components/music/ProfileMusicDiary';
 import { ProfileDailySong } from './components/music/ProfileDailySong';
 import { ProfileMusicLibrary } from './components/music/ProfileMusicLibrary';
 import { ProfileMusicTasteCard } from './components/music/ProfileMusicTasteCard';
+import { ProfileMusicPreferencesPanel } from './components/music/ProfileMusicPreferencesPanel';
 import './profile-view.css';
 import './profile-about-card.css';
 import './profile-global.css';
@@ -56,6 +58,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const { song: dailySong, loading: loadingDailySong, saving: savingDailySong, search: searchDailySong, getSavedMusic, choose: chooseDailySong } = useProfileDailySong(profileId, activeTab === 'Música');
   const { tracks: musicTracks, favoriteIds, playlists, loading: loadingMusicLibrary, toggleFavorite, editTrack, removeTrack, createPlaylist, updatePlaylist, deletePlaylist, addTrackToPlaylist } = useProfileMusicLibrary(profileId, activeTab === 'Música');
   const { artists: musicTasteArtists, loading: loadingMusicTaste, saving: savingMusicTaste, error: musicTasteError, addArtist: addMusicTasteArtist, removeArtist: removeMusicTasteArtist } = useProfileMusicTaste(profileId, activeTab === 'Música');
+  const musicPreferences = useProfileMusicPreferences(profileId, activeTab === 'Música');
   const displayProfile = profile || initialProfile;
   const ownProfile = profileId === session.user.id;
   const displayName = displayProfile?.full_name || displayProfile?.username || username || 'Usuario';
@@ -87,6 +90,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
       <ProfileDailySong song={dailySong} loading={loadingDailySong} saving={savingDailySong} canEdit={ownProfile} search={searchDailySong} getSavedMusic={getSavedMusic} onChoose={chooseDailySong} onPlay={playTrack} />
       <ProfileMusicLibrary tracks={musicTracks} favoriteIds={favoriteIds} playlists={playlists} loading={loadingMusicLibrary} canEdit={ownProfile} onPlay={playTrack} onToggleFavorite={toggleFavorite} onEditTrack={handleEditTrack} onDeleteTrack={removeTrack} onNewPlaylist={() => { const name = window.prompt('Nombre de la playlist'); if (name) void createPlaylist(name, '', true); }} onEditPlaylist={playlist => { const name = window.prompt('Nombre', playlist.name) ?? playlist.name; void updatePlaylist(playlist.id, name, playlist.description || '', playlist.is_public !== false); }} onDeletePlaylist={deletePlaylist} onAddToPlaylist={handleAddToPlaylist} />
       <ProfileMusicTasteCard artists={musicTasteArtists} loading={loadingMusicTaste} saving={savingMusicTaste} canEdit={ownProfile} error={musicTasteError} onAdd={addMusicTasteArtist} onRemove={removeMusicTasteArtist} />
+      <ProfileMusicPreferencesPanel playlists={musicPreferences.featuredPlaylists} selectedIds={musicPreferences.featuredPlaylists.map(item => item.id)} saving={musicPreferences.saving} canEdit={ownProfile} error={musicPreferences.error} onSave={musicPreferences.save} />
       <ProfileMusicDiary entries={musicDiary} loading={loadingMusicDiary} onPlay={playDiaryEntry} />
     </div>}
     {activeTab === 'Videos' && <div className="profile-view-card profile-view-empty">Los vídeos del perfil se cargarán aquí.</div>}
