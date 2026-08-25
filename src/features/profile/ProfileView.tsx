@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Images } from 'lucide-react';
 import { useAuthStore, usePlayerStore } from '../../lib/store';
-import type { GalleryPhoto, MediaTarget, ProfileViewProps, StatusValue } from './types/profile.types';
+import type { MediaTarget, ProfileViewProps, StatusValue } from './types/profile.types';
 import { useProfile } from './hooks/useProfile';
 import { useProfileStats } from './hooks/useProfileStats';
 import { useProfileSignatures } from './hooks/useProfileSignatures';
@@ -18,7 +18,6 @@ const STATUS_META: Record<StatusValue, { label: string; className: string }> = {
   ausente: { label: 'Ausente', className: 'away' },
   desconectado: { label: 'Desconectado', className: 'offline' },
 };
-
 const normalizeStatus = (value: string | null | undefined): StatusValue => value === 'ausente' || value === 'desconectado' ? value : 'conectado';
 
 export function ProfileView({ session, profile: initialProfile, profileId, username }: ProfileViewProps) {
@@ -31,8 +30,6 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const [editingHashtag, setEditingHashtag] = useState(false);
   const [hashtagDraft, setHashtagDraft] = useState(initialProfile?.profile_hashtag || '');
   const [savingHashtag, setSavingHashtag] = useState(false);
-  const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
-  const [loadingGallery, setLoadingGallery] = useState(false);
 
   const globalProfile = useAuthStore(state => state.profile);
   const updateGlobalProfile = useAuthStore(state => state.updateProfile);
@@ -46,14 +43,12 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const { profile, update, updateStatus } = useProfile(profileId, initialProfile);
   const { stats: profileStats } = useProfileStats(profileId);
   const { signatures, loading: loadingSignatures, saving: savingSignature, submit: submitSignature } = useProfileSignatures(profileId, session.user.id);
-  const { openMediaEditor } = useProfileMedia(profileId === session.user.id);
+  const { openMediaEditor, gallery, loadingGallery, loadGallery } = useProfileMedia(profileId === session.user.id);
 
   const displayProfile = profile || initialProfile;
   const isOwnProfile = profileId === session.user.id;
   const displayName = displayProfile?.full_name || displayProfile?.username || username || 'Usuario';
   const handle = displayProfile?.username ? `@${displayProfile.username}` : `@${username}`;
-  const avatar = displayProfile?.avatar_url || '';
-  const banner = displayProfile?.banner_url || '';
   const effectiveStatus = isOwnProfile ? normalizeStatus(globalProfile?.user_status ?? status) : normalizeStatus(displayProfile?.user_status);
   const statusMeta = STATUS_META[effectiveStatus];
 
@@ -66,29 +61,18 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   useEffect(() => {
     if (activeTab !== 'Fotos') return;
     let cancelled = false;
-    setLoadingGallery(true);
-    async function loadGallery() {
-      const { data, error } = await fetchProfilePhotos(profileId);
-      if (cancelled) return;
-      if (error) console.error('Error loading profile gallery:', error);
-      setGallery((data || []) as GalleryPhoto[]);
-      setLoadingGallery(false);
-    }
-    void loadGallery();
+    void loadGallery(profileId).catch(error => {
+      if (!cancelled) console.error('Error loading profile gallery:', error);
+    });
     return () => { cancelled = true; };
-  }, [activeTab, profileId]);
+  }, [activeTab, loadGallery, profileId]);
 
   const saveStatus = async (next: StatusValue) => {
     if (!isOwnProfile) return;
     setSavingStatus(true);
-    try {
-      await updateStatus(next);
-      setStatus(next);
-      updateGlobalProfile({ user_status: next });
-      window.dispatchEvent(new CustomEvent('inkorium-user-status-updated', { detail: { userId: session.user.id, status: next } }));
-    } catch (error) {
-      window.alert(`No se pudo guardar el estado: ${error instanceof Error ? error.message : 'Error desconocido'}`);
-    } finally { setSavingStatus(false); }
+    try { await updateStatus(next); setStatus(next); updateGlobalProfile({ user_status: next }); window.dispatchEvent(new CustomEvent('inkorium-user-status-updated', { detail: { userId: session.user.id, status: next } })); }
+    catch (error) { window.alert(`No se pudo guardar el estado: ${error instanceof Error ? error.message : 'Error desconocido'}`); }
+    finally { setSavingStatus(false); }
   };
 
   const saveBio = async () => {
@@ -110,21 +94,14 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   };
 
   const handleSubmitSignature = async () => {
-    if (!signatureDraft.trim()) return;
-    try {
-      await submitSignature(signatureDraft);
-      setSignatureDraft('');
-    } catch (error) {
-      window.alert(`No se pudo dejar la firma: ${error instanceof Error ? error.message : 'Error desconocido'}`);
-    }
+    try { await submitSignature(signatureDraft); setSignatureDraft(''); }
+    catch (error) { window.alert(`No se pudo dejar la firma: ${error instanceof Error ? error.message : 'Error desconocido'}`); }
   };
 
   const togglePlayback = () => {
     if (!currentSong) { openPlayer(); return; }
     if (isPlaying || pendingPlay) pause(); else resume();
   };
-
-  const openMediaChooser = (target: MediaTarget) => openMediaEditor(target);
 
   if (!displayProfile) return null;
 
@@ -134,8 +111,8 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
         profile={displayProfile}
         displayName={displayName}
         handle={handle}
-        avatar={avatar}
-        banner={banner}
+        avatar={displayProfile.avatar_url || ''}
+        banner={displayProfile.banner_url || ''}
         isOwnProfile={isOwnProfile}
         status={effectiveStatus}
         statusLabel={statusMeta.label}
@@ -147,7 +124,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
         editingBio={editingBio}
         bioDraft={bioDraft}
         savingBio={savingBio}
-        onOpenMedia={openMediaChooser}
+        onOpenMedia={openMediaEditor}
         onStatusChange={saveStatus}
         onStartHashtagEdit={() => setEditingHashtag(true)}
         onHashtagDraftChange={setHashtagDraft}
@@ -158,41 +135,11 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
         onSaveBio={() => void saveBio()}
         onCancelBio={() => setEditingBio(false)}
       />
-
       <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
-
-      {activeTab === 'Inicio' && (
-        <ProfileHome
-          signatures={signatures}
-          loadingSignatures={loadingSignatures}
-          signatureDraft={signatureDraft}
-          savingSignature={savingSignature}
-          onSignatureDraftChange={setSignatureDraft}
-          onSubmitSignature={() => void handleSubmitSignature()}
-          profileStats={profileStats}
-          currentSong={currentSong}
-          onTogglePlayback={togglePlayback}
-        />
-      )}
-
-      {activeTab === 'Fotos' && (
-        <div className="profile-view-card">
-          <div className="profile-view-section-head"><h2><Images size={17} /> Fotos</h2><span>{gallery.length}</span></div>
-          <div className="profile-media-gallery">
-            {loadingGallery ? [1, 2, 3, 4].map(item => <span key={item} />) : gallery.map(photo => (
-              <button key={photo.id} type="button"><img src={photo.url} alt={photo.caption || 'Foto'} /></button>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {activeTab === 'Inicio' && <ProfileHome signatures={signatures} loadingSignatures={loadingSignatures} signatureDraft={signatureDraft} savingSignature={savingSignature} onSignatureDraftChange={setSignatureDraft} onSubmitSignature={() => void handleSubmitSignature()} profileStats={profileStats} currentSong={currentSong} onTogglePlayback={togglePlayback} />}
+      {activeTab === 'Fotos' && <div className="profile-view-card"><div className="profile-view-section-head"><h2><Images size={17} /> Fotos</h2><span>{gallery.length}</span></div><div className="profile-media-gallery">{loadingGallery ? [1,2,3,4].map(item => <span key={item} />) : gallery.map(photo => <button key={photo.id} type="button"><img src={photo.url} alt={photo.caption || 'Foto'} /></button>)}</div></div>}
       {activeTab === 'Videos' && <div className="profile-view-card profile-view-empty">Los vídeos del perfil se cargarán aquí.</div>}
       {activeTab === 'Música' && <div className="profile-view-card profile-view-empty">La música del perfil se cargará aquí.</div>}
     </section>
   );
-}
-
-async function fetchProfilePhotos(profileId: string) {
-  const { supabase } = await import('../../lib/supabase');
-  return supabase.from('photos').select('id, url, caption, created_at').eq('user_id', profileId).order('created_at', { ascending: false }).limit(60);
 }
