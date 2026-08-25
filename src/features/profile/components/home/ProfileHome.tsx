@@ -12,6 +12,13 @@ type Props = {
   onCityDraftChange: (value: string) => void;
   onSaveCity: () => void;
   onCancelCity: () => void;
+  editingBio: boolean;
+  bioDraft: string;
+  savingBio: boolean;
+  onStartBioEdit: () => void;
+  onBioDraftChange: (value: string) => void;
+  onSaveBio: () => void;
+  onCancelBio: () => void;
   signatures: Signature[];
   loadingSignatures: boolean;
   signatureDraft: string;
@@ -23,11 +30,55 @@ type Props = {
   onTogglePlayback: () => void;
 };
 
-export function ProfileHome({ profile, isOwnProfile, editingCity, cityDraft, savingCity, onStartCityEdit, onCityDraftChange, onSaveCity, onCancelCity, signatures, loadingSignatures, signatureDraft, savingSignature, onSignatureDraftChange, onSubmitSignature, profileStats, currentSong, onTogglePlayback }: Props) {
+export function ProfileHome({
+  profile,
+  isOwnProfile,
+  editingCity,
+  cityDraft,
+  savingCity,
+  onStartCityEdit,
+  onCityDraftChange,
+  onSaveCity,
+  onCancelCity,
+  editingBio,
+  bioDraft,
+  savingBio,
+  onStartBioEdit,
+  onBioDraftChange,
+  onSaveBio,
+  onCancelBio,
+  signatures,
+  loadingSignatures,
+  signatureDraft,
+  savingSignature,
+  onSignatureDraftChange,
+  onSubmitSignature,
+  profileStats,
+  currentSong,
+  onTogglePlayback,
+}: Props) {
   return (
     <div className="profile-view-grid">
       <main className="profile-view-main">
-        <ProfileAbout profile={profile} isOwnProfile={isOwnProfile} editingCity={editingCity} cityDraft={cityDraft} savingCity={savingCity} onStartCityEdit={onStartCityEdit} onCityDraftChange={onCityDraftChange} onSaveCity={onSaveCity} onCancelCity={onCancelCity} />
+        <ProfileAbout
+          profile={profile}
+          isOwnProfile={isOwnProfile}
+          editingBio={editingBio}
+          bioDraft={bioDraft}
+          savingBio={savingBio}
+          editingCity={editingCity}
+          cityDraft={cityDraft}
+          savingCity={savingCity}
+          onStartBioEdit={onStartBioEdit}
+          onBioDraftChange={onBioDraftChange}
+          onSaveBio={onSaveBio}
+          onCancelBio={onCancelBio}
+          onStartCityEdit={onStartCityEdit}
+          onCityDraftChange={onCityDraftChange}
+          onSaveCity={onSaveCity}
+          onCancelCity={onCancelCity}
+        />
+
         <div className="profile-view-card profile-view-signature-card">
           <div className="profile-view-section-head"><h2><BookOpen size={17} /> Libro de firmas</h2><span>{signatures.length}</span></div>
           <div className="profile-view-signature-form">
@@ -41,6 +92,7 @@ export function ProfileHome({ profile, isOwnProfile, editingCity, cityDraft, sav
           )}
         </div>
       </main>
+
       <aside className="profile-view-side">
         <div className="profile-view-card profile-view-intro-card"><div className="profile-view-card-title"><Music2 size={18} /> ¿Qué estás escuchando ahora?</div><button type="button" className="profile-view-listening" onClick={onTogglePlayback}>{currentSong ? `${currentSong.title || 'Canción'} · ${currentSong.artist || ''}` : 'Nada reproduciéndose ahora. Abre el reproductor global para empezar a escuchar música.'}</button></div>
         <div className="profile-view-card"><div className="profile-view-section-head"><h2><Users size={16} /> Estadísticas</h2></div><div className="profile-view-stats-list"><div><Users size={16} /><span>Amigos</span><strong>{profileStats.friends_count}</strong></div><div><Heart size={16} /><span>Seguidores</span><strong>{profileStats.followers_count}</strong></div><div><UserRound size={16} /><span>Siguiendo</span><strong>{profileStats.following_count}</strong></div><div><Images size={16} /><span>Álbumes</span><strong>{profileStats.albums_count}</strong></div></div></div>
