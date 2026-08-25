@@ -10,7 +10,6 @@ import "./features/route-content-bridge.css";
 import "./features/route-content-bridge-header-stable-2026.css";
 import "./features/route-content-bridge-events-navbar-fix-2026.css";
 import "./features/events/events-route-rebuild-2026.css";
-import "./features/disable-events-route-2026.css";
 import "./components/composer-2026.css";
 import "./features/feed/feed-post-media-2026.css";
 import "./features/feed/feed-comments-2026.css";
