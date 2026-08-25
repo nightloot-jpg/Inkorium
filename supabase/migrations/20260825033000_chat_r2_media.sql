@@ -1,0 +1,2 @@
+-- Chat media authorization is handled by the r2-media Edge Function.
+-- No schema change is required for the migration to R2.
