@@ -22,7 +22,9 @@ export function useProfileDailySong(profileId: string, enabled: boolean) {
     finally { setSaving(false); }
   }, [profileId]);
 
+  const loadSavedMusic = useCallback(() => getSavedMusic(profileId), [profileId]);
+
   useEffect(() => { void reload(); }, [reload]);
 
-  return { song, loading, saving, error, reload, choose, search: searchDailySong, getSavedMusic };
+  return { song, loading, saving, error, reload, choose, search: searchDailySong, getSavedMusic: loadSavedMusic };
 }
