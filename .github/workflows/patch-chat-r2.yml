@@ -1,0 +1,52 @@
+name: Patch chat R2 client
+
+on:
+  push:
+    branches: [security/chat-r2-client]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply chat R2 patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/ChatWidget.tsx')
+          text = path.read_text()
+
+          old_import = 'import { supabase } from "./lib/supabase";\nimport "./chat-realtime.css";'
+          new_import = 'import { supabase } from "./lib/supabase";\nimport { getR2SignedUrl, uploadToPresignedUrl } from "./lib/r2";\nimport "./chat-realtime.css";'
+          if old_import not in text:
+              raise SystemExit('Expected ChatWidget import block not found')
+          text = text.replace(old_import, new_import, 1)
+
+          old_image = '''function MessageBody({ message }: { message: ChatMessage }) {\n  const parsed = parseMessageContent(message);\n  if (parsed.kind === "image") {\n    return <img className="tuenti-chat-image" src={String(parsed.value)} alt="Foto enviada" loading="lazy" />;\n  }'''
+          new_image = '''function ChatImage({ value }: { value: string }) {\n  const [src, setSrc] = useState<string | null>(null);\n\n  useEffect(() => {\n    let active = true;\n    if (/^https?:\\/\\//i.test(value)) {\n      setSrc(value);\n      return () => { active = false; };\n    }\n\n    setSrc(null);\n    void getR2SignedUrl(value)\n      .then((url) => { if (active) setSrc(url); })\n      .catch((error) => console.error("[Chat] signed image url", error));\n\n    return () => { active = false; };\n  }, [value]);\n\n  if (!src) return <span className="tuenti-loading">Cargando foto...</span>;\n  return <img className="tuenti-chat-image" src={src} alt="Foto enviada" loading="lazy" />;\n}\n\nfunction MessageBody({ message }: { message: ChatMessage }) {\n  const parsed = parseMessageContent(message);\n  if (parsed.kind === "image") {\n    return <ChatImage value={String(parsed.value)} />;\n  }'''
+          if old_image not in text:
+              raise SystemExit('Expected ChatWidget image renderer not found')
+          text = text.replace(old_image, new_image, 1)
+
+          old_upload = '''  const uploadImage = useCallback(async (id: string, file: File) => {\n    if (!file.type.startsWith("image/")) return;\n    if (file.size > MAX_IMAGE_SIZE) {\n      console.warn("[Chat] image too large");\n      return;\n    }\n    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");\n    const path = `${myId}/chat/${crypto.randomUUID()}-${safeName}`;\n    const { error } = await supabase.storage.from("photos").upload(path, file, { contentType: file.type, upsert: false });\n    if (error) {\n      console.error("[Chat] upload image", error);\n      return;\n    }\n    const { data } = supabase.storage.from("photos").getPublicUrl(path);\n    await insertMessage(id, "image", data.publicUrl);\n  }, [insertMessage, myId]);'''
+          new_upload = '''  const uploadImage = useCallback(async (id: string, file: File) => {\n    const current = windows[id];\n    if (!current?.channelId || !file.type.startsWith("image/")) return;\n    if (file.size > MAX_IMAGE_SIZE) {\n      console.warn("[Chat] image too large");\n      return;\n    }\n\n    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");\n    const { data, error } = await supabase.functions.invoke("r2-media", {\n      body: {\n        action: "upload",\n        folder: "chat",\n        channelId: current.channelId,\n        fileName: safeName,\n        contentType: file.type,\n        size: file.size,\n      },\n    });\n\n    if (error || !data?.uploadUrl || !data?.key) {\n      console.error("[Chat] R2 upload ticket", error || data?.error);\n      return;\n    }\n\n    try {\n      await uploadToPresignedUrl(data.uploadUrl as string, file, file.type);\n      await insertMessage(id, "image", data.key as string);\n    } catch (uploadError) {\n      console.error("[Chat] R2 image upload", uploadError);\n    }\n  }, [insertMessage, windows]);'''
+          if old_upload not in text:
+              raise SystemExit('Expected legacy chat upload block not found')
+          text = text.replace(old_upload, new_upload, 1)
+
+          path.write_text(text)
+          PY
+
+          rm .github/workflows/patch-chat-r2.yml
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/ChatWidget.tsx .github/workflows/patch-chat-r2.yml
+          git commit -m "security: move chat image uploads to R2"
+          git push origin HEAD:security/chat-r2-client
