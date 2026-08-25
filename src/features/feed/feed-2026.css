@@ -1,0 +1,150 @@
+.feed-app {
+  --feed-blue: #2b6fa8;
+  --feed-blue-deep: #1f5d8f;
+  --feed-surface: #ffffff;
+  --feed-bg: #edf2f6;
+  --feed-border: #d5dde5;
+  --feed-text: #32485b;
+  --feed-muted: #7a8997;
+  background: var(--feed-bg);
+}
+
+.feed-app .topbar {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-bottom: 1px solid #214e75;
+  background: linear-gradient(180deg, var(--feed-blue) 0%, var(--feed-blue-deep) 100%);
+  box-shadow: 0 1px 3px rgba(26, 55, 80, .2);
+}
+
+.feed-app .top-nav button,
+.feed-app .top-actions button,
+.feed-app .brand-button {
+  transition: background .15s ease, opacity .15s ease, transform .15s ease;
+}
+
+.feed-app .top-nav button:hover,
+.feed-app .top-actions button:hover,
+.feed-app .brand-button:hover {
+  opacity: .92;
+}
+
+.feed-app .feed-layout {
+  width: min(1180px, calc(100% - 24px));
+  margin: 14px auto 30px;
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr) 286px;
+  gap: 14px;
+  align-items: start;
+}
+
+.feed-app .left-column,
+.feed-app .right-column,
+.feed-app .stream {
+  min-width: 0;
+}
+
+.feed-app .panel,
+.feed-app .post,
+.feed-app .profile-card,
+.feed-app .side-menu,
+.feed-app .friends,
+.feed-app .composer,
+.feed-app .feed-right-rail .feed-rail-card {
+  border: 1px solid var(--feed-border);
+  border-radius: 6px;
+  background: var(--feed-surface);
+  box-shadow: 0 1px 2px rgba(38, 61, 82, .06);
+}
+
+.feed-app .side-menu,
+.feed-app .friends,
+.feed-app .profile-card {
+  box-shadow: none;
+}
+
+.feed-app .stream {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feed-app .post {
+  overflow: hidden;
+}
+
+.feed-app .post + .post {
+  margin-top: 0;
+}
+
+.feed-app .post-head {
+  padding: 13px 14px 9px;
+}
+
+.feed-app .post-text {
+  color: var(--feed-text);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.feed-app .post-actions {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid #e6ebef;
+  background: #fafcfd;
+}
+
+.feed-app .post-actions button {
+  color: #547088;
+}
+
+.feed-app .post-actions button:hover,
+.feed-app .post-actions button.is-liked {
+  color: var(--feed-blue);
+}
+
+.feed-app .comment-input-area {
+  padding: 9px 12px 12px;
+  background: #fafcfd;
+}
+
+.feed-app .comment-input-area input,
+.feed-app .search-form input {
+  border: 1px solid #cfd9e2;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: inset 0 1px 2px rgba(24, 49, 68, .05);
+}
+
+.feed-app .feed-right-rail {
+  position: sticky;
+  top: 58px;
+}
+
+@media (max-width: 1080px) {
+  .feed-app .feed-layout {
+    grid-template-columns: 170px minmax(0, 1fr);
+  }
+
+  .feed-app .right-column {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .feed-app .feed-layout {
+    width: min(100%, calc(100% - 12px));
+    margin: 8px auto 18px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .feed-app .left-column {
+    display: none;
+  }
+
+  .feed-app .topbar {
+    padding: 0 9px;
+  }
+}
