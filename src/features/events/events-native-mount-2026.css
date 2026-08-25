@@ -1,0 +1,6 @@
+body.inkorium-events-native-active{overflow:auto!important}
+body.inkorium-events-native-active #root .feed-app>header{position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:11000!important}
+body.inkorium-events-native-active #root .feed-app> :not(header){display:none!important}
+body.inkorium-events-native-active #root .inkorium-events-native-host{display:block!important;position:relative!important;z-index:1000!important;margin:44px 0 0!important;min-height:calc(100vh - 44px)!important}
+body.inkorium-events-native-active #inkorium-route-content-bridge{display:none!important}
+body.inkorium-events-native-active #root .feed-shell-right-rail{display:none!important}
