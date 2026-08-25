@@ -24,6 +24,7 @@ import "./features/music/music-upload-player-2026.css";
 import "./features/videos/videos-2026.css";
 import "./features/videos/videos-player-library-2026.css";
 import "./features/videos/videos-uploader-2026.css";
+import "./people-actions-2026.css";
 
 async function bootstrap() {
   const { data } = await supabase.auth.getSession();
