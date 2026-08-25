@@ -1,0 +1,18 @@
+.profile-photos-v2-lightbox{padding:16px;background:rgba(4,18,32,.94);backdrop-filter:blur(8px)}
+.profile-photos-v2-viewer{width:min(1180px,96vw);max-height:94vh;grid-template-columns:minmax(0,1fr) 340px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:#fff;box-shadow:0 24px 80px rgba(0,0,0,.42)}
+.profile-photos-v2-viewer>img{height:94vh;max-height:94vh;background:#0d2338}
+.profile-photos-v2-info{padding:14px 15px}
+.profile-photos-v2-info strong{font-size:13px}
+.profile-photos-v2-actions{gap:12px;font-size:11px}
+.profile-photos-v2-actions button{font-size:11px}
+.profile-photos-v2-comments-list{padding:12px 14px}
+.profile-photos-v2-comments-list article{padding:9px 0}
+.profile-photos-v2-comments-list p{font-size:11px}
+.profile-photos-v2-comment-form{padding:10px}
+.profile-photos-v2-comment-form input{height:34px;font-size:10px}
+.profile-photos-v2-comment-form button{height:34px;padding:0 11px;font-size:10px}
+.profile-photos-v2-close{top:14px;right:14px;width:36px;height:36px}
+.profile-photos-v2-nav{width:42px;height:42px;margin-top:-21px;background:rgba(6,29,50,.62)}
+.profile-photos-v2-nav.prev{left:14px}.profile-photos-v2-nav.next{right:14px}
+@media(max-width:820px){.profile-photos-v2-lightbox{padding:8px}.profile-photos-v2-viewer{width:96vw;max-height:96vh;grid-template-columns:1fr}.profile-photos-v2-viewer>img{height:60vh;max-height:60vh}.profile-photos-v2-comments{min-height:220px}}
+@media(max-width:560px){.profile-photos-v2-viewer>img{height:50vh;max-height:50vh}.profile-photos-v2-close{top:9px;right:9px}.profile-photos-v2-nav.prev{left:6px}.profile-photos-v2-nav.next{right:6px}}
