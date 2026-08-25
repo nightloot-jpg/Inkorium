@@ -1,20 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Images } from 'lucide-react';
 import { useAuthStore, usePlayerStore } from '../../lib/store';
-import type { MediaTarget, ProfileViewProps, StatusValue } from './types/profile.types';
+import type { ProfileViewProps, StatusValue } from './types/profile.types';
 import type { MusicDiaryEntry } from './services/profile-music.service';
 import type { DailySongTrack } from './services/profile-daily-song.service';
+import type { MusicLibraryTrack } from './services/profile-music-library.service';
+import type { MusicPlaylist } from './services/profile-music-library.service';
 import { useProfile } from './hooks/useProfile';
 import { useProfileStats } from './hooks/useProfileStats';
 import { useProfileSignatures } from './hooks/useProfileSignatures';
 import { useProfileMedia } from './hooks/useProfileMedia';
 import { useProfileMusicDiary } from './hooks/useProfileMusicDiary';
 import { useProfileDailySong } from './hooks/useProfileDailySong';
+import { useProfileMusicLibrary } from './hooks/useProfileMusicLibrary';
 import { ProfileHeader } from './components/ProfileHeader';
 import { ProfileTabs, type ProfileTab } from './components/ProfileTabs';
 import { ProfileHome } from './components/home/ProfileHome';
 import { ProfileMusicDiary } from './components/music/ProfileMusicDiary';
 import { ProfileDailySong } from './components/music/ProfileDailySong';
+import { ProfileMusicLibrary } from './components/music/ProfileMusicLibrary';
 import './profile-view.css';
 import './profile-about-card.css';
 import './profile-global.css';
@@ -48,6 +52,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const { openMediaEditor, gallery, loadingGallery, loadGallery } = useProfileMedia(profileId === session.user.id);
   const { entries: musicDiary, loading: loadingMusicDiary } = useProfileMusicDiary(profileId, activeTab === 'Música', profileId === session.user.id);
   const { song: dailySong, loading: loadingDailySong, saving: savingDailySong, search: searchDailySong, getSavedMusic, choose: chooseDailySong } = useProfileDailySong(profileId, activeTab === 'Música');
+  const { tracks: musicTracks, favoriteIds, playlists, loading: loadingMusicLibrary, toggleFavorite, editTrack, removeTrack, createPlaylist, updatePlaylist, deletePlaylist, addTrackToPlaylist, importYoutubeTrack } = useProfileMusicLibrary(profileId, activeTab === 'Música');
   const displayProfile = profile || initialProfile;
   const ownProfile = profileId === session.user.id;
   const displayName = displayProfile?.full_name || displayProfile?.username || username || 'Usuario';
@@ -63,16 +68,23 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const saveHashtag = async () => { if (!ownProfile) return; setSavingHashtag(true); const value = hashtagDraft.trim().replace(/^#+/, '').replace(/\s+/g, '').slice(0, 50); try { await update({ profile_hashtag: value || null }); setHashtagDraft(value); setEditingHashtag(false); } catch (error) { window.alert(`No se pudo guardar el hashtag: ${error instanceof Error ? error.message : 'Error desconocido'}`); } finally { setSavingHashtag(false); } };
   const handleSubmitSignature = async () => { if (!signatureDraft.trim()) return; try { await submitSignature(signatureDraft); setSignatureDraft(''); } catch (error) { window.alert(`No se pudo dejar la firma: ${error instanceof Error ? error.message : 'Error desconocido'}`); } };
   const togglePlayback = () => { if (!currentSong) { openPlayer(); return; } if (isPlaying || pendingPlay) pause(); else resume(); };
-  const playTrack = (track: DailySongTrack) => { playSong({ id: track.id, title: track.title, artist: track.artist || undefined, thumbnail: track.cover_url || undefined, video_id: track.youtube_id || undefined, source_type: track.source_type === 'local' ? 'local' : 'youtube' }, true); };
+  const playTrack = (track: DailySongTrack | MusicLibraryTrack) => { playSong({ id: track.id, title: track.title, artist: track.artist || undefined, thumbnail: track.cover_url || undefined, video_id: track.youtube_id || undefined, source_type: track.source_type === 'local' ? 'local' : 'youtube' }, true); };
   const playDiaryEntry = (entry: MusicDiaryEntry) => { if (!entry.track) return; playSong({ id: entry.track.id, title: entry.track.title, artist: entry.track.artist || undefined, thumbnail: entry.track.cover_url || undefined, video_id: entry.track.youtube_id || undefined, source_type: entry.track.source_type === 'local' ? 'local' : 'youtube' }, true); };
   if (!displayProfile) return null;
+
+  const handleEditTrack = (track: MusicLibraryTrack) => { const title = window.prompt('Título', track.title); if (title === null) return; const artist = window.prompt('Artista', track.artist || '') ?? ''; const album = window.prompt('Álbum', track.album || '') ?? ''; void editTrack(track.id, { title, artist, album }).catch(error => window.alert(error instanceof Error ? error.message : 'No se pudo editar la canción.')); };
+  const handleAddToPlaylist = async (playlist: MusicPlaylist) => { const track = musicTracks[0]; if (!track) return; try { await addTrackToPlaylist(playlist.id, track.id); } catch (error) { window.alert(error instanceof Error ? error.message : 'No se pudo añadir la canción.'); } };
 
   return <section className="profile-view-page">
     <ProfileHeader profile={displayProfile} displayName={displayName} handle={handle} avatar={displayProfile.avatar_url || ''} banner={displayProfile.banner_url || ''} isOwnProfile={ownProfile} status={effectiveStatus} statusLabel={statusMeta.label} statusClassName={statusMeta.className} savingStatus={savingStatus} savingHashtag={savingHashtag} editingHashtag={editingHashtag} hashtagDraft={hashtagDraft} editingBio={editingBio} bioDraft={bioDraft} savingBio={savingBio} onOpenMedia={openMediaEditor} onStatusChange={saveStatus} onStartHashtagEdit={() => setEditingHashtag(true)} onHashtagDraftChange={setHashtagDraft} onSaveHashtag={() => void saveHashtag()} onCancelHashtag={() => { setEditingHashtag(false); setHashtagDraft(displayProfile.profile_hashtag || ''); }} onStartBioEdit={() => { if (ownProfile) setEditingBio(true); }} onBioDraftChange={setBioDraft} onSaveBio={() => void saveBio()} onCancelBio={() => setEditingBio(false)} />
     <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
     {activeTab === 'Inicio' && <ProfileHome signatures={signatures} loadingSignatures={loadingSignatures} signatureDraft={signatureDraft} savingSignature={savingSignature} onSignatureDraftChange={setSignatureDraft} onSubmitSignature={() => void handleSubmitSignature()} profileStats={profileStats} currentSong={currentSong} onTogglePlayback={togglePlayback} />}
     {activeTab === 'Fotos' && <div className="profile-view-card"><div className="profile-view-section-head"><h2><Images size={17} /> Fotos</h2><span>{gallery.length}</span></div><div className="profile-media-gallery">{loadingGallery ? [1,2,3,4].map(item => <span key={item} />) : gallery.map(photo => <button key={photo.id} type="button"><img src={photo.url} alt={photo.caption || 'Foto'} /></button>)}</div></div>}
-    {activeTab === 'Música' && <div className="profile-music-stack"><ProfileDailySong song={dailySong} loading={loadingDailySong} saving={savingDailySong} canEdit={ownProfile} search={searchDailySong} getSavedMusic={getSavedMusic} onChoose={chooseDailySong} onPlay={playTrack} /><ProfileMusicDiary entries={musicDiary} loading={loadingMusicDiary} onPlay={playDiaryEntry} /></div>}
+    {activeTab === 'Música' && <div className="profile-music-stack">
+      <ProfileDailySong song={dailySong} loading={loadingDailySong} saving={savingDailySong} canEdit={ownProfile} search={searchDailySong} getSavedMusic={getSavedMusic} onChoose={chooseDailySong} onPlay={playTrack} />
+      <ProfileMusicLibrary tracks={musicTracks} favoriteIds={favoriteIds} playlists={playlists} loading={loadingMusicLibrary} canEdit={ownProfile} onPlay={playTrack} onToggleFavorite={toggleFavorite} onEditTrack={handleEditTrack} onDeleteTrack={removeTrack} onNewPlaylist={() => { const name = window.prompt('Nombre de la playlist'); if (name) void createPlaylist(name, '', true); }} onEditPlaylist={playlist => { const name = window.prompt('Nombre', playlist.name) ?? playlist.name; void updatePlaylist(playlist.id, name, playlist.description || '', playlist.is_public !== false); }} onDeletePlaylist={deletePlaylist} onAddToPlaylist={handleAddToPlaylist} />
+      <ProfileMusicDiary entries={musicDiary} loading={loadingMusicDiary} onPlay={playDiaryEntry} />
+    </div>}
     {activeTab === 'Videos' && <div className="profile-view-card profile-view-empty">Los vídeos del perfil se cargarán aquí.</div>}
   </section>;
 }
