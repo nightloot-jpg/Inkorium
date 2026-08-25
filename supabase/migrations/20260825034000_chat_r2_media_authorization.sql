@@ -1,0 +1,4 @@
+-- Chat attachments are authorized by the r2-media Edge Function.
+-- New chat keys use: chat/<channel_id>/<owner_id>/<filename>
+-- The function checks chat_participants for signed GET access and restricts DELETE to the owner.
+-- No schema change is required.
