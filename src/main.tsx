@@ -13,6 +13,7 @@ import "./features/feed/feed-right-rail-2026.css";
 import "./features/profile/profile-photos-2026.css";
 import "./features/profile/profile-photos-lightbox-2026.css";
 import "./features/profile/profile-albums-moments-2026.css";
+import "./features/music/music-2026.css";
 
 async function bootstrap() {
   const { data } = await supabase.auth.getSession();
