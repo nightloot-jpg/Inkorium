@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Images } from 'lucide-react';
 import { useAuthStore, usePlayerStore } from '../../lib/store';
-import type { GalleryPhoto, MediaTarget, ProfileViewProps, StatusValue } from './types/profile.types';
+import type { MediaTarget, ProfileViewProps, StatusValue } from './types/profile.types';
 import { useProfile } from './hooks/useProfile';
 import { useProfileStats } from './hooks/useProfileStats';
 import { useProfileSignatures } from './hooks/useProfileSignatures';
+import { useProfileMedia } from './hooks/useProfileMedia';
 import { ProfileHeader } from './components/ProfileHeader';
 import { ProfileTabs, type ProfileTab } from './components/ProfileTabs';
 import { ProfileHome } from './components/home/ProfileHome';
@@ -12,12 +13,7 @@ import './profile-view.css';
 import './profile-about-card.css';
 import './profile-global.css';
 
-const STATUS_META: Record<StatusValue, { label: string; className: string }> = {
-  conectado: { label: 'Conectado', className: 'online' },
-  ausente: { label: 'Ausente', className: 'away' },
-  desconectado: { label: 'Desconectado', className: 'offline' },
-};
-
+const STATUS_META: Record<StatusValue, { label: string; className: string }> = { conectado: { label: 'Conectado', className: 'online' }, ausente: { label: 'Ausente', className: 'away' }, desconectado: { label: 'Desconectado', className: 'offline' } };
 const normalizeStatus = (value: string | null | undefined): StatusValue => value === 'ausente' || value === 'desconectado' ? value : 'conectado';
 
 export function ProfileView({ session, profile: initialProfile, profileId, username }: ProfileViewProps) {
@@ -30,9 +26,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const [editingHashtag, setEditingHashtag] = useState(false);
   const [hashtagDraft, setHashtagDraft] = useState(initialProfile?.profile_hashtag || '');
   const [savingHashtag, setSavingHashtag] = useState(false);
-  const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
-  const [loadingGallery, setLoadingGallery] = useState(false);
-
+  const [signatureDraft, setSignatureDraft] = useState('');
   const globalProfile = useAuthStore(state => state.profile);
   const updateGlobalProfile = useAuthStore(state => state.updateProfile);
   const currentSong = usePlayerStore(state => state.currentSong);
@@ -41,159 +35,33 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const pause = usePlayerStore(state => state.pause);
   const resume = usePlayerStore(state => state.resume);
   const openPlayer = usePlayerStore(state => state.openPlayer);
-
   const { profile, update, updateStatus } = useProfile(profileId, initialProfile);
   const { stats: profileStats } = useProfileStats(profileId);
   const { signatures, loading: loadingSignatures, saving: savingSignature, submit: submitSignature } = useProfileSignatures(profileId, session.user.id);
-
+  const { openMediaEditor, gallery, loadingGallery, loadGallery } = useProfileMedia(profileId === session.user.id);
   const displayProfile = profile || initialProfile;
   const isOwnProfile = profileId === session.user.id;
   const displayName = displayProfile?.full_name || displayProfile?.username || username || 'Usuario';
   const handle = displayProfile?.username ? `@${displayProfile.username}` : `@${username}`;
-  const avatar = displayProfile?.avatar_url || '';
-  const banner = displayProfile?.banner_url || '';
   const effectiveStatus = isOwnProfile ? normalizeStatus(globalProfile?.user_status ?? status) : normalizeStatus(displayProfile?.user_status);
   const statusMeta = STATUS_META[effectiveStatus];
 
-  useEffect(() => {
-    setStatus(normalizeStatus(displayProfile?.user_status));
-    setBioDraft(displayProfile?.bio || '');
-    setHashtagDraft(displayProfile?.profile_hashtag || '');
-  }, [displayProfile?.bio, displayProfile?.profile_hashtag, displayProfile?.user_status]);
+  useEffect(() => { setStatus(normalizeStatus(displayProfile?.user_status)); setBioDraft(displayProfile?.bio || ''); setHashtagDraft(displayProfile?.profile_hashtag || ''); }, [displayProfile?.bio, displayProfile?.profile_hashtag, displayProfile?.user_status]);
+  useEffect(() => { if (activeTab === 'Fotos') void loadGallery(profileId).catch(error => console.error('Error loading profile gallery:', error)); }, [activeTab, loadGallery, profileId]);
 
-  useEffect(() => {
-    if (activeTab !== 'Fotos') return;
-    let cancelled = false;
-    setLoadingGallery(true);
-    async function loadGallery() {
-      const { data, error } = await fetchProfilePhotos(profileId);
-      if (cancelled) return;
-      if (error) console.error('Error loading profile gallery:', error);
-      setGallery((data || []) as GalleryPhoto[]);
-      setLoadingGallery(false);
-    }
-    void loadGallery();
-    return () => { cancelled = true; };
-  }, [activeTab, profileId]);
-
-  const saveStatus = async (next: StatusValue) => {
-    if (!isOwnProfile) return;
-    setSavingStatus(true);
-    try {
-      await updateStatus(next);
-      setStatus(next);
-      updateGlobalProfile({ user_status: next });
-      window.dispatchEvent(new CustomEvent('inkorium-user-status-updated', { detail: { userId: session.user.id, status: next } }));
-    } catch (error) {
-      window.alert(`No se pudo guardar el estado: ${error instanceof Error ? error.message : 'Error desconocido'}`);
-    } finally { setSavingStatus(false); }
-  };
-
-  const saveBio = async () => {
-    if (!isOwnProfile) return;
-    setSavingBio(true);
-    const value = bioDraft.trim().slice(0, 180);
-    try { await update({ bio: value || null }); updateGlobalProfile({ bio: value || null }); setEditingBio(false); }
-    catch (error) { window.alert(`No se pudo guardar la biografía: ${error instanceof Error ? error.message : 'Error desconocido'}`); }
-    finally { setSavingBio(false); }
-  };
-
-  const saveHashtag = async () => {
-    if (!isOwnProfile) return;
-    setSavingHashtag(true);
-    const value = hashtagDraft.trim().replace(/^#+/, '').replace(/\s+/g, '').slice(0, 50);
-    try { await update({ profile_hashtag: value || null }); setHashtagDraft(value); setEditingHashtag(false); }
-    catch (error) { window.alert(`No se pudo guardar el hashtag: ${error instanceof Error ? error.message : 'Error desconocido'}`); }
-    finally { setSavingHashtag(false); }
-  };
-
-  const handleSubmitSignature = async () => {
-    if (!signatureDraft.trim()) return;
-    try {
-      await submitSignature(signatureDraft);
-      setSignatureDraft('');
-    } catch (error) {
-      window.alert(`No se pudo dejar la firma: ${error instanceof Error ? error.message : 'Error desconocido'}`);
-    }
-  };
-
-  const togglePlayback = () => {
-    if (!currentSong) { openPlayer(); return; }
-    if (isPlaying || pendingPlay) pause(); else resume();
-  };
-
-  const openMediaChooser = (target: MediaTarget) => {
-    if (isOwnProfile) window.dispatchEvent(new CustomEvent('inkorium-profile-media-edit', { detail: { target } }));
-  };
-
+  const saveStatus = async (next: StatusValue) => { if (!isOwnProfile) return; setSavingStatus(true); try { await updateStatus(next); setStatus(next); updateGlobalProfile({ user_status: next }); window.dispatchEvent(new CustomEvent('inkorium-user-status-updated', { detail: { userId: session.user.id, status: next } })); } catch (error) { window.alert(`No se pudo guardar el estado: ${error instanceof Error ? error.message : 'Error desconocido'}`); } finally { setSavingStatus(false); } };
+  const saveBio = async () => { if (!isOwnProfile) return; setSavingBio(true); const value = bioDraft.trim().slice(0, 180); try { await update({ bio: value || null }); updateGlobalProfile({ bio: value || null }); setEditingBio(false); } catch (error) { window.alert(`No se pudo guardar la biografía: ${error instanceof Error ? error.message : 'Error desconocido'}`); } finally { setSavingBio(false); } };
+  const saveHashtag = async () => { if (!isOwnProfile) return; setSavingHashtag(true); const value = hashtagDraft.trim().replace(/^#+/, '').replace(/\s+/g, '').slice(0, 50); try { await update({ profile_hashtag: value || null }); setHashtagDraft(value); setEditingHashtag(false); } catch (error) { window.alert(`No se pudo guardar el hashtag: ${error instanceof Error ? error.message : 'Error desconocido'}`); } finally { setSavingHashtag(false); } };
+  const handleSubmitSignature = async () => { if (!signatureDraft.trim()) return; try { await submitSignature(signatureDraft); setSignatureDraft(''); } catch (error) { window.alert(`No se pudo dejar la firma: ${error instanceof Error ? error.message : 'Error desconocido'}`); } };
+  const togglePlayback = () => { if (!currentSong) { openPlayer(); return; } if (isPlaying || pendingPlay) pause(); else resume(); };
   if (!displayProfile) return null;
 
-  return (
-    <section className="profile-view-page">
-      <ProfileHeader
-        profile={displayProfile}
-        displayName={displayName}
-        handle={handle}
-        avatar={avatar}
-        banner={banner}
-        isOwnProfile={isOwnProfile}
-        status={effectiveStatus}
-        statusLabel={statusMeta.label}
-        statusClassName={statusMeta.className}
-        savingStatus={savingStatus}
-        savingHashtag={savingHashtag}
-        editingHashtag={editingHashtag}
-        hashtagDraft={hashtagDraft}
-        editingBio={editingBio}
-        bioDraft={bioDraft}
-        savingBio={savingBio}
-        onOpenMedia={openMediaChooser}
-        onStatusChange={saveStatus}
-        onStartHashtagEdit={() => setEditingHashtag(true)}
-        onHashtagDraftChange={setHashtagDraft}
-        onSaveHashtag={() => void saveHashtag()}
-        onCancelHashtag={() => { setEditingHashtag(false); setHashtagDraft(displayProfile.profile_hashtag || ''); }}
-        onStartBioEdit={() => { if (isOwnProfile) setEditingBio(true); }}
-        onBioDraftChange={setBioDraft}
-        onSaveBio={() => void saveBio()}
-        onCancelBio={() => setEditingBio(false)}
-      />
-
-      <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
-
-      {activeTab === 'Inicio' && (
-        <ProfileHome
-          signatures={signatures}
-          loadingSignatures={loadingSignatures}
-          signatureDraft={signatureDraft}
-          savingSignature={savingSignature}
-          onSignatureDraftChange={setSignatureDraft}
-          onSubmitSignature={() => void handleSubmitSignature()}
-          profileStats={profileStats}
-          currentSong={currentSong}
-          onTogglePlayback={togglePlayback}
-        />
-      )}
-
-      {activeTab === 'Fotos' && (
-        <div className="profile-view-card">
-          <div className="profile-view-section-head"><h2><Images size={17} /> Fotos</h2><span>{gallery.length}</span></div>
-          <div className="profile-media-gallery">
-            {loadingGallery ? [1, 2, 3, 4].map(item => <span key={item} />) : gallery.map(photo => (
-              <button key={photo.id} type="button"><img src={photo.url} alt={photo.caption || 'Foto'} /></button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'Videos' && <div className="profile-view-card profile-view-empty">Los vídeos del perfil se cargarán aquí.</div>}
-      {activeTab === 'Música' && <div className="profile-view-card profile-view-empty">La música del perfil se cargará aquí.</div>}
-    </section>
-  );
-}
-
-async function fetchProfilePhotos(profileId: string) {
-  const { supabase } = await import('../../lib/supabase');
-  const result = await supabase.from('photos').select('id, url, caption, created_at').eq('user_id', profileId).order('created_at', { ascending: false }).limit(60);
-  return result;
+  return <section className="profile-view-page">
+    <ProfileHeader profile={displayProfile} displayName={displayName} handle={handle} avatar={displayProfile.avatar_url || ''} banner={displayProfile.banner_url || ''} isOwnProfile={isOwnProfile} status={effectiveStatus} statusLabel={statusMeta.label} statusClassName={statusMeta.className} savingStatus={savingStatus} savingHashtag={savingHashtag} editingHashtag={editingHashtag} hashtagDraft={hashtagDraft} editingBio={editingBio} bioDraft={bioDraft} savingBio={savingBio} onOpenMedia={openMediaEditor} onStatusChange={saveStatus} onStartHashtagEdit={() => setEditingHashtag(true)} onHashtagDraftChange={setHashtagDraft} onSaveHashtag={() => void saveHashtag()} onCancelHashtag={() => { setEditingHashtag(false); setHashtagDraft(displayProfile.profile_hashtag || ''); }} onStartBioEdit={() => { if (isOwnProfile) setEditingBio(true); }} onBioDraftChange={setBioDraft} onSaveBio={() => void saveBio()} onCancelBio={() => setEditingBio(false)} />
+    <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
+    {activeTab === 'Inicio' && <ProfileHome signatures={signatures} loadingSignatures={loadingSignatures} signatureDraft={signatureDraft} savingSignature={savingSignature} onSignatureDraftChange={setSignatureDraft} onSubmitSignature={() => void handleSubmitSignature()} profileStats={profileStats} currentSong={currentSong} onTogglePlayback={togglePlayback} />}
+    {activeTab === 'Fotos' && <div className="profile-view-card"><div className="profile-view-section-head"><h2><Images size={17} /> Fotos</h2><span>{gallery.length}</span></div><div className="profile-media-gallery">{loadingGallery ? [1,2,3,4].map(item => <span key={item} />) : gallery.map(photo => <button key={photo.id} type="button"><img src={photo.url} alt={photo.caption || 'Foto'} /></button>)}</div></div>}
+    {activeTab === 'Videos' && <div className="profile-view-card profile-view-empty">Los vídeos del perfil se cargarán aquí.</div>}
+    {activeTab === 'Música' && <div className="profile-view-card profile-view-empty">La música del perfil se cargará aquí.</div>}
+  </section>;
 }
