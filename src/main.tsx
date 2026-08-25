@@ -4,6 +4,7 @@ import { useAuthStore } from "./lib/store";
 import { supabase } from "./lib/supabase";
 import { FeedShell } from "./features/feed/FeedShell";
 import type { ProfileData } from "./features/feed/Feed";
+import "./features/route-feed-compat";
 import "./features/RouteContentBridge";
 import "./features/route-content-bridge.css";
 import "./features/route-content-bridge-events-navbar-fix-2026.css";
