@@ -5,6 +5,7 @@ import type { GalleryPhoto, MediaTarget, ProfileViewProps, StatusValue } from '.
 import { useProfile } from './hooks/useProfile';
 import { useProfileStats } from './hooks/useProfileStats';
 import { useProfileSignatures } from './hooks/useProfileSignatures';
+import { useProfileMedia } from './hooks/useProfileMedia';
 import { ProfileHeader } from './components/ProfileHeader';
 import { ProfileTabs, type ProfileTab } from './components/ProfileTabs';
 import { ProfileHome } from './components/home/ProfileHome';
@@ -45,6 +46,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const { profile, update, updateStatus } = useProfile(profileId, initialProfile);
   const { stats: profileStats } = useProfileStats(profileId);
   const { signatures, loading: loadingSignatures, saving: savingSignature, submit: submitSignature } = useProfileSignatures(profileId, session.user.id);
+  const { openMediaEditor } = useProfileMedia(profileId === session.user.id);
 
   const displayProfile = profile || initialProfile;
   const isOwnProfile = profileId === session.user.id;
@@ -122,9 +124,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
     if (isPlaying || pendingPlay) pause(); else resume();
   };
 
-  const openMediaChooser = (target: MediaTarget) => {
-    if (isOwnProfile) window.dispatchEvent(new CustomEvent('inkorium-profile-media-edit', { detail: { target } }));
-  };
+  const openMediaChooser = (target: MediaTarget) => openMediaEditor(target);
 
   if (!displayProfile) return null;
 
@@ -194,6 +194,5 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
 
 async function fetchProfilePhotos(profileId: string) {
   const { supabase } = await import('../../lib/supabase');
-  const result = await supabase.from('photos').select('id, url, caption, created_at').eq('user_id', profileId).order('created_at', { ascending: false }).limit(60);
-  return result;
+  return supabase.from('photos').select('id, url, caption, created_at').eq('user_id', profileId).order('created_at', { ascending: false }).limit(60);
 }
