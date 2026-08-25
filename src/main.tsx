@@ -4,6 +4,7 @@ import { useAuthStore } from "./lib/store";
 import { supabase } from "./lib/supabase";
 import { Feed, type ProfileData } from "./features/feed/Feed";
 import "./features/RouteContentBridge";
+import "./components/composer-2026.css";
 
 async function bootstrap() {
   const { data } = await supabase.auth.getSession();

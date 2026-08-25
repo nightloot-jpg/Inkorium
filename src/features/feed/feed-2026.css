@@ -1,3 +1,5 @@
+@import '../../components/composer-2026.css';
+
 .feed-app {
   --feed-blue: #2b6fa8;
   --feed-blue-deep: #1f5d8f;
@@ -26,9 +28,7 @@
 
 .feed-app .top-nav button:hover,
 .feed-app .top-actions button:hover,
-.feed-app .brand-button:hover {
-  opacity: .92;
-}
+.feed-app .brand-button:hover { opacity: .92; }
 
 .feed-app .feed-layout {
   width: min(1180px, calc(100% - 24px));
@@ -41,9 +41,7 @@
 
 .feed-app .left-column,
 .feed-app .right-column,
-.feed-app .stream {
-  min-width: 0;
-}
+.feed-app .stream { min-width: 0; }
 
 .feed-app .panel,
 .feed-app .post,
@@ -60,55 +58,18 @@
 
 .feed-app .side-menu,
 .feed-app .friends,
-.feed-app .profile-card {
-  box-shadow: none;
-}
+.feed-app .profile-card { box-shadow: none; }
 
-.feed-app .stream {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.feed-app .post {
-  overflow: hidden;
-}
-
-.feed-app .post + .post {
-  margin-top: 0;
-}
-
-.feed-app .post-head {
-  padding: 13px 14px 9px;
-}
-
-.feed-app .post-text {
-  color: var(--feed-text);
-  font-size: 14px;
-  line-height: 1.55;
-}
-
-.feed-app .post-actions {
-  margin-top: 10px;
-  padding: 8px 12px;
-  border-top: 1px solid #e6ebef;
-  background: #fafcfd;
-}
-
-.feed-app .post-actions button {
-  color: #547088;
-}
-
+.feed-app .stream { display: flex; flex-direction: column; gap: 12px; }
+.feed-app .post { overflow: hidden; }
+.feed-app .post + .post { margin-top: 0; }
+.feed-app .post-head { padding: 13px 14px 9px; }
+.feed-app .post-text { color: var(--feed-text); font-size: 14px; line-height: 1.55; }
+.feed-app .post-actions { margin-top: 10px; padding: 8px 12px; border-top: 1px solid #e6ebef; background: #fafcfd; }
+.feed-app .post-actions button { color: #547088; }
 .feed-app .post-actions button:hover,
-.feed-app .post-actions button.is-liked {
-  color: var(--feed-blue);
-}
-
-.feed-app .comment-input-area {
-  padding: 9px 12px 12px;
-  background: #fafcfd;
-}
-
+.feed-app .post-actions button.is-liked { color: var(--feed-blue); }
+.feed-app .comment-input-area { padding: 9px 12px 12px; background: #fafcfd; }
 .feed-app .comment-input-area input,
 .feed-app .search-form input {
   border: 1px solid #cfd9e2;
@@ -116,20 +77,11 @@
   background: #fff;
   box-shadow: inset 0 1px 2px rgba(24, 49, 68, .05);
 }
-
-.feed-app .feed-right-rail {
-  position: sticky;
-  top: 58px;
-}
+.feed-app .feed-right-rail { position: sticky; top: 58px; }
 
 @media (max-width: 1080px) {
-  .feed-app .feed-layout {
-    grid-template-columns: 170px minmax(0, 1fr);
-  }
-
-  .feed-app .right-column {
-    display: none;
-  }
+  .feed-app .feed-layout { grid-template-columns: 170px minmax(0, 1fr); }
+  .feed-app .right-column { display: none; }
 }
 
 @media (max-width: 760px) {
@@ -139,12 +91,6 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }
-
-  .feed-app .left-column {
-    display: none;
-  }
-
-  .feed-app .topbar {
-    padding: 0 9px;
-  }
+  .feed-app .left-column { display: none; }
+  .feed-app .topbar { padding: 0 9px; }
 }
