@@ -1,5 +1,0 @@
-/* Eventos queda retirado de la navegación hasta su reconstrucción. */
-.top-nav > button:nth-child(7),
-.side-menu > button:nth-child(5) {
-  display: none !important;
-}
