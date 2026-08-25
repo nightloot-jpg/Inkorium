@@ -30,6 +30,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const [editingHashtag, setEditingHashtag] = useState(false);
   const [hashtagDraft, setHashtagDraft] = useState(initialProfile?.profile_hashtag || '');
   const [savingHashtag, setSavingHashtag] = useState(false);
+  const [signatureDraft, setSignatureDraft] = useState('');
 
   const globalProfile = useAuthStore(state => state.profile);
   const updateGlobalProfile = useAuthStore(state => state.updateProfile);
@@ -60,11 +61,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
 
   useEffect(() => {
     if (activeTab !== 'Fotos') return;
-    let cancelled = false;
-    void loadGallery(profileId).catch(error => {
-      if (!cancelled) console.error('Error loading profile gallery:', error);
-    });
-    return () => { cancelled = true; };
+    void loadGallery(profileId).catch(error => console.error('Error loading profile gallery:', error));
   }, [activeTab, loadGallery, profileId]);
 
   const saveStatus = async (next: StatusValue) => {
@@ -94,6 +91,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   };
 
   const handleSubmitSignature = async () => {
+    if (!signatureDraft.trim()) return;
     try { await submitSignature(signatureDraft); setSignatureDraft(''); }
     catch (error) { window.alert(`No se pudo dejar la firma: ${error instanceof Error ? error.message : 'Error desconocido'}`); }
   };
@@ -102,6 +100,8 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
     if (!currentSong) { openPlayer(); return; }
     if (isPlaying || pendingPlay) pause(); else resume();
   };
+
+  const openMediaChooser = (target: MediaTarget) => openMediaEditor(target);
 
   if (!displayProfile) return null;
 
@@ -124,7 +124,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
         editingBio={editingBio}
         bioDraft={bioDraft}
         savingBio={savingBio}
-        onOpenMedia={openMediaEditor}
+        onOpenMedia={openMediaChooser}
         onStatusChange={saveStatus}
         onStartHashtagEdit={() => setEditingHashtag(true)}
         onHashtagDraftChange={setHashtagDraft}
