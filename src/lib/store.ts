@@ -26,7 +26,10 @@ let authenticatedUserId: string | null = null;
 export const useAuthStore = create<AuthStore>((set) => ({
   profile: null,
   session: null,
-  setSession: (session) => set({ session }),
+  setSession: (session) => {
+    authenticatedUserId = session?.user.id ?? null;
+    set({ session });
+  },
   setProfile: (profile) => set((state) => {
     if (!profile) return { profile: null };
     if (!profile.id || !authenticatedUserId || profile.id !== authenticatedUserId) return state;
@@ -55,12 +58,10 @@ async function hydrateAuthenticatedProfile(userId: string | null) {
   }
 }
 
-void supabase.auth.getSession().then(({ data }) => {
-  useAuthStore.getState().setSession(data.session ?? null);
-  void hydrateAuthenticatedProfile(data.session?.user.id ?? null);
-});
-
-supabase.auth.onAuthStateChange((_event, session) => {
+supabase.auth.onAuthStateChange((event, session) => {
+  // main.tsx owns the initial session/profile bootstrap. Avoid a second
+  // getSession/profile query when Supabase emits INITIAL_SESSION.
+  if (event === 'INITIAL_SESSION') return;
   useAuthStore.getState().setSession(session);
   void hydrateAuthenticatedProfile(session?.user.id ?? null);
 });
