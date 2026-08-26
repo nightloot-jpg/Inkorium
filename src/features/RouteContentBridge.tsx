@@ -147,22 +147,22 @@ function RouteContentBridge() {
   const page = routeState.page;
   const routeParams = routeState.params;
   const isRoute = BRIDGED_ROUTE_PAGES.has(page);
-  if (!isRoute || !sessionReady || !session) return null;
+  if (!isRoute || !sessionReady) return null;
 
   const routePage = page as RoutePage;
   const bridgeNavigate = (nextPage: RoutePage, params?: Record<string, any>) => {
     appendNavigationEntry(nextPage, params);
     setRouteState(readRouteState());
   };
-  const visitedProfileId = typeof routeParams?.userId === 'string' && routeParams.userId.trim() ? routeParams.userId.trim() : session.user.id;
+  const visitedProfileId = typeof routeParams?.userId === 'string' && routeParams.userId.trim() ? routeParams.userId.trim() : session!.user.id;
 
   return <div id={BRIDGE_ID} className="inkorium-route-bridge" data-route-page={routePage}>
     <RouteErrorBoundary>
       <Suspense fallback={<div style={{minHeight:'100%',padding:24,background:'#f3f6fa',color:'#66788b'}}>Cargando sección…</div>}>
-        {routePage === 'perfil' && <ProfileView session={session} profile={profile} profileId={visitedProfileId} username={username} />}
-        {routePage === 'personas' && <PeopleView session={session} navigate={bridgeNavigate} />}
-        {routePage === 'musica' && <MusicView session={session} navigate={bridgeNavigate} />}
-        {routePage === 'videos' && <VideoView session={session} navigate={bridgeNavigate} />}
+        {routePage === 'perfil' && <ProfileView session={session!} profile={profile} profileId={visitedProfileId} username={username} />}
+        {routePage === 'personas' && <PeopleView session={session!} navigate={bridgeNavigate} />}
+        {routePage === 'musica' && <MusicView session={session!} navigate={bridgeNavigate} />}
+        {routePage === 'videos' && <VideoView session={session!} navigate={bridgeNavigate} />}
       </Suspense>
     </RouteErrorBoundary>
   </div>;
