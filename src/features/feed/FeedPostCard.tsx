@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { Heart, MessageCircle, MoreHorizontal, Share2 } from 'lucide-react';
 import './feed-post-card-2026.css';
@@ -45,7 +45,34 @@ type Props = {
   renderComments?: ReactNode;
 };
 
-export function FeedPostCard({
+function samePostData(a: FeedPostCardData, b: FeedPostCardData) {
+  if (a.id !== b.id || a.text !== b.text || a.time !== b.time || a.likes !== b.likes) return false;
+  if (a.authorName !== b.authorName || a.authorAvatarUrl !== b.authorAvatarUrl || a.author_id !== b.author_id) return false;
+  if (a.target_profile_id !== b.target_profile_id || a.targetName !== b.targetName) return false;
+  if (a.shared_post_id !== b.shared_post_id || a.commentsCount !== b.commentsCount || a.poll_id !== b.poll_id) return false;
+  if (a.media_data !== b.media_data) return false;
+  const ao = a.originalPost;
+  const bo = b.originalPost;
+  if (!!ao !== !!bo) return false;
+  if (ao && bo) {
+    if (ao.text !== bo.text || ao.authorName !== bo.authorName || ao.authorAvatarUrl !== bo.authorAvatarUrl || ao.time !== bo.time || ao.author_id !== bo.author_id) return false;
+  }
+  return true;
+}
+
+function areEqual(prev: Props, next: Props) {
+  return (
+    samePostData(prev.post, next.post) &&
+    prev.session.user.id === next.session.user.id &&
+    prev.username === next.username &&
+    prev.liked === next.liked &&
+    prev.commentsOpen === next.commentsOpen &&
+    prev.shareOpen === next.shareOpen &&
+    prev.postMenuOpen === next.postMenuOpen
+  );
+}
+
+export const FeedPostCard = memo(function FeedPostCard({
   post,
   session,
   username,
@@ -142,4 +169,4 @@ export function FeedPostCard({
       {commentsOpen ? renderComments : null}
     </article>
   );
-}
+}, areEqual);
