@@ -102,7 +102,7 @@ export function useFeedPosts(session: Session, profile: Profile | null, username
     return () => {
       cancelled = true;
     };
-  }, [profile?.avatar_url, session.user.id, username]);
+  }, [session.user.id, username]);
 
   async function toggleLike(postId: string) {
     const active = liked.includes(postId);
