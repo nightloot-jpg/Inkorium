@@ -26,8 +26,8 @@ async function getR2PlaybackUrl(value: string | null): Promise<string | null> {
 export function VideoView({ session }: { session:any; navigate:any }) {
   const [tab,setTab] = useState<Tab>('descubrir');
   return <section className="content-view ink-video-view" style={{background:'#f3f6fa',minHeight:'100%',padding:'18px 20px'}}>
-    <style>{`.
-      feed-layout:has(.ink-video-view){grid-template-columns:minmax(190px,280px) minmax(0,1fr)!important}
+    <style>{`
+      .feed-layout:has(.ink-video-view){grid-template-columns:minmax(190px,280px) minmax(0,1fr)!important}
       .feed-layout:has(.ink-video-view)> .right-column,.feed-layout:has(.ink-video-view) .right-column,body:has(.ink-video-view) .right-column{display:none!important}
       .ink-video-shell{max-width:1220px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px}
       .ink-video-panel{background:#fff;border:1px solid ${border};border-radius:6px;box-shadow:0 1px 2px rgba(23,55,90,.03)}
@@ -70,19 +70,70 @@ export function VideoView({ session }: { session:any; navigate:any }) {
 }
 
 function VideoDiscover({session}:{session:any}){
-  const [query,setQuery]=useState(''); const [results,setResults]=useState<YouTubeResult[]>([]); const [loading,setLoading]=useState(false); const [error,setError]=useState(''); const [notice,setNotice]=useState('');
-  async function search(event:React.FormEvent){event.preventDefault();const value=query.trim();if(!value)return;setLoading(true);setError('');setNotice('');try{const response=await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(value)}&type=video&maxResults=12`);const data=await response.json();if(!response.ok)throw new Error(data?.error?.message||'No se pudieron cargar los vídeos.');setResults((data.items||[]).filter((item:YouTubeResult)=>item?.id?.videoId));if((data.items||[]).length===0)setNotice('No se han encontrado vídeos para esa búsqueda.')}catch(err:any){setError(err?.message||'No se pudo completar la búsqueda.')}finally{setLoading(false)}}
-  async function save(item:YouTubeResult){const videoId=item.id.videoId;const thumbnail=item.snippet.thumbnails?.high?.url||item.snippet.thumbnails?.medium?.url||item.snippet.thumbnails?.default?.url||null;const {error}=await supabase.from('user_videos').insert({user_id:session.user.id,youtube_video_id:videoId,title:item.snippet.title,thumbnail,channel:item.snippet.channelTitle,url:`https://www.youtube.com/watch?v=${videoId}`,source:'youtube'});if(error){setNotice(error.code==='23505'?'Ese vídeo ya está guardado.':'No se pudo guardar el vídeo.');return}setNotice('Vídeo guardado en Mis vídeos.')}
+  const [query,setQuery]=useState('');
+  const [results,setResults]=useState<YouTubeResult[]>([]);
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState('');
+  const [notice,setNotice]=useState('');
+
+  async function search(event:React.FormEvent){
+    event.preventDefault();
+    const value=query.trim();
+    if(!value)return;
+    setLoading(true);setError('');setNotice('');
+    try{
+      const response=await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(value)}&type=video&maxResults=12`);
+      const data=await response.json();
+      if(!response.ok)throw new Error(data?.error?.message||'No se pudieron cargar los vídeos.');
+      setResults((data.items||[]).filter((item:YouTubeResult)=>item?.id?.videoId));
+      if((data.items||[]).length===0)setNotice('No se han encontrado vídeos para esa búsqueda.');
+    }catch(err:any){setError(err?.message||'No se pudo completar la búsqueda.');}
+    finally{setLoading(false);}
+  }
+
+  async function save(item:YouTubeResult){
+    const videoId=item.id.videoId;
+    const thumbnail=item.snippet.thumbnails?.high?.url||item.snippet.thumbnails?.medium?.url||item.snippet.thumbnails?.default?.url||null;
+    const {error}=await supabase.from('user_videos').insert({user_id:session.user.id,youtube_video_id:videoId,title:item.snippet.title,thumbnail,channel:item.snippet.channelTitle,url:`https://www.youtube.com/watch?v=${videoId}`,source:'youtube'});
+    if(error){setNotice(error.code==='23505'?'Ese vídeo ya está guardado.':'No se pudo guardar el vídeo.');return;}
+    setNotice('Vídeo guardado en Mis vídeos.');
+  }
+
   return <div className="ink-video-panel" style={{padding:16}}>
-    <form onSubmit={search} className="ink-video-search" style={{marginBottom:14}}><div style={{position:'relative',flex:1,minWidth:0}}><Search size={18} color="#8192a5" style={{position:'absolute',left:13,top:13}}/><input className="ink-video-input" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar vídeos, canales, temas..."/></div><button type="submit" disabled={loading} style={{minWidth:96,border:0,borderRadius:5,background:blue,color:'#fff',fontWeight:700}}>{loading?<Loader2 size={18}/>: 'Buscar'}</button></form>
+    <form onSubmit={search} className="ink-video-search" style={{marginBottom:14}}>
+      <div style={{position:'relative',flex:1,minWidth:0}}>
+        <Search size={18} color="#8192a5" style={{position:'absolute',left:13,top:13}}/>
+        <input className="ink-video-input" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar vídeos, canales, temas..."/>
+      </div>
+      <button type="submit" disabled={loading} style={{minWidth:96,border:0,borderRadius:5,background:blue,color:'#fff',fontWeight:700}}>{loading?<Loader2 size={18}/>: 'Buscar'}</button>
+    </form>
     {error&&<div style={{padding:12,marginBottom:14,borderRadius:5,color:'#a52828',background:'#fff1f1',border:'1px solid #f0caca',fontSize:13}}>{error}</div>}
     {notice&&<div style={{padding:12,marginBottom:14,borderRadius:5,color:'#24613b',background:'#effaf2',border:'1px solid #ccebd5',fontSize:13}}>{notice}</div>}
-    {results.length===0&&!loading?<div style={{padding:'48px 15px',textAlign:'center',color:muted}}><Video size={42} color="#b8c5d2"/><p style={{margin:'12px 0 0'}}>Busca un vídeo para empezar.</p></div>:<div className="ink-video-grid">{results.map(item=>{const id=item.id.videoId;const thumbnail=item.snippet.thumbnails?.high?.url||item.snippet.thumbnails?.medium?.url||item.snippet.thumbnails?.default?.url;return <article className="ink-video-card" key={id}><img className="ink-video-thumb" src={thumbnail} alt="" loading="lazy" decoding="async"/><div className="ink-video-body"><strong style={{display:'block',color:text,fontSize:14,lineHeight:1.35}}>{item.snippet.title}</strong><span style={{display:'block',marginTop:5,color:muted,fontSize:12}}>{item.snippet.channelTitle}</span><div style={{display:'flex',gap:8,marginTop:10}}><button onClick={()=>window.open(`https://www.youtube.com/watch?v=${id}`,'_blank','noopener,noreferrer')}><ExternalLink size={14}/>Ver</button><button onClick={()=>save(item)}><Plus size={14}/>Guardar</button></div></div></article>})}</div>}
+    {results.length===0&&!loading
+      ? <div style={{padding:'48px 15px',textAlign:'center',color:muted}}><Video size={42} color="#b8c5d2"/><p style={{margin:'12px 0 0'}}>Busca un vídeo para empezar.</p></div>
+      : <div className="ink-video-grid">{results.map(item=>{
+          const id=item.id.videoId;
+          const thumbnail=item.snippet.thumbnails?.high?.url||item.snippet.thumbnails?.medium?.url||item.snippet.thumbnails?.default?.url;
+          return <article className="ink-video-card" key={id}>
+            <img className="ink-video-thumb" src={thumbnail} alt="" loading="lazy" decoding="async"/>
+            <div className="ink-video-body">
+              <strong style={{display:'block',color:text,fontSize:14,lineHeight:1.35}}>{item.snippet.title}</strong>
+              <span style={{display:'block',marginTop:5,color:muted,fontSize:12}}>{item.snippet.channelTitle}</span>
+              <div style={{display:'flex',gap:8,marginTop:10}}>
+                <button onClick={()=>window.open(`https://www.youtube.com/watch?v=${id}`,'_blank','noopener,noreferrer')}><ExternalLink size={14}/>Ver</button>
+                <button onClick={()=>save(item)}><Plus size={14}/>Guardar</button>
+              </div>
+            </div>
+          </article>;
+        })}</div>}
   </div>;
 }
 
 function SavedVideos({session}:{session:any}){
-  const[videos,setVideos]=useState<SavedVideo[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState('');
+  const[videos,setVideos]=useState<SavedVideo[]>([]);
+  const[loading,setLoading]=useState(true);
+  const[error,setError]=useState('');
+
   async function load(){
     setLoading(true);setError('');
     const{data,error}=await supabase.from('user_videos').select('id,youtube_video_id,title,thumbnail,channel,url,source,created_at').eq('user_id',session.user.id).order('created_at',{ascending:false});
@@ -90,11 +141,13 @@ function SavedVideos({session}:{session:any}){
     const rows=(data||[]) as SavedVideo[];
     const uploadRows=rows.filter(video=>video.source==='upload');
     const signedUrls=await Promise.all(uploadRows.map(video=>getR2PlaybackUrl(video.url)));
-    let signedIndex=0;
-    const hydrated=rows.map(video=>video.source==='upload' ? ({ ...video, playbackUrl: signedUrls[signedIndex++] ?? null }) : video);
-    setVideos(hydrated);setLoading(false);
+    const signedById=new Map(uploadRows.map((video,index)=>[video.id,signedUrls[index] ?? null]));
+    setVideos(rows.map(video=>video.source==='upload' ? {...video,playbackUrl:signedById.get(video.id) ?? null} : video));
+    setLoading(false);
   }
+
   useEffect(()=>{void load()},[session.user.id]);
+
   async function remove(video:SavedVideo){
     if(video.source==='upload'&&video.url?.startsWith('r2://')){
       const key=video.url.slice('r2://'.length);
@@ -102,11 +155,43 @@ function SavedVideos({session}:{session:any}){
     } else if(video.source==='upload'&&video.url){
       const marker='/storage/v1/object/public/videos/';
       const index=video.url.indexOf(marker);
-      if(index>=0){const path=decodeURIComponent(video.url.slice(index+marker.length));await supabase.storage.from('videos').remove([path]);}
+      if(index>=0){
+        const path=decodeURIComponent(video.url.slice(index+marker.length));
+        await supabase.storage.from('videos').remove([path]);
+      }
     }
     const{error}=await supabase.from('user_videos').delete().eq('id',video.id).eq('user_id',session.user.id);
     if(!error)setVideos(prev=>prev.filter(v=>v.id!==video.id));
   }
+
+  function renderVideoMedia(video:SavedVideo){
+    if(video.source==='upload'&&video.playbackUrl){
+      return <video className="ink-video-thumb" src={video.playbackUrl} controls preload="metadata"/>;
+    }
+    if(video.source==='upload'){
+      return <div className="ink-video-thumb" style={{display:'grid',placeItems:'center',color:muted}}>No se pudo obtener el vídeo</div>;
+    }
+    return <img className="ink-video-thumb" src={video.thumbnail||'/default-avatar.png'} alt="" loading="lazy" decoding="async"/>;
+  }
+
   if(loading)return <div className="ink-video-panel" style={{padding:30,textAlign:'center',color:muted}}><Loader2 size={20}/></div>;
-  return <div className="ink-video-panel" style={{padding:16}}>{error&&<p style={{color:'#a52828'}}>{error}</p>}{videos.length===0&&!error?<div style={{padding:'48px 15px',textAlign:'center',color:muted}}><Video size={42} color="#b8c5d2"/><p style={{margin:'12px 0 0'}}>Todavía no has guardado ningún vídeo.</p></div>:<div className="ink-video-grid">{videos.map(video=><article className="ink-video-card" key={video.id}>{video.source==='upload'&&video.playbackUrl?<video className="ink-video-thumb" src={video.playbackUrl} controls preload="metadata"/>:video.source==='upload'?<div className="ink-video-thumb" style={{display:'grid',placeItems:'center',color:muted}}>No se pudo obtener el vídeo</div>:<><img className="ink-video-thumb" src={video.thumbnail||'/default-avatar.png'} alt="" loading="lazy" decoding="async"/><div className="ink-video-body"><strong style={{display:'block',color:text,fontSize:14}}>{video.title}</strong><span style={{display:'block',marginTop:5,color:muted,fontSize:12}}>{video.channel|| (video.source==='upload'?'Vídeo subido por ti':'YouTube')}</span><div style={{display:'flex',gap:8,marginTop:10}}>{video.playbackUrl&&<button onClick={()=>window.open(video.playbackUrl!,'_blank','noopener,noreferrer')}><ExternalLink size={14}/>Ver</button>}<button onClick={()=>remove(video)}><Trash2 size={14}/>Eliminar</button></div></div></>})}</div>}</div>
+
+  return <div className="ink-video-panel" style={{padding:16}}>
+    {error&&<p style={{color:'#a52828'}}>{error}</p>}
+    {!error&&videos.length===0
+      ? <div style={{padding:'48px 15px',textAlign:'center',color:muted}}><Video size={42} color="#b8c5d2"/><p style={{margin:'12px 0 0'}}>Todavía no has guardado ningún vídeo.</p></div>
+      : !error && <div className="ink-video-grid">{videos.map(video=>{
+          return <article className="ink-video-card" key={video.id}>
+            {renderVideoMedia(video)}
+            <div className="ink-video-body">
+              <strong style={{display:'block',color:text,fontSize:14}}>{video.title}</strong>
+              <span style={{display:'block',marginTop:5,color:muted,fontSize:12}}>{video.channel||(video.source==='upload'?'Vídeo subido por ti':'YouTube')}</span>
+              <div style={{display:'flex',gap:8,marginTop:10}}>
+                {video.playbackUrl&&<button onClick={()=>window.open(video.playbackUrl!,'_blank','noopener,noreferrer')}><ExternalLink size={14}/>Ver</button>}
+                <button onClick={()=>remove(video)}><Trash2 size={14}/>Eliminar</button>
+              </div>
+            </div>
+          </article>;
+        })}</div>}
+  </div>;
 }
