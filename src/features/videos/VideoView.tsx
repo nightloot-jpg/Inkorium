@@ -85,10 +85,13 @@ function SavedVideos({session}:{session:any}){
   const[videos,setVideos]=useState<SavedVideo[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState('');
   async function load(){
     setLoading(true);setError('');
-    const{data,error}=await supabase.from('user_videos').select('*').eq('user_id',session.user.id).order('created_at',{ascending:false});
+    const{data,error}=await supabase.from('user_videos').select('id,youtube_video_id,title,thumbnail,channel,url,source,created_at').eq('user_id',session.user.id).order('created_at',{ascending:false});
     if(error){setError('No se pudieron cargar tus vídeos.');setLoading(false);return;}
     const rows=(data||[]) as SavedVideo[];
-    const hydrated=await Promise.all(rows.map(async video=>({ ...video, playbackUrl: video.source==='upload' ? await getR2PlaybackUrl(video.url) : video.url })));
+    const uploadRows=rows.filter(video=>video.source==='upload');
+    const signedUrls=await Promise.all(uploadRows.map(video=>getR2PlaybackUrl(video.url)));
+    let signedIndex=0;
+    const hydrated=rows.map(video=>video.source==='upload' ? ({ ...video, playbackUrl: signedUrls[signedIndex++] ?? null }) : video);
     setVideos(hydrated);setLoading(false);
   }
   useEffect(()=>{void load()},[session.user.id]);
