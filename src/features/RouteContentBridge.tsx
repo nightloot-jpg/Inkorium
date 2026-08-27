@@ -75,7 +75,11 @@ export function useRouteState(): [RouteState, (page: RoutePage, params?: Record<
   }));
 
   useEffect(() => {
-    const onPopState = () => setRoute({ page: normalizeRoutePath(window.location.pathname), params: parseRouteParams(window.location.search) });
+    const sync = () => {
+      const next = { page: normalizeRoutePath(window.location.pathname), params: parseRouteParams(window.location.search) };
+      setRoute(next);
+      window.dispatchEvent(new CustomEvent('inkorium-route-change', { detail: next }));
+    };
     const onLegacyRouteChange = (event: Event) => {
       const detail = (event as CustomEvent).detail || {};
       const page = typeof detail === 'string' ? detail : detail.page;
@@ -85,16 +89,20 @@ export function useRouteState(): [RouteState, (page: RoutePage, params?: Record<
       if (window.location.pathname + window.location.search !== nextUrl) window.history.pushState({ page, params }, '', nextUrl);
       setRoute({ page: page as RoutePage, params });
     };
-    window.addEventListener('popstate', onPopState);
+    window.addEventListener('popstate', sync);
     window.addEventListener('inkorium-route-change', onLegacyRouteChange);
-    return () => { window.removeEventListener('popstate', onPopState); window.removeEventListener('inkorium-route-change', onLegacyRouteChange); };
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('inkorium-route-change', onLegacyRouteChange);
+    };
   }, []);
 
   const navigate = (page: RoutePage, params?: Record<string, any>) => {
     const nextUrl = routeUrl(page, params);
     window.history.pushState({ page, params }, '', nextUrl);
-    setRoute({ page, params });
-    window.dispatchEvent(new CustomEvent('inkorium-route-change', { detail: { page, params } }));
+    const next = { page, params };
+    setRoute(next);
+    window.dispatchEvent(new CustomEvent('inkorium-route-change', { detail: next }));
   };
   return [route, navigate];
 }
