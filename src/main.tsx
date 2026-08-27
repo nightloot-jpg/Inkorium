@@ -4,7 +4,6 @@ import { useAuthStore } from "./lib/store";
 import { supabase } from "./lib/supabase";
 import { FeedShell } from "./features/feed/FeedShell";
 import type { ProfileData } from "./features/feed/Feed";
-import "./features/RouteContentBridge";
 import "./features/route-content-bridge.css";
 import "./features/route-content-bridge-header-stable-2026.css";
 import "./components/composer-2026.css";
@@ -28,6 +27,23 @@ import "./features/videos/videos-player-library-2026.css";
 import "./features/videos/videos-uploader-2026.css";
 import "./chat-2026.css";
 import "./chat-media-2026.css";
+
+const KNOWN_ROUTES = new Set(["inicio", "perfil", "mensajes", "personas", "musica", "buscar", "fotos", "videos", "eventos"]);
+
+function migrateLegacyRoute() {
+  const hashRoute = window.location.hash.replace(/^#\/?/, "").split(/[/?]/)[0].toLowerCase();
+  const pathRoute = window.location.pathname.replace(/\/+$/, "").split("/").filter(Boolean).pop()?.toLowerCase() || "";
+  const storedRoute = sessionStorage.getItem("inkorium-page")?.trim().toLowerCase() || "";
+  const legacyRoute = KNOWN_ROUTES.has(hashRoute) ? hashRoute : pathRoute || (KNOWN_ROUTES.has(storedRoute) ? storedRoute : "inicio");
+  if (hashRoute && KNOWN_ROUTES.has(hashRoute)) {
+    const target = legacyRoute === "inicio" ? "/" : `/${legacyRoute}`;
+    window.history.replaceState({ page: legacyRoute }, "", target);
+  } else if (!pathRoute && KNOWN_ROUTES.has(storedRoute) && storedRoute !== "inicio") {
+    window.history.replaceState({ page: storedRoute }, "", `/${storedRoute}`);
+  }
+}
+
+migrateLegacyRoute();
 
 async function bootstrap() {
   const { data } = await supabase.auth.getSession();
