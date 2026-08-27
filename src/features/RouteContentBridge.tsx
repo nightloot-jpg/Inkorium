@@ -1,5 +1,4 @@
-import React, { Component, Suspense, lazy, type ErrorInfo, type ReactNode, useEffect, useState } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import React, { Component, Suspense, lazy, type ErrorInfo, type ReactNode, useEffect } from 'react';
 import { useAuthStore } from '../lib/store';
 
 const MusicView = lazy(() => import('./music/MusicView').then(module => ({ default: module.MusicView })));
@@ -7,174 +6,103 @@ const VideoView = lazy(() => import('./videos/VideoView').then(module => ({ defa
 const ProfileView = lazy(() => import('./profile/ProfileView').then(module => ({ default: module.ProfileView })));
 const PeopleView = lazy(() => import('../PeopleView').then(module => ({ default: module.PeopleView })));
 
-const BRIDGE_ID = 'inkorium-route-content-bridge';
-const ROUTE_PAGES = new Set(['inicio','perfil','mensajes','personas','musica','buscar','fotos','videos']);
-const BRIDGED_ROUTE_PAGES = new Set(['perfil','personas','musica','videos']);
+export const ROUTE_PAGES = new Set(['inicio','perfil','mensajes','personas','musica','buscar','fotos','videos','eventos']);
+export const ROUTED_CONTENT_PAGES = new Set(['perfil','personas','musica','videos']);
+export type RoutePage = 'inicio'|'perfil'|'mensajes'|'personas'|'musica'|'buscar'|'fotos'|'videos'|'eventos';
+export type RouteState = { page: RoutePage; params?: Record<string, any> };
 
-type RoutePage = 'inicio'|'perfil'|'mensajes'|'personas'|'musica'|'buscar'|'fotos'|'videos';
-type RouteState = { page:string; params?:Record<string,any> };
-type RouteErrorBoundaryProps = { children: ReactNode };
-type RouteErrorBoundaryState = { error: Error | null };
+type Props = { route: RouteState; navigate: (page: RoutePage, params?: Record<string, any>) => void };
+type ErrorBoundaryProps = { children: ReactNode };
+type ErrorBoundaryState = { error: Error | null };
 
-class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBoundaryState> {
-  state: RouteErrorBoundaryState = { error: null };
+class RouteErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { error: null };
   static getDerivedStateFromError(error: Error) { return { error }; }
   componentDidCatch(error: Error, info: ErrorInfo) { console.error('[Inkorium route]', error, info); }
   render() {
-    if (this.state.error) return <div style={{minHeight:'100%',padding:32,background:'#f3f6fa',color:'#26364d',fontFamily:'Arial,Helvetica,sans-serif'}}><div style={{maxWidth:720,margin:'0 auto',background:'#fff',border:'1px solid #e4e7ee',borderRadius:8,padding:24}}><h2 style={{margin:'0 0 8px'}}>No se ha podido cargar esta sección</h2><p style={{margin:0,color:'#66788b'}}>{this.state.error.message}</p></div></div>;
-    return this.props.children;
+    if (!this.state.error) return this.props.children;
+    return <div style={{minHeight:'100%',padding:32,background:'#f3f6fa',color:'#26364d',fontFamily:'Arial,Helvetica,sans-serif'}}><div style={{maxWidth:720,margin:'0 auto',background:'#fff',border:'1px solid #e4e7ee',borderRadius:8,padding:24}}><h2 style={{margin:'0 0 8px'}}>No se ha podido cargar esta sección</h2><p style={{margin:0,color:'#66788b'}}>{this.state.error.message}</p></div></div>;
   }
 }
 
-function readRouteParams() {
-  try {
-    const raw = sessionStorage.getItem('inkorium-route-params');
-    const params = raw ? JSON.parse(raw) : undefined;
-    return params && typeof params === 'object' ? params : undefined;
-  } catch { return undefined; }
+export function normalizeRoutePath(pathname: string): RoutePage {
+  const clean = pathname.replace(/\/+$/,'').split('/').filter(Boolean).pop()?.toLowerCase() || '';
+  return ROUTE_PAGES.has(clean) ? clean as RoutePage : 'inicio';
 }
 
-function readRouteState(): RouteState {
-  const hash = window.location.hash.replace(/^#/,'').trim().toLowerCase();
-  const path = window.location.pathname.replace(/\/+$/,'').split('/').pop()?.toLowerCase() || '';
-  const stored = sessionStorage.getItem('inkorium-page')?.trim().toLowerCase() || '';
-  let page = 'inicio';
-  if (ROUTE_PAGES.has(hash)) page = hash;
-  else if (ROUTE_PAGES.has(path)) page = path;
-  else if (ROUTE_PAGES.has(stored)) page = stored;
-  return { page, params: readRouteParams() };
+export function parseRouteParams(search: string): Record<string, any> | undefined {
+  const params = new URLSearchParams(search);
+  const userId = params.get('userId');
+  return userId ? { userId } : undefined;
 }
 
-function setRoute(next: RoutePage, params?: Record<string, any>) {
-  sessionStorage.setItem('inkorium-page', next);
-  if (params && Object.keys(params).length) sessionStorage.setItem('inkorium-route-params', JSON.stringify(params));
-  else sessionStorage.removeItem('inkorium-route-params');
-  window.dispatchEvent(new CustomEvent('inkorium-route-change', { detail: { page: next, params } }));
+export function routeUrl(page: RoutePage, params?: Record<string, any>) {
+  const pathname = page === 'inicio' ? '/' : `/${page}`;
+  return params?.userId ? `${pathname}?userId=${encodeURIComponent(params.userId)}` : pathname;
 }
 
-function normalizeRouteLabel(value: string) {
-  return value.replace(/\s+/g,' ').trim().toLowerCase().replace(/^[^a-záéíóúüñ]+/i,'').replace(/[^a-záéíóúüñ]+$/i,'');
-}
-
-function routeFromLabel(value: string): RoutePage | null {
-  const label = normalizeRouteLabel(value);
-  if (!label) return null;
-  if (label.includes('inicio') || label.includes('novedades')) return 'inicio';
-  if (label.includes('perfil')) return 'perfil';
-  if (label.includes('mensajes')) return 'mensajes';
-  if (label.includes('personas')) return 'personas';
-  if (label.includes('música') || label.includes('musica')) return 'musica';
-  if (label.includes('buscar')) return 'buscar';
-  if (label.includes('fotos')) return 'fotos';
-  if (label.includes('vídeos') || label.includes('videos')) return 'videos';
-  if (label.includes('grupos') || label.includes('páginas') || label.includes('paginas') || label.includes('configuracion')) return 'personas';
-  if (label.includes('encuestas') || label.includes('guardados')) return 'buscar';
-  return null;
-}
-
-function getClickedRoute(target: HTMLElement | null): RoutePage | null {
-  if (!target) return null;
-  const candidate = target.closest('button, a, [role="button"], [data-page], [data-route]') as HTMLElement | null;
-  if (!candidate || !candidate.closest('.top-nav, .side-menu')) return null;
-  const routeValue = candidate.getAttribute('data-page') || candidate.getAttribute('data-route');
-  if (routeValue) {
-    const route = routeFromLabel(routeValue);
-    if (route) return route;
-  }
-  return routeFromLabel(candidate.textContent || '');
-}
-
-function findShellNavigationButton(route: RoutePage): HTMLElement | null {
-  const candidates = ['.top-nav button', '.side-menu button'].flatMap(selector => Array.from(document.querySelectorAll<HTMLElement>(selector)));
-  return candidates.find(button => routeFromLabel(button.textContent || '') === route) || null;
-}
-
-function appendNavigationEntry(page: RoutePage, params?: Record<string, any>) { setRoute(page, params); }
-
-function RouteContentBridge() {
-  const [routeState, setRouteState] = useState<RouteState>(() => readRouteState());
+export function RouteContentBridge({ route, navigate }: Props) {
   const session = useAuthStore(state => state.session);
   const profile = useAuthStore(state => state.profile);
   const sessionReady = !!session;
   const username = profile?.username || profile?.full_name || session?.user?.email?.split('@')[0] || 'Usuario';
 
   useEffect(() => {
-    const bridged = BRIDGED_ROUTE_PAGES.has(routeState.page) && sessionReady;
-    document.body.classList.toggle('inkorium-route-bridge-active', bridged);
-    return () => { document.body.classList.remove('inkorium-route-bridge-active'); };
-  }, [routeState.page, sessionReady]);
+    const active = ROUTED_CONTENT_PAGES.has(route.page) && sessionReady;
+    document.body.classList.toggle('inkorium-route-bridge-active', active);
+    return () => document.body.classList.remove('inkorium-route-bridge-active');
+  }, [route.page, sessionReady]);
 
-  useEffect(() => {
-    const syncRoute = () => setRouteState(readRouteState());
-    const onStorage = () => syncRoute();
-    const onHash = () => syncRoute();
-    const onRouteChange = () => syncRoute();
-    let replayingShellNavigation = false;
+  if (!sessionReady || !session || !ROUTED_CONTENT_PAGES.has(route.page)) return null;
+  const visitedProfileId = typeof route.params?.userId === 'string' && route.params.userId.trim() ? route.params.userId.trim() : session.user.id;
 
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('hashchange', onHash);
-    window.addEventListener('inkorium-route-change', onRouteChange);
-
-    const handleNavigationClick = (event: MouseEvent) => {
-      if (replayingShellNavigation) return;
-      const route = getClickedRoute(event.target as HTMLElement | null);
-      if (!route) return;
-      if (BRIDGED_ROUTE_PAGES.has(route)) {
-        event.preventDefault();
-        event.stopPropagation();
-        setRoute(route);
-        setRouteState(readRouteState());
-        return;
-      }
-      const shellButton = findShellNavigationButton(route);
-      if (!shellButton) return;
-      event.preventDefault();
-      event.stopPropagation();
-      replayingShellNavigation = true;
-      try { shellButton.click(); } finally { replayingShellNavigation = false; }
-    };
-
-    document.addEventListener('click', handleNavigationClick, true);
-    syncRoute();
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('hashchange', onHash);
-      window.removeEventListener('inkorium-route-change', onRouteChange);
-      document.removeEventListener('click', handleNavigationClick, true);
-    };
-  }, []);
-
-  const page = routeState.page;
-  const routeParams = routeState.params;
-  const isRoute = BRIDGED_ROUTE_PAGES.has(page);
-  if (!isRoute || !sessionReady || !session) return null;
-
-  const routePage = page as RoutePage;
-  const bridgeNavigate = (nextPage: RoutePage, params?: Record<string, any>) => {
-    appendNavigationEntry(nextPage, params);
-    setRouteState(readRouteState());
-  };
-  const visitedProfileId = typeof routeParams?.userId === 'string' && routeParams.userId.trim() ? routeParams.userId.trim() : session.user.id;
-
-  return <div id={BRIDGE_ID} className="inkorium-route-bridge" data-route-page={routePage}>
+  return <div className="inkorium-route-bridge" data-route-page={route.page}>
     <RouteErrorBoundary>
       <Suspense fallback={<div style={{minHeight:'100%',padding:24,background:'#f3f6fa',color:'#66788b'}}>Cargando sección…</div>}>
-        {routePage === 'perfil' && <ProfileView session={session} profile={profile} profileId={visitedProfileId} username={username} />}
-        {routePage === 'personas' && <PeopleView session={session} navigate={bridgeNavigate} />}
-        {routePage === 'musica' && <MusicView session={session} navigate={bridgeNavigate} />}
-        {routePage === 'videos' && <VideoView session={session} navigate={bridgeNavigate} />}
+        {route.page === 'perfil' && <ProfileView session={session} profile={profile} profileId={visitedProfileId} username={username} />}
+        {route.page === 'personas' && <PeopleView session={session} navigate={navigate} />}
+        {route.page === 'musica' && <MusicView session={session} navigate={navigate} />}
+        {route.page === 'videos' && <VideoView session={session} navigate={navigate} />}
       </Suspense>
     </RouteErrorBoundary>
   </div>;
 }
 
-export function mountRouteContentBridge() {
-  if (document.getElementById(BRIDGE_ID)) return;
-  const host = document.createElement('div');
-  host.id = BRIDGE_ID;
-  document.body.appendChild(host);
-  const root: Root = createRoot(host);
-  root.render(<RouteContentBridge />);
-}
+export function useRouteState(): [RouteState, (page: RoutePage, params?: Record<string, any>) => void] {
+  const [route, setRoute] = React.useState<RouteState>(() => ({
+    page: normalizeRoutePath(window.location.pathname),
+    params: parseRouteParams(window.location.search),
+  }));
 
-mountRouteContentBridge();
+  useEffect(() => {
+    const sync = () => {
+      const next = { page: normalizeRoutePath(window.location.pathname), params: parseRouteParams(window.location.search) };
+      setRoute(next);
+      window.dispatchEvent(new CustomEvent('inkorium-route-change', { detail: next }));
+    };
+    const onLegacyRouteChange = (event: Event) => {
+      const detail = (event as CustomEvent).detail || {};
+      const page = typeof detail === 'string' ? detail : detail.page;
+      if (!ROUTE_PAGES.has(page)) return;
+      const params = typeof detail === 'object' ? detail.params : undefined;
+      const nextUrl = routeUrl(page as RoutePage, params);
+      if (window.location.pathname + window.location.search !== nextUrl) window.history.pushState({ page, params }, '', nextUrl);
+      setRoute({ page: page as RoutePage, params });
+    };
+    window.addEventListener('popstate', sync);
+    window.addEventListener('inkorium-route-change', onLegacyRouteChange);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('inkorium-route-change', onLegacyRouteChange);
+    };
+  }, []);
+
+  const navigate = (page: RoutePage, params?: Record<string, any>) => {
+    const nextUrl = routeUrl(page, params);
+    window.history.pushState({ page, params }, '', nextUrl);
+    const next = { page, params };
+    setRoute(next);
+    window.dispatchEvent(new CustomEvent('inkorium-route-change', { detail: next }));
+  };
+  return [route, navigate];
+}
