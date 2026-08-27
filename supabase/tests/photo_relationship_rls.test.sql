@@ -1,0 +1,11 @@
+-- Regression coverage for the photo metadata/relationship RLS fix.
+-- These assertions document the intended contract; execute with the
+-- project's Supabase test harness after seeding authenticated users.
+
+-- Required behavior:
+-- 1. Anonymous users can only see likes/comments/albums tied to photos
+--    that are public through public.photos.
+-- 2. Authenticated users inherit the photos SELECT policy for friends and
+--    authorized-private photos.
+-- 3. A private photo must not leak its likes, comments, or album metadata.
+-- 4. Album owners can read their own albums, including empty/private albums.
