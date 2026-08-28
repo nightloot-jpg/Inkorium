@@ -8,6 +8,7 @@ async function loadOnce(page: RouteStylePage, loader: () => Promise<unknown>) {
     await loader();
     loaded.add(page);
   } catch (error) {
+    loaded.delete(page);
     console.error(`[Inkorium styles] No se pudieron cargar los estilos de ${page}:`, error);
   }
 }
@@ -25,9 +26,6 @@ export function loadRouteStyles(page: RouteStylePage) {
         import('./profile/profile-final-polish-2026.css'),
         import('./profile/profile-background-fix-2026.css'),
         import('./profile/profile-enhancements.css'),
-        import('./profile/profile-view.css'),
-        import('./profile/profile-about-card.css'),
-        import('./profile/profile-videos-tab-2026.css'),
       ]));
     case 'personas':
       return loadOnce(page, () => Promise.all([
