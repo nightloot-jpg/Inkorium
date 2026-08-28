@@ -1,60 +1,45 @@
-# Migración de Supabase Storage a Cloudflare R2
+# Migración de media a Cloudflare R2
 
-## Arquitectura
+## Arquitectura canónica
 
-Supabase sigue gestionando Auth y PostgreSQL. Cloudflare R2 pasa a ser el almacenamiento de imágenes, vídeos y audio.
+Supabase gestiona Auth y PostgreSQL. Cloudflare R2 es el único almacenamiento persistente de bytes para fotos, portadas, avatares, post-media, vídeos, música y chat.
 
-La aplicación usa las Edge Functions `r2-media` y `r2-video` para generar URLs firmadas. Las credenciales de R2 nunca deben llegar al bundle del navegador.
+Las Edge Functions `r2-media` y `r2-video` generan URLs firmadas y validan la sesión. Ninguna credencial de R2 llega al navegador.
 
-## Buckets actuales de Supabase
+## Rutas de objetos
 
-La migración contempla estos buckets:
+Las nuevas subidas usan claves bajo estas carpetas:
 
-- `photos`
-- `post-media`
-- `profile-media`
-- `music-media`
-- `videos`
+- `photos/<userId>/`
+- `covers/<userId>/`
+- `avatars/<userId>/`
+- `post-media/<userId>/`
+- `videos/<userId>/`
+- `music/<userId>/`
+- `chat/<channelId>/<userId>/`
 
-Los objetos se copian a un único bucket de R2 conservando el bucket de origen como prefijo:
+`r2-media` acepta además prefijos históricos de R2 (`profile-media`, `music-media`) para conservar compatibilidad durante la migración.
 
-`<bucket>/<path-original>`
+## Variables canónicas
 
-Esto permite migrar sin colisiones y mantener trazabilidad.
+Las Edge Functions deben usar únicamente:
 
-## Cloudflare R2
-
-Crea un bucket de producción, por ejemplo `inkorium-media`, y asocia el dominio público que vaya a utilizar la aplicación, por ejemplo `media.inkorium.es`.
-
-Variables necesarias para las Edge Functions y para el workflow:
-
-- `R2_ENDPOINT`: endpoint S3 de la cuenta de Cloudflare
-- `R2_ACCESS_KEY_ID`
-- `R2_SECRET_ACCESS_KEY`
-- `R2_BUCKET_NAME`
-- `R2_PUBLIC_BASE_URL`: base pública sin `/` final, por ejemplo `https://media.inkorium.es`
-
-Configura CORS del bucket para permitir `PUT`, `GET` y `HEAD` desde el dominio de Inkorium.
-
-## Secrets de GitHub Actions
-
-Añade estos secrets al repositorio `nightloot-jpg/Inkorium`:
-
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
 - `R2_ENDPOINT`
 - `R2_ACCESS_KEY_ID`
 - `R2_SECRET_ACCESS_KEY`
 - `R2_BUCKET_NAME`
 - `R2_PUBLIC_BASE_URL`
 
-## Ejecución de la migración histórica
+No se deben añadir variables `HETZNER_S3_*` para media. El nginx del frontend tampoco sirve media persistente desde disco local o Hetzner.
 
-1. Abre GitHub Actions.
-2. Ejecuta `Migrate Supabase Storage to Cloudflare R2` manualmente.
-3. Escribe exactamente `MIGRATE` en el campo de confirmación.
-4. Descarga el artefacto `r2-migration-manifest` y comprueba que los objetos fueron copiados.
-5. Verifica perfiles, fotos, publicaciones, vídeos y música en producción.
-6. Mantén Supabase Storage intacto hasta completar la verificación.
+## Migración histórica
 
-El workflow no elimina objetos de Supabase. La retirada del Storage antiguo debe ser una operación separada y posterior.
+El repositorio conserva workflows/documentación para copiar objetos históricos desde proveedores anteriores a R2. La migración de datos existente es una operación de infraestructura independiente del código de subida.
+
+Antes de retirar un almacenamiento legado:
+
+1. Ejecuta la migración en modo simulación.
+2. Copia los objetos a R2.
+3. Actualiza las referencias persistidas que todavía apunten al backend antiguo.
+4. Verifica fotos, portadas, avatares, publicaciones, vídeos, música y chat.
+5. Solo después retira el almacenamiento legado.
