@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Loader2, Upload, Video, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { createR2UploadTicket, deleteR2Object, uploadToPresignedUrl } from '../../lib/r2';
+import { createStorageUploadTicket, deleteStorageObject, uploadToPresignedUrl } from '../../lib/storage';
 
 const MAX_SIZE = 1024 * 1024 * 1024; // 1 GiB
 const ALLOWED_TYPES = new Set(['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']);
@@ -65,7 +65,7 @@ export function VideoUploader({ session, onUploaded }: Props) {
     let key = '';
 
     try {
-      const ticket = await createR2UploadTicket({ folder: 'videos', file });
+      const ticket = await createStorageUploadTicket({ folder: 'videos', file });
       key = ticket.key;
       await uploadToPresignedUrl(ticket.uploadUrl, file, file.type);
 
@@ -80,18 +80,18 @@ export function VideoUploader({ session, onUploaded }: Props) {
         source: 'upload',
       });
       if (dbError) {
-        await deleteR2Object(key);
+        await deleteStorageObject(key);
         throw new Error(dbError.message || 'No se pudo guardar el vídeo.');
       }
 
-      setSuccess('Vídeo subido correctamente a Cloudflare R2.');
+      setSuccess('Vídeo subido correctamente a Hetzner Object Storage.');
       clearFile();
       setTitle('');
       setDescription('');
       onUploaded?.();
     } catch (caught) {
-      if (key) await deleteR2Object(key).catch(() => undefined);
-      console.error('[VIDEO_UPLOAD_R2]', caught);
+      if (key) await deleteStorageObject(key).catch(() => undefined);
+      console.error('[VIDEO_UPLOAD_STORAGE]', caught);
       setError(caught instanceof Error ? caught.message : 'No se pudo subir el vídeo.');
     } finally {
       setUploading(false);
