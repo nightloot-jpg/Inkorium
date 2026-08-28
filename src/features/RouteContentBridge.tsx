@@ -1,6 +1,8 @@
 import React, { Component, Suspense, lazy, type ErrorInfo, type ReactNode, useEffect } from 'react';
 import { useAuthStore } from '../lib/store';
 import { loadRouteStyles } from './feature-styles';
+import './route-content-bridge.css';
+import './route-content-bridge-header-stable-2026.css';
 
 const MusicView = lazy(() => import('./music/MusicView').then(module => ({ default: module.MusicView })));
 const VideoView = lazy(() => import('./videos/VideoView').then(module => ({ default: module.VideoView })));
