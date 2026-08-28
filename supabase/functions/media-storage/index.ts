@@ -4,9 +4,10 @@ import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.879.0";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://www.inkorium.es",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 const MAX_IMAGE_SIZE = 60 * 1024 * 1024;
@@ -26,16 +27,7 @@ const ALLOWED_FOLDERS = new Map<string, Set<string>>([
   ["chat", new Set([...ALLOWED_IMAGES, ...ALLOWED_VIDEO])],
 ]);
 
-const OWNED_PREFIXES = [
-  "photos",
-  "covers",
-  "avatars",
-  "post-media",
-  "videos",
-  "music",
-  "profile-media",
-  "music-media",
-];
+const OWNED_PREFIXES = ["photos", "covers", "avatars", "post-media", "videos", "music", "profile-media", "music-media"];
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -89,18 +81,14 @@ const s3 = endpoint && accessKeyId && secretAccessKey
   : null;
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  if (!supabaseUrl || !supabaseAnonKey || !s3 || !bucketName) {
-    return json({ error: "Hetzner Object Storage no está configurado en la función." }, 500);
-  }
+  if (!supabaseUrl || !supabaseAnonKey || !s3 || !bucketName) return json({ error: "Hetzner Object Storage no está configurado en la función." }, 500);
 
   const authorization = req.headers.get("Authorization");
   if (!authorization) return json({ error: "No autenticado." }, 401);
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: authorization } },
-  });
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authorization } } });
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return json({ error: "Sesión no válida." }, 401);
 
@@ -115,32 +103,20 @@ Deno.serve(async (req: Request) => {
       const allowedTypes = ALLOWED_FOLDERS.get(folder);
       if (!allowedTypes) return json({ error: "Carpeta no permitida." }, 400);
       if (!allowedTypes.has(contentType)) return json({ error: "Tipo de archivo no compatible para esta carpeta." }, 400);
-      const maxSize = folder === "music"
-        ? MAX_AUDIO_SIZE
-        : (folder === "videos" || folder === "post-media") && contentType.startsWith("video/")
-          ? MAX_VIDEO_SIZE
-          : MAX_IMAGE_SIZE;
-      if (!Number.isFinite(size) || size <= 0 || size > maxSize) {
-        return json({ error: `El archivo supera el máximo permitido de ${Math.round(maxSize / 1024 / 1024)} MB.` }, 400);
-      }
+      const maxSize = folder === "music" ? MAX_AUDIO_SIZE : (folder === "videos" || folder === "post-media") && contentType.startsWith("video/") ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+      if (!Number.isFinite(size) || size <= 0 || size > maxSize) return json({ error: `El archivo supera el máximo permitido de ${Math.round(maxSize / 1024 / 1024)} MB.` }, 400);
 
       let key: string;
       if (folder === "chat") {
         const channelId = String(body.channelId || "").trim();
         if (!channelId) return json({ error: "Falta el canal del chat." }, 400);
-        if (!(await isChatParticipant(supabase, channelId, user.id))) {
-          return json({ error: "No estás autorizado para subir archivos a este chat." }, 403);
-        }
+        if (!(await isChatParticipant(supabase, channelId, user.id))) return json({ error: "No estás autorizado para subir archivos a este chat." }, 403);
         key = `chat/${channelId}/${user.id}/${Date.now()}-${crypto.randomUUID()}.${extension(body.fileName || "upload.bin", contentType)}`;
       } else {
         key = `${folder}/${user.id}/${Date.now()}-${crypto.randomUUID()}.${extension(body.fileName || "upload.bin", contentType)}`;
       }
 
-      const uploadUrl = await getSignedUrl(
-        s3,
-        new PutObjectCommand({ Bucket: bucketName, Key: key, ContentType: contentType }),
-        { expiresIn: 3600 },
-      );
+      const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: bucketName, Key: key, ContentType: contentType }), { expiresIn: 3600 });
       return json({ key, uploadUrl, url: `${publicBase}/${key}`, expiresIn: 3600 });
     }
 
@@ -148,18 +124,9 @@ Deno.serve(async (req: Request) => {
       const key = String(body.key || "").trim();
       const chatKey = parseChatKey(key);
       if (chatKey) {
-        if (!(await isChatParticipant(supabase, chatKey.channelId, user.id))) {
-          return json({ error: "No estás autorizado para ver este archivo del chat." }, 403);
-        }
-      } else if (!isOwnedKey(key, user.id)) {
-        return json({ error: "Objeto no autorizado." }, 403);
-      }
-
-      const url = await getSignedUrl(
-        s3,
-        new GetObjectCommand({ Bucket: bucketName, Key: key }),
-        { expiresIn: 3600 },
-      );
+        if (!(await isChatParticipant(supabase, chatKey.channelId, user.id))) return json({ error: "No estás autorizado para ver este archivo del chat." }, 403);
+      } else if (!isOwnedKey(key, user.id)) return json({ error: "Objeto no autorizado." }, 403);
+      const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucketName, Key: key }), { expiresIn: 3600 });
       return json({ url, expiresIn: 3600 });
     }
 
@@ -168,12 +135,8 @@ Deno.serve(async (req: Request) => {
       const chatKey = parseChatKey(key);
       if (chatKey) {
         if (chatKey.ownerId !== user.id) return json({ error: "Solo el autor puede borrar este archivo." }, 403);
-        if (!(await isChatParticipant(supabase, chatKey.channelId, user.id))) {
-          return json({ error: "No estás autorizado para borrar este archivo del chat." }, 403);
-        }
-      } else if (!isOwnedKey(key, user.id)) {
-        return json({ error: "Objeto no autorizado." }, 403);
-      }
+        if (!(await isChatParticipant(supabase, chatKey.channelId, user.id))) return json({ error: "No estás autorizado para borrar este archivo del chat." }, 403);
+      } else if (!isOwnedKey(key, user.id)) return json({ error: "Objeto no autorizado." }, 403);
       await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }));
       return json({ ok: true });
     }
