@@ -1,1 +1,0 @@
-This document is retained only as an historical migration note. Hetzner Object Storage is no longer the canonical media backend. Cloudflare R2 is the canonical persistent media store. See docs/cloudflare-r2-migration.md.
