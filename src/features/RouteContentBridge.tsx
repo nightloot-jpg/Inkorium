@@ -1,6 +1,5 @@
 import React, { Component, Suspense, lazy, type ErrorInfo, type ReactNode, useEffect } from 'react';
 import { useAuthStore } from '../lib/store';
-import { loadRouteStyles } from './feature-styles';
 import './route-content-bridge.css';
 import './route-content-bridge-header-stable-2026.css';
 
@@ -44,6 +43,53 @@ export function routeUrl(page: RoutePage, params?: Record<string, any>) {
   return params?.userId ? `${pathname}?userId=${encodeURIComponent(params.userId)}` : pathname;
 }
 
+async function loadRouteStyles(page: RoutePage) {
+  switch (page) {
+    case 'perfil':
+      await Promise.all([
+        import('./profile/profile-photos-2026.css'),
+        import('./profile/profile-photos-lightbox-2026.css'),
+        import('./profile/profile-albums-moments-2026.css'),
+        import('./profile/profile-home-2026.css'),
+        import('./profile/profile-header-tabs-2026.css'),
+        import('./profile/profile-music-2026.css'),
+        import('./profile/profile-final-polish-2026.css'),
+        import('./profile/profile-background-fix-2026.css'),
+        import('./profile/profile-enhancements.css'),
+      ]);
+      break;
+    case 'personas':
+      await Promise.all([
+        import('../people-search-light.css'),
+        import('../people-requests-light.css'),
+      ]);
+      break;
+    case 'musica':
+      await Promise.all([
+        import('./music/music-2026.css'),
+        import('./music/music-library-playlists-2026.css'),
+        import('./music/music-upload-player-2026.css'),
+        import('../music-redesign.css'),
+      ]);
+      break;
+    case 'videos':
+      await Promise.all([
+        import('./videos/videos-2026.css'),
+        import('./videos/videos-player-library-2026.css'),
+        import('./videos/videos-uploader-2026.css'),
+      ]);
+      break;
+    case 'fotos':
+      await Promise.all([
+        import('./profile/profile-photos-2026.css'),
+        import('./profile/profile-photos-lightbox-2026.css'),
+      ]);
+      break;
+    default:
+      break;
+  }
+}
+
 export function RouteContentBridge({ route, navigate }: Props) {
   const session = useAuthStore(state => state.session);
   const profile = useAuthStore(state => state.profile);
@@ -57,7 +103,7 @@ export function RouteContentBridge({ route, navigate }: Props) {
   }, [route.page, sessionReady]);
 
   useEffect(() => {
-    if (sessionReady) void loadRouteStyles(route.page as any);
+    if (sessionReady) void loadRouteStyles(route.page);
   }, [route.page, sessionReady]);
 
   if (!sessionReady || !session || !ROUTED_CONTENT_PAGES.has(route.page)) return null;
