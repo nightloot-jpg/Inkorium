@@ -9,6 +9,29 @@ const ALLOWED_TYPES = new Set(['video/mp4', 'video/webm', 'video/ogg', 'video/qu
 type Props = { session: any; onUploaded?: () => void };
 type UploadStage = 'preparing' | 'uploading' | 'saving' | 'done';
 
+const UPLOAD_MESSAGES: Record<UploadStage, string[]> = {
+  preparing: [
+    '🎬 Preparando tu estreno…',
+    '✨ Dándole los últimos retoques…',
+    '🚀 Alistando tu vídeo para despegar…',
+  ],
+  uploading: [
+    '☁️ Mandando el vídeo de viaje…',
+    '🎞️ Poniendo cada frame en su sitio…',
+    '📦 Empaquetando los píxeles…',
+    '📡 Cruzando la nube…',
+    '🛫 Tu vídeo está despegando…',
+    '🔄 Moviendo montañas de bits…',
+  ],
+  saving: [
+    '📚 Guardándolo en tu colección…',
+    '🏠 Buscándole sitio en Inkorium…',
+    '💾 Dejándolo a buen recaudo…',
+    '✨ Casi forma parte de tu perfil…',
+  ],
+  done: ['🎉 ¡Vídeo publicado!'],
+};
+
 export function VideoUploader({ session, onUploaded }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -18,10 +41,22 @@ export function VideoUploader({ session, onUploaded }: Props) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stage, setStage] = useState<UploadStage>('preparing');
+  const [messageIndex, setMessageIndex] = useState(0);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+
+  useEffect(() => {
+    setMessageIndex(0);
+    if (!uploading) return;
+    const messages = UPLOAD_MESSAGES[stage];
+    if (messages.length < 2) return;
+    const interval = window.setInterval(() => {
+      setMessageIndex(current => (current + 1) % messages.length);
+    }, 2800);
+    return () => window.clearInterval(interval);
+  }, [stage, uploading]);
 
   function selectFile(event: React.ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0];
@@ -69,7 +104,7 @@ export function VideoUploader({ session, onUploaded }: Props) {
     } finally { setUploading(false); }
   }
 
-  const stageText: Record<UploadStage, string> = { preparing: 'Preparando la subida…', uploading: 'Subiendo vídeo…', saving: 'Guardando vídeo…', done: 'Vídeo listo' };
+  const stageMessage = UPLOAD_MESSAGES[stage][messageIndex % UPLOAD_MESSAGES[stage].length];
 
   return <div className="ink-video-panel" style={{ padding: 18 }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}><Upload size={20} color="#0750A7" /><h2 style={{ margin: 0, color: '#1f2e40', fontSize: 21 }}>Subir vídeo</h2></div>
@@ -84,9 +119,9 @@ export function VideoUploader({ session, onUploaded }: Props) {
     </>}
     {uploading && <div role="dialog" aria-modal="true" aria-label="Progreso de subida" style={{ position: 'fixed', inset: 0, zIndex: 1200, display: 'grid', placeItems: 'center', padding: 20, background: 'rgba(15,23,32,.42)', backdropFilter: 'blur(2px)' }}>
       <div style={{ width: 'min(460px, 100%)', padding: 24, borderRadius: 12, background: '#fff', boxShadow: '0 18px 60px rgba(15,23,32,.24)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><span style={{ display: 'grid', placeItems: 'center', width: 40, height: 40, borderRadius: 10, background: '#edf5ff' }}><CloudUpload size={21} color="#0750A7" /></span><div><strong style={{ color: '#1f2e40', fontSize: 17 }}>{stageText[stage]}</strong><div style={{ color: '#718096', fontSize: 12, marginTop: 3 }}>{stage === 'uploading' ? `${progress}%` : 'Proceso en curso'}</div></div></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}><span style={{ display: 'grid', placeItems: 'center', width: 40, height: 40, borderRadius: 10, background: '#edf5ff' }}><CloudUpload size={21} color="#0750A7" /></span><div><strong style={{ color: '#1f2e40', fontSize: 17 }}>{stageMessage}</strong><div style={{ color: '#718096', fontSize: 12, marginTop: 3 }}>{stage === 'uploading' ? `${progress}%` : 'Proceso en curso'}</div></div></div>
         <div style={{ height: 10, borderRadius: 999, background: '#e9eef4', overflow: 'hidden', marginTop: 18 }}><div style={{ width: `${stage === 'preparing' ? 6 : stage === 'saving' ? 100 : progress}%`, height: '100%', borderRadius: 999, background: '#0750A7', transition: 'width .18s ease' }} /></div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, color: '#718096', fontSize: 12 }}><span>{stage === 'preparing' ? 'Solicitando acceso seguro…' : stage === 'uploading' ? 'Enviando a Hetzner Object Storage…' : 'Registrando el vídeo en Inkorium…'}</span><strong style={{ color: '#1f2e40' }}>{stage === 'uploading' ? `${progress}%` : stage === 'saving' ? '100%' : '…'}</strong></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, color: '#718096', fontSize: 12 }}><span>{stageMessage}</span><strong style={{ color: '#1f2e40' }}>{stage === 'uploading' ? `${progress}%` : stage === 'saving' ? '100%' : '…'}</strong></div>
       </div>
     </div>}
     <input ref={inputRef} type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" onChange={selectFile} style={{ display: 'none' }} />
