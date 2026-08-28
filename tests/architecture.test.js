@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const ROOT = process.cwd();
@@ -42,9 +42,8 @@ test('YouTube browser access stays behind the canonical client', async () => {
   assert.doesNotMatch(index, /youtube-api-proxy\.ts/);
 });
 
-test('legacy YouTube proxy cannot monkey-patch fetch', async () => {
-  const proxy = await source('src/platform/youtube-api-proxy.ts');
-  assert.doesNotMatch(proxy, /window\.fetch\s*=/);
+test('legacy YouTube fetch proxy is removed', async () => {
+  await assert.rejects(() => access(join(ROOT, 'src/platform/youtube-api-proxy.ts')));
 });
 
 test('media storage uses Hetzner as the canonical object backend', async () => {
