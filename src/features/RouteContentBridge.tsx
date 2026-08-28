@@ -56,7 +56,7 @@ export function RouteContentBridge({ route, navigate }: Props) {
   if (!sessionReady || !session || !ROUTED_CONTENT_PAGES.has(route.page)) return null;
   const visitedProfileId = typeof route.params?.userId === 'string' && route.params.userId.trim() ? route.params.userId.trim() : session.user.id;
 
-  return <div className="inkorium-route-bridge" data-route-page={route.page}>
+  return <div id="inkorium-route-content-bridge" className="inkorium-route-bridge" data-route-page={route.page}>
     <RouteErrorBoundary>
       <Suspense fallback={<div style={{minHeight:'100%',padding:24,background:'#f3f6fa',color:'#66788b'}}>Cargando sección…</div>}>
         {route.page === 'perfil' && <ProfileView session={session} profile={profile} profileId={visitedProfileId} username={username} />}
