@@ -10,25 +10,9 @@ type Props = { session: any; onUploaded?: () => void };
 type UploadStage = 'preparing' | 'uploading' | 'saving' | 'done';
 
 const UPLOAD_MESSAGES: Record<UploadStage, string[]> = {
-  preparing: [
-    '🎬 Preparando tu estreno…',
-    '✨ Dándole los últimos retoques…',
-    '🚀 Alistando tu vídeo para despegar…',
-  ],
-  uploading: [
-    '☁️ Mandando el vídeo de viaje…',
-    '🎞️ Poniendo cada frame en su sitio…',
-    '📦 Empaquetando los píxeles…',
-    '📡 Cruzando la nube…',
-    '🛫 Tu vídeo está despegando…',
-    '🔄 Moviendo montañas de bits…',
-  ],
-  saving: [
-    '📚 Guardándolo en tu colección…',
-    '🏠 Buscándole sitio en Inkorium…',
-    '💾 Dejándolo a buen recaudo…',
-    '✨ Casi forma parte de tu perfil…',
-  ],
+  preparing: ['🎬 Preparando tu estreno…','✨ Dándole los últimos retoques…','🚀 Alistando tu vídeo para despegar…'],
+  uploading: ['☁️ Mandando el vídeo de viaje…','🎞️ Poniendo cada frame en su sitio…','📦 Empaquetando los píxeles…','📡 Cruzando la nube…','🛫 Tu vídeo está despegando…','🔄 Moviendo montañas de bits…'],
+  saving: ['📚 Guardándolo en tu colección…','🏠 Buscándole sitio en Inkorium…','💾 Dejándolo a buen recaudo…','✨ Casi forma parte de tu perfil…'],
   done: ['🎉 ¡Vídeo publicado!'],
 };
 
@@ -46,15 +30,12 @@ export function VideoUploader({ session, onUploaded }: Props) {
   const [success, setSuccess] = useState('');
 
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
-
   useEffect(() => {
     setMessageIndex(0);
     if (!uploading) return;
     const messages = UPLOAD_MESSAGES[stage];
     if (messages.length < 2) return;
-    const interval = window.setInterval(() => {
-      setMessageIndex(current => (current + 1) % messages.length);
-    }, 2800);
+    const interval = window.setInterval(() => setMessageIndex(current => (current + 1) % messages.length), 2800);
     return () => window.clearInterval(interval);
   }, [stage, uploading]);
 
@@ -81,7 +62,6 @@ export function VideoUploader({ session, onUploaded }: Props) {
     const userId = session?.user?.id;
     if (!userId) { setError('Tu sesión ha caducado. Vuelve a iniciar sesión.'); return; }
     if (!title.trim()) { setError('Pon un título al vídeo.'); return; }
-
     setUploading(true); setProgress(0); setStage('preparing'); setError(''); setSuccess('');
     let key = '';
     try {
