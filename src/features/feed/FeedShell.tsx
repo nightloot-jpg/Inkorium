@@ -14,7 +14,7 @@ import "../../topbar-modern-fix.css";
 import "../../navbar-dropdown-fix.css";
 import "../../navbar-dropdown-escape-fix.css";
 import "../../composer-r2-fix.css";
-import "../../composer-2026.css";
+import "../../components/composer-2026.css";
 import "./feed-post-media-2026.css";
 import "./feed-comments-2026.css";
 import "./feed-left-rail-2026.css";
