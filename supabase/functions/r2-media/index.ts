@@ -26,17 +26,7 @@ const ALLOWED_FOLDERS = new Map<string, Set<string>>([
   ["chat", new Set([...ALLOWED_IMAGES, ...ALLOWED_VIDEO])],
 ]);
 
-const OWNED_PREFIXES = [
-  "photos",
-  "covers",
-  "avatars",
-  "post-media",
-  "videos",
-  "music",
-  "chat",
-  "profile-media",
-  "music-media",
-];
+const OWNED_PREFIXES = ["photos", "covers", "avatars", "post-media", "videos", "music", "profile-media", "music-media"];
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -53,7 +43,7 @@ function extension(fileName: string, contentType: string): string {
 function isOwnedKey(key: string, userId: string): boolean {
   const safeKey = key.trim();
   if (!safeKey || safeKey.startsWith("/") || safeKey.includes("..")) return false;
-  return OWNED_PREFIXES.some(prefix => safeKey.startsWith(`${prefix}/${userId}/`));
+  return OWNED_PREFIXES.some(prefix => safeKey.startsWith(`${prefix}/${userId}/`)) || safeKey.startsWith(`${userId}/`);
 }
 
 function parseChatKey(key: string): { channelId: string; ownerId: string } | null {
@@ -76,45 +66,30 @@ async function isChatParticipant(supabase: ReturnType<typeof createClient>, chan
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-const endpoint = Deno.env.get("HETZNER_S3_ENDPOINT")?.replace(/\/$/, "");
-const region = Deno.env.get("HETZNER_S3_REGION") || "hel1";
-const accessKeyId = Deno.env.get("HETZNER_S3_ACCESS_KEY_ID");
-const secretAccessKey = Deno.env.get("HETZNER_S3_SECRET_ACCESS_KEY");
-const bucketName = Deno.env.get("HETZNER_S3_BUCKET") || "inkorium-media";
-const publicBase = Deno.env.get("HETZNER_S3_PUBLIC_BASE_URL")?.replace(/\/$/, "")
-  || `https://${bucketName}.${region}.your-objectstorage.com`;
+const r2Endpoint = Deno.env.get("R2_ENDPOINT")?.replace(/\/$/, "");
+const r2AccessKeyId = Deno.env.get("R2_ACCESS_KEY_ID");
+const r2SecretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY");
+const r2BucketName = Deno.env.get("R2_BUCKET_NAME");
+const publicBase = Deno.env.get("R2_PUBLIC_BASE_URL")?.replace(/\/$/, "");
 
-const s3 = endpoint && accessKeyId && secretAccessKey
-  ? new S3Client({
-      region,
-      endpoint,
-      credentials: { accessKeyId, secretAccessKey },
-      forcePathStyle: false,
-    })
+const s3 = r2Endpoint && r2AccessKeyId && r2SecretAccessKey
+  ? new S3Client({ region: "auto", endpoint: r2Endpoint, credentials: { accessKeyId: r2AccessKeyId, secretAccessKey: r2SecretAccessKey } })
   : null;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  if (!supabaseUrl || !supabaseAnonKey || !s3 || !bucketName) {
-    return json({ error: "Hetzner Object Storage no está configurado en la función." }, 500);
-  }
+  if (!supabaseUrl || !supabaseAnonKey || !s3 || !r2BucketName) return json({ error: "Cloudflare R2 no está configurado en la función." }, 500);
 
   const authorization = req.headers.get("Authorization");
   if (!authorization) return json({ error: "No autenticado." }, 401);
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: authorization } },
-  });
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authorization } } });
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return json({ error: "Sesión no válida." }, 401);
 
   let body: { action?: string; folder?: string; fileName?: string; contentType?: string; size?: number; key?: string; channelId?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: "Cuerpo JSON inválido." }, 400);
-  }
+  try { body = await req.json(); } catch { return json({ error: "Cuerpo JSON inválido." }, 400); }
 
   try {
     if (body.action === "upload") {
@@ -130,48 +105,32 @@ Deno.serve(async (req: Request) => {
         : (folder === "videos" || folder === "post-media" || folder === "chat") && contentType.startsWith("video/")
           ? MAX_VIDEO_SIZE
           : MAX_IMAGE_SIZE;
+      if (!Number.isFinite(size) || size <= 0 || size > maxSize) return json({ error: `El archivo supera el máximo permitido de ${Math.round(maxSize / 1024 / 1024)} MB.` }, 400);
 
-      if (!Number.isFinite(size) || size <= 0 || size > maxSize) {
-        return json({ error: `El archivo supera el máximo permitido de ${Math.round(maxSize / 1024 / 1024)} MB.` }, 400);
-      }
+      const key = folder === "chat"
+        ? (() => {
+            const channelId = String(body.channelId || "").trim();
+            if (!channelId) return "";
+            return `chat/${channelId}/${user.id}/${Date.now()}-${crypto.randomUUID()}.${extension(body.fileName || "upload.bin", contentType)}`;
+          })()
+        : `${folder}/${user.id}/${Date.now()}-${crypto.randomUUID()}.${extension(body.fileName || "upload.bin", contentType)}`;
+      if (!key) return json({ error: "Falta el canal del chat." }, 400);
+      const chatKey = parseChatKey(key);
+      if (chatKey && !(await isChatParticipant(supabase, chatKey.channelId, user.id))) return json({ error: "No estás autorizado para subir archivos a este chat." }, 403);
 
-      let key: string;
-      if (folder === "chat") {
-        const channelId = String(body.channelId || "").trim();
-        if (!channelId) return json({ error: "Falta el canal del chat." }, 400);
-        if (!(await isChatParticipant(supabase, channelId, user.id))) {
-          return json({ error: "No estás autorizado para subir archivos a este chat." }, 403);
-        }
-        key = `chat/${channelId}/${user.id}/${Date.now()}-${crypto.randomUUID()}.${extension(body.fileName || "upload.bin", contentType)}`;
-      } else {
-        key = `${folder}/${user.id}/${Date.now()}-${crypto.randomUUID()}.${extension(body.fileName || "upload.bin", contentType)}`;
-      }
-
-      const uploadUrl = await getSignedUrl(
-        s3,
-        new PutObjectCommand({ Bucket: bucketName, Key: key, ContentType: contentType }),
-        { expiresIn: 3600 },
-      );
-
-      return json({ key, uploadUrl, url: `${publicBase}/${key}`, expiresIn: 3600 });
+      const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: r2BucketName, Key: key, ContentType: contentType }), { expiresIn: 3600 });
+      return json({ key, uploadUrl, url: publicBase ? `${publicBase}/${key}` : null, expiresIn: 3600 });
     }
 
     if (body.action === "get") {
       const key = String(body.key || "").trim();
       const chatKey = parseChatKey(key);
       if (chatKey) {
-        if (!(await isChatParticipant(supabase, chatKey.channelId, user.id))) {
-          return json({ error: "No estás autorizado para ver este archivo del chat." }, 403);
-        }
+        if (!(await isChatParticipant(supabase, chatKey.channelId, user.id))) return json({ error: "No estás autorizado para ver este archivo del chat." }, 403);
       } else if (!isOwnedKey(key, user.id)) {
         return json({ error: "Objeto no autorizado." }, 403);
       }
-
-      const url = await getSignedUrl(
-        s3,
-        new GetObjectCommand({ Bucket: bucketName, Key: key }),
-        { expiresIn: 3600 },
-      );
+      const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: r2BucketName, Key: key }), { expiresIn: 3600 });
       return json({ url, expiresIn: 3600 });
     }
 
@@ -180,20 +139,17 @@ Deno.serve(async (req: Request) => {
       const chatKey = parseChatKey(key);
       if (chatKey) {
         if (chatKey.ownerId !== user.id) return json({ error: "Solo el autor puede borrar este archivo." }, 403);
-        if (!(await isChatParticipant(supabase, chatKey.channelId, user.id))) {
-          return json({ error: "No estás autorizado para borrar este archivo del chat." }, 403);
-        }
+        if (!(await isChatParticipant(supabase, chatKey.channelId, user.id))) return json({ error: "No estás autorizado para borrar este archivo del chat." }, 403);
       } else if (!isOwnedKey(key, user.id)) {
         return json({ error: "Objeto no autorizado." }, 403);
       }
-
-      await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }));
+      await s3.send(new DeleteObjectCommand({ Bucket: r2BucketName, Key: key }));
       return json({ ok: true });
     }
 
     return json({ error: "Acción no soportada." }, 400);
   } catch (error) {
-    console.error("Hetzner media function error", error);
-    return json({ error: error instanceof Error ? error.message : "Error con Hetzner Object Storage." }, 500);
+    console.error("Cloudflare R2 media function error", error);
+    return json({ error: error instanceof Error ? error.message : "Error con Cloudflare R2." }, 500);
   }
 });
