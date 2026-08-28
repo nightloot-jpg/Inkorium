@@ -72,8 +72,8 @@ test('feature CSS is not linked from the HTML entrypoint', async () => {
 });
 
 test('route style loader covers the lazy feature pages', async () => {
-  const styles = await source('src/features/feature-styles.ts');
+  const route = await source('src/features/RouteContentBridge.tsx');
   for (const page of ['perfil', 'personas', 'musica', 'videos']) {
-    assert.match(styles, new RegExp(`case ['"]${page}['"]`));
+    assert.match(route, new RegExp(`case ['"]${page}['"]`));
   }
 });
