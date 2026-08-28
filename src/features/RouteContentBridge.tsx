@@ -57,6 +57,7 @@ async function loadRouteStyles(page: RoutePage) {
         import('./profile/profile-background-fix-2026.css'),
         import('./profile/profile-enhancements.css'),
       ]);
+      await import('./profile/profile-layout-authoritative.css');
       break;
     case 'personas':
       await Promise.all([
