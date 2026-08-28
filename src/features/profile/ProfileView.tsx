@@ -17,6 +17,7 @@ import { useProfileMusicTaste } from './hooks/useProfileMusicTaste';
 import { useProfileMusicPreferences } from './hooks/useProfileMusicPreferences';
 import { ProfileHeader } from './components/ProfileHeader';
 import { ProfileTabs, type ProfileTab } from './components/ProfileTabs';
+import { ProfileSideNav } from './components/ProfileSideNav';
 import { ProfileHome } from './components/home/ProfileHome';
 import { ProfileMusicDiary } from './components/music/ProfileMusicDiary';
 import { ProfileDailySong } from './components/music/ProfileDailySong';
@@ -28,6 +29,7 @@ import './profile-view.css';
 import './profile-about-card.css';
 import './profile-global.css';
 import './profile-videos-tab-2026.css';
+import './profile-tueni-2026.css';
 
 const STATUS_META: Record<StatusValue, { label: string; className: string }> = { conectado: { label: 'Conectado', className: 'online' }, ausente: { label: 'Ausente', className: 'away' }, desconectado: { label: 'Desconectado', className: 'offline' } };
 const normalizeStatus = (value: string | null | undefined): StatusValue => value === 'ausente' || value === 'desconectado' ? value : 'conectado';
@@ -86,15 +88,20 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   return <section className="profile-view-page">
     <ProfileHeader profile={displayProfile} displayName={displayName} handle={handle} avatar={displayProfile.avatar_url || ''} banner={displayProfile.banner_url || ''} isOwnProfile={ownProfile} status={effectiveStatus} statusLabel={statusMeta.label} statusClassName={statusMeta.className} savingStatus={savingStatus} savingHashtag={savingHashtag} editingHashtag={editingHashtag} hashtagDraft={hashtagDraft} editingBio={editingBio} bioDraft={bioDraft} savingBio={savingBio} onOpenMedia={openMediaEditor} onStatusChange={saveStatus} onStartHashtagEdit={() => setEditingHashtag(true)} onHashtagDraftChange={setHashtagDraft} onSaveHashtag={() => void saveHashtag()} onCancelHashtag={() => { setEditingHashtag(false); setHashtagDraft(displayProfile.profile_hashtag || ''); }} onStartBioEdit={() => { if (ownProfile) setEditingBio(true); }} onBioDraftChange={setBioDraft} onSaveBio={() => void saveBio()} onCancelBio={() => setEditingBio(false)} />
     <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
-    {activeTab === 'Inicio' && <ProfileHome signatures={signatures} loadingSignatures={loadingSignatures} signatureDraft={signatureDraft} savingSignature={savingSignature} onSignatureDraftChange={setSignatureDraft} onSubmitSignature={() => void handleSubmitSignature()} profileStats={profileStats} currentSong={currentSong} onTogglePlayback={togglePlayback} />}
-    {activeTab === 'Fotos' && <div className="profile-view-card"><div className="profile-view-section-head"><h2><Images size={17} /> Fotos</h2><span>{gallery.length}</span></div><div className="profile-media-gallery">{loadingGallery ? [1,2,3,4].map(item => <span key={item} />) : gallery.map(photo => <button key={photo.id} type="button"><img src={photo.url} alt={photo.caption || 'Foto'} /></button>)}</div></div>}
-    {activeTab === 'Videos' && <ProfileVideos profileId={profileId} />}
-    {activeTab === 'Música' && <div className="profile-music-stack">
-      <ProfileDailySong song={dailySong} loading={loadingDailySong} saving={savingDailySong} canEdit={ownProfile} search={searchDailySong} getSavedMusic={getSavedMusic} onChoose={chooseDailySong} onPlay={playTrack} />
-      <ProfileMusicLibrary tracks={musicTracks} favoriteIds={favoriteIds} playlists={playlists} loading={loadingMusicLibrary} canEdit={ownProfile} onPlay={playTrack} onToggleFavorite={toggleFavorite} onEditTrack={handleEditTrack} onDeleteTrack={removeTrack} onNewPlaylist={() => { const name = window.prompt('Nombre de la playlist'); if (name) void createPlaylist(name, '', true); }} onEditPlaylist={playlist => { const name = window.prompt('Nombre', playlist.name) ?? playlist.name; void updatePlaylist(playlist.id, name, playlist.description || '', playlist.is_public !== false); }} onDeletePlaylist={deletePlaylist} onAddToPlaylist={handleAddToPlaylist} />
-      <ProfileMusicTasteCard artists={musicTasteArtists} loading={loadingMusicTaste} saving={savingMusicTaste} canEdit={ownProfile} error={musicTasteError} onAdd={addMusicTasteArtist} onRemove={removeMusicTasteArtist} />
-      <ProfileMusicPreferencesPanel playlists={musicPreferences.featuredPlaylists} selectedIds={musicPreferences.featuredPlaylists.map(item => item.id)} saving={musicPreferences.saving} canEdit={ownProfile} error={musicPreferences.error} onSave={musicPreferences.save} />
-      <ProfileMusicDiary entries={musicDiary} loading={loadingMusicDiary} onPlay={playDiaryEntry} />
-    </div>}
+    <div className="profile-view-layout">
+      <ProfileSideNav activeTab={activeTab} onChange={setActiveTab} />
+      <div className="profile-view-route-content">
+        {activeTab === 'Inicio' && <ProfileHome signatures={signatures} loadingSignatures={loadingSignatures} signatureDraft={signatureDraft} savingSignature={savingSignature} onSignatureDraftChange={setSignatureDraft} onSubmitSignature={() => void handleSubmitSignature()} profileStats={profileStats} currentSong={currentSong} onTogglePlayback={togglePlayback} />}
+        {activeTab === 'Fotos' && <div className="profile-view-card"><div className="profile-view-section-head"><h2><Images size={17} /> Fotos</h2><span>{gallery.length}</span></div><div className="profile-media-gallery">{loadingGallery ? [1,2,3,4].map(item => <span key={item} />) : gallery.map(photo => <button key={photo.id} type="button"><img src={photo.url} alt={photo.caption || 'Foto'} /></button>)}</div></div>}
+        {activeTab === 'Videos' && <ProfileVideos profileId={profileId} />}
+        {activeTab === 'Música' && <div className="profile-music-stack">
+          <ProfileDailySong song={dailySong} loading={loadingDailySong} saving={savingDailySong} canEdit={ownProfile} search={searchDailySong} getSavedMusic={getSavedMusic} onChoose={chooseDailySong} onPlay={playTrack} />
+          <ProfileMusicLibrary tracks={musicTracks} favoriteIds={favoriteIds} playlists={playlists} loading={loadingMusicLibrary} canEdit={ownProfile} onPlay={playTrack} onToggleFavorite={toggleFavorite} onEditTrack={handleEditTrack} onDeleteTrack={removeTrack} onNewPlaylist={() => { const name = window.prompt('Nombre de la playlist'); if (name) void createPlaylist(name, '', true); }} onEditPlaylist={playlist => { const name = window.prompt('Nombre', playlist.name) ?? playlist.name; void updatePlaylist(playlist.id, name, playlist.description || '', playlist.is_public !== false); }} onDeletePlaylist={deletePlaylist} onAddToPlaylist={handleAddToPlaylist} />
+          <ProfileMusicTasteCard artists={musicTasteArtists} loading={loadingMusicTaste} saving={savingMusicTaste} canEdit={ownProfile} error={musicTasteError} onAdd={addMusicTasteArtist} onRemove={removeMusicTasteArtist} />
+          <ProfileMusicPreferencesPanel playlists={musicPreferences.featuredPlaylists} selectedIds={musicPreferences.featuredPlaylists.map(item => item.id)} saving={musicPreferences.saving} canEdit={ownProfile} error={musicPreferences.error} onSave={musicPreferences.save} />
+          <ProfileMusicDiary entries={musicDiary} loading={loadingMusicDiary} onPlay={playDiaryEntry} />
+        </div>}
+      </div>
+    </div>
   </section>;
 }
