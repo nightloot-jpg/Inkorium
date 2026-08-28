@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Images } from 'lucide-react';
 import { useAuthStore, usePlayerStore } from '../../lib/store';
-import type { ProfileViewProps, StatusValue } from './types/profile.types';
+import type { ProfileViewProps, StatusValue, MediaTarget } from './types/profile.types';
 import type { MusicDiaryEntry } from './services/profile-music.service';
 import type { DailySongTrack } from './services/profile-daily-song.service';
 import type { MusicLibraryTrack } from './services/profile-music-library.service';
@@ -29,7 +29,7 @@ import './profile-view.css';
 import './profile-about-card.css';
 import './profile-global.css';
 import './profile-videos-tab-2026.css';
-import './profile-tueni-2026.css';
+import './profile-tuenti-2026.css';
 
 const STATUS_META: Record<StatusValue, { label: string; className: string }> = { conectado: { label: 'Conectado', className: 'online' }, ausente: { label: 'Ausente', className: 'away' }, desconectado: { label: 'Desconectado', className: 'offline' } };
 const normalizeStatus = (value: string | null | undefined): StatusValue => value === 'ausente' || value === 'desconectado' ? value : 'conectado';
@@ -57,14 +57,23 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const { profile, update, updateStatus } = useProfile(profileId, initialProfile);
   const { stats: profileStats } = useProfileStats(profileId);
   const { signatures, loading: loadingSignatures, saving: savingSignature, submit: submitSignature } = useProfileSignatures(profileId, session.user.id);
-  const { openMediaEditor, gallery, loadingGallery, loadGallery } = useProfileMedia(profileId === session.user.id);
+  const displayProfileBeforeMedia = profile || initialProfile;
+  const ownProfile = profileId === session.user.id;
+  const { openMediaEditor, uploadingMedia, gallery, loadingGallery, loadGallery } = useProfileMedia({
+    isOwnProfile: ownProfile,
+    profileId,
+    onMediaUpdated: (target: MediaTarget, url: string) => {
+      const fields = target === 'banner' ? { banner_url: url } : { avatar_url: url };
+      updateGlobalProfile(fields);
+      void update(fields);
+    },
+  });
   const { entries: musicDiary, loading: loadingMusicDiary } = useProfileMusicDiary(profileId, activeTab === 'Música', profileId === session.user.id);
   const { song: dailySong, loading: loadingDailySong, saving: savingDailySong, search: searchDailySong, getSavedMusic, choose: chooseDailySong } = useProfileDailySong(profileId, activeTab === 'Música');
   const { tracks: musicTracks, favoriteIds, playlists, loading: loadingMusicLibrary, toggleFavorite, editTrack, removeTrack, createPlaylist, updatePlaylist, deletePlaylist, addTrackToPlaylist } = useProfileMusicLibrary(profileId, activeTab === 'Música');
   const { artists: musicTasteArtists, loading: loadingMusicTaste, saving: savingMusicTaste, error: musicTasteError, addArtist: addMusicTasteArtist, removeArtist: removeMusicTasteArtist } = useProfileMusicTaste(profileId, activeTab === 'Música');
   const musicPreferences = useProfileMusicPreferences(profileId, activeTab === 'Música');
-  const displayProfile = profile || initialProfile;
-  const ownProfile = profileId === session.user.id;
+  const displayProfile = profile || displayProfileBeforeMedia;
   const displayName = displayProfile?.full_name || displayProfile?.username || username || 'Usuario';
   const handle = displayProfile?.username ? `@${displayProfile.username}` : `@${username}`;
   const effectiveStatus = ownProfile ? normalizeStatus(globalProfile?.user_status ?? status) : normalizeStatus(displayProfile?.user_status);
@@ -86,6 +95,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const handleAddToPlaylist = async (playlist: MusicPlaylist) => { const track = musicTracks[0]; if (!track) return; try { await addTrackToPlaylist(playlist.id, track.id); } catch (error) { window.alert(error instanceof Error ? error.message : 'No se pudo añadir la canción.'); } };
 
   return <section className="profile-view-page">
+    {uploadingMedia && <div className="profile-media-upload-status" role="status" aria-live="polite">Subiendo imagen…</div>}
     <ProfileHeader profile={displayProfile} displayName={displayName} handle={handle} avatar={displayProfile.avatar_url || ''} banner={displayProfile.banner_url || ''} isOwnProfile={ownProfile} status={effectiveStatus} statusLabel={statusMeta.label} statusClassName={statusMeta.className} savingStatus={savingStatus} savingHashtag={savingHashtag} editingHashtag={editingHashtag} hashtagDraft={hashtagDraft} editingBio={editingBio} bioDraft={bioDraft} savingBio={savingBio} onOpenMedia={openMediaEditor} onStatusChange={saveStatus} onStartHashtagEdit={() => setEditingHashtag(true)} onHashtagDraftChange={setHashtagDraft} onSaveHashtag={() => void saveHashtag()} onCancelHashtag={() => { setEditingHashtag(false); setHashtagDraft(displayProfile.profile_hashtag || ''); }} onStartBioEdit={() => { if (ownProfile) setEditingBio(true); }} onBioDraftChange={setBioDraft} onSaveBio={() => void saveBio()} onCancelBio={() => setEditingBio(false)} />
     <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
     <div className="profile-view-layout">
