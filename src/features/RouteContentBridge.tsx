@@ -1,5 +1,6 @@
 import React, { Component, Suspense, lazy, type ErrorInfo, type ReactNode, useEffect } from 'react';
 import { useAuthStore } from '../lib/store';
+import { loadRouteStyles } from './feature-styles';
 
 const MusicView = lazy(() => import('./music/MusicView').then(module => ({ default: module.MusicView })));
 const VideoView = lazy(() => import('./videos/VideoView').then(module => ({ default: module.VideoView })));
@@ -51,6 +52,10 @@ export function RouteContentBridge({ route, navigate }: Props) {
     const active = ROUTED_CONTENT_PAGES.has(route.page) && sessionReady;
     document.body.classList.toggle('inkorium-route-bridge-active', active);
     return () => document.body.classList.remove('inkorium-route-bridge-active');
+  }, [route.page, sessionReady]);
+
+  useEffect(() => {
+    if (sessionReady) void loadRouteStyles(route.page as any);
   }, [route.page, sessionReady]);
 
   if (!sessionReady || !session || !ROUTED_CONTENT_PAGES.has(route.page)) return null;
