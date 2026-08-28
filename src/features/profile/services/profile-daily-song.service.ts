@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase';
+import { youtubeRequest } from '../../../lib/youtube';
 
 export type DailySongTrack = {
   id: string;
@@ -25,12 +26,17 @@ export async function getSavedMusic(profileId: string) {
 }
 
 export async function searchDailySong(query: string): Promise<DailySongTrack[]> {
-  const key = import.meta.env.VITE_YOUTUBE_API_KEY;
-  if (!key) throw new Error('Falta VITE_YOUTUBE_API_KEY');
-  const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&key=${key}`);
-  const data = await response.json();
-  if (!response.ok) throw new Error(data?.error?.message || 'No se pudo buscar en YouTube.');
-  return (data.items || []).filter((item: any) => item?.id?.videoId).map((item: any) => ({ id: '', youtube_id: item.id.videoId, title: item.snippet?.title || 'Sin título', artist: item.snippet?.channelTitle || 'YouTube', cover_url: item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '', source_type: 'youtube' }));
+  const data = await youtubeRequest('search', { q: query, type: 'video', maxResults: 10 });
+  return (data.items || [])
+    .filter((item: any) => item?.id?.videoId)
+    .map((item: any) => ({
+      id: '',
+      youtube_id: item.id.videoId,
+      title: item.snippet?.title || 'Sin título',
+      artist: item.snippet?.channelTitle || 'YouTube',
+      cover_url: item.snippet?.thumbnails?.high?.url || item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '',
+      source_type: 'youtube',
+    }));
 }
 
 export async function saveDailySong(profileId: string, track: DailySongTrack, entryDate = today()) {
