@@ -30,6 +30,7 @@ import './profile-about-card.css';
 import './profile-global.css';
 import './profile-videos-tab-2026.css';
 import './profile-tuenti-2026.css';
+import './profile-media-upload.css';
 
 const STATUS_META: Record<StatusValue, { label: string; className: string }> = { conectado: { label: 'Conectado', className: 'online' }, ausente: { label: 'Ausente', className: 'away' }, desconectado: { label: 'Desconectado', className: 'offline' } };
 const normalizeStatus = (value: string | null | undefined): StatusValue => value === 'ausente' || value === 'desconectado' ? value : 'conectado';
@@ -57,12 +58,11 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const { profile, update, updateStatus } = useProfile(profileId, initialProfile);
   const { stats: profileStats } = useProfileStats(profileId);
   const { signatures, loading: loadingSignatures, saving: savingSignature, submit: submitSignature } = useProfileSignatures(profileId, session.user.id);
-  const displayProfileBeforeMedia = profile || initialProfile;
   const ownProfile = profileId === session.user.id;
   const { openMediaEditor, uploadingMedia, gallery, loadingGallery, loadGallery } = useProfileMedia({
     isOwnProfile: ownProfile,
     profileId,
-    onMediaUpdated: (target: MediaTarget, url: string) => {
+    onMediaUpdated: (target, url) => {
       const fields = target === 'banner' ? { banner_url: url } : { avatar_url: url };
       updateGlobalProfile(fields);
       void update(fields);
@@ -73,7 +73,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const { tracks: musicTracks, favoriteIds, playlists, loading: loadingMusicLibrary, toggleFavorite, editTrack, removeTrack, createPlaylist, updatePlaylist, deletePlaylist, addTrackToPlaylist } = useProfileMusicLibrary(profileId, activeTab === 'Música');
   const { artists: musicTasteArtists, loading: loadingMusicTaste, saving: savingMusicTaste, error: musicTasteError, addArtist: addMusicTasteArtist, removeArtist: removeMusicTasteArtist } = useProfileMusicTaste(profileId, activeTab === 'Música');
   const musicPreferences = useProfileMusicPreferences(profileId, activeTab === 'Música');
-  const displayProfile = profile || displayProfileBeforeMedia;
+  const displayProfile = profile || initialProfile;
   const displayName = displayProfile?.full_name || displayProfile?.username || username || 'Usuario';
   const handle = displayProfile?.username ? `@${displayProfile.username}` : `@${username}`;
   const effectiveStatus = ownProfile ? normalizeStatus(globalProfile?.user_status ?? status) : normalizeStatus(displayProfile?.user_status);
