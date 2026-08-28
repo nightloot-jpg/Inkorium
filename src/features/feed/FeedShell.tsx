@@ -6,7 +6,6 @@ import "./feed-shell.css";
 import "../../player-layer-fix.css";
 import "../../tuenti-chat.css";
 import "../../chat-global-zindex.css";
-import "../../people-requests-light.css";
 import "../../notifications.css";
 import "../../feed-layout-fixes.css";
 import "../../tuenti-classic-feed.css";
