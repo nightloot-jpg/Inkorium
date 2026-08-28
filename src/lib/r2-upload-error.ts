@@ -1,5 +1,5 @@
 export async function readR2FunctionError(error: unknown): Promise<string> {
-  const fallback = error instanceof Error ? error.message : 'No se pudo preparar la subida a Cloudflare R2.';
+  const fallback = error instanceof Error ? error.message : 'No se pudo preparar el almacenamiento de media.';
   const context = (error as { context?: Response } | null)?.context;
   if (!(context instanceof Response)) return fallback;
   try {

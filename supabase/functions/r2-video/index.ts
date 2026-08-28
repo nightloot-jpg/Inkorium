@@ -34,24 +34,21 @@ function isOwnedKey(key: string, userId: string): boolean {
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-const r2Endpoint = Deno.env.get("R2_ENDPOINT");
-const r2AccessKeyId = Deno.env.get("R2_ACCESS_KEY_ID");
-const r2SecretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY");
-const r2BucketName = Deno.env.get("R2_BUCKET_NAME");
+const endpoint = Deno.env.get("HETZNER_S3_ENDPOINT")?.replace(/\/$/, "");
+const region = Deno.env.get("HETZNER_S3_REGION") || "hel1";
+const accessKeyId = Deno.env.get("HETZNER_S3_ACCESS_KEY_ID");
+const secretAccessKey = Deno.env.get("HETZNER_S3_SECRET_ACCESS_KEY");
+const bucketName = Deno.env.get("HETZNER_S3_BUCKET") || "inkorium-media";
 
-const s3 = r2Endpoint && r2AccessKeyId && r2SecretAccessKey
-  ? new S3Client({
-      region: "auto",
-      endpoint: r2Endpoint,
-      credentials: { accessKeyId: r2AccessKeyId, secretAccessKey: r2SecretAccessKey },
-    })
+const s3 = endpoint && accessKeyId && secretAccessKey
+  ? new S3Client({ region, endpoint, credentials: { accessKeyId, secretAccessKey }, forcePathStyle: false })
   : null;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   if (!supabaseUrl || !supabaseAnonKey) return json({ error: "Supabase no está configurado en la función." }, 500);
-  if (!s3 || !r2BucketName) return json({ error: "Cloudflare R2 no está configurado en Supabase." }, 500);
+  if (!s3 || !bucketName) return json({ error: "Hetzner Object Storage no está configurado en Supabase." }, 500);
 
   const authorization = req.headers.get("Authorization");
   if (!authorization) return json({ error: "No autenticado." }, 401);
@@ -68,33 +65,28 @@ Deno.serve(async (req: Request) => {
       const size = Number(body.size || 0);
       if (!ALLOWED_TYPES.has(contentType)) return json({ error: "Formato no compatible. Usa MP4, WebM, OGG o MOV." }, 400);
       if (!Number.isFinite(size) || size <= 0 || size > MAX_SIZE) return json({ error: "El vídeo supera el máximo permitido de 1 GB." }, 400);
-      const ext = extension(body.fileName || "video.mp4", contentType);
-      const key = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-      const uploadUrl = await getSignedUrl(
-        s3,
-        new PutObjectCommand({ Bucket: r2BucketName, Key: key, ContentType: contentType }),
-        { expiresIn: 60 * 60 },
-      );
+      const key = `videos/${user.id}/${Date.now()}-${crypto.randomUUID()}.${extension(body.fileName || "video.mp4", contentType)}`;
+      const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: bucketName, Key: key, ContentType: contentType }), { expiresIn: 3600 });
       return json({ key, uploadUrl, expiresIn: 3600 });
     }
 
     if (body.action === "get") {
       const key = String(body.key || "");
       if (!isOwnedKey(key, user.id)) return json({ error: "Objeto no autorizado." }, 403);
-      const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: r2BucketName, Key: key }), { expiresIn: 60 * 60 });
+      const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: bucketName, Key: key }), { expiresIn: 3600 });
       return json({ url, expiresIn: 3600 });
     }
 
     if (body.action === "delete") {
       const key = String(body.key || "");
       if (!isOwnedKey(key, user.id)) return json({ error: "Objeto no autorizado." }, 403);
-      await s3.send(new DeleteObjectCommand({ Bucket: r2BucketName, Key: key }));
+      await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }));
       return json({ ok: true });
     }
 
     return json({ error: "Acción no soportada." }, 400);
   } catch (error) {
-    console.error("R2 video function error", error);
-    return json({ error: error instanceof Error ? error.message : "Error al comunicarse con Cloudflare R2." }, 500);
+    console.error("Hetzner video storage function error", error);
+    return json({ error: error instanceof Error ? error.message : "Error con Hetzner Object Storage." }, 500);
   }
 });
