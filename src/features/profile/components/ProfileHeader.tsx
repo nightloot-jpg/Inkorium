@@ -1,10 +1,11 @@
-import { Camera, Check, Circle, Pencil, X } from 'lucide-react';
-import type { Profile, StatusValue } from '../types/profile.types';
+import { Camera, Check, Circle, Images, MapPin, Pencil, Users, X } from 'lucide-react';
+import type { Profile, ProfileStats, StatusValue } from '../types/profile.types';
 
 type MediaTarget = 'avatar' | 'banner';
 
 type Props = {
   profile: Profile;
+  profileStats: ProfileStats;
   displayName: string;
   handle: string;
   avatar: string;
@@ -32,12 +33,13 @@ type Props = {
   onCancelBio: () => void;
 };
 
-export function ProfileHeader({ profile, displayName, handle, avatar, banner, isOwnProfile, status, statusLabel, statusClassName, savingStatus, savingHashtag, editingHashtag, hashtagDraft, editingBio, bioDraft, savingBio, onMediaFileSelected, onStatusChange, onStartHashtagEdit, onHashtagDraftChange, onSaveHashtag, onCancelHashtag, onStartBioEdit, onBioDraftChange, onSaveBio, onCancelBio }: Props) {
+export function ProfileHeader({ profile, profileStats, displayName, handle, avatar, banner, isOwnProfile, status, statusLabel, statusClassName, savingStatus, savingHashtag, editingHashtag, hashtagDraft, editingBio, bioDraft, savingBio, onMediaFileSelected, onStatusChange, onStartHashtagEdit, onHashtagDraftChange, onSaveHashtag, onCancelHashtag, onStartBioEdit, onBioDraftChange, onSaveBio, onCancelBio }: Props) {
   const handleFileChange = (target: MediaTarget) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (file) onMediaFileSelected(target, file);
   };
+  const interests = (profile.profile_interests || []).filter(Boolean).slice(0, 6);
 
   return <>
     {isOwnProfile && <>
@@ -67,6 +69,15 @@ export function ProfileHeader({ profile, displayName, handle, avatar, banner, is
         </div>
         {isOwnProfile ? (editingHashtag ? <div className="profile-view-hashtag-editor"><input autoFocus value={hashtagDraft ? `#${hashtagDraft}` : ''} maxLength={51} placeholder="#Inkorium" onChange={event => onHashtagDraftChange(event.target.value.replace(/^#+/, '').replace(/\s+/g, ''))} onKeyDown={event => { if (event.key === 'Enter') onSaveHashtag(); if (event.key === 'Escape') onCancelHashtag(); }} /><button type="button" onClick={onSaveHashtag} disabled={savingHashtag}><Check size={14} />Guardar</button><button type="button" className="secondary" onClick={onCancelHashtag}><X size={14} /></button></div> : <button type="button" className="profile-view-hashtag editable" onClick={onStartHashtagEdit}>#{profile.profile_hashtag || 'Añadir hashtag'} <Pencil size={13} /></button>) : profile.profile_hashtag ? <span className="profile-view-hashtag">#{profile.profile_hashtag}</span> : null}
         {editingBio && isOwnProfile ? <div className="profile-view-bio-editor"><textarea value={bioDraft} onChange={event => onBioDraftChange(event.target.value)} maxLength={180} /><div className="profile-view-bio-actions"><button type="button" onClick={onCancelBio}><X size={14} />Cancelar</button><button className="primary" type="button" onClick={onSaveBio} disabled={savingBio}><Check size={14} />Guardar</button></div></div> : <button type="button" className="profile-view-bio" onClick={onStartBioEdit}>{profile.bio || 'Añade una biografía para contar algo sobre ti.'}{isOwnProfile && <Pencil size={14} />}</button>}
+        {(profile.city || interests.length > 0) && <div className="profile-profile-meta">
+          {profile.city && <span><MapPin size={13} />{profile.city}</span>}
+          {profile.city && interests.length > 0 && <span className="dot">·</span>}
+          {interests.length > 0 && <span>{interests.slice(0, 3).join(' · ')}</span>}
+        </div>}
+        <div className="profile-header-stats" aria-label="Resumen del perfil">
+          <span className="profile-header-stat"><Users size={13} /><strong>{profileStats.friends_count}</strong> amigos</span>
+          <span className="profile-header-stat"><Images size={13} /><strong>{profileStats.albums_count}</strong> álbumes</span>
+        </div>
       </div>
     </div>
   </>;

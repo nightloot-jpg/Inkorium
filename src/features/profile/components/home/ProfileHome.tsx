@@ -1,7 +1,8 @@
-import { BookOpen, Heart, Images, Music2, Send, UserRound, Users } from 'lucide-react';
-import type { ProfileStats, Signature } from '../../types/profile.types';
+import { BookOpen, Heart, Images, MapPin, Music2, Send, UserRound, Users } from 'lucide-react';
+import type { Profile, ProfileStats, Signature } from '../../types/profile.types';
 
 type Props = {
+  profile: Profile;
   signatures: Signature[];
   loadingSignatures: boolean;
   signatureDraft: string;
@@ -13,10 +14,26 @@ type Props = {
   onTogglePlayback: () => void;
 };
 
-export function ProfileHome({ signatures, loadingSignatures, signatureDraft, savingSignature, onSignatureDraftChange, onSubmitSignature, profileStats, currentSong, onTogglePlayback }: Props) {
+export function ProfileHome({ profile, signatures, loadingSignatures, signatureDraft, savingSignature, onSignatureDraftChange, onSubmitSignature, profileStats, currentSong, onTogglePlayback }: Props) {
+  const interests = (profile.profile_interests || []).filter(Boolean).slice(0, 8);
   return (
     <div className="profile-view-grid">
       <main className="profile-view-main">
+        <section className="profile-view-card profile-about-card">
+          <div className="profile-view-section-head"><h2>Sobre mí</h2><span>{profile.city ? 'Perfil personal' : ''}</span></div>
+          <div className="profile-about-grid">
+            <div className="profile-about-block">
+              <h3>Biografía</h3>
+              <p className={profile.bio ? '' : 'profile-about-empty'}>{profile.bio || 'Todavía no ha añadido una biografía.'}</p>
+            </div>
+            <div className="profile-about-block">
+              <h3>Detalles</h3>
+              <p className="profile-profile-detail">{profile.city ? <span><MapPin size={13} /> {profile.city}</span> : <span className="profile-about-empty">Sin ciudad</span>}</p>
+              <div className="profile-interest-list">{interests.length ? interests.map((interest, index) => <span className="profile-interest-chip" key={`${interest}-${index}`}>{interest}</span>) : <span className="profile-about-empty">Sin intereses todavía</span>}</div>
+            </div>
+          </div>
+        </section>
+
         <div className="profile-view-card profile-view-signature-card">
           <div className="profile-view-section-head"><h2><BookOpen size={17} /> Libro de firmas</h2><span>{signatures.length}</span></div>
           <div className="profile-view-signature-form">
