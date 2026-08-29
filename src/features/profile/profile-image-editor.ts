@@ -1,4 +1,4 @@
-import { createStorageUploadTicket, uploadToPresignedUrl } from '../../lib/storage';
+import { uploadFileDirectToStorage } from '../../lib/storage';
 import { supabase } from '../../lib/supabase';
 
 type Target = 'avatar' | 'banner';
@@ -22,13 +22,14 @@ async function persistImage(state: EditorState, canvas: HTMLCanvasElement) {
   const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
   if (!blob) throw new Error('No se pudo preparar la imagen final.');
   const file = new File([blob], `${state.target}.jpg`, { type: 'image/jpeg' });
-  const ticket = await createStorageUploadTicket({ folder: state.target === 'banner' ? 'covers' : 'avatars', file });
-  await uploadToPresignedUrl(ticket.uploadUrl, file, 'image/jpeg');
-  if (!ticket.url) throw new Error('El almacenamiento no devolvió la URL de la imagen.');
+  const folder = state.target === 'banner' ? 'covers' : 'avatars';
+  const uploaded = await uploadFileDirectToStorage({ folder, file });
+  if (!uploaded.url) throw new Error('El almacenamiento no devolvió la URL de la imagen.');
+
   const field = state.target === 'banner' ? 'banner_url' : 'avatar_url';
-  const { error } = await supabase.from('profiles').update({ [field]: ticket.url, updated_at: new Date().toISOString() }).eq('id', state.userId);
+  const { error } = await supabase.from('profiles').update({ [field]: uploaded.url, updated_at: new Date().toISOString() }).eq('id', state.userId);
   if (error) throw error;
-  state.onSaved?.(ticket.url, state.target);
+  state.onSaved?.(uploaded.url, state.target);
 }
 
 export async function openProfileImageEditor({ target, file, userId, onSaved }: EditorOptions): Promise<void> {

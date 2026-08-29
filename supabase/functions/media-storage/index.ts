@@ -66,6 +66,24 @@ async function isChatParticipant(supabase: ReturnType<typeof createClient>, chan
   return !error && !!data;
 }
 
+function validateUpload(folder: string, contentType: string, size: number) {
+  const allowedTypes = ALLOWED_FOLDERS.get(folder);
+  if (!allowedTypes) throw new Error("Carpeta no permitida.");
+  if (!allowedTypes.has(contentType)) throw new Error("Tipo de archivo no compatible para esta carpeta.");
+  const maxSize = folder === "music"
+    ? MAX_AUDIO_SIZE
+    : (folder === "videos" || folder === "post-media") && contentType.startsWith("video/")
+      ? MAX_VIDEO_SIZE
+      : MAX_IMAGE_SIZE;
+  if (!Number.isFinite(size) || size <= 0 || size > maxSize) {
+    throw new Error(`El archivo supera el máximo permitido de ${Math.round(maxSize / 1024 / 1024)} MB.`);
+  }
+}
+
+function objectKey(folder: string, userId: string, fileName: string, contentType: string) {
+  return `${folder}/${userId}/${Date.now()}-${crypto.randomUUID()}.${extension(fileName || "upload.bin", contentType)}`;
+}
+
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
 const endpoint = Deno.env.get("HETZNER_S3_ENDPOINT")?.replace(/\/$/, "");
@@ -92,19 +110,43 @@ Deno.serve(async (req: Request) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return json({ error: "Sesión no válida." }, 401);
 
-  let body: { action?: string; folder?: string; fileName?: string; contentType?: string; size?: number; key?: string; channelId?: string };
-  try { body = await req.json(); } catch { return json({ error: "Cuerpo JSON inválido." }, 400); }
-
   try {
+    const requestContentType = req.headers.get("content-type") || "";
+
+    if (requestContentType.includes("multipart/form-data")) {
+      const form = await req.formData();
+      const action = String(form.get("action") || "");
+      if (action !== "upload-direct") return json({ error: "Acción multipart no soportada." }, 400);
+
+      const folder = String(form.get("folder") || "");
+      const fileEntry = form.get("file");
+      if (!(fileEntry instanceof File)) return json({ error: "Falta el archivo de media." }, 400);
+      if (folder === "chat") return json({ error: "Las subidas directas no están disponibles para chat." }, 400);
+
+      const contentType = fileEntry.type || "application/octet-stream";
+      validateUpload(folder, contentType, fileEntry.size);
+      const key = objectKey(folder, user.id, fileEntry.name, contentType);
+      const body = new Uint8Array(await fileEntry.arrayBuffer());
+
+      await s3.send(new PutObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+        ContentLength: fileEntry.size,
+      }));
+
+      return json({ key, url: `${publicBase}/${key}`, expiresIn: 3600 });
+    }
+
+    let body: { action?: string; folder?: string; fileName?: string; contentType?: string; size?: number; key?: string; channelId?: string };
+    try { body = await req.json(); } catch { return json({ error: "Cuerpo JSON inválido." }, 400); }
+
     if (body.action === "upload") {
       const folder = String(body.folder || "photos");
       const contentType = String(body.contentType || "");
       const size = Number(body.size || 0);
-      const allowedTypes = ALLOWED_FOLDERS.get(folder);
-      if (!allowedTypes) return json({ error: "Carpeta no permitida." }, 400);
-      if (!allowedTypes.has(contentType)) return json({ error: "Tipo de archivo no compatible para esta carpeta." }, 400);
-      const maxSize = folder === "music" ? MAX_AUDIO_SIZE : (folder === "videos" || folder === "post-media") && contentType.startsWith("video/") ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
-      if (!Number.isFinite(size) || size <= 0 || size > maxSize) return json({ error: `El archivo supera el máximo permitido de ${Math.round(maxSize / 1024 / 1024)} MB.` }, 400);
+      validateUpload(folder, contentType, size);
 
       let key: string;
       if (folder === "chat") {
@@ -113,7 +155,7 @@ Deno.serve(async (req: Request) => {
         if (!(await isChatParticipant(supabase, channelId, user.id))) return json({ error: "No estás autorizado para subir archivos a este chat." }, 403);
         key = `chat/${channelId}/${user.id}/${Date.now()}-${crypto.randomUUID()}.${extension(body.fileName || "upload.bin", contentType)}`;
       } else {
-        key = `${folder}/${user.id}/${Date.now()}-${crypto.randomUUID()}.${extension(body.fileName || "upload.bin", contentType)}`;
+        key = objectKey(folder, user.id, body.fileName || "upload.bin", contentType);
       }
 
       const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: bucketName, Key: key, ContentType: contentType }), { expiresIn: 3600 });
