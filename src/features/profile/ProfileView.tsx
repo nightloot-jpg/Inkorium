@@ -59,7 +59,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const { stats: profileStats } = useProfileStats(profileId);
   const { signatures, loading: loadingSignatures, saving: savingSignature, submit: submitSignature } = useProfileSignatures(profileId, session.user.id);
   const ownProfile = profileId === session.user.id;
-  const { openMediaEditor, uploadingMedia, gallery, loadingGallery, loadGallery } = useProfileMedia({
+  const { uploadingMedia, handleMediaFileSelected, gallery, loadingGallery, loadGallery } = useProfileMedia({
     isOwnProfile: ownProfile,
     profileId,
     onMediaUpdated: (target, url) => {
@@ -96,7 +96,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
 
   return <section className="profile-view-page">
     {uploadingMedia && <div className="profile-media-upload-status" role="status" aria-live="polite">Subiendo imagen…</div>}
-    <ProfileHeader profile={displayProfile} displayName={displayName} handle={handle} avatar={displayProfile.avatar_url || ''} banner={displayProfile.banner_url || ''} isOwnProfile={ownProfile} status={effectiveStatus} statusLabel={statusMeta.label} statusClassName={statusMeta.className} savingStatus={savingStatus} savingHashtag={savingHashtag} editingHashtag={editingHashtag} hashtagDraft={hashtagDraft} editingBio={editingBio} bioDraft={bioDraft} savingBio={savingBio} onOpenMedia={openMediaEditor} onStatusChange={saveStatus} onStartHashtagEdit={() => setEditingHashtag(true)} onHashtagDraftChange={setHashtagDraft} onSaveHashtag={() => void saveHashtag()} onCancelHashtag={() => { setEditingHashtag(false); setHashtagDraft(displayProfile.profile_hashtag || ''); }} onStartBioEdit={() => { if (ownProfile) setEditingBio(true); }} onBioDraftChange={setBioDraft} onSaveBio={() => void saveBio()} onCancelBio={() => setEditingBio(false)} />
+    <ProfileHeader profile={displayProfile} displayName={displayName} handle={handle} avatar={displayProfile.avatar_url || ''} banner={displayProfile.banner_url || ''} isOwnProfile={ownProfile} status={effectiveStatus} statusLabel={statusMeta.label} statusClassName={statusMeta.className} savingStatus={savingStatus} savingHashtag={savingHashtag} editingHashtag={editingHashtag} hashtagDraft={hashtagDraft} editingBio={editingBio} bioDraft={bioDraft} savingBio={savingBio} onMediaFileSelected={(target: MediaTarget, file: File) => { void handleMediaFileSelected(target, file); }} onStatusChange={saveStatus} onStartHashtagEdit={() => setEditingHashtag(true)} onHashtagDraftChange={setHashtagDraft} onSaveHashtag={() => void saveHashtag()} onCancelHashtag={() => { setEditingHashtag(false); setHashtagDraft(displayProfile.profile_hashtag || ''); }} onStartBioEdit={() => { if (ownProfile) setEditingBio(true); }} onBioDraftChange={setBioDraft} onSaveBio={() => void saveBio()} onCancelBio={() => setEditingBio(false)} />
     <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
     <div className="profile-view-layout">
       <ProfileSideNav activeTab={activeTab} onChange={setActiveTab} />
