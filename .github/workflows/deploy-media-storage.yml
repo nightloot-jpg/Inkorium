@@ -1,0 +1,26 @@
+name: Deploy media-storage
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/functions/media-storage/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SUPABASE_PROJECT_REF: zllwzmfsfzfedorljgtg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy media-storage
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npx --yes supabase@latest functions deploy media-storage --project-ref "$SUPABASE_PROJECT_REF" --token "$SUPABASE_ACCESS_TOKEN"
