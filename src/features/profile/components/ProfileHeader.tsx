@@ -34,24 +34,25 @@ type Props = {
 };
 
 export function ProfileHeader({ profile, displayName, handle, avatar, banner, isOwnProfile, status, statusLabel, statusClassName, savingStatus, savingHashtag, editingHashtag, hashtagDraft, editingBio, bioDraft, savingBio, onMediaFileSelected, onStatusChange, onStartHashtagEdit, onHashtagDraftChange, onSaveHashtag, onCancelHashtag, onStartBioEdit, onBioDraftChange, onSaveBio, onCancelBio }: Props) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const pendingTargetRef = useRef<MediaTarget>('avatar');
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const pickMedia = (target: MediaTarget) => {
     if (!isOwnProfile) return;
-    pendingTargetRef.current = target;
-    fileInputRef.current?.click();
+    if (target === 'banner') bannerInputRef.current?.click();
+    else avatarInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (target: MediaTarget) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    onMediaFileSelected(pendingTargetRef.current, file);
+    onMediaFileSelected(target, file);
   };
 
   return <>
-    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} aria-hidden="true" />
+    <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleFileChange('banner')} style={{ display: 'none' }} aria-hidden="true" />
+    <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleFileChange('avatar')} style={{ display: 'none' }} aria-hidden="true" />
 
     <button className={`profile-view-cover profile-view-cover-button ${isOwnProfile ? 'editable' : ''}`} type="button" onClick={() => pickMedia('banner')} disabled={!isOwnProfile} style={banner ? { backgroundImage: `url(${banner})` } : undefined} aria-label={isOwnProfile ? 'Cambiar foto de portada' : 'Foto de portada'}>
       {!banner && <div className="profile-view-cover-placeholder" />}
