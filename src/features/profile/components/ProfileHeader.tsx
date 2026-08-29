@@ -1,5 +1,8 @@
+import { useRef } from 'react';
 import { Camera, Check, Circle, Pencil, X } from 'lucide-react';
 import type { Profile, StatusValue } from '../types/profile.types';
+
+type MediaTarget = 'avatar' | 'banner';
 
 type Props = {
   profile: Profile;
@@ -18,7 +21,7 @@ type Props = {
   editingBio: boolean;
   bioDraft: string;
   savingBio: boolean;
-  onOpenMedia: (target: 'avatar' | 'banner') => void;
+  onMediaFileSelected: (target: MediaTarget, file: File) => void;
   onStatusChange: (value: StatusValue) => void;
   onStartHashtagEdit: () => void;
   onHashtagDraftChange: (value: string) => void;
@@ -30,16 +33,34 @@ type Props = {
   onCancelBio: () => void;
 };
 
-export function ProfileHeader({ profile, displayName, handle, avatar, banner, isOwnProfile, status, statusLabel, statusClassName, savingStatus, savingHashtag, editingHashtag, hashtagDraft, editingBio, bioDraft, savingBio, onOpenMedia, onStatusChange, onStartHashtagEdit, onHashtagDraftChange, onSaveHashtag, onCancelHashtag, onStartBioEdit, onBioDraftChange, onSaveBio, onCancelBio }: Props) {
+export function ProfileHeader({ profile, displayName, handle, avatar, banner, isOwnProfile, status, statusLabel, statusClassName, savingStatus, savingHashtag, editingHashtag, hashtagDraft, editingBio, bioDraft, savingBio, onMediaFileSelected, onStatusChange, onStartHashtagEdit, onHashtagDraftChange, onSaveHashtag, onCancelHashtag, onStartBioEdit, onBioDraftChange, onSaveBio, onCancelBio }: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingTargetRef = useRef<MediaTarget>('avatar');
+
+  const pickMedia = (target: MediaTarget) => {
+    if (!isOwnProfile) return;
+    pendingTargetRef.current = target;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    onMediaFileSelected(pendingTargetRef.current, file);
+  };
+
   return <>
-    <button className={`profile-view-cover profile-view-cover-button ${isOwnProfile ? 'editable' : ''}`} type="button" onClick={() => onOpenMedia('banner')} disabled={!isOwnProfile} style={banner ? { backgroundImage: `url(${banner})` } : undefined} aria-label={isOwnProfile ? 'Cambiar foto de portada' : 'Foto de portada'}>
+    <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFileChange} style={{ display: 'none' }} aria-hidden="true" />
+
+    <button className={`profile-view-cover profile-view-cover-button ${isOwnProfile ? 'editable' : ''}`} type="button" onClick={() => pickMedia('banner')} disabled={!isOwnProfile} style={banner ? { backgroundImage: `url(${banner})` } : undefined} aria-label={isOwnProfile ? 'Cambiar foto de portada' : 'Foto de portada'}>
       {!banner && <div className="profile-view-cover-placeholder" />}
       {isOwnProfile && <span className="profile-view-image-overlay"><Camera size={13} /> Cambiar portada</span>}
     </button>
 
     <div className="profile-view-header">
       <div className="profile-view-avatar-wrap">
-        <button className={`profile-view-avatar-button ${isOwnProfile ? 'editable' : ''}`} type="button" onClick={() => onOpenMedia('avatar')} disabled={!isOwnProfile} aria-label={isOwnProfile ? 'Cambiar foto de perfil' : 'Foto de perfil'}>
+        <button className={`profile-view-avatar-button ${isOwnProfile ? 'editable' : ''}`} type="button" onClick={() => pickMedia('avatar')} disabled={!isOwnProfile} aria-label={isOwnProfile ? 'Cambiar foto de perfil' : 'Foto de perfil'}>
           {avatar ? <img className="profile-view-avatar" src={avatar} alt={displayName} /> : <div className="profile-view-avatar profile-view-avatar-fallback">{displayName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'U'}</div>}
           {isOwnProfile && <span className="profile-view-avatar-overlay"><Camera size={15} /></span>}
         </button>
