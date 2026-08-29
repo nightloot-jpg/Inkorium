@@ -1,0 +1,111 @@
+/* Final profile header composition: square avatar, compact cover, bio inside white header. */
+.profile-view-page > .profile-view-cover {
+  height: 176px !important;
+  min-height: 176px !important;
+  border-radius: 0 !important;
+}
+
+.profile-view-page > .profile-view-header {
+  min-height: 156px !important;
+  padding: 0 32px 20px 192px !important;
+  background: #fff !important;
+  position: relative !important;
+}
+
+.profile-view-page .profile-view-avatar-wrap {
+  left: 32px !important;
+  top: -56px !important;
+  width: 128px !important;
+  height: 128px !important;
+}
+
+.profile-view-page .profile-view-avatar-button,
+.profile-view-page .profile-view-avatar-button.editable,
+.profile-view-page .profile-view-avatar,
+.profile-view-page .profile-view-avatar-fallback {
+  width: 128px !important;
+  height: 128px !important;
+  border-radius: 8px !important;
+}
+
+.profile-view-page .profile-view-avatar {
+  border: 4px solid #fff !important;
+  object-fit: cover !important;
+}
+
+.profile-view-page .profile-view-avatar-overlay {
+  right: 7px !important;
+  bottom: 7px !important;
+  border-radius: 6px !important;
+}
+
+.profile-view-page .profile-view-identity {
+  padding-top: 18px !important;
+  align-content: start !important;
+}
+
+.profile-view-page .profile-view-name-row h1 {
+  font-size: 30px !important;
+  line-height: 1.1 !important;
+}
+
+.profile-view-page .profile-view-handle {
+  margin-top: 2px !important;
+}
+
+.profile-view-page .profile-view-status-row {
+  margin-top: 6px !important;
+}
+
+.profile-view-page .profile-view-hashtag {
+  margin-top: 8px !important;
+}
+
+.profile-view-page .profile-view-bio {
+  margin-top: 7px !important;
+  max-width: 920px !important;
+  padding: 0 !important;
+  line-height: 1.45 !important;
+}
+
+.profile-view-page > .profile-view-cover .profile-view-image-overlay {
+  right: 20px !important;
+  bottom: 12px !important;
+  border-radius: 6px !important;
+}
+
+@media (max-width: 800px) {
+  .profile-view-page > .profile-view-cover {
+    height: 160px !important;
+    min-height: 160px !important;
+  }
+
+  .profile-view-page > .profile-view-header {
+    min-height: 190px !important;
+    padding: 72px 18px 18px !important;
+  }
+
+  .profile-view-page .profile-view-avatar-wrap {
+    left: 18px !important;
+    top: -46px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .profile-view-page > .profile-view-cover {
+    height: 136px !important;
+    min-height: 136px !important;
+  }
+
+  .profile-view-page .profile-view-avatar-wrap,
+  .profile-view-page .profile-view-avatar-button,
+  .profile-view-page .profile-view-avatar {
+    width: 104px !important;
+    height: 104px !important;
+  }
+
+  .profile-view-page > .profile-view-header {
+    min-height: 190px !important;
+    padding: 66px 14px 14px !important;
+  }
+}
