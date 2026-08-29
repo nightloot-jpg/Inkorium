@@ -1,0 +1,27 @@
+/* Real Profile refresh: social identity + useful information hierarchy. */
+.profile-view-page > .profile-view-cover{height:168px !important;min-height:168px !important}
+.profile-view-page > .profile-view-header{min-height:154px !important;padding:0 34px 18px 184px !important}
+.profile-view-page .profile-view-avatar-wrap{left:30px !important;top:-52px !important;width:120px !important;height:120px !important}
+.profile-view-page .profile-view-avatar-button,.profile-view-page .profile-view-avatar{width:120px !important;height:120px !important;border-radius:8px !important}
+.profile-view-page .profile-view-avatar{border:4px solid #fff !important;object-fit:cover !important}
+.profile-view-page .profile-view-identity{padding-top:16px !important}
+.profile-view-page .profile-view-name-row h1{font-size:29px !important}
+.profile-view-page .profile-view-bio{max-width:720px !important;margin-top:6px !important}
+.profile-view-page .profile-profile-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:7px;color:#62788e;font-size:13px}
+.profile-view-page .profile-profile-meta span{display:inline-flex;align-items:center;gap:5px}
+.profile-view-page .profile-profile-meta .dot{color:#b5c2ce}
+.profile-view-page .profile-header-stats{display:flex;gap:0;width:max-content;margin-top:9px;border-top:1px solid #edf1f5;padding-top:8px}
+.profile-view-page .profile-header-stat{display:inline-flex;align-items:baseline;gap:5px;padding:0 13px;border-right:1px solid #e5ebf0;color:#5f7489;font-size:12px}
+.profile-view-page .profile-header-stat:first-child{padding-left:0}
+.profile-view-page .profile-header-stat:last-child{border-right:0}
+.profile-view-page .profile-header-stat strong{color:#17324f;font-size:14px}
+.profile-view-page .profile-about-card{padding:0}
+.profile-view-page .profile-about-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(190px,.7fr);gap:18px;padding:17px 18px 18px}
+.profile-view-page .profile-about-block h3{margin:0 0 7px;color:#25445f;font-size:14px}
+.profile-view-page .profile-about-block p{margin:0;color:#61778d;font-size:13px;line-height:1.55}
+.profile-view-page .profile-interest-list{display:flex;flex-wrap:wrap;gap:6px}
+.profile-view-page .profile-interest-chip{display:inline-flex;align-items:center;padding:5px 8px;background:#f2f5f8;border:1px solid #e1e8ee;border-radius:999px;color:#536b82;font-size:12px}
+.profile-view-page .profile-about-empty{color:#8a9bad !important}
+.profile-view-page .profile-view-main > .profile-view-card + .profile-view-card{margin-top:14px}
+@media(max-width:900px){.profile-view-page .profile-about-grid{grid-template-columns:1fr}}
+@media(max-width:800px){.profile-view-page > .profile-view-cover{height:156px !important;min-height:156px !important}.profile-view-page > .profile-view-header{min-height:205px !important;padding:66px 18px 18px !important}.profile-view-page .profile-view-avatar-wrap{left:18px !important;top:-44px !important}}
