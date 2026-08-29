@@ -31,6 +31,7 @@ import './profile-global.css';
 import './profile-videos-tab-2026.css';
 import './profile-tuenti-2026.css';
 import './profile-media-upload.css';
+import './profile-media-final-2026.css';
 
 const STATUS_META: Record<StatusValue, { label: string; className: string }> = { conectado: { label: 'Conectado', className: 'online' }, ausente: { label: 'Ausente', className: 'away' }, desconectado: { label: 'Desconectado', className: 'offline' } };
 const normalizeStatus = (value: string | null | undefined): StatusValue => value === 'ausente' || value === 'desconectado' ? value : 'conectado';
