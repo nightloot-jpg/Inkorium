@@ -7,6 +7,12 @@ type StorageUploadTicket = {
   expiresIn?: number;
 };
 
+type DirectStorageUpload = {
+  key: string;
+  url?: string | null;
+  expiresIn?: number;
+};
+
 export type StorageFolder = 'photos' | 'covers' | 'avatars' | 'post-media' | 'videos' | 'music' | 'chat';
 
 async function getAuthHeaders() {
@@ -45,6 +51,25 @@ async function invokeStorage(body: Record<string, unknown>) {
   return result.data;
 }
 
+async function invokeStorageFormData(formData: FormData) {
+  const headers = await getAuthHeaders();
+  const result = await supabase.functions.invoke('media-storage', { body: formData, headers });
+  if (result.error) {
+    const fallback = result.error instanceof Error ? result.error.message : 'No se pudo subir el archivo al almacenamiento de media.';
+    const context = (result.error as { context?: Response } | null)?.context;
+    if (context instanceof Response) {
+      try {
+        const payload = await context.clone().json() as { error?: string; message?: string };
+        if (payload.error || payload.message) throw new Error(payload.error || payload.message);
+      } catch {
+        // Keep the SDK error when the response is not JSON.
+      }
+    }
+    throw new Error(fallback);
+  }
+  return result.data;
+}
+
 export async function createStorageUploadTicket(input: {
   folder: StorageFolder;
   file: File;
@@ -64,6 +89,23 @@ export async function createStorageUploadTicket(input: {
   }
 
   return data as StorageUploadTicket;
+}
+
+export async function uploadFileDirectToStorage(input: {
+  folder: StorageFolder;
+  file: File;
+}) {
+  const formData = new FormData();
+  formData.append('action', 'upload-direct');
+  formData.append('folder', input.folder);
+  formData.append('file', input.file, input.file.name);
+
+  const data = await invokeStorageFormData(formData);
+  if (!data?.url || !data?.key) {
+    throw new Error(data?.error || 'El almacenamiento de media no devolvió una URL válida.');
+  }
+
+  return data as DirectStorageUpload;
 }
 
 export async function uploadToPresignedUrl(uploadUrl: string, file: Blob, contentType: string) {
