@@ -14,6 +14,7 @@
 .profile-view-avatar-button .profile-view-avatar,.profile-view-avatar-button .profile-view-avatar-fallback{width:116px!important;height:116px!important;display:block!important;border-radius:8px!important;object-fit:cover!important}
 .profile-view-avatar-button.editable .profile-view-avatar-overlay{position:absolute!important;right:7px!important;bottom:7px!important;width:32px!important;height:32px!important;display:grid!important;place-items:center!important;border-radius:7px!important;background:rgba(91,45,181,.94)!important;color:#fff!important;border:2px solid #fff!important;opacity:1!important;visibility:visible!important;pointer-events:none!important}
 .profile-view-avatar-button.editable:hover .profile-view-avatar{filter:brightness(.82)!important}
+.profile-view-avatar-button.editable:hover:after,.profile-view-avatar-button.editable:focus-visible:after{content:none!important;display:none!important}
 
 .profile-view-media-actions{display:none!important}
 
