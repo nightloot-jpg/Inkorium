@@ -55,7 +55,12 @@ export function ProfileHeader({ profile, displayName, handle, avatar, banner, is
 
     <button className={`profile-view-cover profile-view-cover-button ${isOwnProfile ? 'editable' : ''}`} type="button" onClick={() => pickMedia('banner')} disabled={!isOwnProfile} style={banner ? { backgroundImage: `url(${banner})` } : undefined} aria-label={isOwnProfile ? 'Cambiar foto de portada' : 'Foto de portada'}>
       {!banner && <div className="profile-view-cover-placeholder" />}
-      {isOwnProfile && <span className="profile-view-image-overlay"><Camera size={13} /> Cambiar portada</span>}
+      {isOwnProfile && (
+        <>
+          {!banner && <span className="profile-view-cover-empty-cta"><Camera size={16} /> Agregar foto de cabecera</span>}
+          <span className={`profile-view-image-overlay ${banner ? 'has-image' : 'always-visible'}`}><Camera size={13} /> {banner ? 'Cambiar portada' : 'Elegir foto'}</span>
+        </>
+      )}
     </button>
 
     <div className="profile-view-header">
