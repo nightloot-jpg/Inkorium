@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Camera, Check, Circle, Pencil, X } from 'lucide-react';
+import { Camera, Check, Circle, ImagePlus, Pencil, X } from 'lucide-react';
 import type { Profile, StatusValue } from '../types/profile.types';
 
 type MediaTarget = 'avatar' | 'banner';
@@ -51,7 +51,7 @@ export function ProfileHeader({ profile, displayName, handle, avatar, banner, is
   };
 
   return <>
-    <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFileChange} style={{ display: 'none' }} aria-hidden="true" />
+    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} aria-hidden="true" />
 
     <button className={`profile-view-cover profile-view-cover-button ${isOwnProfile ? 'editable' : ''}`} type="button" onClick={() => pickMedia('banner')} disabled={!isOwnProfile} style={banner ? { backgroundImage: `url(${banner})` } : undefined} aria-label={isOwnProfile ? 'Cambiar foto de portada' : 'Foto de portada'}>
       {!banner && <div className="profile-view-cover-placeholder" />}
@@ -78,6 +78,7 @@ export function ProfileHeader({ profile, displayName, handle, avatar, banner, is
           <span className={`profile-view-status-dot ${statusClassName}`}><Circle size={10} fill="currentColor" /></span>
           {isOwnProfile ? <select className="profile-view-status-select" value={status} onChange={event => onStatusChange(event.target.value as StatusValue)} disabled={savingStatus} aria-label="Estado"><option value="conectado">Conectado</option><option value="ausente">Ausente</option><option value="desconectado">Desconectado</option></select> : <span className="profile-view-status-label">{statusLabel}</span>}
         </div>
+        {isOwnProfile && <div className="profile-view-media-actions"><button type="button" className="profile-view-media-action" onClick={() => pickMedia('banner')}><ImagePlus size={14} />Cambiar cabecera</button><button type="button" className="profile-view-media-action secondary" onClick={() => pickMedia('avatar')}><Camera size={14} />Cambiar avatar</button></div>}
         {isOwnProfile ? (editingHashtag ? <div className="profile-view-hashtag-editor"><input autoFocus value={hashtagDraft ? `#${hashtagDraft}` : ''} maxLength={51} placeholder="#Inkorium" onChange={event => onHashtagDraftChange(event.target.value.replace(/^#+/, '').replace(/\s+/g, ''))} onKeyDown={event => { if (event.key === 'Enter') onSaveHashtag(); if (event.key === 'Escape') onCancelHashtag(); }} /><button type="button" onClick={onSaveHashtag} disabled={savingHashtag}><Check size={14} />Guardar</button><button type="button" className="secondary" onClick={onCancelHashtag}><X size={14} /></button></div> : <button type="button" className="profile-view-hashtag editable" onClick={onStartHashtagEdit}>#{profile.profile_hashtag || 'Añadir hashtag'} <Pencil size={13} /></button>) : profile.profile_hashtag ? <span className="profile-view-hashtag">#{profile.profile_hashtag}</span> : null}
         {editingBio && isOwnProfile ? <div className="profile-view-bio-editor"><textarea value={bioDraft} onChange={event => onBioDraftChange(event.target.value)} maxLength={180} /><div className="profile-view-bio-actions"><button type="button" onClick={onCancelBio}><X size={14} />Cancelar</button><button className="primary" type="button" onClick={onSaveBio} disabled={savingBio}><Check size={14} />Guardar</button></div></div> : <button type="button" className="profile-view-bio" onClick={onStartBioEdit}>{profile.bio || 'Añade una biografía para contar algo sobre ti.'}{isOwnProfile && <Pencil size={14} />}</button>}
       </div>
