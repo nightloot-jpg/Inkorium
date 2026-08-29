@@ -1,4 +1,21 @@
-.profile-media-upload-status{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:2500;display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid #d9c8f5;border-radius:999px;background:#fff;color:#5b2db5;box-shadow:0 8px 24px rgba(35,47,70,.14);font:700 13px Arial,Helvetica,sans-serif;pointer-events:none}.profile-view-cover-button.editable,.profile-view-avatar-button.editable{pointer-events:auto;cursor:pointer!important}.profile-view-cover-button.editable:focus-visible,.profile-view-avatar-button.editable:focus-visible{outline:3px solid rgba(106,53,194,.28)!important;outline-offset:3px}.profile-view-cover-button.editable:hover{filter:brightness(.985)}.profile-view-avatar-button.editable:hover .profile-view-avatar{box-shadow:0 6px 18px rgba(27,55,90,.2)!important}.profile-view-cover-button.editable:hover .profile-view-image-overlay,.profile-view-avatar-button.editable:hover .profile-view-avatar-overlay{opacity:1!important}
-/* These rules load last so legacy Profile styles cannot undo the edit targets. */
-html body:has(.profile-view-page) .profile-view-avatar-button,html body:has(.profile-view-page) .profile-view-avatar,html body:has(.profile-view-page) .profile-view-avatar-fallback{border-radius:8px!important}.profile-view-avatar-button.editable .profile-view-avatar-overlay{display:grid!important;visibility:visible!important}.profile-view-cover-button{position:relative!important;display:block!important;width:100%!important;min-height:190px!important;background-position:center!important;background-size:cover!important;overflow:hidden!important}.profile-view-cover-button.editable{pointer-events:auto!important}.profile-view-cover-button.editable .profile-view-image-overlay{display:inline-flex!important;visibility:visible!important}.profile-view-cover-button:disabled .profile-view-image-overlay{display:none!important}
+.profile-media-upload-status{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:2500;display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid #d9c8f5;border-radius:999px;background:#fff;color:#5b2db5;box-shadow:0 8px 24px rgba(35,47,70,.14);font:700 13px Arial,Helvetica,sans-serif;pointer-events:none}
+
+.profile-view-file-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+.profile-view-cover-button{position:relative!important;display:block!important;width:100%!important;cursor:default!important;overflow:hidden!important}
+.profile-view-cover-button.editable{cursor:pointer!important;pointer-events:auto!important}
+.profile-view-cover-button .profile-view-cover-placeholder{width:100%;height:100%}
+.profile-view-image-overlay{position:absolute!important;right:16px!important;bottom:16px!important;display:inline-flex!important;align-items:center!important;gap:7px!important;padding:8px 12px!important;border-radius:8px!important;background:rgba(24,40,60,.78)!important;color:#fff!important;font-size:12px!important;font-weight:700!important;opacity:1!important;visibility:visible!important;pointer-events:none!important}
+.profile-view-cover-button.editable:hover .profile-view-image-overlay{background:#5f31b9!important}
+
+.profile-view-avatar-wrap{z-index:5!important}
+.profile-view-avatar-button{position:relative!important;display:block!important;width:116px!important;height:116px!important;padding:0!important;border:0!important;border-radius:8px!important;overflow:hidden!important;background:transparent!important;cursor:default!important}
+.profile-view-avatar-button.editable{cursor:pointer!important;pointer-events:auto!important}
+.profile-view-avatar-button .profile-view-avatar,.profile-view-avatar-button .profile-view-avatar-fallback{width:116px!important;height:116px!important;display:block!important;border-radius:8px!important;object-fit:cover!important}
+.profile-view-avatar-button.editable .profile-view-avatar-overlay{position:absolute!important;right:7px!important;bottom:7px!important;width:32px!important;height:32px!important;display:grid!important;place-items:center!important;border-radius:7px!important;background:rgba(91,45,181,.94)!important;color:#fff!important;border:2px solid #fff!important;opacity:1!important;visibility:visible!important;pointer-events:none!important}
+.profile-view-avatar-button.editable:hover .profile-view-avatar{filter:brightness(.82)!important}
+
+.profile-view-media-actions{display:none!important}
+
 @media(max-width:900px){.profile-media-upload-status{top:62px}}
+@media(max-width:640px){.profile-view-avatar-button,.profile-view-avatar-button .profile-view-avatar,.profile-view-avatar-button .profile-view-avatar-fallback{width:96px!important;height:96px!important;border-radius:8px!important}.profile-view-avatar-button.editable .profile-view-avatar-overlay{width:30px!important;height:30px!important;border-radius:7px!important}.profile-view-image-overlay{right:10px!important;bottom:10px!important}}
