@@ -1,0 +1,14 @@
+/* Final profile media rules. Loaded after every legacy profile stylesheet. */
+html body:has(.profile-view-page) .profile-view-cover-button{position:relative!important;width:100%!important;display:block!important;cursor:pointer!important;pointer-events:auto!important}
+html body:has(.profile-view-page) .profile-view-cover-button:disabled{cursor:default!important;pointer-events:none!important}
+html body:has(.profile-view-page) .profile-view-cover-button.editable .profile-view-image-overlay{opacity:1!important;visibility:visible!important;display:inline-flex!important;pointer-events:none!important}
+html body:has(.profile-view-page) .profile-view-avatar-button{position:relative!important;width:116px!important;height:116px!important;display:block!important;padding:0!important;border-radius:8px!important;overflow:hidden!important;pointer-events:auto!important;cursor:pointer!important}
+html body:has(.profile-view-page) .profile-view-avatar-button.editable{cursor:pointer!important}
+html body:has(.profile-view-page) .profile-view-avatar,
+html body:has(.profile-view-page) .profile-view-avatar-fallback{width:116px!important;height:116px!important;display:block!important;border-radius:8px!important;object-fit:cover!important}
+html body:has(.profile-view-page) .profile-view-avatar-overlay{right:7px!important;bottom:7px!important;width:34px!important;height:34px!important;display:grid!important;place-items:center!important;border-radius:7px!important;opacity:1!important;visibility:visible!important}
+html body:has(.profile-view-page) .profile-view-avatar-button.editable:hover .profile-view-avatar,
+html body:has(.profile-view-page) .profile-view-avatar-button.editable:focus-visible .profile-view-avatar{filter:brightness(.82)!important}
+html body:has(.profile-view-page) .profile-view-avatar-button.editable:hover .profile-view-avatar-overlay,
+html body:has(.profile-view-page) .profile-view-avatar-button.editable:focus-visible .profile-view-avatar-overlay{background:#5b2db5!important}
+@media(max-width:640px){html body:has(.profile-view-page) .profile-view-avatar-button,html body:has(.profile-view-page) .profile-view-avatar,html body:has(.profile-view-page) .profile-view-avatar-fallback{width:96px!important;height:96px!important;border-radius:8px!important}html body:has(.profile-view-page) .profile-view-avatar-overlay{width:30px!important;height:30px!important;border-radius:7px!important}}
