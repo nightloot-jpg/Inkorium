@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Images } from 'lucide-react';
 import { useAuthStore, usePlayerStore } from '../../lib/store';
-import type { ProfileViewProps, StatusValue, MediaTarget } from './types/profile.types';
+import type { ProfileViewProps, StatusValue } from './types/profile.types';
 import type { MusicDiaryEntry } from './services/profile-music.service';
 import type { DailySongTrack } from './services/profile-daily-song.service';
-import type { MusicLibraryTrack } from './services/profile-music-library.service';
-import type { MusicPlaylist } from './services/profile-music-library.service';
+import type { MusicLibraryTrack, MusicPlaylist } from './services/profile-music-library.service';
 import { useProfile } from './hooks/useProfile';
 import { useProfileStats } from './hooks/useProfileStats';
 import { useProfileSignatures } from './hooks/useProfileSignatures';
@@ -31,6 +30,7 @@ import './profile-global.css';
 import './profile-videos-tab-2026.css';
 import './profile-tuenti-2026.css';
 import './profile-media-upload.css';
+import './profile-media-final-2026.css';
 
 const STATUS_META: Record<StatusValue, { label: string; className: string }> = { conectado: { label: 'Conectado', className: 'online' }, ausente: { label: 'Ausente', className: 'away' }, desconectado: { label: 'Desconectado', className: 'offline' } };
 const normalizeStatus = (value: string | null | undefined): StatusValue => value === 'ausente' || value === 'desconectado' ? value : 'conectado';
@@ -96,7 +96,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
 
   return <section className="profile-view-page">
     {uploadingMedia && <div className="profile-media-upload-status" role="status" aria-live="polite">Subiendo imagen…</div>}
-    <ProfileHeader profile={displayProfile} displayName={displayName} handle={handle} avatar={displayProfile.avatar_url || ''} banner={displayProfile.banner_url || ''} isOwnProfile={ownProfile} status={effectiveStatus} statusLabel={statusMeta.label} statusClassName={statusMeta.className} savingStatus={savingStatus} savingHashtag={savingHashtag} editingHashtag={editingHashtag} hashtagDraft={hashtagDraft} editingBio={editingBio} bioDraft={bioDraft} savingBio={savingBio} onMediaFileSelected={(target: MediaTarget, file: File) => { void handleMediaFileSelected(target, file); }} onStatusChange={saveStatus} onStartHashtagEdit={() => setEditingHashtag(true)} onHashtagDraftChange={setHashtagDraft} onSaveHashtag={() => void saveHashtag()} onCancelHashtag={() => { setEditingHashtag(false); setHashtagDraft(displayProfile.profile_hashtag || ''); }} onStartBioEdit={() => { if (ownProfile) setEditingBio(true); }} onBioDraftChange={setBioDraft} onSaveBio={() => void saveBio()} onCancelBio={() => setEditingBio(false)} />
+    <ProfileHeader profile={displayProfile} displayName={displayName} handle={handle} avatar={displayProfile.avatar_url || ''} banner={displayProfile.banner_url || ''} isOwnProfile={ownProfile} status={effectiveStatus} statusLabel={statusMeta.label} statusClassName={statusMeta.className} savingStatus={savingStatus} savingHashtag={savingHashtag} editingHashtag={editingHashtag} hashtagDraft={hashtagDraft} editingBio={editingBio} bioDraft={bioDraft} savingBio={savingBio} onMediaFileSelected={handleMediaFileSelected} onStatusChange={saveStatus} onStartHashtagEdit={() => setEditingHashtag(true)} onHashtagDraftChange={setHashtagDraft} onSaveHashtag={() => void saveHashtag()} onCancelHashtag={() => { setEditingHashtag(false); setHashtagDraft(displayProfile.profile_hashtag || ''); }} onStartBioEdit={() => { if (ownProfile) setEditingBio(true); }} onBioDraftChange={setBioDraft} onSaveBio={() => void saveBio()} onCancelBio={() => setEditingBio(false)} />
     <ProfileTabs activeTab={activeTab} onChange={setActiveTab} />
     <div className="profile-view-layout">
       <ProfileSideNav activeTab={activeTab} onChange={setActiveTab} />
