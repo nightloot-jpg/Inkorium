@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, InkoriumNotification, AccessLog, UserActivity, UserPresence } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { fetchPosts, createPost } from '../lib/postsApi';
 
 interface ChatWindow { targetUserId: string; minimized: boolean; }
 interface InkoriumContextType {
@@ -34,12 +35,10 @@ interface InkoriumContextType {
 }
 
 const InkoriumContext = createContext<InkoriumContextType | undefined>(undefined);
-
 const EMPTY_USER: User = { id: '', nombre: '', apellidos: '', email: '', sexo: 'otro', fnac: '', provincia: '', ciudad: undefined, estado: '', estadoFecha: '', situacionSentimental: 'Soltero/a', avatar: '', fechaReg: '', online: false, ultimoAcceso: '', chatEstado: '0' };
 
 export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [currentUserId, setCurrentUserId] = useState('');
+  const [users, setUsers] = useState<User[]>([]); const [currentUserId, setCurrentUserId] = useState('');
   const [photos, setPhotos] = useState<Photo[]>([]); const [albums, setAlbums] = useState<Album[]>([]); const [feed, setFeed] = useState<FeedItem[]>([]); const [wallComments, setWallComments] = useState<WallComment[]>([]);
   const [messages, setMessages] = useState<PrivateMessage[]>([]); const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]); const [friendships, setFriendships] = useState<Friendship[]>([]); const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [notifications, setNotifications] = useState<InkoriumNotification[]>([]); const [toasts, setToasts] = useState<InkoriumNotification[]>([]); const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]); const [activities, setActivities] = useState<UserActivity[]>([]);
@@ -69,6 +68,19 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, 100);
   }, [mapProfileToUser, currentUserId]);
 
+  const fetchAndMapPosts = useCallback(async () => {
+    try {
+      const rows = await fetchPosts(100);
+      const mapped: FeedItem[] = rows.map(row => {
+        const author = users.find(u => u.id === row.author_id);
+        let photoUrl = '';
+        if (row.media_data && typeof row.media_data === 'object' && 'url' in (row.media_data as any)) photoUrl = String((row.media_data as any).url || '');
+        return { id: row.id, tipo: photoUrl ? 'foto' : 'estado', propietarioId: row.author_id, propietarioNombre: author ? `${author.nombre} ${author.apellidos}`.trim() : 'Usuario', propietarioAvatar: author?.avatar || '', datos: row.content, fotoUrl: photoUrl || undefined, fecha: row.created_at, likes: [], comentarios: [] };
+      });
+      setFeed(mapped);
+    } catch (error) { console.error('Posts load failed:', error); }
+  }, [users]);
+
   useEffect(() => {
     if (!supabase || !isSupabaseConfigured) return; let mounted = true;
     void supabase.auth.getSession().then(({ data }) => { if (!mounted) return; setCurrentUserId(data.session?.user?.id || ''); setIsLoggedIn(Boolean(data.session?.user)); void fetchProfiles(); });
@@ -77,22 +89,18 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => { mounted = false; if (profilesTimer.current) clearTimeout(profilesTimer.current); auth.subscription.unsubscribe(); void supabase.removeChannel(channel); };
   }, [fetchProfiles]);
 
+  useEffect(() => { if (users.length > 0 || isSupabaseConfigured) void fetchAndMapPosts(); }, [users.length, fetchAndMapPosts]);
+
   const currentUser = users.find(user => user.id === currentUserId) || EMPTY_USER;
-  const updateUserPresence = useCallback((presencia: UserPresence) => {
-    if (!currentUserId) return;
-    setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, presencia, online: presencia !== 'invisible', chatEstado: presencia === 'invisible' ? '0' : '1' } : user));
-    localStorage.setItem('inkorium:presence', presencia);
-  }, [currentUserId]);
+  const updateUserPresence = useCallback((presencia: UserPresence) => { if (!currentUserId) return; setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, presencia, online: presencia !== 'invisible', chatEstado: presencia === 'invisible' ? '0' : '1' } : user)); localStorage.setItem('inkorium:presence', presencia); }, [currentUserId]);
+  const publishStatus = useCallback((statusText: string, attachedPhotoUrl?: string) => { if (!statusText.trim() && !attachedPhotoUrl) return; void createPost(statusText.trim(), attachedPhotoUrl).then(row => { const author = users.find(u => u.id === row.author_id) || currentUser; const photoUrl = row.media_data && typeof row.media_data === 'object' && 'url' in (row.media_data as any) ? String((row.media_data as any).url || '') : attachedPhotoUrl || ''; const item: FeedItem = { id: row.id, tipo: photoUrl ? 'foto' : 'estado', propietarioId: row.author_id, propietarioNombre: `${author.nombre} ${author.apellidos}`.trim() || 'Usuario', propietarioAvatar: author.avatar, datos: row.content, fotoUrl: photoUrl || undefined, fecha: row.created_at, likes: [], comentarios: [] }; setFeed(prev => [item, ...prev]); }).catch(error => { console.error('Post create failed:', error); alert('No se ha podido publicar. Revisa tu sesión e inténtalo de nuevo.'); }); }, [currentUser, users]);
   const updateUserData = useCallback((data: Partial<User>) => { if (!currentUserId) return; setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, ...data } : user)); }, [currentUserId]);
   const noop = useCallback((..._args: any[]) => {}, []);
-  const setActiveTab = useCallback((tab: InkoriumContextType['activeTab']) => setActiveTabState(tab), []);
-  const viewUserProfile = useCallback((id: string) => { setSelectedUserId(id); setActiveTabState('perfil'); }, []);
-  const viewPhoto = useCallback((id: string | null) => setSelectedPhotoId(id), []); const viewAlbum = useCallback((id: string | null) => setSelectedAlbumId(id), []);
-  const login = useCallback((_email: string, _password?: string) => ({ success: isLoggedIn }), [isLoggedIn]); const loginAsUser = useCallback((id: string) => { setCurrentUserId(id); setIsLoggedIn(true); }, []);
-  const logout = useCallback(() => { if (supabase) void supabase.auth.signOut(); setCurrentUserId(''); setIsLoggedIn(false); }, []); const setCurrentUserById = useCallback((id: string) => setCurrentUserId(id), []);
-  const setIsRealtime = useCallback((enabled: boolean) => setIsRealtimeSimulationEnabledState(enabled), []); const pushNotification = useCallback((notif: InkoriumNotification) => setNotifications(prev => [notif, ...prev]), []);
+  const setActiveTab = useCallback((tab: InkoriumContextType['activeTab']) => setActiveTabState(tab), []); const viewUserProfile = useCallback((id: string) => { setSelectedUserId(id); setActiveTabState('perfil'); }, []); const viewPhoto = useCallback((id: string | null) => setSelectedPhotoId(id), []); const viewAlbum = useCallback((id: string | null) => setSelectedAlbumId(id), []);
+  const login = useCallback((_email: string, _password?: string) => ({ success: isLoggedIn }), [isLoggedIn]); const loginAsUser = useCallback((id: string) => { setCurrentUserId(id); setIsLoggedIn(true); }, []); const logout = useCallback(() => { if (supabase) void supabase.auth.signOut(); setCurrentUserId(''); setIsLoggedIn(false); }, []); const setCurrentUserById = useCallback((id: string) => setCurrentUserId(id), []);
+  const setIsRealtime = useCallback((enabled: boolean) => setIsRealtimeSimulationEnabledState(enabled)); const pushNotification = useCallback((notif: InkoriumNotification) => setNotifications(prev => [notif, ...prev]), []);
 
-  return <InkoriumContext.Provider value={{ currentUser, users, photos, albums, feed, wallComments, messages, friendRequests, friendships, chatMessages, notifications, toasts, accessLogs, activities, activeChatWindows, activeTab, selectedUserId, selectedPhotoId, selectedAlbumId, unreadMessagesCount: 0, unreadNotificationsCount: 0, pendingRequestsCount: 0, isRealtimeSimulationEnabled, isLoggedIn, setActiveTab, viewUserProfile, viewPhoto, viewAlbum, setCurrentUserById, login, loginAsUser, logout, publishStatus: noop, updateStatusText: noop, updateUserPresence, likeFeedItem: noop, commentFeedItem: noop, postWallComment: noop, deleteWallComment: noop, uploadPhoto: noop, addPhotoTag: noop, removePhotoTag: noop, addPhotoComment: noop, likePhoto: noop, setPhotoAsAvatar: noop, deletePhoto: noop, createAlbum: noop, renameAlbum: noop, deleteAlbum: noop, sendFriendRequest: noop, acceptFriendRequest: noop, ignoreFriendRequest: noop, isFriend: () => false, hasPendingRequest: () => false, getFriendsOf: () => [], sendPrivateMessage: noop, markMessageAsRead: noop, deleteMessage: noop, openChatWith: noop, closeChat: noop, toggleMinimizeChat: noop, sendChatMessage: noop, setChatEstado: noop, logUserActivity: noop, deleteUserActivity: noop, getUserActivities: () => [], pushNotification, dismissToast: noop, markNotificationAsRead: noop, markAllNotificationsAsRead: noop, deleteNotification: noop, setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage: noop, simulateWallComment: noop, simulateFriendRequest: noop, simulatePhotoInteraction: noop, updateUserData, resetToDefaultData: noop, registerNewUser: noop }}>{children}</InkoriumContext.Provider>;
+  return <InkoriumContext.Provider value={{ currentUser, users, photos, albums, feed, wallComments, messages, friendRequests, friendships, chatMessages, notifications, toasts, accessLogs, activities, activeChatWindows, activeTab, selectedUserId, selectedPhotoId, selectedAlbumId, unreadMessagesCount: 0, unreadNotificationsCount: 0, pendingRequestsCount: 0, isRealtimeSimulationEnabled, isLoggedIn, setActiveTab, viewUserProfile, viewPhoto, viewAlbum, setCurrentUserById, login, loginAsUser, logout, publishStatus, updateStatusText: noop, updateUserPresence, likeFeedItem: noop, commentFeedItem: noop, postWallComment: noop, deleteWallComment: noop, uploadPhoto: noop, addPhotoTag: noop, removePhotoTag: noop, addPhotoComment: noop, likePhoto: noop, setPhotoAsAvatar: noop, deletePhoto: noop, createAlbum: noop, renameAlbum: noop, deleteAlbum: noop, sendFriendRequest: noop, acceptFriendRequest: noop, ignoreFriendRequest: noop, isFriend: () => false, hasPendingRequest: () => false, getFriendsOf: () => [], sendPrivateMessage: noop, markMessageAsRead: noop, deleteMessage: noop, openChatWith: noop, closeChat: noop, toggleMinimizeChat: noop, sendChatMessage: noop, setChatEstado: noop, logUserActivity: noop, deleteUserActivity: noop, getUserActivities: () => [], pushNotification, dismissToast: noop, markNotificationAsRead: noop, markAllNotificationsAsRead: noop, deleteNotification: noop, setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage: noop, simulateWallComment: noop, simulateFriendRequest: noop, simulatePhotoInteraction: noop, updateUserData, resetToDefaultData: noop, registerNewUser: noop }}>{children}</InkoriumContext.Provider>;
 };
 
 export const useInkorium = () => { const ctx = useContext(InkoriumContext); if (!ctx) throw new Error('useInkorium debe usarse dentro de InkoriumProvider'); return ctx; };
