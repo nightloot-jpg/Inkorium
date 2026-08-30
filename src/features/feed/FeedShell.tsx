@@ -20,6 +20,7 @@ import "./feed-post-media-2026.css";
 import "./feed-comments-2026.css";
 import "./feed-left-rail-2026.css";
 import "./feed-right-rail-2026.css";
+import "../../nuenti-migration.css";
 
 type Props = {
   session: Session;
