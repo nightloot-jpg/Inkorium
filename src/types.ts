@@ -4,6 +4,8 @@ export type RelationshipStatus = 'Soltero/a' | 'Con pareja' | 'En una relación'
 
 export interface User {
   id: string;
+  username?: string;
+  full_name?: string;
   nombre: string;
   apellidos: string;
   email: string;

@@ -65,9 +65,13 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
     const q = e.target.value;
     setSearchQuery(q);
     if (q.trim().length > 0) {
+      const lower = q.toLowerCase();
       const results = users.filter(u => 
-        `${u.nombre} ${u.apellidos}`.toLowerCase().includes(q.toLowerCase()) ||
-        u.provincia.toLowerCase().includes(q.toLowerCase())
+        `${u.nombre} ${u.apellidos}`.toLowerCase().includes(lower) ||
+        (u.full_name && u.full_name.toLowerCase().includes(lower)) ||
+        (u.username && u.username.toLowerCase().includes(lower)) ||
+        (u.ciudad && u.ciudad.toLowerCase().includes(lower)) ||
+        (u.provincia && u.provincia.toLowerCase().includes(lower))
       );
       setSearchResults(results);
       setShowSearchResults(true);

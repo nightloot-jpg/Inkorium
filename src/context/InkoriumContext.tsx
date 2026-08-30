@@ -187,44 +187,87 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
   const [activeChatWindows, setActiveChatWindows] = useState<ChatWindow[]>([]);
 
+  // Helper to map Supabase profiles row to Inkorium User
+  const mapProfileToUser = useCallback((p: any): User => {
+    const username = (p.username || '').trim();
+    const fullName = (p.full_name || p.nombre || p.name || '').trim();
+    
+    let nombre = '';
+    let apellidos = '';
+    
+    if (fullName) {
+      const parts = fullName.split(/\s+/);
+      nombre = parts[0] || '';
+      apellidos = parts.slice(1).join(' ') || '';
+    } else if (username) {
+      nombre = username;
+      apellidos = '';
+    } else {
+      const shortId = p.id ? p.id.substring(0, 6) : 'anon';
+      nombre = `Usuario_${shortId}`;
+      apellidos = '';
+    }
+
+    const avatar = p.avatar_url || p.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80';
+    const rawCity = (p.city || p.ciudad || p.provincia || '').trim();
+    const provincia = rawCity || 'España';
+    const ciudad = rawCity || undefined;
+    const estado = (p.user_status || p.status || p.estado || '').trim();
+    const fnac = p.birth_date || p.fnac || '2000-01-01';
+    const fechaReg = p.created_at 
+      ? new Date(p.created_at).toLocaleDateString('es-ES') 
+      : (p.updated_at ? new Date(p.updated_at).toLocaleDateString('es-ES') : 'Reciente');
+
+    return {
+      id: p.id,
+      username: username || undefined,
+      full_name: fullName || undefined,
+      nombre,
+      apellidos,
+      email: p.email || (username ? `${username}@inkorium.es` : ''),
+      sexo: p.sexo === 'm' || p.gender === 'm' || p.gender === 'female' ? 'm' : (p.sexo === 'otro' ? 'otro' : 'h'),
+      fnac,
+      provincia,
+      ciudad,
+      estado,
+      estadoFecha: p.updated_at ? 'Reciente' : '',
+      situacionSentimental: p.relationship_status || p.situacion_sentimental || 'Soltero/a',
+      ocupacion: p.occupation || p.ocupacion || '',
+      intereses: p.profile_interests || p.intereses || '',
+      musica: p.music || p.musica || '',
+      avatar,
+      fechaReg,
+      online: Boolean(p.online !== false),
+      ultimoAcceso: p.ultimo_acceso || 'Recientemente',
+      chatEstado: p.chat_estado || '1'
+    };
+  }, []);
+
   // Function to refresh users from Supabase profiles
   const fetchSupabaseProfiles = useCallback(async (currentAuthUser?: User) => {
     if (!isSupabaseConfigured || !supabase) return;
     try {
       const { data, error } = await supabase.from('profiles').select('*');
-      if (!error && data && Array.isArray(data)) {
-        const mappedUsers: User[] = data.map((p: any) => ({
-          id: p.id,
-          nombre: p.nombre || p.name || 'Usuario',
-          apellidos: p.apellidos || '',
-          email: p.email || '',
-          sexo: p.sexo || 'h',
-          fnac: p.fnac || '2000-01-01',
-          provincia: p.provincia || 'Madrid',
-          ciudad: p.ciudad || p.provincia || 'Madrid',
-          estado: p.estado || '',
-          estadoFecha: p.estado_fecha || 'Reciente',
-          situacionSentimental: p.situacion_sentimental || 'Soltero/a',
-          avatar: p.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-          fechaReg: p.fecha_reg || new Date().toLocaleDateString('es-ES'),
-          online: Boolean(p.online),
-          ultimoAcceso: p.ultimo_acceso || 'Recientemente',
-          chatEstado: p.chat_estado || '1'
-        }));
+      if (error) {
+        console.warn('Error fetching Supabase profiles:', error.message);
+        return;
+      }
+      if (data && Array.isArray(data)) {
+        const mappedUsers: User[] = data.map(p => mapProfileToUser(p));
 
         setUsers(prev => {
           const list = [...mappedUsers];
           // Ensure current user is in list if not yet returned by profiles
-          if (currentAuthUser && !list.find(u => u.id === currentAuthUser.id || u.email === currentAuthUser.email)) {
+          if (currentAuthUser && !list.find(u => u.id === currentAuthUser.id || (currentAuthUser.email && u.email === currentAuthUser.email))) {
             list.unshift(currentAuthUser);
           }
           return list;
         });
       }
     } catch (err) {
-      console.warn('Error fetching Supabase profiles:', err);
+      console.warn('Error connecting to Supabase profiles:', err);
     }
-  }, []);
+  }, [mapProfileToUser]);
 
   // Listen to Supabase auth session changes & sync user profiles
   useEffect(() => {

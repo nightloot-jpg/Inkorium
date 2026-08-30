@@ -13,65 +13,100 @@ export const PeopleSearch: React.FC = () => {
     hasPendingRequest
   } = useInkorium();
 
+  const [generalQuery, setGeneralQuery] = useState('');
   const [nombre, setNombre] = useState('');
   const [apellidos, setApellidos] = useState('');
   const [sexo, setSexo] = useState<string>('');
-  const [edadMenor, setEdadMenor] = useState<string>('14');
-  const [edadMayor, setEdadMayor] = useState<string>('60');
+  const [edadMenor, setEdadMenor] = useState<string>('');
+  const [edadMayor, setEdadMayor] = useState<string>('');
   const [provincia, setProvincia] = useState<string>('all');
   const [page, setPage] = useState<number>(1);
 
   const ITEMS_PER_PAGE = 15;
 
+  // Other users in database (excluding current user)
+  const otherUsersInDb = useMemo(() => {
+    return users.filter(u => !currentUser?.id || u.id !== currentUser.id);
+  }, [users, currentUser?.id]);
+
   // Filtered list
   const filteredUsers = useMemo(() => {
-    return users.filter(user => {
-      // Don't show current user in search results
-      if (user.id === currentUser.id) return false;
+    return otherUsersInDb.filter(user => {
+      // 1. General search box (matches name, username, city, province)
+      if (generalQuery.trim()) {
+        const q = generalQuery.trim().toLowerCase();
+        const matchesGeneral = 
+          (user.nombre && user.nombre.toLowerCase().includes(q)) ||
+          (user.apellidos && user.apellidos.toLowerCase().includes(q)) ||
+          (user.username && user.username.toLowerCase().includes(q)) ||
+          (user.full_name && user.full_name.toLowerCase().includes(q)) ||
+          (user.ciudad && user.ciudad.toLowerCase().includes(q)) ||
+          (user.provincia && user.provincia.toLowerCase().includes(q)) ||
+          (user.email && user.email.toLowerCase().includes(q));
 
-      // Filter by name
-      if (nombre.trim() && !user.nombre.toLowerCase().includes(nombre.trim().toLowerCase())) {
-        return false;
+        if (!matchesGeneral) return false;
       }
 
-      // Filter by surname
-      if (apellidos.trim() && !user.apellidos.toLowerCase().includes(apellidos.trim().toLowerCase())) {
-        return false;
+      // 2. Filter by Name / Username
+      if (nombre.trim()) {
+        const nq = nombre.trim().toLowerCase();
+        const matchesName = 
+          (user.nombre && user.nombre.toLowerCase().includes(nq)) ||
+          (user.username && user.username.toLowerCase().includes(nq)) ||
+          (user.full_name && user.full_name.toLowerCase().includes(nq));
+        if (!matchesName) return false;
       }
 
-      // Filter by gender
+      // 3. Filter by Surname
+      if (apellidos.trim()) {
+        const aq = apellidos.trim().toLowerCase();
+        const matchesSurname = 
+          (user.apellidos && user.apellidos.toLowerCase().includes(aq)) ||
+          (user.full_name && user.full_name.toLowerCase().includes(aq));
+        if (!matchesSurname) return false;
+      }
+
+      // 4. Filter by Gender (only if specified)
       if (sexo && user.sexo !== sexo) {
         return false;
       }
 
-      // Filter by province
-      if (provincia !== 'all' && user.provincia.toLowerCase() !== provincia.toLowerCase()) {
-        return false;
+      // 5. Filter by Province / City
+      if (provincia !== 'all') {
+        const pq = provincia.toLowerCase();
+        const matchesLocation = 
+          (user.provincia && user.provincia.toLowerCase().includes(pq)) ||
+          (user.ciudad && user.ciudad.toLowerCase().includes(pq));
+        if (!matchesLocation) return false;
       }
 
-      // Filter by age
-      const birthYear = parseInt(user.fnac.split('-')[0], 10) || 1993;
-      const userAge = new Date().getFullYear() - birthYear;
-      const minAge = parseInt(edadMenor, 10) || 14;
-      const maxAge = parseInt(edadMayor, 10) || 100;
-
-      if (userAge < minAge || userAge > maxAge) {
-        return false;
+      // 6. Filter by Age (only if user explicitly specified min or max)
+      const minAge = parseInt(edadMenor, 10);
+      const maxAge = parseInt(edadMayor, 10);
+      
+      if (!isNaN(minAge) || !isNaN(maxAge)) {
+        const birthYear = parseInt(user.fnac.split('-')[0], 10);
+        if (!isNaN(birthYear)) {
+          const userAge = new Date().getFullYear() - birthYear;
+          if (!isNaN(minAge) && userAge < minAge) return false;
+          if (!isNaN(maxAge) && userAge > maxAge) return false;
+        }
       }
 
       return true;
     });
-  }, [users, currentUser.id, nombre, apellidos, sexo, provincia, edadMenor, edadMayor]);
+  }, [otherUsersInDb, generalQuery, nombre, apellidos, sexo, provincia, edadMenor, edadMayor]);
 
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE) || 1;
   const paginatedUsers = filteredUsers.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const handleResetFilters = () => {
+    setGeneralQuery('');
     setNombre('');
     setApellidos('');
     setSexo('');
-    setEdadMenor('14');
-    setEdadMayor('60');
+    setEdadMenor('');
+    setEdadMayor('');
     setProvincia('all');
     setPage(1);
   };
@@ -96,12 +131,27 @@ export const PeopleSearch: React.FC = () => {
               </button>
             </div>
 
-            {/* Nombre */}
+            {/* Búsqueda rápida */}
             <div>
-              <label className="font-bold text-gray-700 block mb-1">Nombre</label>
+              <label className="font-bold text-gray-700 block mb-1">Búsqueda rápida</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Nombre, @usuario, ciudad..."
+                  value={generalQuery}
+                  onChange={e => { setGeneralQuery(e.target.value); setPage(1); }}
+                  className="w-full p-2 pl-7 rounded border border-gray-300 text-xs focus:outline-none focus:border-[#3869A0]"
+                />
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2 top-2.5" />
+              </div>
+            </div>
+
+            {/* Nombre o usuario */}
+            <div>
+              <label className="font-bold text-gray-700 block mb-1">Nombre o @usuario</label>
               <input
                 type="text"
-                placeholder="Escribe un nombre..."
+                placeholder="Ej. Bárbara, nightloot..."
                 value={nombre}
                 onChange={e => { setNombre(e.target.value); setPage(1); }}
                 className="w-full p-2 rounded border border-gray-300 text-xs focus:outline-none focus:border-[#3869A0]"
@@ -128,7 +178,7 @@ export const PeopleSearch: React.FC = () => {
                 onChange={e => { setSexo(e.target.value); setPage(1); }}
                 className="w-full p-2 rounded border border-gray-300 text-xs focus:outline-none focus:border-[#3869A0] bg-white"
               >
-                <option value="">Ambos (Chico y Chica)</option>
+                <option value="">Cualquiera (Todos)</option>
                 <option value="m">Chica (Mujer)</option>
                 <option value="h">Chico (Hombre)</option>
               </select>
@@ -136,12 +186,13 @@ export const PeopleSearch: React.FC = () => {
 
             {/* Edad */}
             <div>
-              <label className="font-bold text-gray-700 block mb-1">Por rango de edad</label>
+              <label className="font-bold text-gray-700 block mb-1">Rango de edad (opcional)</label>
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">De</span>
                 <input
                   type="number"
-                  min="14"
+                  placeholder="Min"
+                  min="1"
                   max="99"
                   value={edadMenor}
                   onChange={e => { setEdadMenor(e.target.value); setPage(1); }}
@@ -150,7 +201,8 @@ export const PeopleSearch: React.FC = () => {
                 <span className="text-gray-500">a</span>
                 <input
                   type="number"
-                  min="14"
+                  placeholder="Max"
+                  min="1"
                   max="99"
                   value={edadMayor}
                   onChange={e => { setEdadMayor(e.target.value); setPage(1); }}
@@ -162,7 +214,7 @@ export const PeopleSearch: React.FC = () => {
 
             {/* Provincia */}
             <div>
-              <label className="font-bold text-gray-700 block mb-1">Por provincia</label>
+              <label className="font-bold text-gray-700 block mb-1">Por provincia o ciudad</label>
               <select
                 value={provincia}
                 onChange={e => { setProvincia(e.target.value); setPage(1); }}
@@ -177,7 +229,7 @@ export const PeopleSearch: React.FC = () => {
 
             <div className="pt-2">
               <div className="p-2.5 bg-blue-50/70 border border-blue-200 rounded text-gray-600 text-[11px] leading-relaxed">
-                💡 <b>Inkorium Tip:</b> Agrega a gente de tu misma ciudad o provincia para ver sus fotos y firmar en su tablón.
+                💡 <b>Inkorium:</b> Conecta con personas reales en la comunidad, visualiza sus fotos y participa en sus tablones.
               </div>
             </div>
           </div>
@@ -191,26 +243,31 @@ export const PeopleSearch: React.FC = () => {
                 <Users className="w-5 h-5 text-[#3869A0]" />
                 <span>Resultados de la búsqueda ({filteredUsers.length})</span>
               </h1>
+              {otherUsersInDb.length > 0 && (
+                <span className="text-[11px] text-gray-500 font-medium">
+                  Total en Inkorium: {otherUsersInDb.length} {otherUsersInDb.length === 1 ? 'usuario' : 'usuarios'}
+                </span>
+              )}
             </div>
 
             {/* Grid of Results */}
             {filteredUsers.length === 0 ? (
               <div className="text-center py-16 px-4 space-y-2">
                 <Users className="w-10 h-10 text-gray-300 mx-auto" />
-                <p className="text-gray-600 font-semibold text-xs">
-                  {users.length <= 1 
-                    ? 'Aún no hay otros usuarios registrados en Supabase.' 
-                    : 'No se han encontrado usuarios con estos filtros.'}
+                <p className="text-gray-700 font-bold text-sm">
+                  {otherUsersInDb.length === 0
+                    ? 'Aún no hay otros usuarios registrados en la base de datos.' 
+                    : 'No se han encontrado usuarios con los filtros aplicados.'}
                 </p>
-                <p className="text-gray-400 text-[11px]">
-                  {users.length <= 1
-                    ? 'Los usuarios que se registren en la base de datos aparecerán aquí automáticamente.'
-                    : 'Prueba a limpiar los filtros o buscar con otros términos.'}
+                <p className="text-gray-400 text-xs max-w-md mx-auto">
+                  {otherUsersInDb.length === 0
+                    ? 'Los perfiles que se registren en Supabase aparecerán aquí automáticamente.'
+                    : 'Prueba a limpiar los filtros o buscar con otros términos como el nombre de usuario o ciudad.'}
                 </p>
-                {users.length > 1 && (
+                {otherUsersInDb.length > 0 && (
                   <button
                     onClick={handleResetFilters}
-                    className="mt-2 px-3 py-1.5 bg-blue-50 text-[#3869A0] font-bold text-xs rounded border border-blue-200 hover:bg-blue-100 transition cursor-pointer"
+                    className="mt-3 px-4 py-2 bg-[#3869A0] text-white font-bold text-xs rounded hover:bg-[#2e5786] transition cursor-pointer shadow-xs"
                   >
                     Restablecer filtros
                   </button>
@@ -219,10 +276,16 @@ export const PeopleSearch: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {paginatedUsers.map(user => {
-                  const birthYear = parseInt(user.fnac.split('-')[0], 10) || 1993;
-                  const age = new Date().getFullYear() - birthYear;
+                  const birthYear = parseInt(user.fnac?.split('-')[0], 10);
+                  const hasValidAge = !isNaN(birthYear) && birthYear > 1900 && birthYear < new Date().getFullYear();
+                  const age = hasValidAge ? new Date().getFullYear() - birthYear : null;
+                  
                   const friend = isFriend(currentUser.id, user.id);
                   const pending = hasPendingRequest(currentUser.id, user.id);
+
+                  const displayName = user.full_name || 
+                    (user.nombre && user.apellidos ? `${user.nombre} ${user.apellidos}` : (user.nombre || user.username || `Usuario ${user.id.substring(0, 5)}`));
+                  const displayLocation = user.ciudad || user.provincia || 'España';
 
                   return (
                     <div
@@ -233,26 +296,37 @@ export const PeopleSearch: React.FC = () => {
                         onClick={() => viewUserProfile(user.id)}
                         className="cursor-pointer group"
                       >
-                        <div className="aspect-square rounded bg-gray-100 overflow-hidden mb-2 border relative">
+                        <div className="aspect-square rounded bg-gray-100 overflow-hidden mb-2 border border-gray-200 relative">
                           <img
                             src={user.avatar}
-                            alt={user.nombre}
+                            alt={displayName}
                             className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80';
+                            }}
                           />
                           {user.online && (
                             <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white shadow" title="Conectado" />
                           )}
                         </div>
 
-                        <h3 className="font-bold text-xs text-[#3869A0] group-hover:underline truncate">
-                          {user.nombre} {user.apellidos}
+                        <h3 className="font-bold text-xs text-[#3869A0] group-hover:underline truncate" title={displayName}>
+                          {displayName}
                         </h3>
+                        
+                        {user.username && user.username !== displayName && (
+                          <p className="text-[11px] text-gray-500 truncate font-mono">
+                            @{user.username}
+                          </p>
+                        )}
+
                         <p className="text-[11px] text-gray-500 truncate flex items-center gap-1 mt-0.5">
                           <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                          <span>{user.provincia} • {age} años</span>
+                          <span>{displayLocation}{age ? ` • ${age} años` : ''}</span>
                         </p>
+
                         {user.estado && (
-                          <p className="text-[10px] text-gray-600 line-clamp-1 italic mt-1 bg-gray-50 p-1 rounded">
+                          <p className="text-[10px] text-gray-600 line-clamp-1 italic mt-1 bg-gray-50 p-1 rounded border border-gray-100">
                             "{user.estado}"
                           </p>
                         )}
