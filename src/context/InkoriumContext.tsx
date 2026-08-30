@@ -90,24 +90,13 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? p.profile_interests.join(', ')
       : String(p.profile_interests ?? p.intereses ?? '').trim();
     return {
-      id: String(p.id),
-      username: username || undefined,
-      full_name: fullName || undefined,
-      nombre: nombre || username || 'Usuario',
-      apellidos,
-      email: String(p.email ?? '').trim(),
+      id: String(p.id), username: username || undefined, full_name: fullName || undefined,
+      nombre: nombre || username || 'Usuario', apellidos, email: String(p.email ?? '').trim(),
       sexo: gender === 'female' || gender === 'mujer' || gender === 'm' ? 'm' : (gender === 'male' || gender === 'hombre' || gender === 'h' ? 'h' : 'otro'),
-      fnac: String(p.birth_date ?? p.fnac ?? '').trim(),
-      provincia: province,
-      ciudad: city || undefined,
-      estado: String(p.user_status ?? p.estado ?? '').trim(),
-      estadoFecha: p.updated_at ? 'Reciente' : '',
-      presencia,
-      situacionSentimental: p.relationship_status ?? p.situacion_sentimental ?? 'Soltero/a',
-      ocupacion: p.occupation ?? p.ocupacion ?? '',
-      intereses,
-      musica: p.music ?? p.musica ?? '',
-      avatar,
+      fnac: String(p.birth_date ?? p.fnac ?? '').trim(), provincia: province, ciudad: city || undefined,
+      estado: String(p.user_status ?? p.estado ?? '').trim(), estadoFecha: p.updated_at ? 'Reciente' : '',
+      presencia, situacionSentimental: p.relationship_status ?? p.situacion_sentimental ?? 'Soltero/a',
+      ocupacion: p.occupation ?? p.ocupacion ?? '', intereses, musica: p.music ?? p.musica ?? '', avatar,
       fechaReg: p.updated_at ? new Date(p.updated_at).toLocaleDateString('es-ES') : 'Reciente',
       online: presencia !== 'invisible' && presenceSource !== 'desconectado',
       ultimoAcceso: p.updated_at ? new Date(p.updated_at).toLocaleString('es-ES') : 'Recientemente',
@@ -121,17 +110,20 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    // Use only stable columns from the current profiles schema. Avoid ordering here:
+    // it is not needed for search and removes a failure point on hosted PostgREST builds.
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, full_name, avatar_url, city, birth_date, user_status, visibility, profile_interests, updated_at')
-      .order('updated_at', { ascending: false, nullsFirst: false });
+      .select('id, username, full_name, avatar_url, city, birth_date, user_status, profile_interests, updated_at')
+      .limit(1000);
 
     if (error) {
-      console.warn('Supabase profiles:', error.message);
+      console.error('Supabase profiles load failed:', error);
       return;
     }
 
-    const mapped = Array.isArray(data) ? data.map(mapProfileToUser).filter(user => Boolean(user.id)) : [];
+    if (!Array.isArray(data)) return;
+    const mapped = data.map(mapProfileToUser).filter(user => Boolean(user.id));
     setUsers(mapped);
   }, [mapProfileToUser]);
 
