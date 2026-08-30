@@ -37,50 +37,12 @@ button, input, textarea, select { font-family: Arial, Helvetica, sans-serif !imp
   background: var(--nuenti-page);
 }
 
-/* Classic Nuenti navbar. */
-.feed-app .topbar {
-  height: 48px !important;
-  min-height: 48px !important;
-  padding: 0 14px !important;
-  background: var(--nuenti-blue) !important;
-  background-image: none !important;
-  box-shadow: 0 2px 5px rgba(0,0,0,.22) !important;
-  border: 0 !important;
-}
-.feed-app .topbar .brand {
-  font-size: 18px !important;
-  font-weight: 700 !important;
-}
-.feed-app .topbar .brand-mark {
-  width: 24px !important;
-  height: 24px !important;
-  background: #fff;
-  border-radius: 2px;
-  object-fit: contain;
-}
-.feed-app .top-nav button {
-  padding: 0 13px !important;
-  color: #fff !important;
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  border: 0 !important;
-  border-radius: 3px 3px 0 0 !important;
-  background: transparent !important;
-}
-.feed-app .top-nav button:hover,
-.feed-app .top-nav button.active {
-  background: rgba(255,255,255,.14) !important;
-  border-bottom: 3px solid #fff !important;
-}
-.feed-app .search-form input {
-  height: 29px !important;
-  border-radius: 3px !important;
-  background: rgba(255,255,255,.94) !important;
-  color: #4e5e6d !important;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,.10) !important;
-}
-.feed-app .icon-button,
-.feed-app .user-chip { border-radius: 3px !important; }
+/* Topbar (.feed-app .topbar, .brand, .top-nav, .search-form, .icon-button,
+   .user-chip) is owned by src/topbar-modern-fix.css, loaded by
+   FeedShell.tsx. Do not redeclare it here: this file previously hardcoded
+   background: var(--nuenti-blue), which overrides the app's selectable
+   color theme (--brand-a/--brand-b, set per .theme-* class in styles.css)
+   with a fixed blue — so switching themes stopped changing the topbar. */
 
 /* Main canvas. */
 .feed-app > main,
@@ -126,142 +88,13 @@ button, input, textarea, select { font-family: Arial, Helvetica, sans-serif !imp
   box-shadow: inset 0 1px rgba(255,255,255,.25) !important;
 }
 
-/* Profile is deliberately brought back to Nuenti's 2000s social layout. */
-.profile-view-page {
-  min-height: 100vh;
-  width: 100% !important;
-  max-width: 997px !important;
-  margin: 0 auto !important;
-  padding: 10px 0 35px !important;
-  background: var(--nuenti-blue) !important;
-  color: var(--nuenti-text) !important;
-  font-family: Arial, Helvetica, sans-serif !important;
-}
-.profile-view-page > .profile-view-cover {
-  height: 205px !important;
-  border: 0 !important;
-  border-radius: 7px 7px 0 0 !important;
-  background-color: #79a7ca !important;
-}
-.profile-view-page > .profile-view-cover::after { display: none !important; }
-.profile-view-cover-placeholder {
-  background: linear-gradient(135deg, #5e8fba, #9fc0d9) !important;
-}
-.profile-view-page > .profile-view-header {
-  min-height: 150px !important;
-  padding: 0 20px 18px 175px !important;
-  background: #fff !important;
-  border: 0 !important;
-  border-radius: 0 0 7px 7px !important;
-  box-shadow: var(--nuenti-shadow) !important;
-}
-.profile-view-page .profile-view-avatar-wrap {
-  position: absolute !important;
-  left: 18px !important;
-  top: -78px !important;
-  margin: 0 !important;
-  width: 145px !important;
-  height: 145px !important;
-}
-.profile-view-page .profile-view-avatar-button,
-.profile-view-page .profile-view-avatar-button .profile-view-avatar,
-.profile-view-page .profile-view-avatar-button .profile-view-avatar-fallback {
-  width: 145px !important;
-  height: 145px !important;
-  border-radius: 7px !important;
-}
-.profile-view-page .profile-view-avatar {
-  border: 4px solid #fff !important;
-  box-shadow: 2px 2px 5px rgba(0,0,0,.28) !important;
-}
-.profile-view-page .profile-view-identity { padding-top: 15px !important; }
-.profile-view-page .profile-view-name-row h1 {
-  font-size: 24px !important;
-  color: #334e68 !important;
-  letter-spacing: 0 !important;
-}
-.profile-view-page .profile-view-handle { color: #8a98a5 !important; }
-.profile-view-page .profile-view-hashtag,
-.profile-view-page .profile-view-hashtag.editable { color: var(--nuenti-link) !important; }
-.profile-view-page .profile-view-bio { color: #5e6d79 !important; }
-.profile-view-page .profile-header-stats { gap: 15px !important; }
-.profile-view-page .profile-header-stat { color: #71808c !important; }
-.profile-view-page .profile-header-stat strong { color: #3869a0 !important; }
-
-/* Nuenti profile navigation: compact tabs, not a SaaS sidebar. */
-.profile-view-page .profile-view-layout {
-  width: 100% !important;
-  padding: 0 !important;
-  margin: 10px auto 0 !important;
-}
-.profile-view-page .profile-side-nav {
-  width: 100% !important;
-  margin-bottom: 10px !important;
-  border: 0 !important;
-  border-radius: 7px !important;
-  background: #fff !important;
-  box-shadow: var(--nuenti-shadow) !important;
-}
-.profile-view-page .profile-side-nav nav {
-  display: grid !important;
-  grid-template-columns: repeat(4, 1fr) !important;
-}
-.profile-view-page .profile-side-nav button {
-  min-height: 39px !important;
-  padding: 7px 10px !important;
-  color: #5b6873 !important;
-  background: #f5f6f7 !important;
-  border-right: 1px solid #d9e0e5 !important;
-  border-bottom: 1px solid #cbd5dc !important;
-  font-size: 13px !important;
-  font-weight: 700 !important;
-}
-.profile-view-page .profile-side-nav button.active {
-  background: #e1edf6 !important;
-  color: #315f89 !important;
-}
-.profile-view-page .profile-side-nav button.active::after { display: none !important; }
-
-/* Two-column Nuenti profile body: 200px info + 740px content. */
-.profile-view-page .profile-view-grid {
-  display: grid !important;
-  grid-template-columns: 200px minmax(0, 1fr) !important;
-  gap: 10px !important;
-  margin: 0 !important;
-}
-.profile-view-page .profile-view-main { grid-column: 2; grid-row: 1; }
-.profile-view-page .profile-view-side { grid-column: 1; grid-row: 1; }
-.profile-view-page .profile-view-card {
-  border: 0 !important;
-  border-radius: 7px !important;
-  box-shadow: var(--nuenti-shadow) !important;
-  padding: 12px !important;
-  margin-bottom: 10px !important;
-}
-.profile-view-page .profile-view-section-head h2,
-.profile-view-page .profile-view-card h2,
-.profile-view-page .profile-view-card-title {
-  color: #3869a0 !important;
-  font-size: 15px !important;
-}
-.profile-view-page .profile-interest-chip {
-  border-radius: 3px !important;
-  background: #e5eff7 !important;
-  color: #3869a0 !important;
-}
-.profile-view-page .profile-view-signature-card { padding: 14px !important; }
-
-/* Make the side information feel like Nuenti's profile facts card. */
-.profile-view-page .profile-view-side .profile-view-stats-list > div {
-  min-height: 31px;
-  border-bottom: 1px solid #edf1f4;
-}
-.profile-view-page .profile-view-side .profile-view-stats-list strong { color: #3869a0; }
-.profile-view-page .profile-friends-item img,
-.profile-view-page .profile-friends-fallback,
-.profile-view-page .profile-activity-avatar {
-  border-radius: 4px !important;
-}
+/* Profile layout, cover, avatar, side-nav and card rules live only in
+   src/features/profile/profile-nuenti-2026.css (loaded by ProfileView.tsx).
+   Do not redeclare .profile-view-page here — a duplicate copy previously
+   existed in this file with different pixel values (e.g. cover 205px vs
+   125px, avatar 145px vs 180px, and an inverted profile-view-grid column
+   order) and silently lost the cascade to profile-nuenti-2026.css, which
+   is the one that actually matches ProfileView.tsx's markup. */
 
 /* Feed posts and comments use the same compact social vocabulary. */
 .feed-app .post-comments,
@@ -283,22 +116,4 @@ button, input, textarea, select { font-family: Arial, Helvetica, sans-serif !imp
 .feed-app .popover {
   border-radius: 5px !important;
   border-color: #c9d4de !important;
-}
-
-@media (max-width: 1020px) {
-  .profile-view-page { max-width: 100% !important; padding-inline: 10px !important; }
-}
-@media (max-width: 760px) {
-  .profile-view-page > .profile-view-cover { height: 160px !important; }
-  .profile-view-page > .profile-view-header { padding: 58px 14px 16px !important; }
-  .profile-view-page .profile-view-avatar-wrap { left: 14px !important; top: -55px !important; width: 100px !important; height: 100px !important; }
-  .profile-view-page .profile-view-avatar-button,
-  .profile-view-page .profile-view-avatar-button .profile-view-avatar,
-  .profile-view-page .profile-view-avatar-button .profile-view-avatar-fallback { width: 100px !important; height: 100px !important; }
-  .profile-view-page .profile-view-grid { grid-template-columns: 1fr !important; }
-  .profile-view-page .profile-view-main,
-  .profile-view-page .profile-view-side { grid-column: 1; grid-row: auto; }
-  .profile-view-page .profile-view-side { display: block !important; }
-  .profile-view-page .profile-side-nav nav { display: flex !important; overflow-x: auto; }
-  .profile-view-page .profile-side-nav button { flex: 0 0 25%; min-width: 100px; }
 }
