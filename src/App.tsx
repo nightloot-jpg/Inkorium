@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useInkorium } from './context/InkoriumContext';
+import { InkoriumProvider, useInkorium } from './context/InkoriumContext';
 import { Navbar } from './components/Navbar';
 import { HomeFeed } from './components/HomeFeed';
 import { ProfileView } from './components/ProfileView';
@@ -51,7 +51,7 @@ const InkoriumAppContent: React.FC = () => {
 };
 
 export function App() {
-  return <InkoriumAppContent />;
+  return <InkoriumProvider><InkoriumAppContent /></InkoriumProvider>;
 }
 
 export default App;
