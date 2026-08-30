@@ -22,7 +22,6 @@ import "./feed-left-rail-2026.css";
 import "./feed-right-rail-2026.css";
 import "../../nuenti-migration.css";
 // Final visual layer: supplied Tuenti/Nuenti ZIP design.
-import "../../tuenti-2026.css";
 import "../../tuenti-zip-design.css";
 
 type Props = {
