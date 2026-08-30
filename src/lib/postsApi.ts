@@ -10,58 +10,54 @@ export interface ApiPost {
   updated_at?: string;
 }
 
-async function getAuthenticatedUser() {
+async function getAccessToken(): Promise<string> {
   if (!supabase) throw new Error('Supabase no está configurado.');
-
   const refreshed = await supabase.auth.refreshSession();
-  if (!refreshed.error && refreshed.data.session?.user) {
-    return refreshed.data.session.user;
-  }
+  if (!refreshed.error && refreshed.data.session?.access_token) return refreshed.data.session.access_token;
+  const current = await supabase.auth.getSession();
+  const token = current.data.session?.access_token;
+  if (!token) throw new Error('No hay una sesión activa en Supabase.');
+  return token;
+}
 
-  const current = await supabase.auth.getUser();
-  if (current.error || !current.data.user) {
-    const message = current.error?.message || refreshed.error?.message || 'No hay una sesión activa en Supabase.';
-    throw new Error(message);
+async function parseResponse(response: Response) {
+  const body = await response.text().catch(() => '');
+  if (!response.ok) {
+    let detail = body;
+    try {
+      const parsed = JSON.parse(body);
+      detail = parsed.message || parsed.error || body;
+    } catch {}
+    throw new Error(`${response.status}: ${detail || 'respuesta vacía del servidor'}`);
   }
-  return current.data.user;
+  return body ? JSON.parse(body) : null;
 }
 
 export async function fetchPosts(limit = 100): Promise<ApiPost[]> {
-  if (!supabase) throw new Error('Supabase no está configurado.');
-
+  const token = await getAccessToken();
   const safeLimit = Math.max(1, Math.min(100, Number(limit) || 100));
-  const { data, error } = await supabase
-    .from('posts')
-    .select('id,author_id,content,visibility,media_data,created_at,updated_at')
-    .order('created_at', { ascending: false })
-    .limit(safeLimit);
-
-  if (error) throw new Error(`Posts load failed: ${error.message}`);
-  return (data || []) as ApiPost[];
+  const response = await fetch(`/api/posts?limit=${encodeURIComponent(String(safeLimit))}`, {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    credentials: 'omit',
+    cache: 'no-store',
+  });
+  const data = await parseResponse(response);
+  return Array.isArray(data) ? data as ApiPost[] : [];
 }
 
 export async function createPost(content: string, mediaUrl?: string): Promise<ApiPost> {
-  if (!supabase) throw new Error('Supabase no está configurado.');
-
+  const token = await getAccessToken();
   const normalizedContent = String(content || '').trim();
   const normalizedMediaUrl = mediaUrl ? String(mediaUrl).trim() : null;
-  if (!normalizedContent && !normalizedMediaUrl) {
-    throw new Error('La publicación está vacía.');
-  }
+  if (!normalizedContent && !normalizedMediaUrl) throw new Error('La publicación está vacía.');
 
-  const user = await getAuthenticatedUser();
-  const { data, error } = await supabase
-    .from('posts')
-    .insert({
-      author_id: user.id,
-      content: normalizedContent,
-      visibility: 'public',
-      media_data: normalizedMediaUrl ? { url: normalizedMediaUrl } : null,
-    })
-    .select('id,author_id,content,visibility,media_data,created_at,updated_at')
-    .single();
-
-  if (error) throw new Error(`Post create failed: ${error.message}`);
-  if (!data) throw new Error('Post create failed: Supabase no devolvió la publicación.');
+  const response = await fetch('/api/posts', {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    credentials: 'omit',
+    body: JSON.stringify({ content: normalizedContent, media_url: normalizedMediaUrl }),
+  });
+  const data = await parseResponse(response);
+  if (!data) throw new Error('El servidor no devolvió la publicación creada.');
   return data as ApiPost;
 }
