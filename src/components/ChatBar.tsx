@@ -29,16 +29,32 @@ export const ChatBar: React.FC = () => {
     setPresence(nextPresence);
     setSavingPresence(true);
     try {
-      const { error } = await supabase?.from('profiles').update({
-        user_status: nextPresence,
-        updated_at: new Date().toISOString()
-      }).eq('id', currentUser.id) || { error: new Error('Supabase no configurado') };
-      if (error) {
-        console.error('Presence update failed:', error);
-        setPresence(previous);
-        return;
+      const sessionResult = await supabase?.auth.getSession();
+      const accessToken = sessionResult?.data.session?.access_token;
+      if (!accessToken) {
+        throw new Error('No hay una sesión de Supabase activa');
       }
+
+      const response = await fetch(`/api/profiles/${encodeURIComponent(currentUser.id)}/presence`, {
+        method: 'PATCH',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`
+        },
+        credentials: 'omit',
+        body: JSON.stringify({ presence: nextPresence })
+      });
+
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        throw new Error(`Presence update failed (${response.status})${detail ? `: ${detail}` : ''}`);
+      }
+
       localStorage.setItem('inkorium:presence', nextPresence);
+    } catch (error) {
+      console.error('Presence update failed:', error);
+      setPresence(previous);
     } finally {
       setSavingPresence(false);
     }
