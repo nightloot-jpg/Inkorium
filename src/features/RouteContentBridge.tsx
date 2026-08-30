@@ -50,12 +50,7 @@ async function loadRouteStyles(page: RoutePage) {
         import('./profile/profile-photos-2026.css'),
         import('./profile/profile-photos-lightbox-2026.css'),
         import('./profile/profile-albums-moments-2026.css'),
-        import('./profile/profile-home-2026.css'),
-        import('./profile/profile-header-tabs-2026.css'),
         import('./profile/profile-music-2026.css'),
-        import('./profile/profile-final-polish-2026.css'),
-        import('./profile/profile-background-fix-2026.css'),
-        import('./profile/profile-enhancements.css'),
       ]);
       break;
     case 'personas':

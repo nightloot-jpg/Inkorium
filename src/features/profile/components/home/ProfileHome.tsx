@@ -1,5 +1,9 @@
 import { BookOpen, Heart, Images, MapPin, Music2, Send, UserRound, Users } from 'lucide-react';
 import type { Profile, ProfileStats, Signature } from '../../types/profile.types';
+import type { ProfileFriend } from '../../services/profile-friends.service';
+import type { ProfileActivityItem } from '../../services/profile-activity.service';
+import { ProfileFriendsCard } from './ProfileFriendsCard';
+import { ProfileRecentActivity } from './ProfileRecentActivity';
 
 type Props = {
   profile: Profile;
@@ -12,9 +16,15 @@ type Props = {
   profileStats: ProfileStats;
   currentSong?: { title?: string | null; artist?: string | null } | null;
   onTogglePlayback: () => void;
+  displayName: string;
+  avatar: string;
+  friends: ProfileFriend[];
+  loadingFriends: boolean;
+  activity: ProfileActivityItem[];
+  loadingActivity: boolean;
 };
 
-export function ProfileHome({ profile, signatures, loadingSignatures, signatureDraft, savingSignature, onSignatureDraftChange, onSubmitSignature, profileStats, currentSong, onTogglePlayback }: Props) {
+export function ProfileHome({ profile, signatures, loadingSignatures, signatureDraft, savingSignature, onSignatureDraftChange, onSubmitSignature, profileStats, currentSong, onTogglePlayback, displayName, avatar, friends, loadingFriends, activity, loadingActivity }: Props) {
   const interests = (profile.profile_interests || []).filter(Boolean).slice(0, 8);
   return (
     <div className="profile-view-grid">
@@ -46,10 +56,13 @@ export function ProfileHome({ profile, signatures, loadingSignatures, signatureD
             </div>
           )}
         </div>
+
+        <ProfileRecentActivity items={activity} loading={loadingActivity} displayName={displayName} avatar={avatar} />
       </main>
       <aside className="profile-view-side">
         <div className="profile-view-card profile-view-intro-card"><div className="profile-view-card-title"><Music2 size={18} /> ¿Qué estás escuchando ahora?</div><button type="button" className="profile-view-listening" onClick={onTogglePlayback}>{currentSong ? `${currentSong.title || 'Canción'} · ${currentSong.artist || ''}` : 'Nada reproduciéndose ahora. Abre el reproductor global para empezar a escuchar música.'}</button></div>
         <div className="profile-view-card"><div className="profile-view-section-head"><h2><Users size={16} /> Estadísticas</h2></div><div className="profile-view-stats-list"><div><Users size={16} /><span>Amigos</span><strong>{profileStats.friends_count}</strong></div><div><Heart size={16} /><span>Seguidores</span><strong>{profileStats.followers_count}</strong></div><div><UserRound size={16} /><span>Siguiendo</span><strong>{profileStats.following_count}</strong></div><div><Images size={16} /><span>Álbumes</span><strong>{profileStats.albums_count}</strong></div></div></div>
+        <ProfileFriendsCard friends={friends} loading={loadingFriends} friendsCount={profileStats.friends_count} />
       </aside>
     </div>
   );
