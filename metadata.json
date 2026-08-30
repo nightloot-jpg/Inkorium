@@ -1,0 +1,6 @@
+{
+  "name": "Inkorium",
+  "description": "Red social nostálgica inspirada en Tuenti y Nuenti con tablón, fotos etiquetadas, álbumes, chat en vivo y buscador de amigos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
