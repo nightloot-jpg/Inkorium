@@ -136,12 +136,9 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const sessionResult = await supabase.auth.getSession();
       const token = sessionResult.data.session?.access_token;
       if (!token) throw new Error('No hay una sesión activa');
-
       const response = await fetch(`/api/profiles/${encodeURIComponent(currentUserId)}/presence`, {
-        method: 'PATCH',
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        credentials: 'omit',
-        body: JSON.stringify({ presence: presencia })
+        method: 'PATCH', headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        credentials: 'omit', body: JSON.stringify({ presence: presencia })
       });
       if (!response.ok) {
         const detail = await response.text().catch(() => '');
@@ -154,9 +151,17 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       localStorage.setItem('inkorium:presence', presencia);
     } catch (error) {
       console.error('Presence update failed:', error);
-      setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, presencia: previous, online: previous !== 'invisible', chatEstado: previous === 'invisible' ? '0' : '1' } : user));
+      setUsers(prev => prev.map(user => user.id === currentUserId
+        ? { ...user, presencia: previous, online: previous !== 'invisible', chatEstado: previous === 'invisible' ? '0' : '1' }
+        : user
+      ));
     }
   }, [currentUserId, currentUser.presencia]);
+
+  const updateUserData = useCallback((data: Partial<User>) => {
+    if (!currentUserId) return;
+    setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, ...data } : user));
+  }, [currentUserId]);
 
   const noop = useCallback((..._args: any[]) => {}, []);
   const setActiveTab = useCallback((tab: InkoriumContextType['activeTab']) => setActiveTabState(tab), []);
@@ -184,7 +189,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     sendChatMessage: noop, setChatEstado: noop, logUserActivity: noop, deleteUserActivity: noop, getUserActivities: () => [],
     pushNotification, dismissToast: noop, markNotificationAsRead: noop, markAllNotificationsAsRead: noop, deleteNotification: noop,
     setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage: noop, simulateWallComment: noop,
-    simulateFriendRequest: noop, simulatePhotoInteraction: noop, updateUserData: noop, resetToDefaultData: noop, registerNewUser: noop
+    simulateFriendRequest: noop, simulatePhotoInteraction: noop, updateUserData, resetToDefaultData: noop, registerNewUser: noop
   }}>{children}</InkoriumContext.Provider>;
 };
 
