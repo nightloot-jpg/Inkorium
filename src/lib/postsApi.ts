@@ -24,11 +24,41 @@ async function parseResponse(response: Response) {
     let detail = body;
     try {
       const parsed = JSON.parse(body);
-      detail = parsed.message || parsed.error || body;
-    } catch {}
-    throw new Error(`${response.status}: ${detail || 'respuesta vacía del servidor'}`);
+      detail = parsed.message || parsed.error || parsed;
+    } catch {
+      // Keep non-JSON responses concise below.
+    }
+    const compactDetail = typeof detail === 'string' ? detail.replace(/\s+/g, ' ').slice(0, 500) : '';
+    throw new Error(`${response.status}: ${compactDetail || 'respuesta vacía del servidor'}`);
   }
   return body ? JSON.parse(body) : null;
+}
+
+function isTransientGatewayStatus(status: number): boolean {
+  return status === 502 || status === 503 || status === 520 || status === 521 || status === 522 || status === 523 || status === 524;
+}
+
+async function requestCreatePost(token: string, content: string, mediaUrl: string | null): Promise<Response> {
+  const maxAttempts = 3;
+  let lastResponse: Response | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const response = await fetch('/api/posts', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      credentials: 'omit',
+      body: JSON.stringify({ content, media_url: mediaUrl, access_token: token }),
+    });
+
+    if (response.ok || !isTransientGatewayStatus(response.status) || attempt === maxAttempts) {
+      return response;
+    }
+
+    lastResponse = response;
+    await new Promise(resolve => setTimeout(resolve, attempt * 700));
+  }
+
+  return lastResponse as Response;
 }
 
 export async function fetchPosts(limit = 100): Promise<ApiPost[]> {
@@ -48,12 +78,7 @@ export async function createPost(content: string, mediaUrl?: string): Promise<Ap
   const normalizedMediaUrl = mediaUrl ? String(mediaUrl).trim() : null;
   if (!normalizedContent && !normalizedMediaUrl) throw new Error('La publicación está vacía.');
 
-  const response = await fetch('/api/posts', {
-    method: 'POST',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-    credentials: 'omit',
-    body: JSON.stringify({ content: normalizedContent, media_url: normalizedMediaUrl, access_token: token }),
-  });
+  const response = await requestCreatePost(token, normalizedContent, normalizedMediaUrl);
   const data = await parseResponse(response);
   if (!data) throw new Error('El servidor no devolvió la publicación creada.');
   return data as ApiPost;
