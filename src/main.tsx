@@ -1,10 +1,9 @@
-import React from "react";
-import { createRoot } from "react-dom/client";
-import { AuthGate } from "./AuthGate";
-import "./nuenti-theme.css";
-import "./nuenti-navbar-spacing.css";
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './tuenti/App';
+import './tuenti/index.css';
 
-const root = document.getElementById("root");
-if (!root) throw new Error("Inkorium root element not found");
+const root = document.getElementById('root');
+if (!root) throw new Error('Inkorium root not found');
 
-createRoot(root).render(<AuthGate />);
+createRoot(root).render(<App />);
