@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { ActivityLog } from './ActivityLog';
+import { AvatarModal } from './AvatarModal';
 import { 
   UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon, 
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
-  Trash2, Send, Check, Shield, UserCheck
+  Trash2, Send, Check, Shield, UserCheck, Camera, Upload
 } from 'lucide-react';
 
 export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload }) => {
@@ -40,6 +41,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const [editingStatus, setEditingStatus] = useState(false);
   const [newStatusText, setNewStatusText] = useState(profileUser.estado);
   const [showDirectMessageModal, setShowDirectMessageModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [mpSubject, setMpSubject] = useState('');
   const [mpBody, setMpBody] = useState('');
 
@@ -95,12 +97,12 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
               />
               {isOwnProfile && (
                 <button
-                  onClick={onOpenUpload}
-                  className="absolute inset-0 bg-black/50 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition rounded flex flex-col items-center justify-center cursor-pointer"
-                  title="Cambiar foto de perfil"
+                  onClick={() => setShowAvatarModal(true)}
+                  className="absolute inset-0 bg-black/60 text-white text-[10px] font-bold opacity-0 group-hover:opacity-100 transition rounded flex flex-col items-center justify-center cursor-pointer"
+                  title="Cambiar foto de perfil / Avatar"
                 >
-                  <ImageIcon className="w-4 h-4 mb-0.5" />
-                  <span>Subir foto</span>
+                  <Camera className="w-4 h-4 mb-0.5" />
+                  <span>Cambiar foto</span>
                 </button>
               )}
             </div>
@@ -211,6 +213,13 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
               </>
             ) : (
               <>
+                <button
+                  onClick={() => setShowAvatarModal(true)}
+                  className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                >
+                  <Camera className="w-3.5 h-3.5 text-[#3869A0]" />
+                  <span>Cambiar avatar</span>
+                </button>
                 <button
                   onClick={() => setActiveTab('ajustes')}
                   className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
@@ -551,6 +560,12 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
           </div>
         </div>
       )}
+
+      {/* Avatar Upload / Change Modal */}
+      <AvatarModal
+        isOpen={showAvatarModal}
+        onClose={() => setShowAvatarModal(false)}
+      />
     </div>
   );
 };

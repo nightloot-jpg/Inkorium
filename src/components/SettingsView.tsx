@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
+import { AvatarModal } from './AvatarModal';
 import { 
   Settings, UserCheck, Shield, KeyRound, UserPlus, 
-  Check, X, RefreshCw, Smartphone, Globe, Sparkles, Bell, Volume2, MessageSquare, Image as ImageIcon
+  Check, X, RefreshCw, Smartphone, Globe, Sparkles, Bell, Volume2, MessageSquare, Image as ImageIcon,
+  Camera, Upload
 } from 'lucide-react';
 import { PROVINCIAS_ESPANA, RelationshipStatus, Gender } from '../types';
 import { isSoundEnabled, toggleSound, playNotificationChime } from '../utils/sound';
@@ -34,6 +36,7 @@ export const SettingsView: React.FC = () => {
 
   const [section, setSection] = useState<'datos' | 'peticiones' | 'notificaciones' | 'ip' | 'seguridad'>('datos');
   const [soundActive, setSoundActive] = useState(isSoundEnabled());
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
 
   // Form states for personal data
   const [nombre, setNombre] = useState(currentUser.nombre);
@@ -187,6 +190,44 @@ export const SettingsView: React.FC = () => {
                       <Check className="w-3.5 h-3.5" /> Guardado correctamente
                     </span>
                   )}
+                </div>
+
+                {/* Avatar / Foto de Perfil Quick Card */}
+                <div className="p-3.5 bg-gradient-to-r from-blue-50/70 to-slate-50 border border-blue-200/80 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="relative group w-16 h-16 rounded-full overflow-hidden border-2 border-[#3869A0] shadow-xs flex-shrink-0 bg-white">
+                      <img
+                        src={currentUser.avatar}
+                        alt={currentUser.nombre}
+                        className="w-full h-full object-cover"
+                      />
+                      <div
+                        onClick={() => setShowAvatarModal(true)}
+                        className="absolute inset-0 bg-black/50 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                        title="Cambiar avatar"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-bold text-gray-800 text-xs flex items-center gap-1.5">
+                        <span>Foto de perfil / Avatar</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-100 text-[#3869A0] font-semibold">Subida activa</span>
+                      </div>
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        Esta imagen se mostrará en tu perfil, tus tablones, fotos y comentarios.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowAvatarModal(true)}
+                    className="px-3.5 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold rounded shadow-xs text-xs flex items-center gap-1.5 transition cursor-pointer flex-shrink-0"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Cambiar avatar</span>
+                  </button>
                 </div>
 
                 <form onSubmit={handleSaveData} className="space-y-3">
@@ -599,6 +640,12 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Avatar Modal */}
+      <AvatarModal
+        isOpen={showAvatarModal}
+        onClose={() => setShowAvatarModal(false)}
+      />
     </div>
   );
 };

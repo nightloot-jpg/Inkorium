@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { 
   Send, Image as ImageIcon, Smile, MessageCircle, Heart, 
   UserPlus, Sparkles, Clock, CheckCircle2, ChevronRight,
-  Upload, Camera
+  Upload, Camera, Loader2, X
 } from 'lucide-react';
 import { FeedItem } from '../types';
+import { uploadMediaFile } from '../lib/storage';
 
 export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload }) => {
   const {
@@ -31,10 +32,30 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
 
   const [statusText, setStatusText] = useState('');
   const [attachedPhotoUrl, setAttachedPhotoUrl] = useState('');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [showPhotoInput, setShowPhotoInput] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'todos' | 'estados' | 'fotos' | 'tablon'>('todos');
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+
+  const feedFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFeedFileSelect = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona una imagen válida.');
+      return;
+    }
+    setIsUploadingPhoto(true);
+    setShowPhotoInput(true);
+    try {
+      const url = await uploadMediaFile(file, 'wall');
+      setAttachedPhotoUrl(url);
+    } catch (err) {
+      console.error('Error subiendo foto al estado:', err);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   const handlePublish = (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,25 +262,71 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
             />
 
             {showPhotoInput && (
-              <div className="p-2 bg-blue-50/70 rounded border border-blue-200 text-xs space-y-1.5">
-                <label className="font-semibold text-gray-700 block text-[11px]">Enlace de imagen o foto:</label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={attachedPhotoUrl}
-                  onChange={e => setAttachedPhotoUrl(e.target.value)}
-                  className="w-full p-1.5 text-xs bg-white rounded border border-gray-300 focus:outline-none"
-                />
+              <div className="p-2.5 bg-blue-50/80 rounded border border-blue-200 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-gray-800 block text-[11px]">Adjuntar foto a tu estado:</label>
+                  <button
+                    type="button"
+                    onClick={() => { setShowPhotoInput(false); setAttachedPhotoUrl(''); }}
+                    className="text-gray-400 hover:text-gray-600 text-xs font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <input
+                    ref={feedFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={e => e.target.files?.[0] && handleFeedFileSelect(e.target.files[0])}
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => feedFileInputRef.current?.click()}
+                    disabled={isUploadingPhoto}
+                    className="w-full sm:w-auto px-3 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white rounded font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
+                  >
+                    {isUploadingPhoto ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Subiendo foto...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Subir desde tu equipo</span>
+                      </>
+                    )}
+                  </button>
+
+                  <span className="text-[10px] text-gray-400 font-semibold">o escribe enlace:</span>
+
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={attachedPhotoUrl.startsWith('data:') ? 'Foto local cargada' : attachedPhotoUrl}
+                    onChange={e => setAttachedPhotoUrl(e.target.value)}
+                    disabled={attachedPhotoUrl.startsWith('data:')}
+                    className="flex-1 w-full p-1.5 text-xs bg-white rounded border border-gray-300 focus:outline-none"
+                  />
+                </div>
+
                 {attachedPhotoUrl && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <img src={attachedPhotoUrl} alt="Preview" className="w-12 h-12 object-cover rounded border" />
-                    <button 
-                      type="button" 
-                      onClick={() => setAttachedPhotoUrl('')}
-                      className="text-red-500 text-[10px] hover:underline"
-                    >
-                      Quitar foto
-                    </button>
+                  <div className="mt-1 flex items-center gap-2 p-1.5 bg-white rounded border border-gray-200">
+                    <img src={attachedPhotoUrl} alt="Preview" className="w-14 h-14 object-cover rounded border border-gray-300 shadow-2xs" />
+                    <div>
+                      <span className="text-[11px] font-bold text-emerald-700 block">✓ Foto adjuntada lista para publicar</span>
+                      <button 
+                        type="button" 
+                        onClick={() => setAttachedPhotoUrl('')}
+                        className="text-red-500 text-[10px] hover:underline font-semibold cursor-pointer mt-0.5"
+                      >
+                        Quitar foto
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

@@ -1,41 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
-import { Upload, Image as ImageIcon, Sparkles, Plus, Check, Sliders, Loader2, RefreshCw } from 'lucide-react';
+import { Upload, Image as ImageIcon, Plus, Check, Sliders, Loader2, RefreshCw, Camera, AlertCircle } from 'lucide-react';
 import { PhotoEditorControls } from './PhotoEditorControls';
 import { PhotoEditState, DEFAULT_EDIT_STATE, bakeEditedImage } from '../utils/imageEditor';
-
-const NOSTALGIC_PRESET_PHOTOS = [
-  {
-    title: 'De fiesta con los colegas el sábado por la noche',
-    url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=900&auto=format&fit=crop&q=80',
-    category: 'Fiesta'
-  },
-  {
-    title: 'Veranito inolvidable en la playa de Tarifa',
-    url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=900&auto=format&fit=crop&q=80',
-    category: 'Playa'
-  },
-  {
-    title: 'Dándolo todo en el festival de música indie',
-    url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=900&auto=format&fit=crop&q=80',
-    category: 'Concierto'
-  },
-  {
-    title: 'Tarde de skate y risas en el parque',
-    url: 'https://images.unsplash.com/photo-1520045892732-304bc3ac5d8e?w=900&auto=format&fit=crop&q=80',
-    category: 'Colegas'
-  },
-  {
-    title: 'Foto pose con la cámara digital antes de salir',
-    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=900&auto=format&fit=crop&q=80',
-    category: 'Pose'
-  },
-  {
-    title: 'Viaje de fin de curso a Mallorca',
-    url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=900&auto=format&fit=crop&q=80',
-    category: 'Viaje'
-  }
-];
+import { uploadMediaFile } from '../lib/storage';
 
 export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { albums, currentUser, uploadPhoto, createAlbum } = useInkorium();
@@ -43,11 +11,13 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
   const [title, setTitle] = useState('');
   const [albumId, setAlbumId] = useState<string>('');
   const [photoUrl, setPhotoUrl] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [editState, setEditState] = useState<PhotoEditState>({ ...DEFAULT_EDIT_STATE });
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [showNewAlbumInput, setShowNewAlbumInput] = useState(false);
   const [newAlbumName, setNewAlbumName] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,14 +25,21 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
 
   const handleFileUpload = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecciona un archivo de imagen válido.');
+      setErrorMessage('Por favor, selecciona un archivo de imagen válido (JPG, PNG, GIF o WEBP).');
       return;
     }
+    setErrorMessage(null);
+    setSelectedFile(file);
+
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
         setPhotoUrl(e.target.result as string);
         setEditState({ ...DEFAULT_EDIT_STATE });
+        if (!title) {
+          const autoTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+          setTitle(autoTitle);
+        }
       }
     };
     reader.readAsDataURL(file);
@@ -88,21 +65,28 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
     if (!photoUrl || isProcessing) return;
 
     setIsProcessing(true);
+    setErrorMessage(null);
     try {
-      // Bake all filters, rotation, adjustments and retro date stamp onto canvas
-      const finalImage = await bakeEditedImage(photoUrl, editState);
-      uploadPhoto(title || 'Sin título', albumId || null, finalImage);
+      // 1. Bake all filters, rotation, adjustments and retro date stamp onto canvas
+      const bakedDataUrl = await bakeEditedImage(photoUrl, editState);
+
+      // 2. Upload to storage bucket (Supabase / R2 / base64 fallback)
+      const storedUrl = await uploadMediaFile(bakedDataUrl, 'photos');
+
+      // 3. Register photo in context
+      uploadPhoto(title.trim() || 'Sin título', albumId || null, storedUrl);
       
       // Clean state
       setTitle('');
       setPhotoUrl('');
+      setSelectedFile(null);
       setAlbumId('');
       setEditState({ ...DEFAULT_EDIT_STATE });
       onClose();
-    } catch (err) {
-      console.error('Error baking image:', err);
-      // Fallback
-      uploadPhoto(title || 'Sin título', albumId || null, photoUrl);
+    } catch (err: any) {
+      console.error('Error processing image:', err);
+      // Fallback with base64
+      uploadPhoto(title.trim() || 'Sin título', albumId || null, photoUrl);
       onClose();
     } finally {
       setIsProcessing(false);
@@ -121,8 +105,8 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
               <Upload className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-bold text-sm text-gray-900 leading-tight">Subir y Editar Foto en Inkorium</h2>
-              <p className="text-[11px] text-gray-500">Aplica filtros vintage, gira o encuadra antes de publicar</p>
+              <h2 className="font-bold text-sm text-gray-900 leading-tight">Subir y Publicar Foto en Inkorium</h2>
+              <p className="text-[11px] text-gray-500">Selecciona fotos de tu equipo, aplica filtros vintage y guárdalas en tus álbumes</p>
             </div>
           </div>
           <button 
@@ -133,11 +117,18 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
           </button>
         </div>
 
+        {errorMessage && (
+          <div className="p-2.5 bg-red-50 border border-red-200 rounded text-red-700 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {/* Main Photo Picker / Photo Editor Area */}
           {!photoUrl ? (
             <div className="space-y-3">
-              <label className="font-bold text-gray-700 block">1. Selecciona la foto que deseas subir:</label>
+              <label className="font-bold text-gray-700 block">1. Selecciona la foto que deseas subir desde tu equipo:</label>
               
               {/* Drag and drop zone */}
               <div
@@ -145,7 +136,7 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition ${
+                className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition ${
                   isDragOver ? 'border-[#3869A0] bg-blue-50' : 'border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -157,42 +148,23 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
                   className="hidden"
                 />
 
-                <div className="flex flex-col items-center gap-2 text-gray-500">
-                  <div className="w-12 h-12 rounded-full bg-blue-50 text-[#3869A0] flex items-center justify-center">
-                    <ImageIcon className="w-6 h-6" />
+                <div className="flex flex-col items-center gap-3 text-gray-500">
+                  <div className="w-14 h-14 rounded-full bg-blue-50 text-[#3869A0] flex items-center justify-center shadow-xs">
+                    <ImageIcon className="w-7 h-7" />
                   </div>
                   <div>
                     <p className="font-bold text-gray-800 text-sm">
-                      Haz clic para examinar o arrastra una imagen aquí
+                      Haz clic para examinar archivos o arrastra una imagen aquí
                     </p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">Formatos compatibles: JPG, PNG, GIF o WEBP</p>
+                    <p className="text-[11px] text-gray-400 mt-1">Formatos compatibles: JPG, JPEG, PNG, GIF o WEBP</p>
                   </div>
-                </div>
-              </div>
-
-              {/* Preset nostalgic photos */}
-              <div>
-                <span className="font-bold text-gray-600 block mb-1.5 flex items-center gap-1 text-[11px]">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>O prueba con una foto temática retro (1-clic):</span>
-                </span>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  {NOSTALGIC_PRESET_PHOTOS.map((preset, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => {
-                        setPhotoUrl(preset.url);
-                        setEditState({ ...DEFAULT_EDIT_STATE });
-                        if (!title) setTitle(preset.title);
-                      }}
-                      className="border border-gray-200 rounded overflow-hidden cursor-pointer relative group transition hover:border-[#3869A0] hover:shadow-xs"
-                    >
-                      <img src={preset.url} alt={preset.title} className="w-full h-16 object-cover group-hover:scale-105 transition" />
-                      <div className="p-1 text-[9px] font-bold text-center text-gray-700 truncate bg-gray-50 border-t border-gray-100">
-                        {preset.category}
-                      </div>
-                    </div>
-                  ))}
+                  <button
+                    type="button"
+                    className="mt-2 px-4 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold rounded shadow-xs text-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Seleccionar desde el ordenador</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -316,7 +288,7 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
                 {isProcessing ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Guardando edición...</span>
+                    <span>Guardando y subiendo...</span>
                   </>
                 ) : (
                   <>
@@ -332,4 +304,5 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
     </div>
   );
 };
+
 
