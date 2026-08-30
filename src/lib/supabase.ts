@@ -33,7 +33,17 @@ const browserFetch: typeof fetch = async (input, init) => {
 
     if (isProfilesRestRequest && typeof window !== 'undefined') {
       const proxyUrl = `${window.location.origin}/api/profiles${parsed.search}`;
-      return fetch(proxyUrl, init);
+
+      // The proxy performs a public profile read server-side. Do not forward the
+      // Supabase session JWT, API key, client metadata, or browser cookies to it.
+      // Forwarding the auth header can exceed reverse-proxy header limits and cause HTTP 431.
+      return fetch(proxyUrl, {
+        ...init,
+        headers: {
+          Accept: 'application/json',
+        },
+        credentials: 'omit',
+      });
     }
   } catch {
     // Fall through to the normal Supabase request for malformed/non-URL inputs.
