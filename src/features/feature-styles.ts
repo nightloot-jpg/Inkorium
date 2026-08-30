@@ -19,15 +19,7 @@ export function loadRouteStyles(page: RouteStylePage) {
         import('./profile/profile-photos-2026.css'),
         import('./profile/profile-photos-lightbox-2026.css'),
         import('./profile/profile-albums-moments-2026.css'),
-        import('./profile/profile-home-2026.css'),
-        import('./profile/profile-header-tabs-2026.css'),
         import('./profile/profile-music-2026.css'),
-        import('./profile/profile-final-polish-2026.css'),
-        import('./profile/profile-background-fix-2026.css'),
-        import('./profile/profile-enhancements.css'),
-        import('./profile/profile-view.css'),
-        import('./profile/profile-about-card.css'),
-        import('./profile/profile-videos-tab-2026.css'),
       ]));
     case 'personas':
       return loadOnce(page, () => Promise.all([

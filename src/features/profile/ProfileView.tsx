@@ -15,6 +15,8 @@ import { useProfileDailySong } from './hooks/useProfileDailySong';
 import { useProfileMusicLibrary } from './hooks/useProfileMusicLibrary';
 import { useProfileMusicTaste } from './hooks/useProfileMusicTaste';
 import { useProfileMusicPreferences } from './hooks/useProfileMusicPreferences';
+import { useProfileFriends } from './hooks/useProfileFriends';
+import { useProfileActivity } from './hooks/useProfileActivity';
 import { ProfileHeader } from './components/ProfileHeader';
 import type { ProfileTab } from './components/ProfileTabs';
 import { ProfileSideNav } from './components/ProfileSideNav';
@@ -26,13 +28,10 @@ import { ProfileMusicTasteCard } from './components/music/ProfileMusicTasteCard'
 import { ProfileMusicPreferencesPanel } from './components/music/ProfileMusicPreferencesPanel';
 import { ProfileVideos } from './components/ProfileVideos';
 import './profile-view.css';
-import './profile-about-card.css';
 import './profile-global.css';
 import './profile-videos-tab-2026.css';
-import './profile-tuenti-2026.css';
 import './profile-media-upload.css';
-import './profile-tueni-composition-2026.css';
-import './profile-social-refresh-2026.css';
+import './profile-mockup-2026.css';
 
 const STATUS_META: Record<StatusValue, { label: string; className: string }> = { conectado: { label: 'Conectado', className: 'online' }, ausente: { label: 'Ausente', className: 'away' }, desconectado: { label: 'Desconectado', className: 'offline' } };
 const normalizeStatus = (value: string | null | undefined): StatusValue => value === 'ausente' || value === 'desconectado' ? value : 'conectado';
@@ -67,6 +66,8 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
   const { tracks: musicTracks, favoriteIds, playlists, loading: loadingMusicLibrary, toggleFavorite, editTrack, removeTrack, createPlaylist, updatePlaylist, deletePlaylist, addTrackToPlaylist } = useProfileMusicLibrary(profileId, activeTab === 'Música');
   const { artists: musicTasteArtists, loading: loadingMusicTaste, saving: savingMusicTaste, error: musicTasteError, addArtist: addMusicTasteArtist, removeArtist: removeMusicTasteArtist } = useProfileMusicTaste(profileId, activeTab === 'Música');
   const musicPreferences = useProfileMusicPreferences(profileId, activeTab === 'Música');
+  const { friends, loading: loadingFriends } = useProfileFriends(profileId);
+  const { items: activity, loading: loadingActivity } = useProfileActivity(profileId);
   const displayProfile = profile || initialProfile;
   const displayName = displayProfile?.full_name || displayProfile?.username || username || 'Usuario';
   const handle = displayProfile?.username ? `@${displayProfile.username}` : `@${username}`;
@@ -90,7 +91,7 @@ export function ProfileView({ session, profile: initialProfile, profileId, usern
     <div className="profile-view-layout">
       <ProfileSideNav activeTab={activeTab} onChange={setActiveTab} />
       <div className="profile-view-route-content">
-        {activeTab === 'Inicio' && <ProfileHome profile={displayProfile} signatures={signatures} loadingSignatures={loadingSignatures} signatureDraft={signatureDraft} savingSignature={savingSignature} onSignatureDraftChange={setSignatureDraft} onSubmitSignature={() => void handleSubmitSignature()} profileStats={profileStats} currentSong={currentSong} onTogglePlayback={togglePlayback} />}
+        {activeTab === 'Inicio' && <ProfileHome profile={displayProfile} signatures={signatures} loadingSignatures={loadingSignatures} signatureDraft={signatureDraft} savingSignature={savingSignature} onSignatureDraftChange={setSignatureDraft} onSubmitSignature={() => void handleSubmitSignature()} profileStats={profileStats} currentSong={currentSong} onTogglePlayback={togglePlayback} displayName={displayName} avatar={displayProfile.avatar_url || ''} friends={friends} loadingFriends={loadingFriends} activity={activity} loadingActivity={loadingActivity} />}
         {activeTab === 'Fotos' && <div className="profile-view-card"><div className="profile-view-section-head"><h2><Images size={17} /> Fotos</h2><span>{gallery.length}</span></div><div className="profile-media-gallery">{loadingGallery ? [1,2,3,4].map(item => <span key={item} />) : gallery.map(photo => <button key={photo.id} type="button"><img src={photo.url} alt={photo.caption || 'Foto'} /></button>)}</div></div>}
         {activeTab === 'Videos' && <ProfileVideos profileId={profileId} />}
         {activeTab === 'Música' && <div className="profile-music-stack"><ProfileDailySong song={dailySong} loading={loadingDailySong} saving={savingDailySong} canEdit={ownProfile} search={searchDailySong} getSavedMusic={getSavedMusic} onChoose={chooseDailySong} onPlay={playTrack} /><ProfileMusicLibrary tracks={musicTracks} favoriteIds={favoriteIds} playlists={playlists} loading={loadingMusicLibrary} canEdit={ownProfile} onPlay={playTrack} onToggleFavorite={toggleFavorite} onEditTrack={handleEditTrack} onDeleteTrack={removeTrack} onNewPlaylist={() => { const name = window.prompt('Nombre de la playlist'); if (name) void createPlaylist(name, '', true); }} onEditPlaylist={playlist => { const name = window.prompt('Nombre', playlist.name) ?? playlist.name; void updatePlaylist(playlist.id, name, playlist.description || '', playlist.is_public !== false); }} onDeletePlaylist={deletePlaylist} onAddToPlaylist={handleAddToPlaylist} /><ProfileMusicTasteCard artists={musicTasteArtists} loading={loadingMusicTaste} saving={savingMusicTaste} canEdit={ownProfile} error={musicTasteError} onAdd={addMusicTasteArtist} onRemove={removeMusicTasteArtist} /><ProfileMusicPreferencesPanel playlists={musicPreferences.featuredPlaylists} selectedIds={musicPreferences.featuredPlaylists.map(item => item.id)} saving={musicPreferences.saving} canEdit={ownProfile} error={musicPreferences.error} onSave={musicPreferences.save} /><ProfileMusicDiary entries={musicDiary} loading={loadingMusicDiary} onPlay={playDiaryEntry} /></div>}
