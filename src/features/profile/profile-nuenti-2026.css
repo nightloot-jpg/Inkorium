@@ -1,0 +1,361 @@
+/* =====================================================================
+   INKORIUM PROFILE / NUENTI SKIN
+   Recreates the visual language of the supplied Nuenti project:
+   blue page background, compact centered canvas, white rounded cards,
+   classic gradients, subtle shadows and a social-first two-column layout.
+   ===================================================================== */
+
+.profile-view-page {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 100vh;
+  margin: 0 !important;
+  padding: 0 0 40px !important;
+  background: #3869a0 !important;
+  color: #333 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  box-sizing: border-box;
+}
+
+.profile-view-page > .profile-view-cover {
+  width: min(997px, calc(100% - 20px)) !important;
+  height: 125px !important;
+  min-height: 125px !important;
+  margin: 10px auto 0 !important;
+  border: 0 !important;
+  border-radius: 7px 7px 0 0 !important;
+  background-color: #5487ba !important;
+  background-position: center !important;
+  background-size: cover !important;
+  box-shadow: 2px 2px 3px rgba(0,0,0,.45) !important;
+}
+
+.profile-view-page > .profile-view-cover::after { display: none !important; }
+
+.profile-view-page > .profile-view-cover .profile-view-image-overlay {
+  right: 12px !important;
+  bottom: 10px !important;
+  border-radius: 4px !important;
+  padding: 5px 8px !important;
+  background: rgba(35,71,109,.88) !important;
+  backdrop-filter: none !important;
+  font-size: 12px !important;
+}
+
+.profile-view-page > .profile-view-header {
+  width: min(997px, calc(100% - 20px)) !important;
+  min-height: 170px !important;
+  margin: 0 auto !important;
+  padding: 0 18px 15px 215px !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  position: relative !important;
+  background: #fff !important;
+  border: 0 !important;
+  border-radius: 0 0 7px 7px !important;
+  box-shadow: 2px 2px 3px rgba(0,0,0,.45) !important;
+}
+
+.profile-view-page .profile-view-avatar-wrap {
+  position: absolute !important;
+  left: 15px !important;
+  top: -15px !important;
+  width: 180px !important;
+  height: 180px !important;
+  margin: 0 !important;
+  z-index: 5 !important;
+}
+
+.profile-view-page .profile-view-avatar-button,
+.profile-view-page .profile-view-avatar-button .profile-view-avatar,
+.profile-view-page .profile-view-avatar-button .profile-view-avatar-fallback {
+  width: 180px !important;
+  height: 180px !important;
+  border-radius: 7px !important;
+}
+
+.profile-view-page .profile-view-avatar {
+  border: 5px solid #fff !important;
+  box-shadow: 2px 2px 5px rgba(0,0,0,.35) !important;
+  object-fit: cover !important;
+}
+
+.profile-view-page .profile-view-avatar-fallback {
+  display: grid !important;
+  place-items: center !important;
+  background: #e8eef4 !important;
+  color: #3869a0 !important;
+  font-size: 42px !important;
+  font-weight: bold !important;
+  border: 5px solid #fff !important;
+  box-shadow: 2px 2px 5px rgba(0,0,0,.35) !important;
+}
+
+.profile-view-page .profile-view-avatar-overlay {
+  width: 32px !important;
+  height: 32px !important;
+  right: 7px !important;
+  bottom: 7px !important;
+  border-radius: 4px !important;
+  border: 2px solid #fff !important;
+  background: #3869a0 !important;
+}
+
+.profile-view-page .profile-view-identity {
+  width: 100% !important;
+  padding-top: 13px !important;
+}
+
+.profile-view-page .profile-view-name-row h1 {
+  margin: 0 !important;
+  font-size: 24px !important;
+  line-height: 1.2 !important;
+  color: #3869a0 !important;
+  font-weight: bold !important;
+  letter-spacing: 0 !important;
+}
+
+.profile-view-page .profile-view-verified {
+  width: 17px !important;
+  height: 17px !important;
+  border-radius: 3px !important;
+  background: #3869a0 !important;
+  font-size: 11px !important;
+}
+
+.profile-view-page .profile-view-handle {
+  margin-top: 2px !important;
+  color: #777 !important;
+  font-size: 13px !important;
+}
+
+.profile-view-page .profile-view-status-row { margin-top: 6px !important; }
+.profile-view-page .profile-view-status-label,
+.profile-view-page .profile-view-status-select { color: #555 !important; font-size: 13px !important; }
+
+.profile-view-page .profile-view-hashtag,
+.profile-view-page .profile-view-hashtag.editable {
+  margin-top: 7px !important;
+  color: #3869a0 !important;
+  font-size: 13px !important;
+}
+
+.profile-view-page .profile-view-bio {
+  margin: 7px 0 !important;
+  max-width: 680px !important;
+  color: #444 !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+.profile-view-page .profile-profile-meta,
+.profile-view-page .profile-header-stats {
+  margin-top: 7px !important;
+  color: #777 !important;
+  font-size: 12px !important;
+}
+
+.profile-view-page .profile-header-stat { color: #666 !important; }
+.profile-view-page .profile-header-stat strong { color: #3869a0 !important; }
+
+/* Nuenti's compact 997px canvas and 200px / 740px content rhythm. */
+.profile-view-page .profile-view-layout {
+  width: min(997px, calc(100% - 20px)) !important;
+  margin: 10px auto 0 !important;
+  padding: 0 !important;
+  display: grid !important;
+  grid-template-columns: 200px minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: start !important;
+}
+
+.profile-view-page .profile-side-nav {
+  width: 200px !important;
+  margin: 0 !important;
+  padding: 10px !important;
+  display: block !important;
+  background: #fff !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  box-shadow: 2px 2px 3px rgba(0,0,0,.45) !important;
+  overflow: hidden !important;
+}
+
+.profile-view-page .profile-side-nav-title {
+  display: flex !important;
+  padding: 0 0 8px !important;
+  margin: 0 0 6px !important;
+  border-bottom: 1px solid #ddd !important;
+  color: #3869a0 !important;
+  font-size: 15px !important;
+}
+
+.profile-view-page .profile-side-nav nav {
+  display: grid !important;
+  gap: 2px !important;
+}
+
+.profile-view-page .profile-side-nav button,
+.profile-view-page .profile-side-nav button.active,
+.profile-view-page .profile-side-nav button:hover {
+  width: 100% !important;
+  min-height: 36px !important;
+  padding: 6px 8px !important;
+  justify-content: flex-start !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  color: #555 !important;
+  font-size: 13px !important;
+  font-weight: bold !important;
+}
+
+.profile-view-page .profile-side-nav button:hover,
+.profile-view-page .profile-side-nav button.active {
+  background: #e8f1fa !important;
+  color: #3869a0 !important;
+}
+
+.profile-view-page .profile-side-nav button.active::after { display: none !important; }
+.profile-view-page .profile-view-route-content { min-width: 0 !important; width: 100% !important; }
+
+.profile-view-page .profile-view-grid {
+  width: 100% !important;
+  margin: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 230px !important;
+  gap: 10px !important;
+  align-items: start !important;
+}
+
+.profile-view-page .profile-view-card {
+  background: #fff !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  padding: 15px !important;
+  margin-bottom: 10px !important;
+  box-shadow: 2px 2px 3px rgba(0,0,0,.45) !important;
+}
+
+.profile-view-page .profile-view-section-head h2,
+.profile-view-page .profile-view-card h2,
+.profile-view-page .profile-view-card-title {
+  margin: 0 !important;
+  color: #3869a0 !important;
+  font-size: 17px !important;
+  font-weight: bold !important;
+}
+
+.profile-view-page .profile-view-section-head span { color: #888 !important; font-size: 12px !important; }
+
+.profile-view-page .profile-about-grid {
+  grid-template-columns: 1fr 1fr !important;
+  gap: 18px !important;
+  margin-top: 10px !important;
+}
+
+.profile-view-page .profile-about-block h3 {
+  margin: 0 0 6px !important;
+  color: #777 !important;
+  font-size: 12px !important;
+}
+
+.profile-view-page .profile-about-block p,
+.profile-view-page .profile-profile-detail span {
+  color: #444 !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+.profile-view-page .profile-interest-chip {
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  background: #e8f1fa !important;
+  color: #3869a0 !important;
+  font-size: 11px !important;
+}
+
+.profile-view-page .profile-friends-grid {
+  grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+  gap: 6px !important;
+}
+
+.profile-view-page .profile-friends-item {
+  padding: 5px !important;
+  gap: 4px !important;
+  border-radius: 4px !important;
+}
+
+.profile-view-page .profile-friends-item img,
+.profile-view-page .profile-friends-fallback {
+  width: 55px !important;
+  height: 55px !important;
+  border-radius: 4px !important;
+}
+
+.profile-view-page .profile-friends-item strong { font-size: 11px !important; color: #3869a0 !important; }
+.profile-view-page .profile-friends-item small { font-size: 10px !important; color: #888 !important; }
+
+.profile-view-page .profile-activity-item { padding: 11px 0 !important; }
+.profile-view-page .profile-activity-avatar { width: 36px !important; height: 36px !important; border-radius: 4px !important; }
+.profile-view-page .profile-activity-item-head strong { color: #3869a0 !important; font-size: 13px !important; }
+.profile-view-page .profile-activity-item p { font-size: 13px !important; }
+
+.profile-view-page .profile-view-signature-actions button {
+  padding: 6px 12px !important;
+  border-radius: 4px !important;
+  border: 1px solid #3869a0 !important;
+  background: linear-gradient(#1098d3, #077cb1) !important;
+  font-size: 12px !important;
+}
+
+.profile-view-page .profile-view-signature-input,
+.profile-view-page .profile-view-signature-form textarea {
+  min-height: 70px !important;
+  border: 1px solid #c8c8c8 !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.08) !important;
+}
+
+.profile-view-page .profile-view-listening {
+  border: 1px solid #d2dbe4 !important;
+  border-radius: 4px !important;
+  background: #eef4f9 !important;
+  color: #3869a0 !important;
+  font-size: 12px !important;
+}
+
+.profile-view-page .profile-view-listening-control,
+.profile-view-page .profile-view-listening-progress span { background: #3869a0 !important; }
+
+.profile-view-page .profile-media-gallery {
+  grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+  gap: 7px !important;
+  padding: 10px 0 0 !important;
+}
+
+.profile-view-page .profile-media-gallery button { border-radius: 4px !important; }
+
+@media (max-width: 800px) {
+  .profile-view-page > .profile-view-cover,
+  .profile-view-page > .profile-view-header,
+  .profile-view-page .profile-view-layout { width: calc(100% - 16px) !important; }
+  .profile-view-page .profile-view-layout { grid-template-columns: 1fr !important; }
+  .profile-view-page .profile-side-nav { width: 100% !important; }
+  .profile-view-page .profile-side-nav nav { display: flex !important; overflow-x: auto; }
+  .profile-view-page .profile-side-nav button { flex: 0 0 auto !important; width: auto !important; }
+  .profile-view-page .profile-view-grid { grid-template-columns: 1fr !important; }
+  .profile-view-page .profile-view-side { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+@media (max-width: 560px) {
+  .profile-view-page > .profile-view-cover { height: 105px !important; min-height: 105px !important; }
+  .profile-view-page > .profile-view-header { min-height: 190px !important; padding: 70px 12px 12px !important; }
+  .profile-view-page .profile-view-avatar-wrap { left: 12px !important; top: -52px !important; width: 105px !important; height: 105px !important; }
+  .profile-view-page .profile-view-avatar-button,
+  .profile-view-page .profile-view-avatar-button .profile-view-avatar,
+  .profile-view-page .profile-view-avatar-button .profile-view-avatar-fallback { width: 105px !important; height: 105px !important; }
+  .profile-view-page .profile-about-grid { grid-template-columns: 1fr !important; }
+  .profile-view-page .profile-view-side { display: block; }
+}
