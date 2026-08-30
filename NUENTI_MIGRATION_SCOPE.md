@@ -1,0 +1,1 @@
+Nuenti visual and interaction layer is being migrated to Inkorium's Vite/React/Supabase runtime. Existing backend/data services remain in place.
