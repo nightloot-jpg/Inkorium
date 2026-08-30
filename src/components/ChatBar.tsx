@@ -12,7 +12,7 @@ const PRESENCE_DOTS: Record<UserPresence, { label: string; dot: string; text: st
 };
 
 export const ChatBar: React.FC = () => {
-  const { currentUser, users, activeChatWindows, chatMessages, closeChat, toggleMinimizeChat, sendChatMessage, openChatWith, viewUserProfile } = useInkorium();
+  const { currentUser, users, activeChatWindows, chatMessages, closeChat, toggleMinimizeChat, sendChatMessage, openChatWith, viewUserProfile, updateUserPresence } = useInkorium();
   const [dockOpen, setDockOpen] = useState(false);
   const [chatSearch, setChatSearch] = useState('');
   const [inputTexts, setInputTexts] = useState<Record<string, string>>({});
@@ -29,26 +29,7 @@ export const ChatBar: React.FC = () => {
     setPresence(nextPresence);
     setSavingPresence(true);
     try {
-      const sessionResult = await supabase?.auth.getSession();
-      const accessToken = sessionResult?.data.session?.access_token;
-      if (!accessToken) throw new Error('No hay una sesión de Supabase activa');
-
-      const response = await fetch(`/api/profiles/${encodeURIComponent(currentUser.id)}/presence`, {
-        method: 'PATCH',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`
-        },
-        credentials: 'omit',
-        body: JSON.stringify({ presence: nextPresence })
-      });
-
-      if (!response.ok) {
-        const detail = await response.text().catch(() => '');
-        throw new Error(`Presence update failed (${response.status})${detail ? `: ${detail}` : ''}`);
-      }
-
+      await updateUserPresence(nextPresence);
       localStorage.setItem('inkorium:presence', nextPresence);
     } catch (error) {
       console.error('Presence update failed:', error);
