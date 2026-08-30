@@ -1,3 +1,3 @@
 # Inkorium
 
-Inkorium is a nostalgic social network inspired by Tuenti and Nuenti.
+Red social nostálgica inspirada en Tuenti y Nuenti con tablón, fotos etiquetadas, álbumes, chat en vivo y buscador de amigos.
