@@ -104,28 +104,68 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, []);
 
-  const fetchSupabaseProfiles = useCallback(async () => {
+  // Guards against the request storm: prevents overlapping fetches, and debounces
+  // bursts of triggers (multiple auth events firing back-to-back, many realtime
+  // postgres_changes events arriving in quick succession, etc). Without this, each
+  // trigger fired its own full 1000-row fetch concurrently, which was hammering the
+  // Supabase REST endpoint and causing intermittent 520s from the gateway.
+  const isFetchingProfilesRef = React.useRef(false);
+  const pendingProfilesFetchRef = React.useRef(false);
+  const profilesDebounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const profilesBackoffRef = React.useRef(1000); // ms, grows on repeated failures
+
+  const fetchSupabaseProfilesNow = useCallback(async () => {
     if (!isSupabaseConfigured || !supabase) {
       console.warn('Supabase profiles: client not configured');
       return;
     }
-
-    // Use only stable columns from the current profiles schema. Avoid ordering here:
-    // it is not needed for search and removes a failure point on hosted PostgREST builds.
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, username, full_name, avatar_url, city, birth_date, user_status, profile_interests, updated_at')
-      .limit(1000);
-
-    if (error) {
-      console.error('Supabase profiles load failed:', error);
+    if (isFetchingProfilesRef.current) {
+      // A fetch is already in flight: remember to run once more when it finishes
+      // instead of starting a second concurrent request.
+      pendingProfilesFetchRef.current = true;
       return;
     }
+    isFetchingProfilesRef.current = true;
+    try {
+      // Use only stable columns from the current profiles schema. Avoid ordering here:
+      // it is not needed for search and removes a failure point on hosted PostgREST builds.
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url, city, birth_date, user_status, profile_interests, updated_at')
+        .limit(1000);
 
-    if (!Array.isArray(data)) return;
-    const mapped = data.map(mapProfileToUser).filter(user => Boolean(user.id));
-    setUsers(mapped);
+      if (error) {
+        console.error('Supabase profiles load failed:', error);
+        // Back off before letting the next trigger fire, up to 30s, so a flaky
+        // API doesn't get re-hammered by every subsequent event.
+        profilesBackoffRef.current = Math.min(profilesBackoffRef.current * 2, 30000);
+        return;
+      }
+
+      profilesBackoffRef.current = 1000;
+      if (!Array.isArray(data)) return;
+      const mapped = data.map(mapProfileToUser).filter(user => Boolean(user.id));
+      setUsers(mapped);
+    } finally {
+      isFetchingProfilesRef.current = false;
+      if (pendingProfilesFetchRef.current) {
+        pendingProfilesFetchRef.current = false;
+        setTimeout(() => { void fetchSupabaseProfilesNow(); }, profilesBackoffRef.current);
+      }
+    }
   }, [mapProfileToUser]);
+
+  // Public trigger: coalesces bursts of calls (e.g. several auth events or several
+  // realtime change events arriving within the same second) into a single fetch.
+  const fetchSupabaseProfiles = useCallback(async () => {
+    if (profilesDebounceTimerRef.current) clearTimeout(profilesDebounceTimerRef.current);
+    return new Promise<void>(resolve => {
+      profilesDebounceTimerRef.current = setTimeout(async () => {
+        await fetchSupabaseProfilesNow();
+        resolve();
+      }, 300);
+    });
+  }, [fetchSupabaseProfilesNow]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
@@ -141,12 +181,17 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (!mounted) return;
       setCurrentUserId(session?.user?.id || '');
       setIsLoggedIn(Boolean(session?.user));
-      await fetchSupabaseProfiles();
+      void fetchSupabaseProfiles();
     });
     const channel = supabase!.channel('profiles-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
       void fetchSupabaseProfiles();
     }).subscribe();
-    return () => { mounted = false; subscription.unsubscribe(); supabase!.removeChannel(channel); };
+    return () => {
+      mounted = false;
+      if (profilesDebounceTimerRef.current) clearTimeout(profilesDebounceTimerRef.current);
+      subscription.unsubscribe();
+      supabase!.removeChannel(channel);
+    };
   }, [fetchSupabaseProfiles]);
 
   const currentUser = users.find(u => u.id === currentUserId) || EMPTY_USER;
