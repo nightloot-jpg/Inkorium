@@ -1,0 +1,1 @@
+This branch migrates the Nuenti visual language onto the modern Inkorium Vite/React/Supabase architecture while preserving the existing data and service logic.
