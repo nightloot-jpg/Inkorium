@@ -12,8 +12,6 @@ export interface ApiPost {
 
 async function getAccessToken(): Promise<string> {
   if (!supabase) throw new Error('Supabase no está configurado.');
-  const refreshed = await supabase.auth.refreshSession();
-  if (!refreshed.error && refreshed.data.session?.access_token) return refreshed.data.session.access_token;
   const current = await supabase.auth.getSession();
   const token = current.data.session?.access_token;
   if (!token) throw new Error('No hay una sesión activa en Supabase.');
@@ -34,10 +32,9 @@ async function parseResponse(response: Response) {
 }
 
 export async function fetchPosts(limit = 100): Promise<ApiPost[]> {
-  const token = await getAccessToken();
   const safeLimit = Math.max(1, Math.min(100, Number(limit) || 100));
   const response = await fetch(`/api/posts?limit=${encodeURIComponent(String(safeLimit))}`, {
-    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    headers: { Accept: 'application/json' },
     credentials: 'omit',
     cache: 'no-store',
   });
@@ -53,9 +50,9 @@ export async function createPost(content: string, mediaUrl?: string): Promise<Ap
 
   const response = await fetch('/api/posts', {
     method: 'POST',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     credentials: 'omit',
-    body: JSON.stringify({ content: normalizedContent, media_url: normalizedMediaUrl }),
+    body: JSON.stringify({ content: normalizedContent, media_url: normalizedMediaUrl, access_token: token }),
   });
   const data = await parseResponse(response);
   if (!data) throw new Error('El servidor no devolvió la publicación creada.');
