@@ -18,44 +18,11 @@ export const isSupabaseConfigured = Boolean(
   !supabaseUrl.includes('your-project')
 );
 
-const browserFetch: typeof fetch = async (input, init) => {
-  const requestUrl = typeof input === 'string'
-    ? input
-    : input instanceof Request
-      ? input.url
-      : String(input);
-
-  try {
-    const parsed = new URL(requestUrl);
-    const isProfilesRestRequest =
-      parsed.origin === supabaseUrl &&
-      parsed.pathname.replace(/\/+$/, '') === '/rest/v1/profiles';
-
-    if (isProfilesRestRequest && typeof window !== 'undefined') {
-      const proxyUrl = `${window.location.origin}/api/profiles${parsed.search}`;
-      // Do not forward Supabase auth/apikey/session headers to the same-origin proxy.
-      // The proxy authenticates server-side using the configured publishable key.
-      return fetch(proxyUrl, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        credentials: 'omit',
-      });
-    }
-  } catch {
-    // Fall through to the normal Supabase request for malformed/non-URL inputs.
-  }
-
-  return fetch(input, init);
-};
-
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-      },
-      global: {
-        fetch: browserFetch,
       },
     })
   : null;
