@@ -61,7 +61,13 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
           body = {};
         }
 
-        const presence = typeof body.presence === 'string' ? body.presence.trim().toLowerCase() : '';
+        const presenceValue =
+          typeof body.presence === 'string'
+            ? body.presence
+            : typeof body.user_status === 'string'
+              ? body.user_status
+              : '';
+        const presence = presenceValue.trim().toLowerCase();
         const authorization = headers.get('authorization') || '';
 
         if (
