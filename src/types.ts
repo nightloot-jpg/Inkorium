@@ -1,5 +1,7 @@
 export type Gender = 'h' | 'm' | 'otro';
 
+export type UserPresence = 'conectado' | 'ausente' | 'ocupado' | 'invisible';
+
 export type RelationshipStatus = 'Soltero/a' | 'Con pareja' | 'En una relación' | 'Casado/a' | 'Es complicado' | 'De fiesta en fiesta';
 
 export interface User {
@@ -16,6 +18,7 @@ export interface User {
   ciudad?: string;
   estado: string; // Status message ("¿Qué estás haciendo?")
   estadoFecha?: string;
+  presencia?: UserPresence;
   situacionSentimental: RelationshipStatus;
   ocupacion?: string;
   intereses?: string;

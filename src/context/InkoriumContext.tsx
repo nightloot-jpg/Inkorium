@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { 
   User, Photo, Album, FeedItem, WallComment, PrivateMessage, 
   FriendRequest, Friendship, ChatMessage, InkoriumNotification, AccessLog,
-  PhotoTag, UserActivity
+  PhotoTag, UserActivity, UserPresence
 } from '../types';
 import { 
   INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, 
@@ -56,6 +56,8 @@ interface InkoriumContextType {
   
   // Feed & Status
   publishStatus: (statusText: string, attachedPhotoUrl?: string) => void;
+  updateStatusText: (statusText: string) => void;
+  updateUserPresence: (presencia: UserPresence) => void;
   likeFeedItem: (feedId: string) => void;
   commentFeedItem: (feedId: string, text: string) => void;
   
@@ -218,6 +220,11 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ? new Date(p.created_at).toLocaleDateString('es-ES') 
       : (p.updated_at ? new Date(p.updated_at).toLocaleDateString('es-ES') : 'Reciente');
 
+    const presenceRaw = p.presence || (p.online === false ? 'invisible' : 'conectado');
+    const presencia: UserPresence = (presenceRaw === 'conectado' || presenceRaw === 'ausente' || presenceRaw === 'ocupado' || presenceRaw === 'invisible') 
+      ? presenceRaw 
+      : 'conectado';
+
     return {
       id: p.id,
       username: username || undefined,
@@ -231,15 +238,16 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ciudad,
       estado,
       estadoFecha: p.updated_at ? 'Reciente' : '',
+      presencia,
       situacionSentimental: p.relationship_status || p.situacion_sentimental || 'Soltero/a',
       ocupacion: p.occupation || p.ocupacion || '',
       intereses: p.profile_interests || p.intereses || '',
       musica: p.music || p.musica || '',
       avatar,
       fechaReg,
-      online: Boolean(p.online !== false),
+      online: Boolean(p.online !== false && presencia !== 'invisible'),
       ultimoAcceso: p.ultimo_acceso || 'Recientemente',
-      chatEstado: p.chat_estado || '1'
+      chatEstado: p.chat_estado || (presencia === 'invisible' ? '0' : '1')
     };
   }, []);
 
@@ -583,8 +591,77 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       date: 'Ahora mismo'
     });
 
+    // Sync to Supabase
+    if (isSupabaseConfigured && supabase && currentUser.id) {
+      supabase.from('profiles').update({
+        user_status: statusText.trim(),
+        estado: statusText.trim(),
+        updated_at: new Date().toISOString()
+      }).eq('id', currentUser.id).then(({ error }) => {
+        if (error) console.warn('Could not sync status update to Supabase:', error.message);
+      });
+    }
+
     playSuccessSound();
   }, [currentUser, logUserActivity]);
+
+  const updateStatusText = useCallback((statusText: string) => {
+    const trimmed = statusText.trim();
+    setUsers(prev => prev.map(u => {
+      if (u.id === currentUser.id) {
+        return {
+          ...u,
+          estado: trimmed,
+          estadoFecha: 'Ahora mismo'
+        };
+      }
+      return u;
+    }));
+
+    // Sync to Supabase
+    if (isSupabaseConfigured && supabase && currentUser.id) {
+      supabase.from('profiles').update({
+        user_status: trimmed,
+        estado: trimmed,
+        updated_at: new Date().toISOString()
+      }).eq('id', currentUser.id).then(({ error }) => {
+        if (error) console.warn('Could not sync status text to Supabase:', error.message);
+      });
+    }
+
+    playSuccessSound();
+  }, [currentUser.id]);
+
+  const updateUserPresence = useCallback((presencia: UserPresence) => {
+    const isOnline = presencia !== 'invisible';
+    const chatEstado: '1' | '0' = presencia === 'invisible' ? '0' : '1';
+
+    setUsers(prev => prev.map(u => {
+      if (u.id === currentUser.id) {
+        return {
+          ...u,
+          presencia,
+          online: isOnline,
+          chatEstado
+        };
+      }
+      return u;
+    }));
+
+    // Sync to Supabase
+    if (isSupabaseConfigured && supabase && currentUser.id) {
+      supabase.from('profiles').update({
+        online: isOnline,
+        presence: presencia,
+        chat_estado: chatEstado,
+        updated_at: new Date().toISOString()
+      }).eq('id', currentUser.id).then(({ error }) => {
+        if (error) console.warn('Could not sync presence to Supabase:', error.message);
+      });
+    }
+
+    playClickSound();
+  }, [currentUser.id]);
 
   const likeFeedItem = useCallback((feedId: string) => {
     playClickSound();
@@ -1584,6 +1661,8 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       loginAsUser,
       logout,
       publishStatus,
+      updateStatusText,
+      updateUserPresence,
       likeFeedItem,
       commentFeedItem,
       postWallComment,

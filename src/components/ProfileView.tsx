@@ -5,8 +5,16 @@ import { AvatarModal } from './AvatarModal';
 import { 
   UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon, 
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
-  Trash2, Send, Check, Shield, UserCheck, Camera, Upload
+  Trash2, Send, Check, Shield, UserCheck, Camera, Upload, ChevronDown
 } from 'lucide-react';
+import { UserPresence } from '../types';
+
+const PRESENCE_CONFIG: Record<UserPresence, { label: string; dot: string; text: string; bg: string }> = {
+  conectado: { label: 'Conectado', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' },
+  ausente: { label: 'Ausente', dot: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50' },
+  ocupado: { label: 'Ocupado', dot: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50' },
+  invisible: { label: 'Invisible', dot: 'bg-gray-400', text: 'text-gray-600', bg: 'bg-gray-100' }
+};
 
 export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload }) => {
   const {
@@ -28,6 +36,8 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     sendPrivateMessage,
     openChatWith,
     updateUserData,
+    updateUserPresence,
+    updateStatusText,
     setActiveTab
   } = useInkorium();
 
@@ -42,8 +52,11 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const [newStatusText, setNewStatusText] = useState(profileUser.estado);
   const [showDirectMessageModal, setShowDirectMessageModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showPresenceMenu, setShowPresenceMenu] = useState(false);
   const [mpSubject, setMpSubject] = useState('');
   const [mpBody, setMpBody] = useState('');
+
+  const userPresence: UserPresence = profileUser.presencia || (profileUser.online ? 'conectado' : 'invisible');
 
   // Photos of this user
   const userPhotos = photos.filter(p => p.uploaderId === profileUser.id);
@@ -68,7 +81,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
 
   const handleSaveStatus = () => {
     if (newStatusText.trim()) {
-      updateUserData({ estado: newStatusText.trim(), estadoFecha: 'Ahora mismo' });
+      updateStatusText(newStatusText.trim());
     }
     setEditingStatus(false);
   };
@@ -112,10 +125,57 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
                   {profileUser.nombre} {profileUser.apellidos}
                 </h1>
-                {profileUser.online ? (
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs" title="En línea ahora" />
+                
+                {isOwnProfile ? (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowPresenceMenu(prev => !prev)}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-xs font-semibold cursor-pointer transition border border-gray-200"
+                      title="Cambiar estado de presencia"
+                    >
+                      <span className={`w-2.5 h-2.5 rounded-full ${PRESENCE_CONFIG[userPresence].dot}`} />
+                      <span className={`text-[11px] ${PRESENCE_CONFIG[userPresence].text}`}>
+                        {PRESENCE_CONFIG[userPresence].label}
+                      </span>
+                      <ChevronDown className="w-3 h-3 text-gray-400" />
+                    </button>
+
+                    {showPresenceMenu && (
+                      <div className="absolute left-0 top-full mt-1 z-30 w-36 bg-white rounded shadow-lg border border-gray-200 py-1 text-xs divide-y divide-gray-100">
+                        {(Object.keys(PRESENCE_CONFIG) as UserPresence[]).map((key) => {
+                          const cfg = PRESENCE_CONFIG[key];
+                          const isSelected = userPresence === key;
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => {
+                                updateUserPresence(key);
+                                setShowPresenceMenu(false);
+                              }}
+                              className={`w-full px-2.5 py-1.5 text-left flex items-center justify-between hover:bg-blue-50 transition cursor-pointer ${
+                                isSelected ? 'bg-blue-50 font-bold' : ''
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+                                <span className="text-gray-700">{cfg.label}</span>
+                              </div>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-[#3869A0]" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <span className="w-2.5 h-2.5 rounded-full bg-gray-300" title="Desconectado" />
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200 text-[11px] font-medium">
+                    <span className={`w-2.5 h-2.5 rounded-full ${PRESENCE_CONFIG[userPresence].dot}`} />
+                    <span className={PRESENCE_CONFIG[userPresence].text}>
+                      {PRESENCE_CONFIG[userPresence].label}
+                    </span>
+                  </div>
                 )}
               </div>
 

@@ -3,10 +3,17 @@ import { useInkorium } from '../context/InkoriumContext';
 import { 
   Send, Image as ImageIcon, Smile, MessageCircle, Heart, 
   UserPlus, Sparkles, Clock, CheckCircle2, ChevronRight,
-  Upload, Camera, Loader2, X
+  Upload, Camera, Loader2, X, Edit2, Check, ChevronDown
 } from 'lucide-react';
-import { FeedItem } from '../types';
+import { FeedItem, UserPresence } from '../types';
 import { uploadMediaFile } from '../lib/storage';
+
+export const PRESENCE_MAP: Record<UserPresence, { label: string; dot: string; text: string; bg: string }> = {
+  conectado: { label: 'Conectado', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' },
+  ausente: { label: 'Ausente', dot: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50' },
+  ocupado: { label: 'Ocupado', dot: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50' },
+  invisible: { label: 'Invisible', dot: 'bg-gray-400', text: 'text-gray-600', bg: 'bg-gray-100' }
+};
 
 export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload }) => {
   const {
@@ -15,6 +22,8 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
     photos,
     feed,
     publishStatus,
+    updateStatusText,
+    updateUserPresence,
     likeFeedItem,
     commentFeedItem,
     viewUserProfile,
@@ -37,6 +46,13 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
   const [activeFilter, setActiveFilter] = useState<'todos' | 'estados' | 'fotos' | 'tablon'>('todos');
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+
+  // Status snippet edit state
+  const [isEditingStatus, setIsEditingStatus] = useState(false);
+  const [editingStatusText, setEditingStatusText] = useState(currentUser.estado || '');
+  const [showPresenceMenu, setShowPresenceMenu] = useState(false);
+
+  const currentPresence: UserPresence = currentUser.presencia || (currentUser.online ? 'conectado' : 'invisible');
 
   const feedFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -114,12 +130,123 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
             </div>
           </div>
 
-          {/* Current Status snippet */}
-          <div className="mt-2.5 p-2 bg-[#f4f7fa] rounded border border-gray-200 text-xs text-gray-700 italic relative">
-            <span className="text-[#3869A0] font-serif font-bold text-base leading-none">“</span>
-            <span className="text-[11px]">{currentUser.estado}</span>
-            <span className="text-[#3869A0] font-serif font-bold text-base leading-none">”</span>
-            <span className="block text-[9px] text-gray-400 text-right mt-0.5 not-italic">{currentUser.estadoFecha || 'Hoy'}</span>
+          {/* Current Status snippet & Presence */}
+          <div className="mt-2.5 p-2 bg-[#f4f7fa] rounded border border-gray-200 text-xs text-gray-700 relative shadow-2xs">
+            {/* Presence selector row */}
+            <div className="flex items-center justify-between gap-1 mb-1.5 pb-1 border-b border-gray-200/90">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowPresenceMenu(prev => !prev)}
+                  className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-white hover:bg-gray-100 border border-gray-200/70 transition cursor-pointer text-[11px] font-semibold"
+                  title="Cambiar estado de conexión (conectado, ausente, ocupado, invisible)"
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full ${PRESENCE_MAP[currentPresence].dot} shadow-2xs`} />
+                  <span className={PRESENCE_MAP[currentPresence].text}>{PRESENCE_MAP[currentPresence].label}</span>
+                  <ChevronDown className="w-3 h-3 text-gray-400" />
+                </button>
+
+                {/* Dropdown for presence states */}
+                {showPresenceMenu && (
+                  <div className="absolute left-0 top-full mt-1 z-30 w-40 bg-white rounded shadow-xl border border-gray-300 py-1 text-xs divide-y divide-gray-100">
+                    {(Object.keys(PRESENCE_MAP) as UserPresence[]).map((key) => {
+                      const cfg = PRESENCE_MAP[key];
+                      const isSelected = currentPresence === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => {
+                            updateUserPresence(key);
+                            setShowPresenceMenu(false);
+                          }}
+                          className={`w-full px-2.5 py-1.5 text-left flex items-center justify-between hover:bg-blue-50 transition cursor-pointer ${
+                            isSelected ? 'bg-blue-50 font-bold' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+                            <span className="text-gray-800 text-[11px]">{cfg.label}</span>
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-[#3869A0]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {!isEditingStatus && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingStatusText(currentUser.estado || '');
+                    setIsEditingStatus(true);
+                  }}
+                  className="text-[10px] text-[#3869A0] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                  title="Editar estado"
+                >
+                  <Edit2 className="w-2.5 h-2.5" />
+                  <span>Editar</span>
+                </button>
+              )}
+            </div>
+
+            {/* Editable Status Message */}
+            {isEditingStatus ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  updateStatusText(editingStatusText);
+                  setIsEditingStatus(false);
+                }}
+                className="space-y-1.5 pt-0.5"
+              >
+                <input
+                  type="text"
+                  value={editingStatusText}
+                  onChange={(e) => setEditingStatusText(e.target.value)}
+                  placeholder="¿Qué estás haciendo?..."
+                  autoFocus
+                  maxLength={140}
+                  className="w-full p-1.5 bg-white border border-[#3869A0] rounded text-xs text-gray-800 focus:outline-none shadow-inner"
+                />
+                <div className="flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingStatus(false)}
+                    className="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded text-[10px] font-semibold transition cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-2 py-0.5 bg-[#3869A0] hover:bg-[#2b517d] text-white rounded text-[10px] font-semibold transition cursor-pointer shadow-2xs flex items-center gap-1"
+                  >
+                    <Check className="w-3 h-3" />
+                    <span>Guardar</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div
+                onClick={() => {
+                  setEditingStatusText(currentUser.estado || '');
+                  setIsEditingStatus(true);
+                }}
+                className="cursor-pointer group italic hover:bg-white/80 p-1 rounded transition"
+                title="Haz clic para editar tu estado"
+              >
+                <span className="text-[#3869A0] font-serif font-bold text-base leading-none">“</span>
+                <span className="text-[11px] text-gray-700 group-hover:text-[#3869A0]">
+                  {currentUser.estado || 'Escribe tu estado aquí...'}
+                </span>
+                <span className="text-[#3869A0] font-serif font-bold text-base leading-none">”</span>
+                <span className="block text-[9px] text-gray-400 text-right mt-0.5 not-italic">
+                  {currentUser.estadoFecha || 'Hoy'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

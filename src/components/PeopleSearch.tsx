@@ -305,9 +305,14 @@ export const PeopleSearch: React.FC = () => {
                               (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80';
                             }}
                           />
-                          {user.online && (
-                            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white shadow" title="Conectado" />
-                          )}
+                          <span 
+                            className={`absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full ring-2 ring-white shadow ${
+                              !user.online || user.presencia === 'invisible'
+                                ? 'bg-gray-400'
+                                : (user.presencia === 'ausente' ? 'bg-amber-500' : (user.presencia === 'ocupado' ? 'bg-red-500' : 'bg-emerald-500'))
+                            }`} 
+                            title={user.presencia ? user.presencia.toUpperCase() : (user.online ? 'Conectado' : 'Desconectado')} 
+                          />
                         </div>
 
                         <h3 className="font-bold text-xs text-[#3869A0] group-hover:underline truncate" title={displayName}>

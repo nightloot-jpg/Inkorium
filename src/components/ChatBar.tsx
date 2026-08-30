@@ -2,8 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { 
   MessageSquare, ChevronUp, ChevronDown, X, Minus, 
-  Send, Search, Smile, Sparkles 
+  Send, Search, Smile, Sparkles, Check 
 } from 'lucide-react';
+import { UserPresence } from '../types';
+
+const PRESENCE_DOTS: Record<UserPresence, { label: string; dot: string; text: string; bg: string }> = {
+  conectado: { label: 'Conectado', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' },
+  ausente: { label: 'Ausente', dot: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50' },
+  ocupado: { label: 'Ocupado', dot: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50' },
+  invisible: { label: 'Invisible', dot: 'bg-gray-400', text: 'text-gray-600', bg: 'bg-gray-100' }
+};
 
 export const ChatBar: React.FC = () => {
   const {
@@ -15,12 +23,16 @@ export const ChatBar: React.FC = () => {
     toggleMinimizeChat,
     sendChatMessage,
     openChatWith,
+    updateUserPresence,
     viewUserProfile
   } = useInkorium();
 
   const [dockOpen, setDockOpen] = useState(false);
   const [chatSearch, setChatSearch] = useState('');
   const [inputTexts, setInputTexts] = useState<Record<string, string>>({});
+  const [showStatusPicker, setShowStatusPicker] = useState(false);
+
+  const myPresence: UserPresence = currentUser.presencia || (currentUser.online ? 'conectado' : 'invisible');
 
   // Filter friends for chat list
   const chatFriends = users.filter(u => {
@@ -40,7 +52,12 @@ export const ChatBar: React.FC = () => {
     setInputTexts(prev => ({ ...prev, [targetUserId]: '' }));
   };
 
-  if (currentUser.chatEstado !== '1') return null;
+  const getUserPresenceDot = (u: { online: boolean; presencia?: UserPresence }) => {
+    if (!u.online || u.presencia === 'invisible') return 'bg-gray-400';
+    if (u.presencia === 'ausente') return 'bg-amber-500';
+    if (u.presencia === 'ocupado') return 'bg-red-500';
+    return 'bg-emerald-500';
+  };
 
   return (
     <div className="fixed bottom-0 right-3 z-40 flex items-end gap-2 pointer-events-none">
@@ -69,7 +86,7 @@ export const ChatBar: React.FC = () => {
                 <div className="flex items-center gap-2 truncate">
                   <div className="relative flex-shrink-0">
                     <img src={targetUser.avatar} alt="" className="w-5 h-5 rounded object-cover border border-white/80" />
-                    <span className={`absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${targetUser.online ? 'bg-emerald-400' : 'bg-gray-400'}`} />
+                    <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white ${getUserPresenceDot(targetUser)}`} />
                   </div>
                   <span className="font-bold text-xs truncate">{targetUser.nombre} {targetUser.apellidos}</span>
                 </div>
@@ -172,15 +189,50 @@ export const ChatBar: React.FC = () => {
             className="bg-[#3869A0] text-white px-3 py-2 flex items-center justify-between cursor-pointer select-none hover:bg-[#2e5785] transition"
           >
             <div className="flex items-center gap-2 font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className={`w-2 h-2 rounded-full ${PRESENCE_DOTS[myPresence].dot} ${myPresence === 'conectado' ? 'animate-pulse' : ''}`} />
               <span>Chat ({onlineCount})</span>
+              <span className="text-[10px] font-normal text-blue-100 bg-black/20 px-1.5 py-0.2 rounded capitalize">
+                {myPresence}
+              </span>
             </div>
             {dockOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </div>
 
-          {/* Expanded Friends Online List */}
+          {/* Expanded Friends Online List & Presence Controls */}
           {dockOpen && (
-            <div className="p-2 bg-white border-t border-gray-200 space-y-2 max-h-72 flex flex-col">
+            <div className="p-2 bg-white border-t border-gray-200 space-y-2 max-h-80 flex flex-col">
+              {/* Quick presence selector inside chat dock */}
+              <div className="bg-gray-50 border border-gray-200 rounded p-1.5">
+                <div className="flex items-center justify-between text-[10px] text-gray-500 font-semibold mb-1">
+                  <span>Tu presencia:</span>
+                  <span className={`capitalize font-bold ${PRESENCE_DOTS[myPresence].text}`}>
+                    {PRESENCE_DOTS[myPresence].label}
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-1">
+                  {(Object.keys(PRESENCE_DOTS) as UserPresence[]).map((key) => {
+                    const cfg = PRESENCE_DOTS[key];
+                    const isSelected = myPresence === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => updateUserPresence(key)}
+                        title={cfg.label}
+                        className={`flex items-center justify-center gap-1 py-1 px-0.5 rounded border text-[10px] font-medium transition cursor-pointer ${
+                          isSelected
+                            ? 'bg-white border-[#3869A0] text-[#3869A0] font-bold shadow-2xs'
+                            : 'bg-gray-100/80 border-gray-200 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                        <span className="truncate">{cfg.label.slice(0, 4)}.</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Search friend */}
               <div className="relative">
                 <input
@@ -195,27 +247,31 @@ export const ChatBar: React.FC = () => {
 
               {/* Friends list */}
               <div className="overflow-y-auto space-y-1 flex-1">
-                {chatFriends.map(friend => (
-                  <div
-                    key={friend.id}
-                    onClick={() => {
-                      openChatWith(friend.id);
-                    }}
-                    className="flex items-center justify-between p-1.5 rounded hover:bg-blue-50 cursor-pointer transition"
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <div className="relative flex-shrink-0">
-                        <img src={friend.avatar} alt="" className="w-6 h-6 rounded object-cover border border-gray-300" />
-                        <span className={`absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${friend.online ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                {chatFriends.map(friend => {
+                  const dotColor = getUserPresenceDot(friend);
+                  const isOnline = friend.online && friend.presencia !== 'invisible';
+                  return (
+                    <div
+                      key={friend.id}
+                      onClick={() => {
+                        openChatWith(friend.id);
+                      }}
+                      className="flex items-center justify-between p-1.5 rounded hover:bg-blue-50 cursor-pointer transition"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <div className="relative flex-shrink-0">
+                          <img src={friend.avatar} alt="" className="w-6 h-6 rounded object-cover border border-gray-300" />
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                        </div>
+                        <span className="font-semibold text-gray-800 truncate text-[11px]">{friend.nombre} {friend.apellidos}</span>
                       </div>
-                      <span className="font-semibold text-gray-800 truncate text-[11px]">{friend.nombre} {friend.apellidos}</span>
-                    </div>
 
-                    <span className="text-[10px] text-gray-400 flex-shrink-0">
-                      {friend.online ? 'Online' : 'Off'}
-                    </span>
-                  </div>
-                ))}
+                      <span className="text-[10px] text-gray-400 flex-shrink-0 capitalize">
+                        {friend.presencia || (isOnline ? 'Online' : 'Off')}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
