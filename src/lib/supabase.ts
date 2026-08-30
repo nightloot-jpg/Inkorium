@@ -33,7 +33,13 @@ const browserFetch: typeof fetch = async (input, init) => {
 
     if (isProfilesRestRequest && typeof window !== 'undefined') {
       const proxyUrl = `${window.location.origin}/api/profiles${parsed.search}`;
-      return fetch(proxyUrl, init);
+      // Do not forward Supabase auth/apikey/session headers to the same-origin proxy.
+      // The proxy authenticates server-side using the configured publishable key.
+      return fetch(proxyUrl, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        credentials: 'omit',
+      });
     }
   } catch {
     // Fall through to the normal Supabase request for malformed/non-URL inputs.
