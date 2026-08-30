@@ -1,0 +1,317 @@
+/*
+ * Inkorium / Nuenti visual shell
+ *
+ * Presentation only. This layer is intentionally loaded last so the existing
+ * React/Supabase widgets keep their behaviour while the supplied Nuenti ZIP
+ * becomes the visual source of truth.
+ */
+:root {
+  --n-bg: #e8eef4;
+  --n-blue: #2f6fae;
+  --n-blue-dark: #245a91;
+  --n-blue-soft: #eaf2f9;
+  --n-border: #d5dce3;
+  --n-text: #344457;
+  --n-muted: #788797;
+  --n-link: #0d5da9;
+  --n-white: #fff;
+}
+
+html, body, #root { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--n-bg);
+  color: var(--n-text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.feed-shell,
+.feed-app {
+  min-height: 100vh;
+  background: var(--n-bg) !important;
+  color: var(--n-text) !important;
+}
+
+.feed-app .topbar {
+  position: relative;
+  z-index: 50;
+  min-height: 56px !important;
+  height: 56px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 28px !important;
+  gap: 0 !important;
+  background: linear-gradient(90deg, #2b75bd 0%, #1d5f9f 100%) !important;
+  border-bottom: 1px solid #1a4e82 !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2) !important;
+}
+
+.feed-app .topbar .brand,
+.feed-app .topbar .brand-button {
+  flex: 0 0 auto !important;
+  min-width: 164px !important;
+  height: 56px !important;
+  margin: 0 18px 0 0 !important;
+  padding: 0 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: #fff !important;
+  background: transparent !important;
+}
+
+.feed-app .topbar .brand-mark { width: 27px !important; height: 27px !important; }
+.feed-app .topbar .brand span { font-size: 23px !important; font-weight: 700 !important; }
+
+.feed-app .top-nav {
+  flex: 0 1 auto !important;
+  display: flex !important;
+  align-items: stretch !important;
+  height: 56px !important;
+  margin: 0 22px 0 0 !important;
+  gap: 0 !important;
+  min-width: 0 !important;
+}
+.feed-app .top-nav a,
+.feed-app .top-nav button {
+  flex: 0 0 auto !important;
+  min-width: 76px !important;
+  height: 56px !important;
+  padding: 0 15px !important;
+  border: 0 !important;
+  border-left: 1px solid rgba(255,255,255,.05) !important;
+  border-radius: 0 !important;
+  color: #f0f7ff !important;
+  background: transparent !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+}
+.feed-app .top-nav a.active,
+.feed-app .top-nav button.active {
+  border-bottom: 4px solid #fff !important;
+  background: rgba(255,255,255,.14) !important;
+}
+
+.feed-app .search-form {
+  flex: 1 1 320px !important;
+  min-width: 220px !important;
+  max-width: 430px !important;
+  margin: 0 20px 0 auto !important;
+}
+.feed-app .search-form input,
+.feed-app .search {
+  width: 100% !important;
+  height: 38px !important;
+  padding: 0 15px !important;
+  border: 1px solid #c6d0da !important;
+  border-radius: 3px !important;
+  color: #4e5f72 !important;
+  background: #fff !important;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.08) !important;
+  font-size: 13px !important;
+}
+
+.feed-app .top-actions {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #fff !important;
+}
+.feed-app .top-actions .icon-button {
+  width: 34px !important;
+  height: 34px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #fff !important;
+  background: transparent !important;
+}
+.feed-app .top-actions .user-chip {
+  min-width: 112px !important;
+  min-height: 40px !important;
+  padding: 0 8px 0 14px !important;
+  border-left: 1px solid rgba(255,255,255,.25) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: #fff !important;
+  background: transparent !important;
+}
+
+.feed-app .feed-layout {
+  display: grid !important;
+  grid-template-columns: 272px minmax(0, 1fr) 360px !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 20px 28px 44px !important;
+  gap: 16px !important;
+  align-items: start !important;
+}
+.feed-app .feed-layout > * { min-width: 0 !important; }
+
+.feed-app .panel,
+.feed-app .composer,
+.feed-app .post,
+.feed-app .profile-card,
+.feed-app .side-menu,
+.feed-app .friends,
+.feed-app .right-card,
+.feed-app .calendar,
+.feed-app .feed-rail-card {
+  border: 1px solid var(--n-border) !important;
+  border-radius: 3px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(24,45,68,.08) !important;
+}
+
+.feed-app .left-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  position: sticky !important;
+  top: 70px !important;
+  align-self: start !important;
+}
+.feed-app .profile-card { min-height: 128px !important; padding: 18px !important; }
+.feed-app .profile-card .avatar { border-radius: 2px !important; }
+.feed-app .profile-card strong,
+.feed-app .friends a,
+.feed-app .right-card a { color: var(--n-link) !important; }
+.feed-app .side-menu { margin: 0 !important; padding: 8px !important; }
+.feed-app .side-menu a {
+  min-height: 39px !important;
+  padding: 8px 11px !important;
+  border-radius: 3px !important;
+  color: var(--n-text) !important;
+  font-size: 14px !important;
+}
+.feed-app .side-menu a.selected {
+  color: var(--n-link) !important;
+  background: var(--n-blue-soft) !important;
+  font-weight: 700 !important;
+}
+.feed-app .friends { margin: 0 !important; padding: 15px 17px !important; }
+
+.feed-app .stream { min-width: 0 !important; width: 100% !important; }
+.feed-app .composer { margin: 0 0 14px !important; padding: 15px 16px 11px !important; }
+.feed-app .composer-row { gap: 11px !important; }
+.feed-app .composer-row .avatar { width: 52px !important; height: 52px !important; flex-basis: 52px !important; }
+.feed-app .composer-row input {
+  height: 52px !important;
+  padding: 0 13px !important;
+  border: 1px solid #cbd5df !important;
+  border-radius: 3px !important;
+  background: #fff !important;
+  font-size: 16px !important;
+}
+.feed-app .composer-tools { justify-content: flex-start !important; gap: 12px !important; padding: 11px 2px 10px !important; }
+.feed-app .composer-footer { padding-top: 8px !important; }
+.feed-app .publish { padding: 9px 20px !important; border-radius: 3px !important; background: #3a7bbd !important; }
+
+.feed-app .post { margin: 0 0 14px !important; overflow: hidden !important; }
+.feed-app .post-head { gap: 10px !important; padding: 13px 15px 9px !important; }
+.feed-app .post-head .avatar { width: 42px !important; height: 42px !important; flex-basis: 42px !important; border-radius: 2px !important; }
+.feed-app .post-head strong { color: var(--n-link) !important; font-size: 15px !important; }
+.feed-app .post-head span { color: #8292a2 !important; font-size: 11px !important; }
+.feed-app .post-text { padding: 1px 15px 12px !important; font-size: 14px !important; line-height: 1.45 !important; }
+.feed-app .post img,
+.feed-app .post video { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; }
+.feed-app .post-actions { padding: 10px 15px !important; gap: 17px !important; }
+
+.feed-app .right-column {
+  position: sticky !important;
+  top: 70px !important;
+  align-self: start !important;
+}
+.feed-app .right-column .right-card,
+.feed-app .right-column .calendar,
+.feed-app .feed-right-rail .feed-rail-card {
+  margin-bottom: 12px !important;
+  padding: 15px 16px !important;
+}
+.feed-app .right-column .right-card > strong,
+.feed-app .right-column .calendar > strong,
+.feed-app .feed-rail-card-head strong {
+  color: #4e6376 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+.feed-app .feed-rail-card-head { background: transparent !important; border: 0 !important; padding: 0 !important; margin-bottom: 10px !important; }
+.feed-app .feed-rail-person { padding: 7px 0 !important; }
+.feed-app .feed-rail-avatar { width: 42px !important; height: 42px !important; flex-basis: 42px !important; border-radius: 2px !important; }
+.feed-app .feed-rail-person-copy strong { color: var(--n-link) !important; font-size: 13px !important; }
+.feed-app .feed-rail-add { padding: 6px 9px !important; border-radius: 3px !important; }
+
+/* The right rail is a dashboard column, not its own scroll area. */
+.feed-app .feed-shell-right-rail {
+  position: fixed !important;
+  top: 70px !important;
+  right: max(20px, calc((100vw - 1388px) / 2)) !important;
+  left: auto !important;
+  width: 360px !important;
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+  z-index: 20 !important;
+}
+.feed-app .feed-shell-right-rail > * { max-height: none !important; overflow: visible !important; }
+
+/* Profile: use the same compact Nuenti frame vocabulary. */
+.feed-app .profile-view-page {
+  width: min(997px, calc(100% - 32px)) !important;
+  margin: 18px auto 40px !important;
+  color: var(--n-text) !important;
+}
+.feed-app .profile-view-page .profile-view-header,
+.feed-app .profile-view-page .profile-view-card,
+.feed-app .profile-view-page .profile-side-nav {
+  border: 1px solid var(--n-border) !important;
+  border-radius: 3px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(24,45,68,.08) !important;
+}
+.feed-app .profile-view-page .profile-view-header { overflow: hidden !important; }
+.feed-app .profile-view-page .profile-view-card { padding: 15px !important; box-shadow: 0 1px 2px rgba(24,45,68,.08) !important; }
+.feed-app .profile-view-page .profile-side-nav { padding: 7px !important; }
+.feed-app .profile-view-page .profile-side-nav button {
+  border-radius: 3px !important;
+  color: var(--n-text) !important;
+}
+.feed-app .profile-view-page .profile-side-nav button.active,
+.feed-app .profile-view-page .profile-side-nav button:hover {
+  color: var(--n-link) !important;
+  background: var(--n-blue-soft) !important;
+}
+.feed-app .profile-view-page h2,
+.feed-app .profile-view-page .profile-view-card-title { color: var(--n-link) !important; }
+
+@media (max-width: 1240px) {
+  .feed-app .feed-layout { grid-template-columns: 242px minmax(0,1fr) !important; }
+  .feed-app .right-column,
+  .feed-app .feed-shell-right-rail { display: none !important; }
+}
+@media (max-width: 900px) {
+  .feed-app .topbar { padding-inline: 14px !important; }
+  .feed-app .topbar .brand { min-width: 130px !important; margin-right: 8px !important; }
+  .feed-app .top-nav { margin-right: 8px !important; overflow-x: auto !important; }
+  .feed-app .top-nav a,
+  .feed-app .top-nav button { min-width: 70px !important; padding-inline: 10px !important; font-size: 12px !important; }
+  .feed-app .search-form { min-width: 160px !important; margin-right: 10px !important; }
+  .feed-app .feed-layout { grid-template-columns: 190px minmax(0,1fr) !important; padding: 14px 14px 30px !important; }
+  .feed-app .profile-view-page { width: calc(100% - 20px) !important; }
+}
+@media (max-width: 700px) {
+  .feed-app .topbar { flex-wrap: nowrap !important; overflow-x: auto !important; }
+  .feed-app .top-actions .user-chip { min-width: 36px !important; width: 36px !important; padding: 0 !important; overflow: hidden !important; }
+  .feed-app .top-actions .user-chip > span:not(.avatar) { display: none !important; }
+  .feed-app .search-form { display: none !important; }
+  .feed-app .feed-layout { display: block !important; padding: 10px 8px 24px !important; }
+  .feed-app .left-column { display: none !important; }
+  .feed-app .profile-view-page { width: calc(100% - 12px) !important; margin-top: 8px !important; }
+}
