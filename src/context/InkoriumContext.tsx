@@ -71,45 +71,68 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [activeChatWindows, setActiveChatWindows] = useState<ChatWindow[]>([]);
 
   const mapProfileToUser = useCallback((p: any): User => {
-    const username = String(p.username || '').trim();
-    const fullName = String(p.full_name || '').trim();
+    const username = String(p.username ?? '').trim();
+    const fullName = String(p.full_name ?? p.fullname ?? '').trim();
     const parts = fullName ? fullName.split(/\s+/) : [];
-    const nombre = parts[0] || username || (p.id ? `Usuario_${String(p.id).slice(0, 6)}` : 'Usuario');
-    const apellidos = parts.slice(1).join(' ');
-    const city = String(p.city || '').trim();
-    const rawPresence = String(p.presence || 'conectado');
-    const presencia = ['conectado', 'ausente', 'ocupado', 'invisible'].includes(rawPresence) ? rawPresence as UserPresence : 'conectado';
+    const nombre = String(p.nombre ?? parts[0] ?? username ?? `Usuario_${String(p.id).slice(0, 6)}`).trim();
+    const apellidos = String(p.apellidos ?? parts.slice(1).join(' ')).trim();
+    const city = String(p.city ?? p.ciudad ?? '').trim();
+    const province = String(p.province ?? p.provincia ?? city).trim();
+    const rawPresence = String(p.presence ?? p.presencia ?? '').trim().toLowerCase();
+    const rawStatus = String(p.user_status ?? p.estado ?? '').trim().toLowerCase();
+    const presenceSource = rawPresence || (['conectado', 'ausente', 'ocupado', 'invisible'].includes(rawStatus) ? rawStatus : 'conectado');
+    const presencia = ['conectado', 'ausente', 'ocupado', 'invisible'].includes(presenceSource)
+      ? presenceSource as UserPresence
+      : (presenceSource === 'desconectado' ? 'invisible' : 'conectado');
+    const gender = String(p.gender ?? p.sexo ?? '').trim().toLowerCase();
+    const avatar = String(p.avatar_url ?? p.avatar ?? '').trim();
+    const interests = Array.isArray(p.profile_interests)
+      ? p.profile_interests.join(', ')
+      : String(p.profile_interests ?? p.intereses ?? '').trim();
     return {
-      id: p.id,
+      id: String(p.id),
       username: username || undefined,
       full_name: fullName || undefined,
-      nombre,
+      nombre: nombre || username || 'Usuario',
       apellidos,
-      email: '',
-      sexo: p.gender === 'female' ? 'm' : (p.gender === 'male' ? 'h' : 'otro'),
-      fnac: p.birth_date || '',
-      provincia: city,
+      email: String(p.email ?? '').trim(),
+      sexo: gender === 'female' || gender === 'mujer' || gender === 'm' ? 'm' : (gender === 'male' || gender === 'hombre' || gender === 'h' ? 'h' : 'otro'),
+      fnac: String(p.birth_date ?? p.fnac ?? '').trim(),
+      provincia: province,
       ciudad: city || undefined,
-      estado: String(p.user_status || '').trim(),
+      estado: String(p.user_status ?? p.estado ?? '').trim(),
       estadoFecha: p.updated_at ? 'Reciente' : '',
       presencia,
-      situacionSentimental: p.relationship_status || 'Soltero/a',
-      ocupacion: p.occupation || '',
-      intereses: p.profile_interests || '',
-      musica: p.music || '',
-      avatar: p.avatar_url || '',
+      situacionSentimental: p.relationship_status ?? p.situacion_sentimental ?? 'Soltero/a',
+      ocupacion: p.occupation ?? p.ocupacion ?? '',
+      intereses,
+      musica: p.music ?? p.musica ?? '',
+      avatar,
       fechaReg: p.updated_at ? new Date(p.updated_at).toLocaleDateString('es-ES') : 'Reciente',
-      online: presencia !== 'invisible',
-      ultimoAcceso: 'Recientemente',
-      chatEstado: presencia === 'invisible' ? '0' : '1'
+      online: presencia !== 'invisible' && presenceSource !== 'desconectado',
+      ultimoAcceso: p.updated_at ? new Date(p.updated_at).toLocaleString('es-ES') : 'Recientemente',
+      chatEstado: presencia === 'invisible' || presenceSource === 'desconectado' ? '0' : '1'
     };
   }, []);
 
   const fetchSupabaseProfiles = useCallback(async () => {
-    if (!isSupabaseConfigured || !supabase) { setUsers([]); return; }
-    const { data, error } = await supabase.from('profiles').select('*');
-    if (error) { console.warn('Supabase profiles:', error.message); setUsers([]); return; }
-    setUsers(Array.isArray(data) ? data.map(mapProfileToUser) : []);
+    if (!isSupabaseConfigured || !supabase) {
+      console.warn('Supabase profiles: client not configured');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url, city, birth_date, user_status, visibility, profile_interests, updated_at')
+      .order('updated_at', { ascending: false, nullsFirst: false });
+
+    if (error) {
+      console.warn('Supabase profiles:', error.message);
+      return;
+    }
+
+    const mapped = Array.isArray(data) ? data.map(mapProfileToUser).filter(user => Boolean(user.id)) : [];
+    setUsers(mapped);
   }, [mapProfileToUser]);
 
   useEffect(() => {
@@ -128,7 +151,9 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsLoggedIn(Boolean(session?.user));
       await fetchSupabaseProfiles();
     });
-    const channel = supabase!.channel('profiles-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => { void fetchSupabaseProfiles(); }).subscribe();
+    const channel = supabase!.channel('profiles-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+      void fetchSupabaseProfiles();
+    }).subscribe();
     return () => { mounted = false; subscription.unsubscribe(); supabase!.removeChannel(channel); };
   }, [fetchSupabaseProfiles]);
 
