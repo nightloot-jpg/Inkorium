@@ -165,18 +165,51 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [users, setUsers] = useState<User[]>(() => {
     const cached = load<User[]>('users', []);
-    return Array.isArray(cached) ? cached : [];
+    if (Array.isArray(cached) && cached.length > 0) {
+      const merged = [...cached];
+      INITIAL_USERS.forEach(bu => {
+        if (!merged.some(u => u.id === bu.id || (bu.email && u.email === bu.email))) {
+          merged.push(bu);
+        }
+      });
+      return merged;
+    }
+    return INITIAL_USERS;
   });
   const [currentUserId, setCurrentUserId] = useState<string>(() => load('currentUserId', ''));
-  const [photos, setPhotos] = useState<Photo[]>(() => load('photos', []));
-  const [albums, setAlbums] = useState<Album[]>(() => load('albums', []));
-  const [feed, setFeed] = useState<FeedItem[]>(() => load('feed', []));
-  const [wallComments, setWallComments] = useState<WallComment[]>(() => load('wallComments', []));
-  const [messages, setMessages] = useState<PrivateMessage[]>(() => load('messages', []));
-  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(() => load('friendRequests', []));
-  const [friendships, setFriendships] = useState<Friendship[]>(() => load('friendships', []));
+  const [photos, setPhotos] = useState<Photo[]>(() => {
+    const cached = load<Photo[]>('photos', []);
+    return (Array.isArray(cached) && cached.length > 0) ? cached : INITIAL_PHOTOS;
+  });
+  const [albums, setAlbums] = useState<Album[]>(() => {
+    const cached = load<Album[]>('albums', []);
+    return (Array.isArray(cached) && cached.length > 0) ? cached : INITIAL_ALBUMS;
+  });
+  const [feed, setFeed] = useState<FeedItem[]>(() => {
+    const cached = load<FeedItem[]>('feed', []);
+    return (Array.isArray(cached) && cached.length > 0) ? cached : INITIAL_FEED;
+  });
+  const [wallComments, setWallComments] = useState<WallComment[]>(() => {
+    const cached = load<WallComment[]>('wallComments', []);
+    return (Array.isArray(cached) && cached.length > 0) ? cached : INITIAL_WALL_COMMENTS;
+  });
+  const [messages, setMessages] = useState<PrivateMessage[]>(() => {
+    const cached = load<PrivateMessage[]>('messages', []);
+    return (Array.isArray(cached) && cached.length > 0) ? cached : INITIAL_MESSAGES;
+  });
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(() => {
+    const cached = load<FriendRequest[]>('friendRequests', []);
+    return (Array.isArray(cached) && cached.length > 0) ? cached : INITIAL_FRIEND_REQUESTS;
+  });
+  const [friendships, setFriendships] = useState<Friendship[]>(() => {
+    const cached = load<Friendship[]>('friendships', []);
+    return (Array.isArray(cached) && cached.length > 0) ? cached : INITIAL_FRIENDSHIPS;
+  });
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => load('chatMessages', []));
-  const [notifications, setNotifications] = useState<InkoriumNotification[]>(() => load('notifications', []));
+  const [notifications, setNotifications] = useState<InkoriumNotification[]>(() => {
+    const cached = load<InkoriumNotification[]>('notifications', []);
+    return (Array.isArray(cached) && cached.length > 0) ? cached : INITIAL_NOTIFICATIONS;
+  });
   const [toasts, setToasts] = useState<InkoriumNotification[]>([]);
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>(() => load('accessLogs', []));
   const [activities, setActivities] = useState<UserActivity[]>(() => load('activities', []));
@@ -269,6 +302,12 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (currentAuthUser && !list.find(u => u.id === currentAuthUser.id || (currentAuthUser.email && u.email === currentAuthUser.email))) {
             list.unshift(currentAuthUser);
           }
+          // Include community users from INITIAL_USERS so community is active
+          INITIAL_USERS.forEach(bu => {
+            if (!list.some(u => u.id === bu.id || (bu.email && u.email === bu.email))) {
+              list.push(bu);
+            }
+          });
           return list;
         });
       }
