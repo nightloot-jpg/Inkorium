@@ -1,36 +1,33 @@
 {
-  "name": "inkorium",
+  "name": "react-example",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --config secure-vite.config.ts",
-    "build": "vite build --config secure-vite.config.ts",
-    "preview": "vite preview --host 0.0.0.0",
-    "lint": "tsc --noEmit",
-    "test": "node --test tests/*.test.js",
-    "test:watch": "node --test --watch tests/*.test.js",
-    "test:coverage": "node --test --experimental-test-coverage tests/*.test.js"
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf dist server.js",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.3",
-    "dotenv": "^17.4.2",
-    "lucide-react": "^1.31.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-easy-crop": "^6.2.3",
-    "react-use": "^17.6.1",
-    "tslib": "^2.8.1",
-    "tus-js-client": "^4.3.1",
-    "uuid": "^14.0.1",
-    "zustand": "^5.0.15"
+    "@google/genai": "^2.4.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/canvas-confetti": "^1.9.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "canvas-confetti": "^1.9.4",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2"
   },
   "devDependencies": {
-    "@types/react": "^19.2.4",
-    "@types/react-dom": "^19.2.4",
-    "@types/uuid": "^10.0.0",
-    "@vitejs/plugin-react": "^5.2.0",
-    "typescript": "^5.9.3",
-    "vite": "^8.2.1"
+    "autoprefixer": "^10.4.21",
+    "esbuild": "^0.25.0"
   }
 }
