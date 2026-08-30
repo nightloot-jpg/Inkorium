@@ -1,4 +1,4 @@
-import baseConfig from './vite.config';
+import baseConfig from './vite.config.ts';
 import { defineConfig, mergeConfig } from 'vite';
 
 const secureConfig = defineConfig({
