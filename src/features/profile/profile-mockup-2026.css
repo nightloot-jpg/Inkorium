@@ -5,12 +5,14 @@
    =================================================================== */
 
 .profile-view-page{
-  max-width:1180px;
-  margin:0 auto;
-  padding:20px 20px 48px;
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:20px 28px 48px;
   background:#f3f6fa;
   color:#14253b;
   font-family:Arial,Helvetica,sans-serif;
+  box-sizing:border-box;
 }
 
 /* ---------- Cover ---------- */
@@ -18,7 +20,7 @@
   height:230px !important;
   border:1px solid #dfe6ee !important;
   border-bottom:0 !important;
-  border-radius:14px 14px 0 0 !important;
+  border-radius:0 !important;
   background-color:#dfe8f2 !important;
   background-position:center !important;
   background-size:cover !important;
@@ -26,7 +28,7 @@
   position:relative;
 }
 .profile-view-cover-placeholder{
-  border-radius:14px 14px 0 0;
+  border-radius:0;
   background:linear-gradient(160deg,#5b3a86 0%,#8a4ba0 35%,#c96f8f 65%,#e79a72 100%);
 }
 
@@ -41,7 +43,7 @@
   background:#fff;
   border:1px solid #dfe6ee;
   border-top:0;
-  border-radius:0 0 14px 14px;
+  border-radius:0;
   box-shadow:0 1px 3px rgba(27,55,90,.05);
 }
 
@@ -56,7 +58,7 @@
 .profile-view-avatar-button .profile-view-avatar-fallback{
   width:150px !important;
   height:150px !important;
-  border-radius:18px !important;
+  border-radius:0 !important;
 }
 .profile-view-avatar{
   border:5px solid #fff !important;
@@ -77,7 +79,7 @@
   bottom:8px !important;
   width:36px !important;
   height:36px !important;
-  border-radius:10px !important;
+  border-radius:0 !important;
   background:#6a35c2 !important;
   border:3px solid #fff !important;
   opacity:1 !important;
@@ -159,7 +161,7 @@
   top:70px;
   background:#fff;
   border:1px solid #dfe6ee;
-  border-radius:12px;
+  border-radius:0;
   padding:8px;
   box-shadow:0 1px 3px rgba(27,55,90,.05);
 }
@@ -183,7 +185,7 @@
   min-height:42px;
   padding:9px 11px;
   border:0;
-  border-radius:8px;
+  border-radius:0;
   background:transparent;
   color:#5c7188;
   font-size:14px;
@@ -208,7 +210,7 @@
 .profile-view-card{
   background:#fff;
   border:1px solid #dfe6ee;
-  border-radius:12px;
+  border-radius:0;
   padding:18px;
   margin-bottom:16px;
   box-shadow:0 1px 3px rgba(27,55,90,.04);
@@ -238,7 +240,7 @@
 .profile-interest-list{display:flex; flex-wrap:wrap; gap:7px; margin-top:8px;}
 .profile-interest-chip{
   padding:5px 11px;
-  border-radius:999px;
+  border-radius:0;
   background:#f1eafb;
   color:#5b2db5;
   font-size:12px;
@@ -248,14 +250,14 @@
 
 /* Libro de firmas */
 .profile-view-signature-form textarea{
-  border-radius:9px;
+  border-radius:0;
   border:1px solid #d4dee8;
   background:#fff;
 }
 .profile-view-signature-actions button{
   background:#6a35c2;
   border-color:#6a35c2;
-  border-radius:8px;
+  border-radius:0;
 }
 
 /* Amigos card (sidebar) */
@@ -271,7 +273,7 @@
   align-items:center;
   gap:6px;
   padding:12px 8px;
-  border-radius:10px;
+  border-radius:0;
   text-decoration:none;
   color:inherit;
   transition:background .15s ease;
@@ -281,7 +283,7 @@
 .profile-friends-fallback{
   width:64px;
   height:64px;
-  border-radius:10px;
+  border-radius:0;
   object-fit:cover;
   background:#e7eef6;
   display:grid;
@@ -301,7 +303,7 @@
 .profile-friends-item small{color:#8091a5; font-size:11px;}
 .profile-friends-skeleton{
   height:96px;
-  border-radius:10px;
+  border-radius:0;
   background:#eef2f6;
 }
 
@@ -313,7 +315,7 @@
 .profile-activity-avatar{
   width:36px;
   height:36px;
-  border-radius:9px;
+  border-radius:0;
   object-fit:cover;
   background:#e7eef6;
 }
@@ -333,7 +335,7 @@
   color:#8798aa;
   cursor:pointer;
   padding:6px;
-  border-radius:6px;
+  border-radius:0;
 }
 .profile-activity-menu:hover{background:#f1f4f8;}
 .profile-activity-item p{margin:10px 0 0; color:#273c53; line-height:1.5; font-size:14px;}
@@ -342,7 +344,7 @@
   width:100%;
   max-height:360px;
   object-fit:cover;
-  border-radius:10px;
+  border-radius:0;
   margin-top:10px;
 }
 
@@ -367,12 +369,12 @@
 }
 @media (max-width:640px){
   .profile-view-page{padding:10px 10px 32px;}
-  .profile-view-page > .profile-view-cover{height:150px !important; border-radius:10px 10px 0 0 !important;}
+  .profile-view-page > .profile-view-cover{height:150px !important; border-radius:0 !important;}
   .profile-view-page > .profile-view-header{flex-direction:column; padding:0 16px 18px !important;}
   .profile-view-avatar-wrap{margin-top:-56px !important;}
   .profile-view-avatar-button,
   .profile-view-avatar-button .profile-view-avatar,
-  .profile-view-avatar-button .profile-view-avatar-fallback{width:104px !important; height:104px !important; border-radius:14px !important;}
+  .profile-view-avatar-button .profile-view-avatar-fallback{width:104px !important; height:104px !important; border-radius:0 !important;}
   .profile-view-name-row h1{font-size:22px;}
   .profile-friends-grid{grid-template-columns:1fr;}
 }
