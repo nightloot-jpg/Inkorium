@@ -28,8 +28,6 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
       parsed.pathname.replace(/\/+$/, '') === '/rest/v1/profiles';
 
     if (isProfilesRequest && typeof window !== 'undefined') {
-      const headers = new Headers(init?.headers || request?.headers || undefined);
-
       if (requestMethod === 'GET') {
         const proxyUrl = `${window.location.origin}/api/profiles${parsed.search}`;
         return fetch(proxyUrl, {
@@ -41,32 +39,67 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
       }
 
       if (requestMethod === 'PATCH') {
-        const match = parsed.searchParams.get('id')?.match(/^eq\.(.+)$/);
-        let body: any = {};
-        const rawBody = init?.body ?? request?.body;
-        if (typeof rawBody === 'string') {
-          try { body = JSON.parse(rawBody); } catch { body = {}; }
+        const headers = new Headers(init?.headers || request?.headers || undefined);
+        const queryId = parsed.searchParams.get('id') || '';
+        const match = queryId.match(/^eq\.(.+)$/);
+
+        let rawBody = '';
+        try {
+          if (typeof init?.body === 'string') {
+            rawBody = init.body;
+          } else if (request) {
+            rawBody = await request.clone().text();
+          }
+        } catch {
+          rawBody = '';
         }
-        const presence = typeof body.presence === 'string' ? body.presence : '';
+
+        let body: Record<string, unknown> = {};
+        try {
+          body = rawBody ? JSON.parse(rawBody) : {};
+        } catch {
+          body = {};
+        }
+
+        const presence = typeof body.presence === 'string' ? body.presence.trim().toLowerCase() : '';
         const authorization = headers.get('authorization') || '';
 
-        if (match && presence && authorization.startsWith('Bearer ')) {
-          const proxyUrl = `${window.location.origin}/api/profiles/${encodeURIComponent(match[1])}/presence`;
-          return fetch(proxyUrl, {
-            method: 'PATCH',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-              Authorization: authorization
-            },
-            credentials: 'omit',
-            body: JSON.stringify({ presence })
-          });
+        if (
+          match &&
+          presence &&
+          ['conectado', 'ausente', 'ocupado', 'invisible'].includes(presence)
+        ) {
+          let accessToken = authorization.startsWith('Bearer ')
+            ? authorization.slice('Bearer '.length).trim()
+            : '';
+
+          if (!accessToken) {
+            try {
+              const sessionResult = await supabase?.auth.getSession();
+              accessToken = sessionResult?.data.session?.access_token || '';
+            } catch {
+              accessToken = '';
+            }
+          }
+
+          if (accessToken) {
+            const proxyUrl = `${window.location.origin}/api/profiles/${encodeURIComponent(match[1])}/presence`;
+            return fetch(proxyUrl, {
+              method: 'PATCH',
+              headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`
+              },
+              credentials: 'omit',
+              body: JSON.stringify({ presence })
+            });
+          }
         }
       }
     }
-  } catch {
-    // Fall back to normal Supabase transport for unrelated/malformed requests.
+  } catch (error) {
+    console.warn('Supabase profile transport fallback:', error);
   }
 
   return fetch(input, init);
