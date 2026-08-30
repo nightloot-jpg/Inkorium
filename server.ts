@@ -38,6 +38,17 @@ function extractToken(req: express.Request): string {
   return String(req.body?.access_token || '').trim() || String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
 }
 
+function getJwtSubject(token: string): string | null {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    return typeof decoded.sub === 'string' && decoded.sub.trim() ? decoded.sub.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 app.get('/api/profiles', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig();
@@ -96,11 +107,20 @@ app.patch('/api/profiles/:id/avatar', async (req, res) => {
   }
 });
 
-app.get('/api/posts', async (_req, res) => {
+app.get('/api/posts', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig();
     if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
-    const upstream = await fetch(`${supabaseUrl}/rest/v1/posts?select=id,author_id,content,visibility,media_data,created_at,updated_at&order=created_at.desc&limit=100`, { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, Accept: 'application/json' } });
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (Array.isArray(value)) value.forEach(item => query.append(key, String(item)));
+      else if (value != null) query.set(key, String(value));
+    }
+    if (!query.has('select')) query.set('select', 'id,author_id,content,visibility,media_data,created_at,updated_at');
+    if (!query.has('order')) query.set('order', 'created_at.desc');
+    const requestedLimit = Number(query.get('limit') || '100');
+    query.set('limit', String(Math.max(1, Math.min(100, Number.isFinite(requestedLimit) ? requestedLimit : 100))));
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/posts?${query.toString()}`, { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, Accept: 'application/json' } });
     const body = await upstream.text();
     return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
   } catch (err: any) {
@@ -115,13 +135,26 @@ app.post('/api/posts', async (req, res) => {
     const content = String(req.body?.content || '').trim();
     const mediaUrl = req.body?.media_url ? String(req.body.media_url).trim() : null;
     const token = extractToken(req);
+    const authorId = getJwtSubject(token);
     if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
     if (!content && !mediaUrl) return res.status(400).json({ error: 'EMPTY_POST' });
-    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
-    const authorResponse = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json' } });
-    if (!authorResponse.ok) return res.status(401).json({ error: 'AUTH_REQUIRED' });
-    const author = await authorResponse.json();
-    const insert = await fetch(`${supabaseUrl}/rest/v1/posts`, { method: 'POST', headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ author_id: author.id, content, visibility: 'public', media_data: mediaUrl ? { url: mediaUrl } : null }) });
+    if (!token || !authorId) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+
+    const insert = await fetch(`${supabaseUrl}/rest/v1/posts`, {
+      method: 'POST',
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify({
+        author_id: authorId,
+        content,
+        visibility: 'public',
+        media_data: mediaUrl ? { url: mediaUrl } : null
+      })
+    });
     const body = await insert.text();
     if (!insert.ok) return res.status(insert.status).type(insert.headers.get('content-type') || 'application/json').send(body);
     const rows = JSON.parse(body);
