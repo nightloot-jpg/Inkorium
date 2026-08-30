@@ -1,0 +1,81 @@
+/* Navbar spacing pass: keep Nuenti's compact visual language without crowding. */
+.feed-app .topbar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  padding: 0 18px !important;
+  overflow: visible !important;
+}
+.feed-app .topbar .brand-button {
+  flex: 0 0 auto !important;
+  margin: 0 28px 0 0 !important;
+}
+.feed-app .topbar .brand {
+  white-space: nowrap !important;
+}
+.feed-app .top-nav {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: stretch !important;
+  gap: 6px !important;
+  margin: 0 24px 0 0 !important;
+}
+.feed-app .top-nav button {
+  flex: 0 0 auto !important;
+  min-width: 74px !important;
+  padding: 0 16px !important;
+  white-space: nowrap !important;
+}
+.feed-app .search-form {
+  flex: 1 1 360px !important;
+  width: min(360px, 32vw) !important;
+  max-width: 360px !important;
+  min-width: 220px !important;
+  margin: 0 24px 0 auto !important;
+}
+.feed-app .search-form input {
+  width: 100% !important;
+}
+.feed-app .top-actions {
+  flex: 0 0 auto !important;
+  gap: 12px !important;
+  margin: 0 !important;
+  padding-left: 4px !important;
+}
+.feed-app .top-actions .icon-button {
+  width: 34px !important;
+  height: 34px !important;
+  display: grid !important;
+  place-items: center !important;
+}
+.feed-app .top-actions .user-chip {
+  min-width: 106px !important;
+  padding: 0 4px 0 12px !important;
+  margin-left: 2px !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+}
+@media (max-width: 1180px) {
+  .feed-app .topbar { padding: 0 12px !important; }
+  .feed-app .topbar .brand-button { margin-right: 18px !important; }
+  .feed-app .top-nav { gap: 2px !important; margin-right: 14px !important; }
+  .feed-app .top-nav button { min-width: 64px !important; padding-inline: 10px !important; }
+  .feed-app .search-form { margin-right: 14px !important; min-width: 180px !important; }
+  .feed-app .top-actions { gap: 7px !important; }
+  .feed-app .top-actions .user-chip { min-width: 88px !important; }
+}
+@media (max-width: 860px) {
+  .feed-app .topbar { flex-wrap: wrap !important; height: auto !important; min-height: 48px !important; padding: 7px 12px !important; row-gap: 6px !important; }
+  .feed-app .topbar .brand-button { margin-right: auto !important; }
+  .feed-app .top-nav { order: 3 !important; flex: 1 0 100% !important; width: 100% !important; margin: 0 !important; overflow-x: auto !important; }
+  .feed-app .top-nav button { height: 38px !important; min-width: 86px !important; }
+  .feed-app .search-form { flex: 1 1 220px !important; width: auto !important; min-width: 160px !important; margin: 0 10px !important; }
+}
+@media (max-width: 560px) {
+  .feed-app .search-form { display: none !important; }
+  .feed-app .top-actions .user-chip { min-width: 34px !important; width: 34px !important; padding: 0 !important; overflow: hidden !important; }
+  .feed-app .top-actions .user-chip .avatar { margin: 0 !important; }
+  .feed-app .top-actions .user-chip > svg,
+  .feed-app .top-actions .user-chip { font-size: 0 !important; }
+  .feed-app .top-actions .user-chip .avatar { font-size: 12px !important; }
+}
