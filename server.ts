@@ -52,6 +52,31 @@ function getJwtSubject(token: string): string | null {
   }
 }
 
+function formatFeedDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const now = new Date();
+  const diffMs = Math.max(0, now.getTime() - date.getTime());
+  const diffMinutes = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday.getTime() - 86400000);
+  if (diffMinutes < 1) return 'Ahora mismo';
+  if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
+  if (date >= startOfToday && diffHours < 24) return `Hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+  if (date >= startOfYesterday && date < startOfToday) return 'Ayer';
+  if (diffMs < 7 * 86400000) {
+    const days = Math.floor(diffMs / 86400000);
+    return `Hace ${days} ${days === 1 ? 'día' : 'días'}`;
+  }
+  return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function normalizePostDates(data: unknown) {
+  if (!Array.isArray(data)) return data;
+  return data.map((row: any) => ({ ...row, created_at: formatFeedDate(String(row.created_at || '')) }));
+}
+
 app.get('/api/profiles', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig();
@@ -116,7 +141,9 @@ app.get('/api/posts', async (_req, res) => {
     if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
     const upstream = await fetch(`${supabaseUrl}/rest/v1/posts?select=id,author_id,content,visibility,media_data,created_at,updated_at&order=created_at.desc&limit=100`, { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, Accept: 'application/json' } });
     const body = await upstream.text();
-    return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+    if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+    try { return res.status(200).json(normalizePostDates(JSON.parse(body))); }
+    catch { return res.status(502).json({ error: 'SUPABASE_POSTS_INVALID_RESPONSE' }); }
   } catch (err: any) {
     console.error('Supabase posts proxy failed:', err);
     return res.status(502).json({ error: 'SUPABASE_POSTS_PROXY_FAILED', message: err?.message || 'Unable to load posts.' });
@@ -132,29 +159,22 @@ app.post('/api/posts', async (req, res) => {
     if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
     if (!content && !mediaUrl) return res.status(400).json({ error: 'EMPTY_POST' });
     if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
-
     const authorId = getJwtSubject(token);
     if (!authorId) return res.status(401).json({ error: 'INVALID_AUTH_TOKEN' });
-
     const insert = await fetch(`${supabaseUrl}/rest/v1/posts`, {
       method: 'POST',
-      headers: {
-        apikey: supabaseKey,
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation'
-      },
-      body: JSON.stringify({
-        author_id: authorId,
-        content,
-        visibility: 'public',
-        media_data: mediaUrl ? { url: mediaUrl } : null
-      })
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ author_id: authorId, content, visibility: 'public', media_data: mediaUrl ? { url: mediaUrl } : null })
     });
     const body = await insert.text();
     if (!insert.ok) return res.status(insert.status).type(insert.headers.get('content-type') || 'application/json').send(body);
-    const rows = JSON.parse(body);
-    return res.status(201).json(Array.isArray(rows) ? rows[0] : rows);
+    try {
+      const rows = JSON.parse(body);
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      return res.status(201).json(row ? { ...row, created_at: formatFeedDate(String(row.created_at || '')) } : row);
+    } catch {
+      return res.status(502).json({ error: 'SUPABASE_POST_CREATE_INVALID_RESPONSE' });
+    }
   } catch (err: any) {
     console.error('Supabase create post failed:', err);
     return res.status(502).json({ error: 'SUPABASE_POST_CREATE_FAILED', message: err?.message || 'Unable to create post.' });
