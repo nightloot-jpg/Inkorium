@@ -83,15 +83,14 @@ app.get('/api/profiles', async (req, res) => {
   }
 });
 
+// Presence updates use a request-body access token deliberately. Sending the JWT
+// in Authorization caused 431 errors at the reverse proxy due to header size.
 app.patch('/api/profiles/:id/presence', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig();
     const profileId = String(req.params.id || '').trim();
     const presence = String(req.body?.presence || '').trim().toLowerCase();
-    // Prefer the request body to avoid reverse-proxy 431 errors caused by large Authorization headers.
-    const bodyToken = String(req.body?.access_token || '').trim();
-    const authorization = String(req.headers.authorization || '').trim();
-    const token = bodyToken || (authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '');
+    const token = String(req.body?.access_token || '').trim();
 
     if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
     if (!profileId || !['conectado', 'ausente', 'ocupado', 'invisible'].includes(presence)) return res.status(400).json({ error: 'INVALID_PRESENCE' });
@@ -121,14 +120,13 @@ app.patch('/api/profiles/:id/avatar', async (req, res) => {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig();
     const profileId = String(req.params.id || '').trim();
     const avatarUrl = String(req.body?.avatar_url || '').trim();
-    const authorization = String(req.headers.authorization || '').trim();
+    const token = String(req.body?.access_token || '').trim() || String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
 
     if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
     if (!profileId) return res.status(400).json({ error: 'INVALID_PROFILE_ID' });
     if (!avatarUrl || !/^https?:\/\//i.test(avatarUrl)) return res.status(400).json({ error: 'INVALID_AVATAR_URL' });
-    if (!authorization.startsWith('Bearer ')) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
 
-    const token = authorization.slice('Bearer '.length).trim();
     const upstream = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profileId)}`, {
       method: 'PATCH',
       headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
@@ -141,7 +139,6 @@ app.patch('/api/profiles/:id/avatar', async (req, res) => {
       res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json');
       return res.send(body);
     }
-
     return res.status(200).json({ success: true, avatar_url: avatarUrl });
   } catch (err: any) {
     console.error('Supabase avatar proxy failed:', err);
