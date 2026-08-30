@@ -35,7 +35,21 @@ function getSupabaseConfig() {
 }
 
 function extractToken(req: express.Request): string {
-  return String(req.body?.access_token || '').trim() || String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+  const authorization = String(req.headers.authorization || '').trim();
+  const headerToken = authorization.replace(/^Bearer\s+/i, '').trim();
+  if (headerToken) return headerToken;
+  return String(req.body?.access_token || '').trim();
+}
+
+function getJwtSubject(token: string): string | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    return typeof payload.sub === 'string' ? payload.sub : null;
+  } catch {
+    return null;
+  }
 }
 
 app.get('/api/profiles', async (req, res) => {
@@ -118,10 +132,25 @@ app.post('/api/posts', async (req, res) => {
     if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
     if (!content && !mediaUrl) return res.status(400).json({ error: 'EMPTY_POST' });
     if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
-    const authorResponse = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json' } });
-    if (!authorResponse.ok) return res.status(401).json({ error: 'AUTH_REQUIRED' });
-    const author = await authorResponse.json();
-    const insert = await fetch(`${supabaseUrl}/rest/v1/posts`, { method: 'POST', headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ author_id: author.id, content, visibility: 'public', media_data: mediaUrl ? { url: mediaUrl } : null }) });
+
+    const authorId = getJwtSubject(token);
+    if (!authorId) return res.status(401).json({ error: 'INVALID_AUTH_TOKEN' });
+
+    const insert = await fetch(`${supabaseUrl}/rest/v1/posts`, {
+      method: 'POST',
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify({
+        author_id: authorId,
+        content,
+        visibility: 'public',
+        media_data: mediaUrl ? { url: mediaUrl } : null
+      })
+    });
     const body = await insert.text();
     if (!insert.ok) return res.status(insert.status).type(insert.headers.get('content-type') || 'application/json').send(body);
     const rows = JSON.parse(body);
