@@ -57,6 +57,57 @@ app.get('/api/storage/status', (req, res) => {
   });
 });
 
+// Same-origin proxy for public Supabase profile reads.
+// This avoids browser CORS failures from the Supabase REST gateway while keeping
+// the normal Supabase client/auth/realtime setup for the rest of the app.
+app.get('/api/profiles', async (req, res) => {
+  try {
+    const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://zllwzmfsfzfedorljgtg.supabase.co').replace(/\/+$/, '');
+    const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseKey) {
+      return res.status(503).json({
+        error: 'SUPABASE_NOT_CONFIGURED',
+        message: 'Supabase server credentials are not configured.'
+      });
+    }
+
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (Array.isArray(value)) {
+        for (const item of value) query.append(key, String(item));
+      } else if (value != null) {
+        query.set(key, String(value));
+      }
+    }
+
+    // Keep profile access bounded and default to the same projection used by the app.
+    if (!query.has('select')) {
+      query.set('select', 'id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at');
+    }
+    if (!query.has('limit')) query.set('limit', '1000');
+
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/profiles?${query.toString()}`, {
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        Accept: 'application/json'
+      }
+    });
+
+    const body = await upstream.text();
+    res.status(upstream.status);
+    res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json');
+    return res.send(body);
+  } catch (err: any) {
+    console.error('Supabase profiles proxy failed:', err);
+    return res.status(502).json({
+      error: 'SUPABASE_PROXY_FAILED',
+      message: err?.message || 'Unable to load profiles from Supabase.'
+    });
+  }
+});
+
 // Upload API route for Hetzner S3 Object Storage
 app.post('/api/upload', upload.single('file'), async (req, res) => {
   try {
