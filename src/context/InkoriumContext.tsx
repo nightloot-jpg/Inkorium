@@ -161,20 +161,23 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const [users, setUsers] = useState<User[]>(() => load('users', INITIAL_USERS));
+  const [users, setUsers] = useState<User[]>(() => {
+    const cached = load<User[]>('users', []);
+    return Array.isArray(cached) ? cached : [];
+  });
   const [currentUserId, setCurrentUserId] = useState<string>(() => load('currentUserId', ''));
-  const [photos, setPhotos] = useState<Photo[]>(() => load('photos', INITIAL_PHOTOS));
-  const [albums, setAlbums] = useState<Album[]>(() => load('albums', INITIAL_ALBUMS));
-  const [feed, setFeed] = useState<FeedItem[]>(() => load('feed', INITIAL_FEED));
-  const [wallComments, setWallComments] = useState<WallComment[]>(() => load('wallComments', INITIAL_WALL_COMMENTS));
-  const [messages, setMessages] = useState<PrivateMessage[]>(() => load('messages', INITIAL_MESSAGES));
-  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(() => load('friendRequests', INITIAL_FRIEND_REQUESTS));
-  const [friendships, setFriendships] = useState<Friendship[]>(() => load('friendships', INITIAL_FRIENDSHIPS));
+  const [photos, setPhotos] = useState<Photo[]>(() => load('photos', []));
+  const [albums, setAlbums] = useState<Album[]>(() => load('albums', []));
+  const [feed, setFeed] = useState<FeedItem[]>(() => load('feed', []));
+  const [wallComments, setWallComments] = useState<WallComment[]>(() => load('wallComments', []));
+  const [messages, setMessages] = useState<PrivateMessage[]>(() => load('messages', []));
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(() => load('friendRequests', []));
+  const [friendships, setFriendships] = useState<Friendship[]>(() => load('friendships', []));
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => load('chatMessages', []));
-  const [notifications, setNotifications] = useState<InkoriumNotification[]>(() => load('notifications', INITIAL_NOTIFICATIONS));
+  const [notifications, setNotifications] = useState<InkoriumNotification[]>(() => load('notifications', []));
   const [toasts, setToasts] = useState<InkoriumNotification[]>([]);
-  const [accessLogs, setAccessLogs] = useState<AccessLog[]>(() => load('accessLogs', INITIAL_ACCESS_LOGS));
-  const [activities, setActivities] = useState<UserActivity[]>(() => load('activities', INITIAL_ACTIVITIES));
+  const [accessLogs, setAccessLogs] = useState<AccessLog[]>(() => load('accessLogs', []));
+  const [activities, setActivities] = useState<UserActivity[]>(() => load('activities', []));
   const [isRealtimeSimulationEnabled, setIsRealtimeSimulationEnabledState] = useState<boolean>(() => false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => load('isLoggedIn', false));
 
@@ -183,6 +186,45 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
   const [activeChatWindows, setActiveChatWindows] = useState<ChatWindow[]>([]);
+
+  // Function to refresh users from Supabase profiles
+  const fetchSupabaseProfiles = useCallback(async (currentAuthUser?: User) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      const { data, error } = await supabase.from('profiles').select('*');
+      if (!error && data && Array.isArray(data)) {
+        const mappedUsers: User[] = data.map((p: any) => ({
+          id: p.id,
+          nombre: p.nombre || p.name || 'Usuario',
+          apellidos: p.apellidos || '',
+          email: p.email || '',
+          sexo: p.sexo || 'h',
+          fnac: p.fnac || '2000-01-01',
+          provincia: p.provincia || 'Madrid',
+          ciudad: p.ciudad || p.provincia || 'Madrid',
+          estado: p.estado || '',
+          estadoFecha: p.estado_fecha || 'Reciente',
+          situacionSentimental: p.situacion_sentimental || 'Soltero/a',
+          avatar: p.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+          fechaReg: p.fecha_reg || new Date().toLocaleDateString('es-ES'),
+          online: Boolean(p.online),
+          ultimoAcceso: p.ultimo_acceso || 'Recientemente',
+          chatEstado: p.chat_estado || '1'
+        }));
+
+        setUsers(prev => {
+          const list = [...mappedUsers];
+          // Ensure current user is in list if not yet returned by profiles
+          if (currentAuthUser && !list.find(u => u.id === currentAuthUser.id || u.email === currentAuthUser.email)) {
+            list.unshift(currentAuthUser);
+          }
+          return list;
+        });
+      }
+    } catch (err) {
+      console.warn('Error fetching Supabase profiles:', err);
+    }
+  }, []);
 
   // Listen to Supabase auth session changes & sync user profiles
   useEffect(() => {
@@ -215,45 +257,31 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (exists) {
               return prev.map(u => (u.id === supaUser.id || u.email === supaUser.email) ? { ...u, ...supaUser } : u);
             }
-            return [...prev, supaUser];
+            return [supaUser, ...prev];
           });
 
           setCurrentUserId(supaUser.id);
           setSelectedUserId(supaUser.id);
           setIsLoggedIn(true);
+
+          // Fetch all profiles
+          fetchSupabaseProfiles(supaUser);
         } else {
           // If no active session in Supabase, ensure logged in state respects it
           if (!load('isLoggedIn', false)) {
             setIsLoggedIn(false);
           }
+          fetchSupabaseProfiles();
         }
       });
 
-      // 2. Fetch profiles table if available
-      supabase.from('profiles').select('*').then(({ data, error }) => {
-        if (!error && data && Array.isArray(data) && data.length > 0) {
-          const mappedUsers: User[] = data.map((p: any) => ({
-            id: p.id,
-            nombre: p.nombre || p.name || 'Usuario',
-            apellidos: p.apellidos || '',
-            email: p.email || '',
-            sexo: p.sexo || 'h',
-            fnac: p.fnac || '2000-01-01',
-            provincia: p.provincia || 'Madrid',
-            ciudad: p.ciudad || p.provincia || 'Madrid',
-            estado: p.estado || '',
-            estadoFecha: p.estado_fecha || 'Reciente',
-            situacionSentimental: p.situacion_sentimental || 'Soltero/a',
-            avatar: p.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-            fechaReg: p.fecha_reg || new Date().toLocaleDateString('es-ES'),
-            online: Boolean(p.online),
-            ultimoAcceso: p.ultimo_acceso || 'Recientemente',
-            chatEstado: p.chat_estado || '1'
-          }));
-
-          setUsers(mappedUsers);
-        }
-      });
+      // 2. Real-time profiles subscription
+      const profilesChannel = supabase
+        .channel('public:profiles')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+          fetchSupabaseProfiles();
+        })
+        .subscribe();
 
       // 3. Auth State Change Listener
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -283,12 +311,13 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (exists) {
               return prev.map(u => (u.id === supaUser.id || u.email === supaUser.email) ? { ...u, ...supaUser } : u);
             }
-            return [...prev, supaUser];
+            return [supaUser, ...prev];
           });
 
           setCurrentUserId(supaUser.id);
           setSelectedUserId(supaUser.id);
           setIsLoggedIn(true);
+          fetchSupabaseProfiles(supaUser);
         } else {
           setIsLoggedIn(false);
           setCurrentUserId('');
@@ -297,9 +326,10 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       return () => {
         subscription.unsubscribe();
+        supabase?.removeChannel(profilesChannel);
       };
     }
-  }, []);
+  }, [fetchSupabaseProfiles]);
 
   // Sync to local storage
   useEffect(() => save('users', users), [users]);

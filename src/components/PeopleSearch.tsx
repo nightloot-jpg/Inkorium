@@ -195,8 +195,26 @@ export const PeopleSearch: React.FC = () => {
 
             {/* Grid of Results */}
             {filteredUsers.length === 0 ? (
-              <div className="text-center py-16 text-gray-400 text-xs">
-                No se han encontrado usuarios con estos filtros. Prueba ampliando los criterios de búsqueda.
+              <div className="text-center py-16 px-4 space-y-2">
+                <Users className="w-10 h-10 text-gray-300 mx-auto" />
+                <p className="text-gray-600 font-semibold text-xs">
+                  {users.length <= 1 
+                    ? 'Aún no hay otros usuarios registrados en Supabase.' 
+                    : 'No se han encontrado usuarios con estos filtros.'}
+                </p>
+                <p className="text-gray-400 text-[11px]">
+                  {users.length <= 1
+                    ? 'Los usuarios que se registren en la base de datos aparecerán aquí automáticamente.'
+                    : 'Prueba a limpiar los filtros o buscar con otros términos.'}
+                </p>
+                {users.length > 1 && (
+                  <button
+                    onClick={handleResetFilters}
+                    className="mt-2 px-3 py-1.5 bg-blue-50 text-[#3869A0] font-bold text-xs rounded border border-blue-200 hover:bg-blue-100 transition cursor-pointer"
+                  >
+                    Restablecer filtros
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
