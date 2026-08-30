@@ -13,13 +13,16 @@ export interface ApiPost {
 async function getAccessToken(): Promise<string> {
   if (!supabase) throw new Error('Supabase no está configurado.');
 
+  // Force Supabase to refresh the JWT before sending it to our API proxy.
+  // A stale JWT was causing /auth/v1/user to answer 401 even though the UI
+  // still showed the user as logged in.
   const refreshed = await supabase.auth.refreshSession();
-  if (!refreshed.error && refreshed.data.session?.access_token) {
-    return refreshed.data.session.access_token;
+  if (refreshed.error) {
+    await supabase.auth.signOut().catch(() => undefined);
+    throw new Error('La sesión de Supabase ha caducado. Vuelve a iniciar sesión.');
   }
 
-  const current = await supabase.auth.getSession();
-  const token = current.data.session?.access_token;
+  const token = refreshed.data.session?.access_token;
   if (!token) throw new Error('No hay una sesión activa en Supabase.');
   return token;
 }
@@ -40,9 +43,14 @@ export async function fetchPosts(limit = 100): Promise<ApiPost[]> {
 
 export async function createPost(content: string, mediaUrl?: string): Promise<ApiPost> {
   const token = await getAccessToken();
+
   const response = await fetch('/api/posts', {
     method: 'POST',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
     credentials: 'omit',
     body: JSON.stringify({ content, media_url: mediaUrl || null, access_token: token }),
   });
