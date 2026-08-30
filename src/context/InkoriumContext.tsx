@@ -1,1389 +1,192 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  User, Photo, Album, FeedItem, WallComment, PrivateMessage, 
-  FriendRequest, Friendship, ChatMessage, InkoriumNotification, AccessLog,
-  PhotoTag, UserActivity
-} from '../types';
-import { 
-  INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, 
-  INITIAL_WALL_COMMENTS, INITIAL_FRIENDSHIPS, INITIAL_FRIEND_REQUESTS, 
-  INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_ACCESS_LOGS, INITIAL_ACTIVITIES
-} from '../data/mockData';
-import { playMessageSound, playSuccessSound, playClickSound, playNotificationChime } from '../utils/sound';
-import confetti from 'canvas-confetti';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { uploadFileDirectToStorage, deleteStorageObject } from '../lib/storage';
+import { playClickSound, playMessageSound, playNotificationChime, playSuccessSound } from '../utils/sound';
+import type { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, InkoriumNotification, AccessLog, UserActivity, PhotoTag } from '../types';
 
-interface ChatWindow {
-  targetUserId: string;
-  minimized: boolean;
-}
+interface ChatWindow { targetUserId: string; minimized: boolean; }
+type Tab = 'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'ajustes';
 
-interface InkoriumContextType {
+interface ContextValue {
   currentUser: User;
-  users: User[];
-  photos: Photo[];
-  albums: Album[];
-  feed: FeedItem[];
-  wallComments: WallComment[];
-  messages: PrivateMessage[];
-  friendRequests: FriendRequest[];
-  friendships: Friendship[];
-  chatMessages: ChatMessage[];
-  notifications: InkoriumNotification[];
-  toasts: InkoriumNotification[];
-  accessLogs: AccessLog[];
-  activities: UserActivity[];
-  activeChatWindows: ChatWindow[];
-  activeTab: 'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'ajustes';
-  selectedUserId: string; // for viewing other user's profiles
-  selectedPhotoId: string | null; // for modal photo viewer
-  selectedAlbumId: string | null;
-  unreadMessagesCount: number;
-  unreadNotificationsCount: number;
-  pendingRequestsCount: number;
+  users: User[]; photos: Photo[]; albums: Album[]; feed: FeedItem[]; wallComments: WallComment[];
+  messages: PrivateMessage[]; friendRequests: FriendRequest[]; friendships: Friendship[]; chatMessages: ChatMessage[];
+  notifications: InkoriumNotification[]; toasts: InkoriumNotification[]; accessLogs: AccessLog[]; activities: UserActivity[];
+  activeChatWindows: ChatWindow[]; activeTab: Tab; selectedUserId: string; selectedPhotoId: string | null; selectedAlbumId: string | null;
+  unreadMessagesCount: number; unreadNotificationsCount: number; pendingRequestsCount: number;
   isRealtimeSimulationEnabled: boolean;
-  
-  // Actions
-  setActiveTab: (tab: 'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'ajustes') => void;
-  viewUserProfile: (userId: string) => void;
-  viewPhoto: (photoId: string | null) => void;
-  viewAlbum: (albumId: string | null) => void;
-  setCurrentUserById: (userId: string) => void;
-  
-  // Feed & Status
-  publishStatus: (statusText: string, attachedPhotoUrl?: string) => void;
-  likeFeedItem: (feedId: string) => void;
-  commentFeedItem: (feedId: string, text: string) => void;
-  
-  // Wall
-  postWallComment: (receptorId: string, text: string) => void;
-  deleteWallComment: (commentId: string) => void;
-  
-  // Photos & Albums
-  uploadPhoto: (titulo: string, albumId: string | null, archivoUrl: string) => void;
-  addPhotoTag: (photoId: string, targetUserId: string, x: number, y: number) => void;
-  removePhotoTag: (photoId: string, tagId: string) => void;
-  addPhotoComment: (photoId: string, comentario: string) => void;
-  likePhoto: (photoId: string) => void;
-  setPhotoAsAvatar: (photoId: string) => void;
-  deletePhoto: (photoId: string) => void;
-  createAlbum: (nombre: string, descripcion?: string) => void;
-  renameAlbum: (albumId: string, nuevoNombre: string) => void;
-  deleteAlbum: (albumId: string) => void;
-  
-  // Friends & Requests
-  sendFriendRequest: (targetUserId: string) => void;
-  acceptFriendRequest: (requestId: string) => void;
-  ignoreFriendRequest: (requestId: string) => void;
-  isFriend: (userId1: string, userId2: string) => boolean;
-  hasPendingRequest: (fromId: string, toId: string) => boolean;
-  getFriendsOf: (userId: string) => User[];
-  
-  // Messages
-  sendPrivateMessage: (receptorId: string, asunto: string, mensaje: string) => void;
-  markMessageAsRead: (messageId: string) => void;
-  deleteMessage: (messageId: string) => void;
-  
-  // Chat
-  openChatWith: (targetUserId: string) => void;
-  closeChat: (targetUserId: string) => void;
-  toggleMinimizeChat: (targetUserId: string) => void;
-  sendChatMessage: (targetUserId: string, text: string) => void;
-  setChatEstado: (estado: '1' | '0') => void;
-  
-  // Activity Log
-  logUserActivity: (activity: Omit<UserActivity, 'id' | 'timestamp'>) => void;
-  deleteUserActivity: (activityId: string) => void;
-  getUserActivities: (userId: string) => UserActivity[];
-  
-  // Notifications & Settings
-  pushNotification: (notif: InkoriumNotification) => void;
-  dismissToast: (toastId: string) => void;
-  markNotificationAsRead: (notifId: string) => void;
-  markAllNotificationsAsRead: () => void;
-  deleteNotification: (notifId: string) => void;
-  setIsRealtimeSimulationEnabled: (enabled: boolean) => void;
-  simulateIncomingMessage: () => void;
-  simulateWallComment: () => void;
-  simulateFriendRequest: () => void;
-  simulatePhotoInteraction: () => void;
-  updateUserData: (data: Partial<User>) => void;
-  resetToDefaultData: () => void;
-  registerNewUser: (nombre: string, apellidos: string, email: string, sexo: 'h' | 'm', provincia: string, fnac: string) => void;
+  setActiveTab: (tab: Tab) => void; viewUserProfile: (id: string) => void; viewPhoto: (id: string | null) => void;
+  viewAlbum: (id: string | null) => void; setCurrentUserById: (id: string) => void;
+  publishStatus: (text: string, attachedPhotoUrl?: string) => void; likeFeedItem: (id: string) => void; commentFeedItem: (id: string, text: string) => void;
+  postWallComment: (receptorId: string, text: string) => void; deleteWallComment: (commentId: string) => void;
+  uploadPhoto: (titulo: string, albumId: string | null, archivoUrl: string) => void; addPhotoTag: (photoId: string, targetUserId: string, x: number, y: number) => void;
+  removePhotoTag: (photoId: string, tagId: string) => void; addPhotoComment: (photoId: string, comentario: string) => void; likePhoto: (photoId: string) => void;
+  setPhotoAsAvatar: (photoId: string) => void; deletePhoto: (photoId: string) => void; createAlbum: (nombre: string, descripcion?: string) => void;
+  renameAlbum: (albumId: string, nuevoNombre: string) => void; deleteAlbum: (albumId: string) => void;
+  sendFriendRequest: (targetUserId: string) => void; acceptFriendRequest: (requestId: string) => void; ignoreFriendRequest: (requestId: string) => void;
+  isFriend: (a: string, b: string) => boolean; hasPendingRequest: (from: string, to: string) => boolean; getFriendsOf: (userId: string) => User[];
+  sendPrivateMessage: (receptorId: string, asunto: string, mensaje: string) => void; markMessageAsRead: (messageId: string) => void; deleteMessage: (messageId: string) => void;
+  openChatWith: (targetUserId: string) => void; closeChat: (targetUserId: string) => void; toggleMinimizeChat: (targetUserId: string) => void;
+  sendChatMessage: (targetUserId: string, text: string) => void; setChatEstado: (estado: '1' | '0') => void;
+  logUserActivity: (activity: Omit<UserActivity, 'id' | 'timestamp'>) => void; deleteUserActivity: (activityId: string) => void; getUserActivities: (userId: string) => UserActivity[];
+  pushNotification: (notif: InkoriumNotification) => void; dismissToast: (id: string) => void; markNotificationAsRead: (id: string) => void;
+  markAllNotificationsAsRead: () => void; deleteNotification: (id: string) => void; setIsRealtimeSimulationEnabled: (enabled: boolean) => void;
+  simulateIncomingMessage: () => void; simulateWallComment: () => void; simulateFriendRequest: () => void; simulatePhotoInteraction: () => void;
+  updateUserData: (data: Partial<User>) => void; resetToDefaultData: () => void;
+  registerNewUser: (nombre: string, apellidos: string, email: string, sexo: 'h' | 'm', provincia: string, fnac: string, password?: string) => void;
 }
 
-const InkoriumContext = createContext<InkoriumContextType | undefined>(undefined);
+const Ctx = createContext<ContextValue | undefined>(undefined);
+const emptyUser: User = { id: '', nombre: 'Invitado', apellidos: '', email: '', sexo: 'otro', fnac: '', provincia: '', estado: '', situacionSentimental: 'Soltero/a', avatar: '', fechaReg: '', online: false, ultimoAcceso: '', chatEstado: '0' };
 
-const STORAGE_PREFIX = 'inkorium_v1_';
+function splitName(name: string) { const p = name.trim().split(/\s+/); return { nombre: p.shift() || '', apellidos: p.join(' ') }; }
+function dateText(value?: string | null) { return value ? new Date(value).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'Ahora mismo'; }
+function toDataUrlFile(dataUrl: string, name: string) { const [meta, b64] = dataUrl.split(','); const mime = meta?.match(/data:(.*?);/)?.[1] || 'image/jpeg'; const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); return new File([bytes], name, { type: mime }); }
+function safeNotifType(type: string): InkoriumNotification['tipo'] { if (type === 'friend_request') return 'peticion'; if (type === 'message') return 'mp'; if (type === 'comment' || type === 'wall_post') return 'tablon'; if (type === 'tag') return 'etiqueta'; if (type === 'like') return 'like'; return 'foto'; }
 
 export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // LocalStorage loader
-  const load = <T,>(key: string, fallback: T): T => {
-    if (typeof window === 'undefined') return fallback;
-    try {
-      const item = localStorage.getItem(STORAGE_PREFIX + key);
-      return item ? JSON.parse(item) : fallback;
-    } catch {
-      return fallback;
-    }
-  };
-
-  const save = (key: string, value: unknown) => {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value));
-      } catch {
-        // quota exceeded or storage error
-      }
-    }
-  };
-
-  const [users, setUsers] = useState<User[]>(() => load('users', INITIAL_USERS));
-  const [currentUserId, setCurrentUserId] = useState<string>(() => load('currentUserId', 'user_1'));
-  const [photos, setPhotos] = useState<Photo[]>(() => load('photos', INITIAL_PHOTOS));
-  const [albums, setAlbums] = useState<Album[]>(() => load('albums', INITIAL_ALBUMS));
-  const [feed, setFeed] = useState<FeedItem[]>(() => load('feed', INITIAL_FEED));
-  const [wallComments, setWallComments] = useState<WallComment[]>(() => load('wallComments', INITIAL_WALL_COMMENTS));
-  const [messages, setMessages] = useState<PrivateMessage[]>(() => load('messages', INITIAL_MESSAGES));
-  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(() => load('friendRequests', INITIAL_FRIEND_REQUESTS));
-  const [friendships, setFriendships] = useState<Friendship[]>(() => load('friendships', INITIAL_FRIENDSHIPS));
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => load('chatMessages', []));
-  const [notifications, setNotifications] = useState<InkoriumNotification[]>(() => load('notifications', INITIAL_NOTIFICATIONS));
+  const [users, setUsers] = useState<User[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [wallComments, setWallComments] = useState<WallComment[]>([]);
+  const [messages, setMessages] = useState<PrivateMessage[]>([]);
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+  const [friendships, setFriendships] = useState<Friendship[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [notifications, setNotifications] = useState<InkoriumNotification[]>([]);
   const [toasts, setToasts] = useState<InkoriumNotification[]>([]);
-  const [accessLogs, setAccessLogs] = useState<AccessLog[]>(() => load('accessLogs', INITIAL_ACCESS_LOGS));
-  const [activities, setActivities] = useState<UserActivity[]>(() => load('activities', INITIAL_ACTIVITIES));
-  const [isRealtimeSimulationEnabled, setIsRealtimeSimulationEnabledState] = useState<boolean>(() => load('realtimeSimEnabled', true));
-
-  const [activeTab, setActiveTabState] = useState<'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'ajustes'>('inicio');
-  const [selectedUserId, setSelectedUserId] = useState<string>(currentUserId);
+  const [activeChatWindows, setActiveChatWindows] = useState<ChatWindow[]>([]);
+  const [activeTab, setActiveTabState] = useState<Tab>('inicio');
+  const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
-  const [activeChatWindows, setActiveChatWindows] = useState<ChatWindow[]>([]);
-
-  // Sync to local storage
-  useEffect(() => save('users', users), [users]);
-  useEffect(() => save('currentUserId', currentUserId), [currentUserId]);
-  useEffect(() => save('photos', photos), [photos]);
-  useEffect(() => save('albums', albums), [albums]);
-  useEffect(() => save('feed', feed), [feed]);
-  useEffect(() => save('wallComments', wallComments), [wallComments]);
-  useEffect(() => save('messages', messages), [messages]);
-  useEffect(() => save('friendRequests', friendRequests), [friendRequests]);
-  useEffect(() => save('friendships', friendships), [friendships]);
-  useEffect(() => save('chatMessages', chatMessages), [chatMessages]);
-  useEffect(() => save('notifications', notifications), [notifications]);
-  useEffect(() => save('accessLogs', accessLogs), [accessLogs]);
-  useEffect(() => save('activities', activities), [activities]);
-  useEffect(() => save('realtimeSimEnabled', isRealtimeSimulationEnabled), [isRealtimeSimulationEnabled]);
-
-  const currentUser = users.find(u => u.id === currentUserId) || users[0];
-
-  const unreadMessagesCount = messages.filter(m => m.receptorId === currentUser.id && !m.leido).length;
-  const unreadNotificationsCount = notifications.filter(n => n.userId === currentUser.id && !n.leido).length;
-  const pendingRequestsCount = friendRequests.filter(r => r.receptorId === currentUser.id && r.estado === 'pendiente').length;
-
-  // Real-time title update with unread badges
-  useEffect(() => {
-    const total = unreadMessagesCount + unreadNotificationsCount + pendingRequestsCount;
-    if (typeof document !== 'undefined') {
-      if (total > 0) {
-        document.title = `(${total}) Inkorium - Tu Red Social Retro`;
-      } else {
-        document.title = 'Inkorium - Tu Red Social Retro';
-      }
-    }
-  }, [unreadMessagesCount, unreadNotificationsCount, pendingRequestsCount]);
-
-  const setIsRealtimeSimulationEnabled = useCallback((enabled: boolean) => {
-    setIsRealtimeSimulationEnabledState(enabled);
-    playClickSound();
-  }, []);
-
-  const pushNotification = useCallback((notif: InkoriumNotification) => {
-    setNotifications(prev => [notif, ...prev]);
-    if (notif.userId === currentUserId) {
-      playNotificationChime();
-      setToasts(prev => [notif, ...prev.filter(t => t.id !== notif.id).slice(0, 3)]);
-    }
-  }, [currentUserId]);
-
-  const dismissToast = useCallback((toastId: string) => {
-    setToasts(prev => prev.filter(t => t.id !== toastId));
-  }, []);
-
-  const deleteNotification = useCallback((notifId: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== notifId));
-    setToasts(prev => prev.filter(t => t.id !== notifId));
-    playClickSound();
-  }, []);
-
-  const setActiveTab = useCallback((tab: 'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'ajustes') => {
-    playClickSound();
-    setActiveTabState(tab);
-    if (tab === 'perfil') {
-      setSelectedUserId(currentUserId);
-    }
-  }, [currentUserId]);
-
-  const viewUserProfile = useCallback((userId: string) => {
-    playClickSound();
-    setSelectedUserId(userId);
-    setActiveTabState('perfil');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
-
-  const viewPhoto = useCallback((photoId: string | null) => {
-    setSelectedPhotoId(photoId);
-  }, []);
-
-  const viewAlbum = useCallback((albumId: string | null) => {
-    setSelectedAlbumId(albumId);
-    setActiveTabState('fotos');
-  }, []);
-
-  const setCurrentUserById = useCallback((userId: string) => {
-    const u = users.find(user => user.id === userId);
-    if (u) {
-      setCurrentUserId(userId);
-      setSelectedUserId(userId);
-      playSuccessSound();
-    }
-  }, [users]);
-
-  // Friendship checks
-  const isFriend = useCallback((userId1: string, userId2: string) => {
-    if (userId1 === userId2) return true;
-    return friendships.some(
-      f => (f.user1 === userId1 && f.user2 === userId2) || (f.user1 === userId2 && f.user2 === userId1)
-    );
-  }, [friendships]);
-
-  const hasPendingRequest = useCallback((fromId: string, toId: string) => {
-    return friendRequests.some(
-      r => r.emisorId === fromId && r.receptorId === toId && r.estado === 'pendiente'
-    );
-  }, [friendRequests]);
-
-  const getFriendsOf = useCallback((userId: string): User[] => {
-    const friendIds = friendships
-      .filter(f => f.user1 === userId || f.user2 === userId)
-      .map(f => (f.user1 === userId ? f.user2 : f.user1));
-    return users.filter(u => friendIds.includes(u.id));
-  }, [friendships, users]);
-
-  // Activity Log Handlers
-  const logUserActivity = useCallback((activityData: Omit<UserActivity, 'id' | 'timestamp'>) => {
-    const newActivity: UserActivity = {
-      ...activityData,
-      id: `act_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      timestamp: Date.now()
-    };
-    setActivities(prev => [newActivity, ...prev]);
-  }, []);
-
-  const deleteUserActivity = useCallback((activityId: string) => {
-    setActivities(prev => prev.filter(a => a.id !== activityId));
-    playClickSound();
-  }, []);
-
-  const getUserActivities = useCallback((userId: string): UserActivity[] => {
-    return activities
-      .filter(a => a.userId === userId)
-      .sort((a, b) => b.timestamp - a.timestamp);
-  }, [activities]);
-
-  // Feed & Status
-  const publishStatus = useCallback((statusText: string, attachedPhotoUrl?: string) => {
-    if (!statusText.trim() && !attachedPhotoUrl) return;
-
-    // Update user status
-    setUsers(prev => prev.map(u => {
-      if (u.id === currentUser.id) {
-        return {
-          ...u,
-          estado: statusText.trim() || u.estado,
-          estadoFecha: 'Ahora mismo'
-        };
-      }
-      return u;
-    }));
-
-    // Add to feed
-    const newFeedItem: FeedItem = {
-      id: `feed_${Date.now()}`,
-      tipo: attachedPhotoUrl ? 'foto' : 'estado',
-      propietarioId: currentUser.id,
-      propietarioNombre: `${currentUser.nombre} ${currentUser.apellidos}`,
-      propietarioAvatar: currentUser.avatar,
-      datos: statusText.trim(),
-      fotoUrl: attachedPhotoUrl,
-      fecha: 'Ahora mismo',
-      likes: [],
-      comentarios: []
-    };
-
-    setFeed(prev => [newFeedItem, ...prev]);
-
-    // Log Activity
-    logUserActivity({
-      userId: currentUser.id,
-      userName: `${currentUser.nombre} ${currentUser.apellidos}`,
-      userAvatar: currentUser.avatar,
-      type: 'status_update',
-      title: 'ha actualizado su estado',
-      detail: statusText.trim(),
-      date: 'Ahora mismo'
-    });
-
-    playSuccessSound();
-  }, [currentUser, logUserActivity]);
-
-  const likeFeedItem = useCallback((feedId: string) => {
-    playClickSound();
-    setFeed(prev => prev.map(item => {
-      if (item.id === feedId) {
-        const hasLiked = item.likes.includes(currentUser.id);
-        const newLikes = hasLiked
-          ? item.likes.filter(id => id !== currentUser.id)
-          : [...item.likes, currentUser.id];
-        return { ...item, likes: newLikes };
-      }
-      return item;
-    }));
-  }, [currentUser.id]);
-
-  const commentFeedItem = useCallback((feedId: string, text: string) => {
-    if (!text.trim()) return;
-    playClickSound();
-    setFeed(prev => prev.map(item => {
-      if (item.id === feedId) {
-        const newComment = {
-          id: `fcom_${Date.now()}`,
-          userId: currentUser.id,
-          nombre: `${currentUser.nombre} ${currentUser.apellidos}`,
-          avatar: currentUser.avatar,
-          texto: text.trim(),
-          fecha: 'Ahora mismo'
-        };
-        return { ...item, comentarios: [...item.comentarios, newComment] };
-      }
-      return item;
-    }));
-  }, [currentUser]);
-
-  // Wall
-  const postWallComment = useCallback((receptorId: string, text: string) => {
-    if (!text.trim()) return;
-    playSuccessSound();
-
-    const newWallComment: WallComment = {
-      id: `wall_${Date.now()}`,
-      emisorId: currentUser.id,
-      emisorNombre: `${currentUser.nombre} ${currentUser.apellidos}`,
-      emisorAvatar: currentUser.avatar,
-      receptorId,
-      comentario: text.trim(),
-      fecha: 'Hoy a las ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setWallComments(prev => [newWallComment, ...prev]);
-
-    // Feed event & Activity if written on someone else's wall
-    if (receptorId !== currentUser.id) {
-      const recipient = users.find(u => u.id === receptorId);
-      if (recipient) {
-        const feedItem: FeedItem = {
-          id: `feed_${Date.now()}`,
-          tipo: 'tablon',
-          propietarioId: receptorId,
-          propietarioNombre: `${recipient.nombre} ${recipient.apellidos}`,
-          propietarioAvatar: recipient.avatar,
-          visitanteId: currentUser.id,
-          visitanteNombre: `${currentUser.nombre} ${currentUser.apellidos}`,
-          visitanteAvatar: currentUser.avatar,
-          datos: text.trim(),
-          fecha: 'Ahora mismo',
-          likes: [],
-          comentarios: []
-        };
-        setFeed(prev => [feedItem, ...prev]);
-
-        // Log Activity for current user
-        logUserActivity({
-          userId: currentUser.id,
-          userName: `${currentUser.nombre} ${currentUser.apellidos}`,
-          userAvatar: currentUser.avatar,
-          type: 'wall_post',
-          title: 'ha firmado en el tablón de',
-          targetUserId: recipient.id,
-          targetUserName: `${recipient.nombre} ${recipient.apellidos}`,
-          targetUserAvatar: recipient.avatar,
-          detail: text.trim(),
-          date: 'Ahora mismo'
-        });
-
-        // Send notification to recipient
-        const notif: InkoriumNotification = {
-          id: `notif_${Date.now()}`,
-          userId: receptorId,
-          fromUserId: currentUser.id,
-          fromUserName: `${currentUser.nombre} ${currentUser.apellidos}`,
-          fromUserAvatar: currentUser.avatar,
-          tipo: 'tablon',
-          mensaje: `${currentUser.nombre} ${currentUser.apellidos} ha firmado en tu tablón.`,
-          detalle: text.trim(),
-          targetId: newWallComment.id,
-          enlace: 'perfil',
-          leido: false,
-          fecha: 'Ahora mismo'
-        };
-        pushNotification(notif);
-      }
-    }
-  }, [currentUser, users, pushNotification, logUserActivity]);
-
-  const deleteWallComment = useCallback((commentId: string) => {
-    setWallComments(prev => prev.filter(c => c.id !== commentId));
-    playClickSound();
-  }, []);
-
-  // Photos & Albums
-  const uploadPhoto = useCallback((titulo: string, albumId: string | null, archivoUrl: string) => {
-    if (!archivoUrl) return;
-    playSuccessSound();
-
-    const targetAlbum = albums.find(a => a.id === albumId);
-    const newPhoto: Photo = {
-      id: `photo_${Date.now()}`,
-      uploaderId: currentUser.id,
-      uploaderName: `${currentUser.nombre} ${currentUser.apellidos}`,
-      albumId: albumId || null,
-      albumName: targetAlbum?.nombre,
-      archivo: archivoUrl,
-      titulo: titulo.trim() || 'Sin título',
-      fecha: 'Hoy a las ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      likes: [],
-      etiquetas: [],
-      comentarios: []
-    };
-
-    setPhotos(prev => [newPhoto, ...prev]);
-
-    // Feed event
-    const feedItem: FeedItem = {
-      id: `feed_${Date.now()}`,
-      tipo: 'foto',
-      propietarioId: currentUser.id,
-      propietarioNombre: `${currentUser.nombre} ${currentUser.apellidos}`,
-      propietarioAvatar: currentUser.avatar,
-      datos: titulo.trim() || 'Nueva foto subida',
-      fotoUrl: archivoUrl,
-      fotoId: newPhoto.id,
-      albumId: albumId || undefined,
-      fecha: 'Ahora mismo',
-      likes: [],
-      comentarios: []
-    };
-    setFeed(prev => [feedItem, ...prev]);
-
-    // Log user activity
-    logUserActivity({
-      userId: currentUser.id,
-      userName: `${currentUser.nombre} ${currentUser.apellidos}`,
-      userAvatar: currentUser.avatar,
-      type: 'photo_upload',
-      title: 'ha subido una nueva foto',
-      detail: titulo.trim() || 'Foto subida',
-      targetPhotoId: newPhoto.id,
-      targetPhotoUrl: archivoUrl,
-      targetAlbumId: albumId || undefined,
-      targetAlbumName: targetAlbum?.nombre,
-      date: 'Ahora mismo'
-    });
-  }, [currentUser, albums, logUserActivity]);
-
-  const addPhotoTag = useCallback((photoId: string, targetUserId: string, x: number, y: number) => {
-    const targetUser = users.find(u => u.id === targetUserId);
-    if (!targetUser) return;
-
-    const newTag: PhotoTag = {
-      id: `tag_${Date.now()}`,
-      photoId,
-      userId: targetUserId,
-      userName: `${targetUser.nombre} ${targetUser.apellidos}`,
-      x: Math.round(x),
-      y: Math.round(y)
-    };
-
-    setPhotos(prev => prev.map(p => {
-      if (p.id === photoId) {
-        return {
-          ...p,
-          etiquetas: [...p.etiquetas.filter(t => t.userId !== targetUserId), newTag]
-        };
-      }
-      return p;
-    }));
-
-    playSuccessSound();
-
-    // Notify tagged user
-    if (targetUserId !== currentUser.id) {
-      const notif: InkoriumNotification = {
-        id: `notif_${Date.now()}`,
-        userId: targetUserId,
-        fromUserId: currentUser.id,
-        fromUserName: `${currentUser.nombre} ${currentUser.apellidos}`,
-        fromUserAvatar: currentUser.avatar,
-        tipo: 'etiqueta',
-        mensaje: `${currentUser.nombre} ${currentUser.apellidos} te ha etiquetado en una foto.`,
-        targetId: photoId,
-        enlace: 'fotos',
-        leido: false,
-        fecha: 'Ahora mismo'
-      };
-      pushNotification(notif);
-    }
-  }, [users, currentUser, pushNotification]);
-
-  const removePhotoTag = useCallback((photoId: string, tagId: string) => {
-    setPhotos(prev => prev.map(p => {
-      if (p.id === photoId) {
-        return {
-          ...p,
-          etiquetas: p.etiquetas.filter(t => t.id !== tagId)
-        };
-      }
-      return p;
-    }));
-  }, []);
-
-  const addPhotoComment = useCallback((photoId: string, comentario: string) => {
-    if (!comentario.trim()) return;
-    playClickSound();
-
-    const newComment = {
-      id: `pcom_${Date.now()}`,
-      photoId,
-      userId: currentUser.id,
-      nombre: `${currentUser.nombre} ${currentUser.apellidos}`,
-      avatar: currentUser.avatar,
-      comentario: comentario.trim(),
-      fecha: 'Hoy a las ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setPhotos(prev => prev.map(p => {
-      if (p.id === photoId) {
-        // notify photo owner if not me
-        if (p.uploaderId !== currentUser.id) {
-          const notif: InkoriumNotification = {
-            id: `notif_${Date.now()}`,
-            userId: p.uploaderId,
-            fromUserId: currentUser.id,
-            fromUserName: `${currentUser.nombre} ${currentUser.apellidos}`,
-            fromUserAvatar: currentUser.avatar,
-            tipo: 'foto',
-            mensaje: `${currentUser.nombre} ${currentUser.apellidos} ha comentado tu foto "${p.titulo}".`,
-            detalle: comentario.trim(),
-            targetId: photoId,
-            enlace: 'fotos',
-            leido: false,
-            fecha: 'Ahora mismo'
-          };
-          pushNotification(notif);
-        }
-
-        // Log Activity
-        logUserActivity({
-          userId: currentUser.id,
-          userName: `${currentUser.nombre} ${currentUser.apellidos}`,
-          userAvatar: currentUser.avatar,
-          type: 'photo_comment',
-          title: `ha comentado en la foto "${p.titulo}"`,
-          detail: comentario.trim(),
-          targetPhotoId: photoId,
-          targetPhotoUrl: p.archivo,
-          date: 'Ahora mismo'
-        });
-
-        return { ...p, comentarios: [...p.comentarios, newComment] };
-      }
-      return p;
-    }));
-  }, [currentUser, pushNotification, logUserActivity]);
-
-  const likePhoto = useCallback((photoId: string) => {
-    playClickSound();
-    setPhotos(prev => prev.map(p => {
-      if (p.id === photoId) {
-        const hasLiked = p.likes.includes(currentUser.id);
-        const newLikes = hasLiked
-          ? p.likes.filter(id => id !== currentUser.id)
-          : [...p.likes, currentUser.id];
-        return { ...p, likes: newLikes };
-      }
-      return p;
-    }));
-  }, [currentUser.id]);
-
-  const setPhotoAsAvatar = useCallback((photoId: string) => {
-    const photo = photos.find(p => p.id === photoId);
-    if (!photo) return;
-
-    setUsers(prev => prev.map(u => {
-      if (u.id === currentUser.id) {
-        return { ...u, avatar: photo.archivo };
-      }
-      return u;
-    }));
-
-    // Log Activity for avatar change
-    logUserActivity({
-      userId: currentUser.id,
-      userName: `${currentUser.nombre} ${currentUser.apellidos}`,
-      userAvatar: photo.archivo,
-      type: 'avatar_change',
-      title: 'ha cambiado su foto de perfil',
-      targetPhotoId: photo.id,
-      targetPhotoUrl: photo.archivo,
-      date: 'Ahora mismo'
-    });
-
-    playSuccessSound();
-    confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-  }, [photos, currentUser, logUserActivity]);
-
-  const deletePhoto = useCallback((photoId: string) => {
-    setPhotos(prev => prev.filter(p => p.id !== photoId));
-    if (selectedPhotoId === photoId) {
-      setSelectedPhotoId(null);
-    }
-    playClickSound();
-  }, [selectedPhotoId]);
-
-  const createAlbum = useCallback((nombre: string, descripcion?: string) => {
-    if (!nombre.trim()) return;
-    const newAlbum: Album = {
-      id: `alb_${Date.now()}`,
-      userId: currentUser.id,
-      nombre: nombre.trim(),
-      descripcion: descripcion?.trim(),
-      fecha: new Date().toLocaleDateString('es-ES')
-    };
-    setAlbums(prev => [...prev, newAlbum]);
-
-    // Log Activity for album creation
-    logUserActivity({
-      userId: currentUser.id,
-      userName: `${currentUser.nombre} ${currentUser.apellidos}`,
-      userAvatar: currentUser.avatar,
-      type: 'album_created',
-      title: 'ha creado el álbum',
-      targetAlbumId: newAlbum.id,
-      targetAlbumName: nombre.trim(),
-      detail: descripcion?.trim(),
-      date: 'Ahora mismo'
-    });
-
-    playSuccessSound();
-  }, [currentUser, logUserActivity]);
-
-  const renameAlbum = useCallback((albumId: string, nuevoNombre: string) => {
-    if (!nuevoNombre.trim()) return;
-    setAlbums(prev => prev.map(a => a.id === albumId ? { ...a, nombre: nuevoNombre.trim() } : a));
-    playClickSound();
-  }, []);
-
-  const deleteAlbum = useCallback((albumId: string) => {
-    setAlbums(prev => prev.filter(a => a.id !== albumId));
-    // move photos in album to unassigned
-    setPhotos(prev => prev.map(p => p.albumId === albumId ? { ...p, albumId: null, albumName: undefined } : p));
-    playClickSound();
-  }, []);
-
-  // Friends & Requests
-  const sendFriendRequest = useCallback((targetUserId: string) => {
-    if (targetUserId === currentUser.id) return;
-    if (isFriend(currentUser.id, targetUserId)) return;
-    if (hasPendingRequest(currentUser.id, targetUserId)) return;
-
-    const newRequest: FriendRequest = {
-      id: `freq_${Date.now()}`,
-      emisorId: currentUser.id,
-      emisorNombre: `${currentUser.nombre} ${currentUser.apellidos}`,
-      emisorAvatar: currentUser.avatar,
-      emisorProvincia: currentUser.provincia,
-      receptorId: targetUserId,
-      fecha: 'Ahora mismo',
-      estado: 'pendiente'
-    };
-
-    setFriendRequests(prev => [...prev, newRequest]);
-    playSuccessSound();
-
-    // Add notification for receiver
-    const notif: InkoriumNotification = {
-      id: `notif_${Date.now()}`,
-      userId: targetUserId,
-      fromUserId: currentUser.id,
-      fromUserName: `${currentUser.nombre} ${currentUser.apellidos}`,
-      fromUserAvatar: currentUser.avatar,
-      tipo: 'peticion',
-      mensaje: `${currentUser.nombre} ${currentUser.apellidos} te ha enviado una petición de amistad.`,
-      targetId: newRequest.id,
-      enlace: 'ajustes',
-      leido: false,
-      fecha: 'Ahora mismo'
-    };
-    pushNotification(notif);
-  }, [currentUser, isFriend, hasPendingRequest, pushNotification]);
-
-  const acceptFriendRequest = useCallback((requestId: string) => {
-    const req = friendRequests.find(r => r.id === requestId);
-    if (!req) return;
-
-    setFriendRequests(prev => prev.map(r => r.id === requestId ? { ...r, estado: 'aceptada' } : r));
-
-    const newFriendship: Friendship = {
-      id: `fr_${Date.now()}`,
-      user1: req.emisorId,
-      user2: req.receptorId,
-      fecha: new Date().toISOString().split('T')[0]
-    };
-
-    setFriendships(prev => [...prev, newFriendship]);
-    playSuccessSound();
-    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-
-    // Feed event
-    const sender = users.find(u => u.id === req.emisorId);
-    if (sender) {
-      const feedItem: FeedItem = {
-        id: `feed_${Date.now()}`,
-        tipo: 'amistad',
-        propietarioId: currentUser.id,
-        propietarioNombre: `${currentUser.nombre} ${currentUser.apellidos}`,
-        propietarioAvatar: currentUser.avatar,
-        visitanteId: sender.id,
-        visitanteNombre: `${sender.nombre} ${sender.apellidos}`,
-        visitanteAvatar: sender.avatar,
-        fecha: 'Ahora mismo',
-        likes: [],
-        comentarios: []
-      };
-      setFeed(prev => [feedItem, ...prev]);
-
-      // Log activity for both users
-      logUserActivity({
-        userId: currentUser.id,
-        userName: `${currentUser.nombre} ${currentUser.apellidos}`,
-        userAvatar: currentUser.avatar,
-        type: 'friend_added',
-        title: 'ahora es amigo de',
-        targetUserId: sender.id,
-        targetUserName: `${sender.nombre} ${sender.apellidos}`,
-        targetUserAvatar: sender.avatar,
-        date: 'Ahora mismo'
-      });
-
-      logUserActivity({
-        userId: sender.id,
-        userName: `${sender.nombre} ${sender.apellidos}`,
-        userAvatar: sender.avatar,
-        type: 'friend_added',
-        title: 'ahora es amigo de',
-        targetUserId: currentUser.id,
-        targetUserName: `${currentUser.nombre} ${currentUser.apellidos}`,
-        targetUserAvatar: currentUser.avatar,
-        date: 'Ahora mismo'
-      });
-    }
-  }, [friendRequests, currentUser, users, logUserActivity]);
-
-  const ignoreFriendRequest = useCallback((requestId: string) => {
-    setFriendRequests(prev => prev.map(r => r.id === requestId ? { ...r, estado: 'ignorada' } : r));
-    playClickSound();
-  }, []);
-
-  // Messages
-  const sendPrivateMessage = useCallback((receptorId: string, asunto: string, mensaje: string) => {
-    if (!mensaje.trim()) return;
-    const recipient = users.find(u => u.id === receptorId);
-    if (!recipient) return;
-
-    const newMsg: PrivateMessage = {
-      id: `mp_${Date.now()}`,
-      emisorId: currentUser.id,
-      emisorNombre: `${currentUser.nombre} ${currentUser.apellidos}`,
-      emisorAvatar: currentUser.avatar,
-      receptorId,
-      receptorNombre: `${recipient.nombre} ${recipient.apellidos}`,
-      asunto: asunto.trim() || 'Sin asunto',
-      mensaje: mensaje.trim(),
-      fecha: 'Hoy a las ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      leido: false
-    };
-
-    setMessages(prev => [newMsg, ...prev]);
-    playSuccessSound();
-
-    // Notify receiver
-    const notif: InkoriumNotification = {
-      id: `notif_${Date.now()}`,
-      userId: receptorId,
-      fromUserId: currentUser.id,
-      fromUserName: `${currentUser.nombre} ${currentUser.apellidos}`,
-      fromUserAvatar: currentUser.avatar,
-      tipo: 'mp',
-      mensaje: `Tienes un nuevo mensaje privado de ${currentUser.nombre} ${currentUser.apellidos}.`,
-      detalle: mensaje.trim(),
-      targetId: newMsg.id,
-      enlace: 'mensajes',
-      leido: false,
-      fecha: 'Ahora mismo'
-    };
-    pushNotification(notif);
-  }, [currentUser, users, pushNotification]);
-
-  const markMessageAsRead = useCallback((messageId: string) => {
-    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, leido: true } : m));
-  }, []);
-
-  const deleteMessage = useCallback((messageId: string) => {
-    setMessages(prev => prev.filter(m => m.id !== messageId));
-    playClickSound();
-  }, []);
-
-  // Chat
-  const openChatWith = useCallback((targetUserId: string) => {
-    if (targetUserId === currentUser.id) return;
-    playClickSound();
-    setActiveChatWindows(prev => {
-      if (prev.some(w => w.targetUserId === targetUserId)) {
-        return prev.map(w => w.targetUserId === targetUserId ? { ...w, minimized: false } : w);
-      }
-      return [...prev, { targetUserId, minimized: false }];
-    });
-  }, [currentUser.id]);
-
-  const closeChat = useCallback((targetUserId: string) => {
-    setActiveChatWindows(prev => prev.filter(w => w.targetUserId !== targetUserId));
-    playClickSound();
-  }, []);
-
-  const toggleMinimizeChat = useCallback((targetUserId: string) => {
-    setActiveChatWindows(prev => prev.map(w => w.targetUserId === targetUserId ? { ...w, minimized: !w.minimized } : w));
-    playClickSound();
-  }, []);
-
-  const sendChatMessage = useCallback((targetUserId: string, text: string) => {
-    if (!text.trim()) return;
-
-    const newMsg: ChatMessage = {
-      id: `chat_${Date.now()}`,
-      emisorId: currentUser.id,
-      receptorId: targetUserId,
-      mensaje: text.trim(),
-      fecha: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      leido: true
-    };
-
-    setChatMessages(prev => [...prev, newMsg]);
-    playClickSound();
-
-    // Simulated retro smart reply after a brief moment
-    const targetUser = users.find(u => u.id === targetUserId);
-    if (targetUser && targetUser.online) {
-      setTimeout(() => {
-        const retroReplies = [
-          'Jajaja qué pasa fiera! ¿Te has enterado del fiestón de este finde? 🎉',
-          'Siii tío! Justo estaba mirando tu tablón xdd',
-          'Ey! Me pillas escuchando temazos en Tuenti / Inkorium jaja 🎧',
-          'Jajajaj qué grande eres!! A ver si subes más fotos de las vacaciones 📸',
-          'De una!! Cuenta conmigo para lo que haga falta!',
-          'Jajajaja lol, me meo contigo xd',
-          'Oye pásate por mi perfil que he subido nuevo álbum!! :)'
-        ];
-        const randomReply = retroReplies[Math.floor(Math.random() * retroReplies.length)];
-        
-        const replyMsg: ChatMessage = {
-          id: `chat_${Date.now()}_reply`,
-          emisorId: targetUserId,
-          receptorId: currentUser.id,
-          mensaje: randomReply,
-          fecha: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          leido: false
-        };
-
-        setChatMessages(prev => [...prev, replyMsg]);
-        playMessageSound();
-      }, 1400);
-    }
-  }, [currentUser.id, users]);
-
-  const setChatEstado = useCallback((estado: '1' | '0') => {
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, chatEstado: estado } : u));
-    playClickSound();
-  }, [currentUser.id]);
-
-  // Notifications
-  const markNotificationAsRead = useCallback((notifId: string) => {
-    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: true } : n));
-  }, []);
-
-  const markAllNotificationsAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => n.userId === currentUser.id ? { ...n, leido: true } : n));
-  }, [currentUser.id]);
-
-  // Real-time Event Simulators
-  const simulateIncomingMessage = useCallback(() => {
-    const otherUsers = users.filter(u => u.id !== currentUser.id);
-    if (otherUsers.length === 0) return;
-    const sender = otherUsers[Math.floor(Math.random() * otherUsers.length)];
-
-    const retroMessages = [
-      { asunto: '¡Eyy qué pasa crack!', texto: '¡Hola! ¿Al final vienes hoy a la quedada o te quedas estudiando? Avisa luego crack! ;)' },
-      { asunto: 'Fotos de la fiesta!!', texto: '¡Wenas! Ya he subido al Tuenti las fotos de la fiesta del sábado jaja, etiquétate cuando puedas que sales brutal xd' },
-      { asunto: '¿Tienes los apuntes?', texto: 'Ey! ¿Por casualidad tienes los apuntes de historia del otro día? Que no pude ir y ando liado jaja. Un besoo' },
-      { asunto: '¡Felicidades!!', texto: '¡Ey máquina! Que me acabo de enterar de lo tuyo, muchas felicidades!! A celebrarlo este fin de semana 🎉' },
-      { asunto: 'Temazo nuevo 🎧', texto: 'Escúchate esta canción que te va a encantar, la están poniendo en todos lados! Luego me cuentas qué tal ;)' },
-      { asunto: 'Quedada este viernes', texto: '¿Qué hacéis este viernes por la tarde? Hemos quedado unos cuantos en el parque y luego al cine. ¡Apúntate!' }
-    ];
-    const chosen = retroMessages[Math.floor(Math.random() * retroMessages.length)];
-
-    const newMsg: PrivateMessage = {
-      id: `mp_${Date.now()}`,
-      emisorId: sender.id,
-      emisorNombre: `${sender.nombre} ${sender.apellidos}`,
-      emisorAvatar: sender.avatar,
-      receptorId: currentUser.id,
-      receptorNombre: `${currentUser.nombre} ${currentUser.apellidos}`,
-      asunto: chosen.asunto,
-      mensaje: chosen.texto,
-      fecha: 'Hoy a las ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      leido: false
-    };
-
-    setMessages(prev => [newMsg, ...prev]);
-
-    const notif: InkoriumNotification = {
-      id: `notif_${Date.now()}`,
-      userId: currentUser.id,
-      fromUserId: sender.id,
-      fromUserName: `${sender.nombre} ${sender.apellidos}`,
-      fromUserAvatar: sender.avatar,
-      tipo: 'mp',
-      mensaje: `${sender.nombre} ${sender.apellidos} te ha enviado un mensaje privado: "${chosen.asunto}".`,
-      detalle: chosen.texto,
-      targetId: newMsg.id,
-      enlace: 'mensajes',
-      leido: false,
-      fecha: 'Ahora mismo'
-    };
-
-    pushNotification(notif);
-  }, [users, currentUser, pushNotification]);
-
-  const simulateWallComment = useCallback(() => {
-    const otherUsers = users.filter(u => u.id !== currentUser.id);
-    if (otherUsers.length === 0) return;
-    const sender = otherUsers[Math.floor(Math.random() * otherUsers.length)];
-
-    const retroWallSignatures = [
-      '¡Firmaaado crack! Pásate por el mío y firma tú también cuando puedas ;)',
-      'Jajajaj qué grande eres tío! A ver si nos vemos pronto de fiesta 🎉🍻',
-      '¡¡Holitaaa!! Pasaba por aquí para dejarte una firmita rápida jeje, que tengas buena semana! (K)',
-      'Eseee fiera!! Vaya finde nos espera xdd. ¡Cuidatee!',
-      'Firma para el más salao de todo Inkorium! No cambies nunca compadre :)',
-      '¡Ey! Qué fotones tienes subidos jaja. A ver si nos echamos ese PRO un día de estos ⚽'
-    ];
-    const signature = retroWallSignatures[Math.floor(Math.random() * retroWallSignatures.length)];
-
-    const newComment: WallComment = {
-      id: `wall_${Date.now()}`,
-      emisorId: sender.id,
-      emisorNombre: `${sender.nombre} ${sender.apellidos}`,
-      emisorAvatar: sender.avatar,
-      receptorId: currentUser.id,
-      comentario: signature,
-      fecha: 'Hoy a las ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setWallComments(prev => [newComment, ...prev]);
-
-    const feedItem: FeedItem = {
-      id: `feed_${Date.now()}`,
-      tipo: 'tablon',
-      propietarioId: currentUser.id,
-      propietarioNombre: `${currentUser.nombre} ${currentUser.apellidos}`,
-      propietarioAvatar: currentUser.avatar,
-      visitanteId: sender.id,
-      visitanteNombre: `${sender.nombre} ${sender.apellidos}`,
-      visitanteAvatar: sender.avatar,
-      datos: signature,
-      fecha: 'Ahora mismo',
-      likes: [],
-      comentarios: []
-    };
-    setFeed(prev => [feedItem, ...prev]);
-
-    const notif: InkoriumNotification = {
-      id: `notif_${Date.now()}`,
-      userId: currentUser.id,
-      fromUserId: sender.id,
-      fromUserName: `${sender.nombre} ${sender.apellidos}`,
-      fromUserAvatar: sender.avatar,
-      tipo: 'tablon',
-      mensaje: `${sender.nombre} ${sender.apellidos} ha firmado en tu tablón.`,
-      detalle: signature,
-      targetId: newComment.id,
-      enlace: 'perfil',
-      leido: false,
-      fecha: 'Ahora mismo'
-    };
-
-    pushNotification(notif);
-  }, [users, currentUser, pushNotification]);
-
-  const simulateFriendRequest = useCallback(() => {
-    let candidate = users.find(u => u.id !== currentUser.id && !isFriend(currentUser.id, u.id) && !hasPendingRequest(u.id, currentUser.id));
-
-    if (!candidate) {
-      const retroProfiles = [
-        { nombre: 'Marta', apellidos: 'Gil Santos', sexo: 'm' as const, provincia: 'Sevilla', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=80' },
-        { nombre: 'Álex', apellidos: 'Navarro Pons', sexo: 'h' as const, provincia: 'Zaragoza', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80' },
-        { nombre: 'Elena', apellidos: 'Sanz Bilbao', sexo: 'm' as const, provincia: 'Bilbao', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80' },
-        { nombre: 'Rubén', apellidos: 'Cortés Luque', sexo: 'h' as const, provincia: 'Alicante', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80' }
-      ];
-      const p = retroProfiles[Math.floor(Math.random() * retroProfiles.length)];
-      const newUser: User = {
-        id: `user_gen_${Date.now()}`,
-        nombre: p.nombre,
-        apellidos: p.apellidos,
-        email: `${p.nombre.toLowerCase()}.${Date.now()}@inkorium.com`,
-        sexo: p.sexo,
-        fnac: '1994-06-12',
-        provincia: p.provincia,
-        ciudad: p.provincia,
-        estado: '¡Buscando gente maja en Inkorium! Tuenti forever ;)',
-        estadoFecha: 'Hace unos minutos',
-        situacionSentimental: 'Soltero/a',
-        avatar: p.avatar,
-        fechaReg: new Date().toLocaleDateString('es-ES'),
-        online: true,
-        ultimoAcceso: 'Ahora mismo',
-        chatEstado: '1'
-      };
-      setUsers(prev => [...prev, newUser]);
-      candidate = newUser;
-    }
-
-    const newRequest: FriendRequest = {
-      id: `freq_${Date.now()}`,
-      emisorId: candidate.id,
-      emisorNombre: `${candidate.nombre} ${candidate.apellidos}`,
-      emisorAvatar: candidate.avatar,
-      emisorProvincia: candidate.provincia,
-      receptorId: currentUser.id,
-      fecha: 'Ahora mismo',
-      estado: 'pendiente'
-    };
-
-    setFriendRequests(prev => [...prev, newRequest]);
-
-    const notif: InkoriumNotification = {
-      id: `notif_${Date.now()}`,
-      userId: currentUser.id,
-      fromUserId: candidate.id,
-      fromUserName: `${candidate.nombre} ${candidate.apellidos}`,
-      fromUserAvatar: candidate.avatar,
-      tipo: 'peticion',
-      mensaje: `${candidate.nombre} ${candidate.apellidos} te ha enviado una petición de amistad.`,
-      detalle: `Desde ${candidate.provincia}`,
-      targetId: newRequest.id,
-      enlace: 'ajustes',
-      leido: false,
-      fecha: 'Ahora mismo'
-    };
-
-    pushNotification(notif);
-  }, [users, currentUser, isFriend, hasPendingRequest, pushNotification]);
-
-  const simulatePhotoInteraction = useCallback(() => {
-    const otherUsers = users.filter(u => u.id !== currentUser.id);
-    if (otherUsers.length === 0) return;
-    const sender = otherUsers[Math.floor(Math.random() * otherUsers.length)];
-
-    const myPhotos = photos.filter(p => p.uploaderId === currentUser.id);
-    const targetPhoto = myPhotos.length > 0 ? myPhotos[Math.floor(Math.random() * myPhotos.length)] : photos[0];
-    if (!targetPhoto) return;
-
-    const isComment = Math.random() > 0.4;
-    if (isComment) {
-      const retroPhotoComments = [
-        '¡Vaya fotón! Sales de lujo crack ;) 📸',
-        'Jajajajaj momento épico ese día!! Qué risas xd',
-        '¡Qué guapos todos! A ver cuándo repetimos!',
-        'Menudo postureo jaja, me encanta la foto! (K)',
-        '¡Fotaza fiera! Tienes que pasarme las demás por privado!'
-      ];
-      const text = retroPhotoComments[Math.floor(Math.random() * retroPhotoComments.length)];
-      const newComment = {
-        id: `pcom_${Date.now()}`,
-        photoId: targetPhoto.id,
-        userId: sender.id,
-        nombre: `${sender.nombre} ${sender.apellidos}`,
-        avatar: sender.avatar,
-        comentario: text,
-        fecha: 'Hoy a las ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-
-      setPhotos(prev => prev.map(p => p.id === targetPhoto.id ? { ...p, comentarios: [...p.comentarios, newComment] } : p));
-
-      const notif: InkoriumNotification = {
-        id: `notif_${Date.now()}`,
-        userId: currentUser.id,
-        fromUserId: sender.id,
-        fromUserName: `${sender.nombre} ${sender.apellidos}`,
-        fromUserAvatar: sender.avatar,
-        tipo: 'foto',
-        mensaje: `${sender.nombre} ${sender.apellidos} ha comentado tu foto "${targetPhoto.titulo}".`,
-        detalle: text,
-        targetId: targetPhoto.id,
-        enlace: 'fotos',
-        leido: false,
-        fecha: 'Ahora mismo'
-      };
-      pushNotification(notif);
-    } else {
-      setPhotos(prev => prev.map(p => {
-        if (p.id === targetPhoto.id && !p.likes.includes(sender.id)) {
-          return { ...p, likes: [...p.likes, sender.id] };
-        }
-        return p;
-      }));
-
-      const notif: InkoriumNotification = {
-        id: `notif_${Date.now()}`,
-        userId: currentUser.id,
-        fromUserId: sender.id,
-        fromUserName: `${sender.nombre} ${sender.apellidos}`,
-        fromUserAvatar: sender.avatar,
-        tipo: 'like',
-        mensaje: `A ${sender.nombre} ${sender.apellidos} le gusta tu foto "${targetPhoto.titulo}".`,
-        targetId: targetPhoto.id,
-        enlace: 'fotos',
-        leido: false,
-        fecha: 'Ahora mismo'
-      };
-      pushNotification(notif);
-    }
-  }, [users, currentUser, photos, pushNotification]);
-
-  // Background real-time periodic simulation
-  useEffect(() => {
-    if (!isRealtimeSimulationEnabled) return;
-
-    const timer = setInterval(() => {
-      const choice = Math.random();
-      if (choice < 0.3) {
-        simulateIncomingMessage();
-      } else if (choice < 0.55) {
-        simulateWallComment();
-      } else if (choice < 0.8) {
-        simulatePhotoInteraction();
-      } else {
-        simulateFriendRequest();
-      }
-    }, 45000); // Live event every 45s
-
-    return () => clearInterval(timer);
-  }, [isRealtimeSimulationEnabled, simulateIncomingMessage, simulateWallComment, simulatePhotoInteraction, simulateFriendRequest]);
-
-  const updateUserData = useCallback((data: Partial<User>) => {
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...data } : u));
-    
-    // Log Activity if avatar, state, or info updated
-    if (data.avatar && data.avatar !== currentUser.avatar) {
-      logUserActivity({
-        userId: currentUser.id,
-        userName: `${currentUser.nombre} ${currentUser.apellidos}`,
-        userAvatar: data.avatar,
-        type: 'avatar_change',
-        title: 'ha cambiado su foto de perfil',
-        targetPhotoUrl: data.avatar,
-        date: 'Ahora mismo'
-      });
-    }
-    if (data.estado && data.estado !== currentUser.estado) {
-      logUserActivity({
-        userId: currentUser.id,
-        userName: `${currentUser.nombre} ${currentUser.apellidos}`,
-        userAvatar: data.avatar || currentUser.avatar,
-        type: 'status_update',
-        title: 'ha actualizado su estado',
-        detail: data.estado,
-        date: 'Ahora mismo'
-      });
-    }
-    if (data.ciudad || data.situacionSentimental || data.provincia) {
-      logUserActivity({
-        userId: currentUser.id,
-        userName: `${currentUser.nombre} ${currentUser.apellidos}`,
-        userAvatar: currentUser.avatar,
-        type: 'info_update',
-        title: 'ha actualizado su información de perfil',
-        detail: [data.provincia, data.ciudad, data.situacionSentimental].filter(Boolean).join(', '),
-        date: 'Ahora mismo'
-      });
-    }
-
-    playSuccessSound();
-  }, [currentUser, logUserActivity]);
-
-  const resetToDefaultData = useCallback(() => {
-    localStorage.clear();
-    setUsers(INITIAL_USERS);
-    setCurrentUserId('user_1');
-    setPhotos(INITIAL_PHOTOS);
-    setAlbums(INITIAL_ALBUMS);
-    setFeed(INITIAL_FEED);
-    setWallComments(INITIAL_WALL_COMMENTS);
-    setMessages(INITIAL_MESSAGES);
-    setFriendRequests(INITIAL_FRIEND_REQUESTS);
-    setFriendships(INITIAL_FRIENDSHIPS);
-    setChatMessages([]);
-    setNotifications(INITIAL_NOTIFICATIONS);
-    setToasts([]);
-    setAccessLogs(INITIAL_ACCESS_LOGS);
-    setActivities(INITIAL_ACTIVITIES);
-    setActiveChatWindows([]);
-    setActiveTabState('inicio');
-    setSelectedUserId('user_1');
-    playSuccessSound();
-  }, []);
-
-  const registerNewUser = useCallback((
-    nombre: string, 
-    apellidos: string, 
-    email: string, 
-    sexo: 'h' | 'm', 
-    provincia: string, 
-    fnac: string
-  ) => {
-    const newUser: User = {
-      id: `user_${Date.now()}`,
-      nombre: nombre.trim(),
-      apellidos: apellidos.trim(),
-      email: email.trim(),
-      sexo,
-      fnac,
-      provincia,
-      ciudad: provincia,
-      estado: '¡Recién llegado a Inkorium! Añadidme todos :)',
-      estadoFecha: 'Ahora mismo',
-      situacionSentimental: 'Soltero/a',
-      avatar: sexo === 'h' 
-        ? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'
-        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-      fechaReg: new Date().toLocaleDateString('es-ES'),
-      online: true,
-      ultimoAcceso: 'Ahora mismo',
-      chatEstado: '1'
-    };
-
-    setUsers(prev => [newUser, ...prev]);
-    setCurrentUserId(newUser.id);
-    setSelectedUserId(newUser.id);
-    setActiveTabState('inicio');
-    playSuccessSound();
-    confetti({ particleCount: 100, spread: 80 });
-  }, []);
-
-  return (
-    <InkoriumContext.Provider value={{
-      currentUser,
-      users,
-      photos,
-      albums,
-      feed,
-      wallComments,
-      messages,
-      friendRequests,
-      friendships,
-      chatMessages,
-      notifications,
-      toasts,
-      accessLogs,
-      activities,
-      activeChatWindows,
-      activeTab,
-      selectedUserId,
-      selectedPhotoId,
-      selectedAlbumId,
-      unreadMessagesCount,
-      unreadNotificationsCount,
-      pendingRequestsCount,
-      isRealtimeSimulationEnabled,
-      setActiveTab,
-      viewUserProfile,
-      viewPhoto,
-      viewAlbum,
-      setCurrentUserById,
-      publishStatus,
-      likeFeedItem,
-      commentFeedItem,
-      postWallComment,
-      deleteWallComment,
-      uploadPhoto,
-      addPhotoTag,
-      removePhotoTag,
-      addPhotoComment,
-      likePhoto,
-      setPhotoAsAvatar,
-      deletePhoto,
-      createAlbum,
-      renameAlbum,
-      deleteAlbum,
-      sendFriendRequest,
-      acceptFriendRequest,
-      ignoreFriendRequest,
-      isFriend,
-      hasPendingRequest,
-      getFriendsOf,
-      sendPrivateMessage,
-      markMessageAsRead,
-      deleteMessage,
-      openChatWith,
-      closeChat,
-      toggleMinimizeChat,
-      sendChatMessage,
-      setChatEstado,
-      logUserActivity,
-      deleteUserActivity,
-      getUserActivities,
-      pushNotification,
-      dismissToast,
-      markNotificationAsRead,
-      markAllNotificationsAsRead,
-      deleteNotification,
-      setIsRealtimeSimulationEnabled,
-      simulateIncomingMessage,
-      simulateWallComment,
-      simulateFriendRequest,
-      simulatePhotoInteraction,
-      updateUserData,
-      resetToDefaultData,
-      registerNewUser
-    }}>
-      {children}
-    </InkoriumContext.Provider>
-  );
+  const [currentUserId, setCurrentUserId] = useState('');
+  const [sessionEmail, setSessionEmail] = useState('');
+  const [chatEstado, setChatEstadoState] = useState<'1' | '0'>('1');
+  const [ready, setReady] = useState(false);
+
+  const currentUser = useMemo(() => users.find(u => u.id === currentUserId) || users.find(u => u.email === sessionEmail) || users[0] || emptyUser, [users, currentUserId, sessionEmail]);
+
+  const refresh = useCallback(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const authId = sessionData.session?.user?.id || '';
+    const email = sessionData.session?.user?.email || '';
+    setSessionEmail(email);
+    const [profilesR, photosR, albumsR, postsR, postLikesR, commentsR, photoLikesR, photoCommentsR, photoTagsR, friendsR, messagesR, chatChannelsR, chatParticipantsR, chatMessagesR, notifsR] = await Promise.all([
+      supabase.from('profiles').select('*').order('full_name'),
+      supabase.from('photos').select('*').order('created_at', { ascending: false }),
+      supabase.from('photo_albums').select('*').order('created_at', { ascending: false }),
+      supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(100),
+      supabase.from('post_likes').select('*'),
+      supabase.from('comments').select('*').order('created_at'),
+      supabase.from('photo_likes').select('*'),
+      supabase.from('photo_comments').select('*').order('created_at'),
+      supabase.from('photo_tags').select('*'),
+      supabase.from('friendships').select('*'),
+      supabase.from('chat_messages').select('*').order('created_at'),
+      supabase.from('chat_channels').select('*'),
+      supabase.from('chat_participants').select('*'),
+      supabase.from('chat_messages').select('*').order('created_at'),
+      supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(100),
+    ]);
+    const profiles: any[] = profilesR.data || [];
+    const profileById = new Map(profiles.map(p => [p.id, p]));
+    const mappedUsers: User[] = profiles.map(p => { const { nombre, apellidos } = splitName(p.full_name || p.username || ''); return {
+      id: p.id, nombre, apellidos, email: p.id === authId ? email : '', sexo: 'otro', fnac: p.birth_date || '', provincia: '', ciudad: p.city || '',
+      estado: p.user_status || '', estadoFecha: dateText(p.updated_at), situacionSentimental: 'Soltero/a', ocupacion: '', intereses: (p.profile_interests || []).join(', '), musica: '',
+      avatar: p.avatar_url || '', fechaReg: dateText(p.created_at), online: false, ultimoAcceso: dateText(p.updated_at), chatEstado: p.id === currentUserId ? chatEstado : '1',
+    }; });
+    setUsers(mappedUsers); if (!currentUserId && authId) setCurrentUserId(authId); if (!selectedUserId && authId) setSelectedUserId(authId);
+
+    const postLikes = postLikesR.data || []; const comments = commentsR.data || [];
+    const mappedFeed: FeedItem[] = (postsR.data || []).map((p: any) => { const author = profileById.get(p.author_id); const { nombre, apellidos } = splitName(author?.full_name || author?.username || 'Usuario');
+      const md = p.media_data; const mediaUrl = md?.url || md?.public_url || md?.src || undefined;
+      const itemComments = comments.filter(c => c.post_id === p.id).map(c => { const a = profileById.get(c.author_id); const n = splitName(a?.full_name || a?.username || 'Usuario'); return { id: c.id, userId: c.author_id, nombre: n.nombre + (n.apellidos ? ` ${n.apellidos}` : ''), avatar: a?.avatar_url || '', texto: c.content || '', fecha: dateText(c.created_at) }; });
+      return { id: p.id, tipo: p.target_profile_id ? 'tablon' : (mediaUrl ? 'foto' : 'estado'), propietarioId: p.author_id, propietarioNombre: nombre + (apellidos ? ` ${apellidos}` : ''), propietarioAvatar: author?.avatar_url || '', datos: p.content || '', fotoUrl: mediaUrl, fecha: dateText(p.created_at), likes: postLikes.filter(l => l.post_id === p.id).map(l => l.user_id), comentarios: itemComments };
+    }); setFeed(mappedFeed);
+    setWallComments((postsR.data || []).filter((p: any) => p.target_profile_id).map((p: any) => { const a = profileById.get(p.author_id); const n = splitName(a?.full_name || a?.username || 'Usuario'); return { id: p.id, emisorId: p.author_id, emisorNombre: n.nombre + (n.apellidos ? ` ${n.apellidos}` : ''), emisorAvatar: a?.avatar_url || '', receptorId: p.target_profile_id, comentario: p.content || '', fecha: dateText(p.created_at) }; }));
+    const albumById = new Map((albumsR.data || []).map((a: any) => [a.id, a]));
+    setAlbums((albumsR.data || []).map((a: any) => ({ id: a.id, userId: a.user_id, nombre: a.name, descripcion: a.description || '', fecha: dateText(a.created_at) })));
+    setPhotos((photosR.data || []).map((p: any) => { const a = profileById.get(p.user_id); const alb = albumById.get(p.album_id); const n = splitName(a?.full_name || a?.username || 'Usuario'); return {
+      id: p.id, uploaderId: p.user_id, uploaderName: n.nombre + (n.apellidos ? ` ${n.apellidos}` : ''), albumId: p.album_id, albumName: alb?.name, archivo: p.url || p.storage_path || '', titulo: p.caption || '', fecha: dateText(p.created_at),
+      etiquetas: (photoTagsR.data || []).filter(t => t.photo_id === p.id).map((t: any): PhotoTag => { const tagUser = profileById.get(t.user_id); const tn = splitName(tagUser?.full_name || tagUser?.username || 'Usuario'); return { id: t.id, photoId: t.photo_id, userId: t.user_id, userName: tn.nombre + (tn.apellidos ? ` ${tn.apellidos}` : ''), x: t.x, y: t.y }; }),
+      comentarios: (photoCommentsR.data || []).filter(c => c.photo_id === p.id).map((c: any) => { const ca = profileById.get(c.author_id); const cn = splitName(ca?.full_name || ca?.username || 'Usuario'); return { id: c.id, photoId: c.photo_id, userId: c.author_id, nombre: cn.nombre + (cn.apellidos ? ` ${cn.apellidos}` : ''), avatar: ca?.avatar_url || '', comentario: c.content || '', fecha: dateText(c.created_at) }; }),
+      likes: (photoLikesR.data || []).filter(l => l.photo_id === p.id).map(l => l.user_id),
+    }; }));
+    const frows: any[] = friendsR.data || [];
+    setFriendships(frows.filter(f => f.status === 'accepted').map(f => ({ id: f.id, user1: f.user_id, user2: f.friend_id, fecha: dateText(f.created_at) })));
+    setFriendRequests(frows.filter(f => f.status === 'pending' || f.status === 'rejected').map(f => { const u = profileById.get(f.user_id); const n = splitName(u?.full_name || u?.username || 'Usuario'); return { id: f.id, emisorId: f.user_id, emisorNombre: n.nombre + (n.apellidos ? ` ${n.apellidos}` : ''), emisorAvatar: u?.avatar_url || '', emisorProvincia: u?.city || '', receptorId: f.friend_id, fecha: dateText(f.created_at), estado: f.status === 'pending' ? 'pendiente' : 'ignorada' }; }));
+
+    const channelRows: any[] = chatChannelsR.data || []; const participantRows: any[] = chatParticipantsR.data || []; const directChannels = channelRows.filter(c => c.type === 'direct' && participantRows.some(p => p.channel_id === c.id && p.user_id === authId));
+    const directIds = new Set(directChannels.map(c => c.id));
+    const participantsByChannel = new Map<string, any[]>(); participantRows.forEach(p => { if (!participantsByChannel.has(p.channel_id)) participantsByChannel.set(p.channel_id, []); participantsByChannel.get(p.channel_id)!.push(p); });
+    const realChatRows: any[] = (chatMessagesR.data || []).filter(m => directIds.has(m.channel_id) && !m.is_deleted);
+    setChatMessages(realChatRows.map(m => { const ps = participantsByChannel.get(m.channel_id) || []; const other = ps.find(p => p.user_id !== m.sender_id); return { id: m.id, emisorId: m.sender_id, receptorId: other?.user_id || authId, mensaje: m.content, fecha: dateText(m.created_at), leido: m.sender_id === authId || ps.find(p => p.user_id === authId)?.last_read_message_id === m.id }; }));
+    const priv: PrivateMessage[] = []; realChatRows.forEach(m => { const ps = participantsByChannel.get(m.channel_id) || []; const receiver = ps.find(p => p.user_id !== m.sender_id); if (!receiver) return; const sender = profileById.get(m.sender_id); const rec = profileById.get(receiver.user_id); const sn = splitName(sender?.full_name || sender?.username || 'Usuario'); const rn = splitName(rec?.full_name || rec?.username || 'Usuario'); let parsed: any = {}; try { parsed = JSON.parse(m.content); } catch { parsed = { mensaje: m.content }; } priv.push({ id: m.id, emisorId: m.sender_id, emisorNombre: sn.nombre + (sn.apellidos ? ` ${sn.apellidos}` : ''), emisorAvatar: sender?.avatar_url || '', receptorId: receiver.user_id, receptorNombre: rn.nombre + (rn.apellidos ? ` ${rn.apellidos}` : ''), asunto: parsed.asunto || 'Mensaje privado', mensaje: parsed.mensaje || m.content, fecha: dateText(m.created_at), leido: m.sender_id === authId || receiver.user_id !== authId || ps.find(p => p.user_id === authId)?.last_read_message_id === m.id }); }); setMessages(priv);
+    setNotifications((notifsR.data || []).filter((n: any) => n.user_id === authId).map((n: any) => { const a = profileById.get(n.actor_id); const nn = splitName(a?.full_name || a?.username || 'Usuario'); return { id: n.id, userId: n.user_id, fromUserId: n.actor_id || '', fromUserName: nn.nombre + (nn.apellidos ? ` ${nn.apellidos}` : ''), fromUserAvatar: a?.avatar_url || '', tipo: safeNotifType(n.type), mensaje: `${nn.nombre} ${n.type === 'friend_request' ? 'te ha enviado una petición de amistad' : 'ha interactuado contigo'}`, enlace: n.type === 'message' ? 'mensajes' : n.type === 'friend_request' ? 'ajustes' : 'inicio', leido: !!n.is_read, fecha: dateText(n.created_at), targetId: n.entity_id || undefined }; }));
+    setReady(true);
+  }, [currentUserId, selectedUserId, sessionEmail, chatEstado]);
+
+  useEffect(() => { void refresh(); const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => { setSessionEmail(session?.user?.email || ''); setCurrentUserId(session?.user?.id || ''); void refresh(); }); return () => sub.subscription.unsubscribe(); }, []);
+  useEffect(() => { if (!ready) return; const channel = supabase.channel('inkorium-live').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, refresh).on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, refresh).on('postgres_changes', { event: '*', schema: 'public', table: 'post_likes' }, refresh).on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, refresh).on('postgres_changes', { event: '*', schema: 'public', table: 'photo_comments' }, refresh).on('postgres_changes', { event: '*', schema: 'public', table: 'photo_likes' }, refresh).on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, refresh).on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, refresh).on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, refresh).subscribe(); return () => { void supabase.removeChannel(channel); }; }, [ready, refresh]);
+
+  const requireAuth = useCallback(async () => { const { data } = await supabase.auth.getSession(); if (!data.session?.user?.id) throw new Error('Debes iniciar sesión en Inkorium.'); return data.session.user.id; }, []);
+  const setActiveTab = useCallback((tab: Tab) => { playClickSound(); setActiveTabState(tab); if (tab === 'perfil') setSelectedUserId(currentUser.id); }, [currentUser.id]);
+  const viewUserProfile = useCallback((id: string) => { playClickSound(); setSelectedUserId(id); setActiveTabState('perfil'); window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);
+  const viewPhoto = useCallback((id: string | null) => setSelectedPhotoId(id), []);
+  const viewAlbum = useCallback((id: string | null) => { setSelectedAlbumId(id); setActiveTabState('fotos'); }, []);
+  const setCurrentUserById = useCallback((id: string) => { setCurrentUserId(id); setSelectedUserId(id); playSuccessSound(); }, []);
+
+  const publishStatus = useCallback(async (text: string, attachedPhotoUrl?: string) => { try { const uid = await requireAuth(); if (!text.trim() && !attachedPhotoUrl) return; await supabase.from('posts').insert({ author_id: uid, content: text.trim(), visibility: 'friends_only', media_data: attachedPhotoUrl ? { url: attachedPhotoUrl, type: 'image' } : null }); if (text.trim()) await supabase.from('profiles').update({ user_status: text.trim() }).eq('id', uid); await refresh(); playSuccessSound(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const likeFeedItem = useCallback(async (id: string) => { try { const uid = await requireAuth(); const { data: existing } = await supabase.from('post_likes').select('user_id').eq('post_id', id).eq('user_id', uid).maybeSingle(); if (existing) await supabase.from('post_likes').delete().eq('post_id', id).eq('user_id', uid); else await supabase.from('post_likes').insert({ post_id: id, user_id: uid }); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const commentFeedItem = useCallback(async (id: string, text: string) => { try { const uid = await requireAuth(); if (!text.trim()) return; await supabase.from('comments').insert({ post_id: id, author_id: uid, content: text.trim() }); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const postWallComment = useCallback(async (receptorId: string, text: string) => { try { const uid = await requireAuth(); if (!text.trim()) return; await supabase.from('posts').insert({ author_id: uid, target_profile_id: receptorId, content: text.trim(), visibility: 'friends_only' }); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const deleteWallComment = useCallback(async (id: string) => { try { await requireAuth(); await supabase.from('posts').delete().eq('id', id); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+
+  const uploadPhoto = useCallback(async (titulo: string, albumId: string | null, archivoUrl: string) => { try { const uid = await requireAuth(); let url = archivoUrl; let key: string | null = null; if (archivoUrl.startsWith('data:')) { const file = toDataUrlFile(archivoUrl, `${Date.now()}.jpg`); const uploaded = await uploadFileDirectToStorage({ folder: 'photos', file }); url = String(uploaded.url || ''); key = uploaded.key || null; } const { data, error } = await supabase.from('photos').insert({ user_id: uid, album_id: albumId || null, storage_path: key, url, caption: titulo || '' }).select('id').single(); if (error) throw error; if (data?.id) await supabase.from('posts').insert({ author_id: uid, content: titulo || '', visibility: 'friends_only', media_data: { photo_id: data.id, url } }); await refresh(); playSuccessSound(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const addPhotoTag = useCallback(async (photoId: string, targetUserId: string, x: number, y: number) => { try { const uid = await requireAuth(); await supabase.from('photo_tags').insert({ photo_id: photoId, user_id: targetUserId, tagged_by: uid, x, y }); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const removePhotoTag = useCallback(async (_photoId: string, tagId: string) => { try { await requireAuth(); await supabase.from('photo_tags').delete().eq('id', tagId); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const addPhotoComment = useCallback(async (photoId: string, comentario: string) => { try { const uid = await requireAuth(); if (!comentario.trim()) return; await supabase.from('photo_comments').insert({ photo_id: photoId, author_id: uid, content: comentario.trim() }); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const likePhoto = useCallback(async (photoId: string) => { try { const uid = await requireAuth(); const { data } = await supabase.from('photo_likes').select('id').eq('photo_id', photoId).eq('user_id', uid).maybeSingle(); if (data) await supabase.from('photo_likes').delete().eq('id', data.id); else await supabase.from('photo_likes').insert({ photo_id: photoId, user_id: uid }); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const setPhotoAsAvatar = useCallback(async (photoId: string) => { try { const uid = await requireAuth(); const p = photos.find(x => x.id === photoId); if (!p) return; await supabase.from('profiles').update({ avatar_url: p.archivo }).eq('id', uid); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, photos, refresh]);
+  const deletePhoto = useCallback(async (photoId: string) => { try { const uid = await requireAuth(); const p = photos.find(x => x.id === photoId); if (p?.archivo?.startsWith('http')) { const key = p.archivo.includes('/photos/') ? p.archivo.split('/').slice(p.archivo.indexOf('photos/')).join('/') : ''; if (key) await deleteStorageObject(key).catch(() => undefined); } await supabase.from('photos').delete().eq('id', photoId).eq('user_id', uid); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, photos, refresh]);
+  const createAlbum = useCallback(async (nombre: string, descripcion?: string) => { try { const uid = await requireAuth(); await supabase.from('photo_albums').insert({ user_id: uid, name: nombre.trim(), description: descripcion || '' }); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const renameAlbum = useCallback(async (id: string, nuevoNombre: string) => { try { const uid = await requireAuth(); await supabase.from('photo_albums').update({ name: nuevoNombre.trim() }).eq('id', id).eq('user_id', uid); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const deleteAlbum = useCallback(async (id: string) => { try { const uid = await requireAuth(); await supabase.from('photo_albums').delete().eq('id', id).eq('user_id', uid); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+
+  const sendFriendRequest = useCallback(async (target: string) => { try { const uid = await requireAuth(); if (uid === target || isFriend(uid, target) || hasPendingRequest(uid, target)) return; const reverse = friendRequests.find(r => r.emisorId === target && r.receptorId === uid && r.estado === 'pendiente'); if (reverse) { await supabase.from('friendships').update({ status: 'accepted' }).eq('id', reverse.id); } else { await supabase.from('friendships').insert({ user_id: uid, friend_id: target, status: 'pending' }); } await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh, friendships, friendRequests]);
+  const acceptFriendRequest = useCallback(async (id: string) => { try { await requireAuth(); await supabase.from('friendships').update({ status: 'accepted' }).eq('id', id); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const ignoreFriendRequest = useCallback(async (id: string) => { try { await requireAuth(); await supabase.from('friendships').update({ status: 'rejected' }).eq('id', id); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const isFriend = useCallback((a: string, b: string) => a === b || friendships.some(f => (f.user1 === a && f.user2 === b) || (f.user1 === b && f.user2 === a)), [friendships]);
+  const hasPendingRequest = useCallback((from: string, to: string) => friendRequests.some(r => r.emisorId === from && r.receptorId === to && r.estado === 'pendiente'), [friendRequests]);
+  const getFriendsOf = useCallback((uid: string) => { const ids = friendships.filter(f => f.user1 === uid || f.user2 === uid).map(f => f.user1 === uid ? f.user2 : f.user1); return users.filter(u => ids.includes(u.id)); }, [friendships, users]);
+
+  const sendPrivateMessage = useCallback(async (receptorId: string, asunto: string, mensaje: string) => { try { const uid = await requireAuth(); const rpc = await supabase.rpc('get_or_create_direct_chat', { p_other_user: receptorId }); if (rpc.error) throw rpc.error; const channelId = String(rpc.data); await supabase.from('chat_messages').insert({ channel_id: channelId, sender_id: uid, type: 'text', content: JSON.stringify({ asunto: asunto || 'Sin asunto', mensaje }) }); await refresh(); playMessageSound(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const markMessageAsRead = useCallback(async (id: string) => { try { const uid = await requireAuth(); const { data: msg } = await supabase.from('chat_messages').select('channel_id').eq('id', id).maybeSingle(); if (!msg) return; await supabase.from('chat_participants').update({ last_read_message_id: id }).eq('channel_id', msg.channel_id).eq('user_id', uid); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const deleteMessage = useCallback(async (id: string) => { try { await requireAuth(); await supabase.from('chat_messages').update({ is_deleted: true }).eq('id', id); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const openChatWith = useCallback((id: string) => setActiveChatWindows(prev => prev.some(w => w.targetUserId === id) ? prev : [...prev, { targetUserId: id, minimized: false }]), []);
+  const closeChat = useCallback((id: string) => setActiveChatWindows(prev => prev.filter(w => w.targetUserId !== id)), []);
+  const toggleMinimizeChat = useCallback((id: string) => setActiveChatWindows(prev => prev.map(w => w.targetUserId === id ? { ...w, minimized: !w.minimized } : w)), []);
+  const sendChatMessage = useCallback(async (targetUserId: string, text: string) => { try { const uid = await requireAuth(); const rpc = await supabase.rpc('get_or_create_direct_chat', { p_other_user: targetUserId }); if (rpc.error) throw rpc.error; await supabase.from('chat_messages').insert({ channel_id: String(rpc.data), sender_id: uid, type: 'text', content: text.trim() }); await refresh(); playMessageSound(); } catch (e) { console.error(e); } }, [requireAuth, refresh]);
+  const setChatEstado = useCallback((estado: '1' | '0') => { setChatEstadoState(estado); playClickSound(); }, []);
+
+  const logUserActivity = useCallback((_a: Omit<UserActivity, 'id' | 'timestamp'>) => {}, []);
+  const deleteUserActivity = useCallback((_id: string) => {}, []);
+  const getUserActivities = useCallback((_id: string) => [], []);
+  const pushNotification = useCallback(async (notif: InkoriumNotification) => { try { await supabase.from('notifications').insert({ user_id: notif.userId, actor_id: notif.fromUserId || null, type: notif.tipo === 'peticion' ? 'friend_request' : notif.tipo === 'mp' ? 'message' : notif.tipo === 'like' ? 'like' : 'comment', entity_id: notif.targetId || null }); await refresh(); playNotificationChime(); } catch (e) { console.error(e); } }, [refresh]);
+  const dismissToast = useCallback((id: string) => setToasts(prev => prev.filter(t => t.id !== id)), []);
+  const markNotificationAsRead = useCallback(async (id: string) => { await supabase.from('notifications').update({ is_read: true }).eq('id', id); await refresh(); }, [refresh]);
+  const markAllNotificationsAsRead = useCallback(async () => { if (!currentUser.id) return; await supabase.from('notifications').update({ is_read: true }).eq('user_id', currentUser.id).eq('is_read', false); await refresh(); }, [currentUser.id, refresh]);
+  const deleteNotification = useCallback(async (id: string) => { await supabase.from('notifications').delete().eq('id', id); await refresh(); }, [refresh]);
+  const setIsRealtimeSimulationEnabled = useCallback((_enabled: boolean) => {}, []);
+  const simulateIncomingMessage = useCallback(() => {}, []); const simulateWallComment = useCallback(() => {}, []); const simulateFriendRequest = useCallback(() => {}, []); const simulatePhotoInteraction = useCallback(() => {}, []);
+  const updateUserData = useCallback(async (data: Partial<User>) => { try { const uid = await requireAuth(); const update: Record<string, unknown> = {}; if (data.nombre !== undefined || data.apellidos !== undefined) update.full_name = `${data.nombre ?? currentUser.nombre} ${data.apellidos ?? currentUser.apellidos}`.trim(); if (data.avatar !== undefined) update.avatar_url = data.avatar; if (data.ciudad !== undefined) update.city = data.ciudad; if (data.fnac !== undefined) update.birth_date = data.fnac || null; if (data.estado !== undefined) update.user_status = data.estado; if (data.intereses !== undefined) update.profile_interests = data.intereses ? data.intereses.split(',').map(s => s.trim()).filter(Boolean) : []; await supabase.from('profiles').update(update).eq('id', uid); await refresh(); } catch (e) { console.error(e); } }, [requireAuth, currentUser, refresh]);
+  const resetToDefaultData = useCallback(() => { void refresh(); }, [refresh]);
+  const registerNewUser = useCallback(async (nombre: string, apellidos: string, email: string, _sexo: 'h' | 'm', provincia: string, fnac: string, password = '') => { try { const result = await supabase.auth.signUp({ email, password: password || crypto.randomUUID() }); if (result.error) throw result.error; if (!result.data.user) return; const uid = result.data.user.id; const profileInsert = await supabase.from('profiles').upsert({ id: uid, username: email.split('@')[0], full_name: `${nombre} ${apellidos}`.trim(), city: provincia, birth_date: fnac || null }).select('id').maybeSingle(); if (profileInsert.error) throw profileInsert.error; setCurrentUserId(uid); setSelectedUserId(uid); await refresh(); } catch (e) { console.error(e); } }, [refresh]);
+
+  const value: ContextValue = { currentUser, users, photos, albums, feed, wallComments, messages, friendRequests, friendships, chatMessages, notifications, toasts, accessLogs: [] as AccessLog[], activities: [], activeChatWindows, activeTab, selectedUserId, selectedPhotoId, selectedAlbumId, unreadMessagesCount: messages.filter(m => m.receptorId === currentUser.id && !m.leido).length, unreadNotificationsCount: notifications.filter(n => n.userId === currentUser.id && !n.leido).length, pendingRequestsCount: friendRequests.filter(r => r.receptorId === currentUser.id && r.estado === 'pendiente').length, isRealtimeSimulationEnabled: false, setActiveTab, viewUserProfile, viewPhoto, viewAlbum, setCurrentUserById, publishStatus, likeFeedItem, commentFeedItem, postWallComment, deleteWallComment, uploadPhoto, addPhotoTag, removePhotoTag, addPhotoComment, likePhoto, setPhotoAsAvatar, deletePhoto, createAlbum, renameAlbum, deleteAlbum, sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, isFriend, hasPendingRequest, getFriendsOf, sendPrivateMessage, markMessageAsRead, deleteMessage, openChatWith, closeChat, toggleMinimizeChat, sendChatMessage, setChatEstado, logUserActivity, deleteUserActivity, getUserActivities, pushNotification, dismissToast, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification, setIsRealtimeSimulationEnabled, simulateIncomingMessage, simulateWallComment, simulateFriendRequest, simulatePhotoInteraction, updateUserData, resetToDefaultData, registerNewUser };
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 };
 
-export const useInkorium = () => {
-  const context = useContext(InkoriumContext);
-  if (!context) {
-    throw new Error('useInkorium must be used within an InkoriumProvider');
-  }
-  return context;
-};
+export function useInkorium() { const ctx = useContext(Ctx); if (!ctx) throw new Error('useInkorium debe usarse dentro de InkoriumProvider'); return ctx; }
