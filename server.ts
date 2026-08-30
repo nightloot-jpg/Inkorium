@@ -88,13 +88,15 @@ app.patch('/api/profiles/:id/presence', async (req, res) => {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig();
     const profileId = String(req.params.id || '').trim();
     const presence = String(req.body?.presence || '').trim().toLowerCase();
+    // Prefer the request body to avoid reverse-proxy 431 errors caused by large Authorization headers.
+    const bodyToken = String(req.body?.access_token || '').trim();
     const authorization = String(req.headers.authorization || '').trim();
+    const token = bodyToken || (authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '');
 
     if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
     if (!profileId || !['conectado', 'ausente', 'ocupado', 'invisible'].includes(presence)) return res.status(400).json({ error: 'INVALID_PRESENCE' });
-    if (!authorization.startsWith('Bearer ')) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
 
-    const token = authorization.slice('Bearer '.length).trim();
     const upstream = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profileId)}`, {
       method: 'PATCH',
       headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
@@ -114,7 +116,6 @@ app.patch('/api/profiles/:id/presence', async (req, res) => {
   }
 });
 
-// Same-origin avatar update. The file itself remains in Hetzner; Supabase stores only its public URL.
 app.patch('/api/profiles/:id/avatar', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig();
