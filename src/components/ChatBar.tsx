@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { MessageSquare, ChevronUp, ChevronDown, X, Minus, Send, Search } from 'lucide-react';
 import { UserPresence } from '../types';
-import { supabase } from '../lib/supabase';
 
 const PRESENCE_DOTS: Record<UserPresence, { label: string; dot: string; text: string }> = {
   conectado: { label: 'Conectado', dot: 'bg-emerald-500', text: 'text-emerald-700' },
@@ -23,20 +22,12 @@ export const ChatBar: React.FC = () => {
     setPresence(currentUser.presencia || (currentUser.online ? 'conectado' : 'invisible'));
   }, [currentUser.presencia, currentUser.online]);
 
-  const handlePresenceChange = async (nextPresence: UserPresence) => {
+  const handlePresenceChange = (nextPresence: UserPresence) => {
     if (!currentUser.id || savingPresence) return;
-    const previous = presence;
-    setPresence(nextPresence);
     setSavingPresence(true);
-    try {
-      await updateUserPresence(nextPresence);
-      localStorage.setItem('inkorium:presence', nextPresence);
-    } catch (error) {
-      console.error('Presence update failed:', error);
-      setPresence(previous);
-    } finally {
-      setSavingPresence(false);
-    }
+    setPresence(nextPresence);
+    updateUserPresence(nextPresence);
+    setSavingPresence(false);
   };
 
   const chatFriends = users.filter(u => {
@@ -107,7 +98,7 @@ export const ChatBar: React.FC = () => {
           {dockOpen && <div className="p-2 bg-white border-t border-gray-200 space-y-2 max-h-80 flex flex-col">
             <div className="bg-gray-50 border border-gray-200 rounded p-1.5">
               <div className="flex items-center justify-between text-[10px] text-gray-500 font-semibold mb-1"><span>Tu presencia:</span><span className={`capitalize font-bold ${PRESENCE_DOTS[presence].text}`}>{PRESENCE_DOTS[presence].label}</span></div>
-              <div className="grid grid-cols-4 gap-1">{(Object.keys(PRESENCE_DOTS) as UserPresence[]).map(key => { const cfg = PRESENCE_DOTS[key]; const isSelected = presence === key; return <button key={key} type="button" onClick={() => void handlePresenceChange(key)} disabled={savingPresence} title={cfg.label} className={`flex items-center justify-center gap-1 py-1 px-0.5 rounded border text-[10px] font-medium transition cursor-pointer disabled:opacity-60 ${isSelected ? 'bg-white border-[#3869A0] text-[#3869A0] font-bold shadow-2xs' : 'bg-gray-100/80 border-gray-200 text-gray-600 hover:bg-gray-200'}`}><span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} /><span className="truncate">{cfg.label.slice(0, 4)}.</span></button>; })}</div>
+              <div className="grid grid-cols-4 gap-1">{(Object.keys(PRESENCE_DOTS) as UserPresence[]).map(key => { const cfg = PRESENCE_DOTS[key]; const isSelected = presence === key; return <button key={key} type="button" onClick={() => handlePresenceChange(key)} disabled={savingPresence} title={cfg.label} className={`flex items-center justify-center gap-1 py-1 px-0.5 rounded border text-[10px] font-medium transition cursor-pointer disabled:opacity-60 ${isSelected ? 'bg-white border-[#3869A0] text-[#3869A0] font-bold shadow-2xs' : 'bg-gray-100/80 border-gray-200 text-gray-600 hover:bg-gray-200'}`}><span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} /><span className="truncate">{cfg.label.slice(0, 4)}.</span></button>; })}</div>
             </div>
             <div className="relative"><input type="text" placeholder="Buscar amigos..." value={chatSearch} onChange={e => setChatSearch(e.target.value)} className="w-full p-1.5 pl-6 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] bg-gray-50" /><Search className="w-3.5 h-3.5 text-gray-400 absolute left-1.5 top-2 pointer-events-none" /></div>
             <div className="overflow-y-auto space-y-1 flex-1">{chatFriends.map(friend => { const dotColor = getUserPresenceDot(friend); return <div key={friend.id} onClick={() => openChatWith(friend.id)} className="flex items-center justify-between p-1.5 rounded hover:bg-blue-50 cursor-pointer transition"><div className="flex items-center gap-2 truncate"><div className="relative flex-shrink-0"><img src={friend.avatar} alt="" className="w-6 h-6 rounded object-cover border border-gray-300" /><span className={`absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${dotColor}`} /></div><span onClick={e => { e.stopPropagation(); viewUserProfile(friend.id); }} className="font-semibold text-gray-800 truncate text-[11px] cursor-pointer">{friend.nombre} {friend.apellidos}</span></div><span className="text-[10px] text-gray-400 flex-shrink-0 capitalize">{friend.presencia || (friend.online ? 'Online' : 'Off')}</span></div>; })}</div>
