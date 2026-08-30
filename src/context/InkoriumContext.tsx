@@ -88,7 +88,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       fnac: String(p.birth_date ?? p.fnac ?? '').trim(), provincia: province, ciudad: city || undefined,
       estado: String(p.user_status ?? p.estado ?? '').trim(), estadoFecha: p.updated_at ? 'Reciente' : '',
       presencia, situacionSentimental: p.relationship_status ?? p.situacion_sentimental ?? 'Soltero/a',
-      ocupacion: p.occupation ?? p.ocupacion ?? '', intereses, musica: p.music ?? p.musica ?? '', avatar,
+      ocupacion: p.occupation ?? p.ocupacion ?? '', intereses: interests, musica: p.music ?? p.musica ?? '', avatar,
       fechaReg: p.updated_at ? new Date(p.updated_at).toLocaleDateString('es-ES') : 'Reciente',
       online: presencia !== 'invisible', ultimoAcceso: p.updated_at ? new Date(p.updated_at).toLocaleString('es-ES') : 'Recientemente',
       chatEstado: presencia === 'invisible' ? '0' : '1'
@@ -101,7 +101,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (profilesTimer.current) clearTimeout(profilesTimer.current);
     profilesTimer.current = setTimeout(async () => {
       try {
-        const response = await fetch('/api/profiles?select=id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at&limit=1000', { cache: 'no-store', headers: { Accept: 'application/json' } });
+        const response = await fetch('/api/profiles?select=id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at', { cache: 'no-store', headers: { Accept: 'application/json' } });
         if (!response.ok) return;
         const data = await response.json();
         if (Array.isArray(data)) setUsers(data.map(mapProfileToUser));
@@ -137,8 +137,10 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const token = sessionResult.data.session?.access_token;
       if (!token) throw new Error('No hay una sesión activa');
       const response = await fetch(`/api/profiles/${encodeURIComponent(currentUserId)}/presence`, {
-        method: 'PATCH', headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        credentials: 'omit', body: JSON.stringify({ presence: presencia })
+        method: 'PATCH',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        credentials: 'omit',
+        body: JSON.stringify({ presence: presencia, access_token: token })
       });
       if (!response.ok) {
         const detail = await response.text().catch(() => '');
