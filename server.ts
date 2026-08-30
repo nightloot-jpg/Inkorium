@@ -49,6 +49,25 @@ function getJwtSubject(token: string): string | null {
   }
 }
 
+function formatFeedDate(value: string): string {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return 'Recientemente';
+  const diff = Math.max(0, Date.now() - timestamp);
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (minutes < 1) return 'Ahora mismo';
+  if (minutes < 60) return `Hace ${minutes} min`;
+  if (hours < 24) return `Hace ${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+  if (days === 1) return 'Ayer';
+  if (days < 7) return `Hace ${days} días`;
+  return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(timestamp));
+}
+
+function normalizePost(row: any) {
+  return { ...row, created_at: formatFeedDate(String(row.created_at || '')) };
+}
+
 app.get('/api/profiles', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig();
@@ -122,7 +141,9 @@ app.get('/api/posts', async (req, res) => {
     query.set('limit', String(Math.max(1, Math.min(100, Number.isFinite(requestedLimit) ? requestedLimit : 100))));
     const upstream = await fetch(`${supabaseUrl}/rest/v1/posts?${query.toString()}`, { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, Accept: 'application/json' } });
     const body = await upstream.text();
-    return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+    if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+    const rows = JSON.parse(body);
+    return res.status(200).json(Array.isArray(rows) ? rows.map(normalizePost) : rows);
   } catch (err: any) {
     console.error('Supabase posts proxy failed:', err);
     return res.status(502).json({ error: 'SUPABASE_POSTS_PROXY_FAILED', message: err?.message || 'Unable to load posts.' });
@@ -142,23 +163,14 @@ app.post('/api/posts', async (req, res) => {
 
     const insert = await fetch(`${supabaseUrl}/rest/v1/posts`, {
       method: 'POST',
-      headers: {
-        apikey: supabaseKey,
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation'
-      },
-      body: JSON.stringify({
-        author_id: authorId,
-        content,
-        visibility: 'public',
-        media_data: mediaUrl ? { url: mediaUrl } : null
-      })
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ author_id: authorId, content, visibility: 'public', media_data: mediaUrl ? { url: mediaUrl } : null })
     });
     const body = await insert.text();
     if (!insert.ok) return res.status(insert.status).type(insert.headers.get('content-type') || 'application/json').send(body);
     const rows = JSON.parse(body);
-    return res.status(201).json(Array.isArray(rows) ? rows[0] : rows);
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return res.status(201).json(normalizePost(row));
   } catch (err: any) {
     console.error('Supabase create post failed:', err);
     return res.status(502).json({ error: 'SUPABASE_POST_CREATE_FAILED', message: err?.message || 'Unable to create post.' });
