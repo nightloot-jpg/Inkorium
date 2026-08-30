@@ -2,11 +2,9 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import {
   User, Photo, Album, FeedItem, WallComment, PrivateMessage,
   FriendRequest, Friendship, ChatMessage, InkoriumNotification, AccessLog,
-  PhotoTag, UserActivity, UserPresence
+  UserActivity, UserPresence
 } from '../types';
-import { playSuccessSound, playClickSound, playNotificationChime } from '../utils/sound';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import confetti from 'canvas-confetti';
 
 interface ChatWindow { targetUserId: string; minimized: boolean; }
 interface InkoriumContextType {
@@ -78,17 +76,11 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const apellidos = String(p.apellidos ?? parts.slice(1).join(' ')).trim();
     const city = String(p.city ?? p.ciudad ?? '').trim();
     const province = String(p.province ?? p.provincia ?? city).trim();
-    const rawPresence = String(p.presence ?? p.presencia ?? '').trim().toLowerCase();
-    const rawStatus = String(p.user_status ?? p.estado ?? '').trim().toLowerCase();
-    const presenceSource = rawPresence || (['conectado', 'ausente', 'ocupado', 'invisible'].includes(rawStatus) ? rawStatus : 'conectado');
-    const presencia = ['conectado', 'ausente', 'ocupado', 'invisible'].includes(presenceSource)
-      ? presenceSource as UserPresence
-      : (presenceSource === 'desconectado' ? 'invisible' : 'conectado');
+    const rawPresence = String(p.presence ?? p.presencia ?? p.user_status ?? p.estado ?? '').trim().toLowerCase();
+    const presencia: UserPresence = ['conectado', 'ausente', 'ocupado', 'invisible'].includes(rawPresence) ? rawPresence as UserPresence : 'conectado';
     const gender = String(p.gender ?? p.sexo ?? '').trim().toLowerCase();
     const avatar = String(p.avatar_url ?? p.avatar ?? '').trim();
-    const interests = Array.isArray(p.profile_interests)
-      ? p.profile_interests.join(', ')
-      : String(p.profile_interests ?? p.intereses ?? '').trim();
+    const interests = Array.isArray(p.profile_interests) ? p.profile_interests.join(', ') : String(p.profile_interests ?? p.intereses ?? '').trim();
     return {
       id: String(p.id), username: username || undefined, full_name: fullName || undefined,
       nombre: nombre || username || 'Usuario', apellidos, email: String(p.email ?? '').trim(),
@@ -96,91 +88,71 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       fnac: String(p.birth_date ?? p.fnac ?? '').trim(), provincia: province, ciudad: city || undefined,
       estado: String(p.user_status ?? p.estado ?? '').trim(), estadoFecha: p.updated_at ? 'Reciente' : '',
       presencia, situacionSentimental: p.relationship_status ?? p.situacion_sentimental ?? 'Soltero/a',
-      ocupacion: p.occupation ?? p.ocupacion ?? '', intereses: interests, musica: p.music ?? p.musica ?? '', avatar,
+      ocupacion: p.occupation ?? p.ocupacion ?? '', intereses, musica: p.music ?? p.musica ?? '', avatar,
       fechaReg: p.updated_at ? new Date(p.updated_at).toLocaleDateString('es-ES') : 'Reciente',
-      online: presencia !== 'invisible' && presenceSource !== 'desconectado',
-      ultimoAcceso: p.updated_at ? new Date(p.updated_at).toLocaleString('es-ES') : 'Recientemente',
-      chatEstado: presencia === 'invisible' || presenceSource === 'desconectado' ? '0' : '1'
+      online: presencia !== 'invisible', ultimoAcceso: p.updated_at ? new Date(p.updated_at).toLocaleString('es-ES') : 'Recientemente',
+      chatEstado: presencia === 'invisible' ? '0' : '1'
     };
   }, []);
 
-  const isFetchingProfilesRef = React.useRef(false);
-  const pendingProfilesFetchRef = React.useRef(false);
-  const profilesDebounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const profilesBackoffRef = React.useRef(1000);
-
-  const fetchSupabaseProfilesNow = useCallback(async () => {
-    if (!isSupabaseConfigured) {
-      console.warn('Supabase profiles: client not configured');
-      return;
-    }
-    if (isFetchingProfilesRef.current) {
-      pendingProfilesFetchRef.current = true;
-      return;
-    }
-    isFetchingProfilesRef.current = true;
-    try {
-      const params = new URLSearchParams({ select: 'id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at', limit: '1000' });
-      const response = await fetch(`/api/profiles?${params.toString()}`, { method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit', cache: 'no-store' });
-      if (!response.ok) {
-        const detail = await response.text().catch(() => '');
-        console.error('Supabase profiles load failed:', response.status, detail);
-        profilesBackoffRef.current = Math.min(profilesBackoffRef.current * 2, 30000);
-        return;
-      }
-      const data = await response.json();
-      profilesBackoffRef.current = 1000;
-      if (!Array.isArray(data)) return;
-      const mapped = data.map(mapProfileToUser).filter(user => Boolean(user.id));
-      setUsers(mapped);
-    } catch (error) {
-      console.error('Supabase profiles request failed:', error);
-      profilesBackoffRef.current = Math.min(profilesBackoffRef.current * 2, 30000);
-    } finally {
-      isFetchingProfilesRef.current = false;
-      if (pendingProfilesFetchRef.current) {
-        pendingProfilesFetchRef.current = false;
-        setTimeout(() => { void fetchSupabaseProfilesNow(); }, profilesBackoffRef.current);
-      }
-    }
+  const profilesTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fetchProfiles = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+    if (profilesTimer.current) clearTimeout(profilesTimer.current);
+    profilesTimer.current = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/profiles?select=id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at&limit=1000', { cache: 'no-store', headers: { Accept: 'application/json' } });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (Array.isArray(data)) setUsers(data.map(mapProfileToUser));
+      } catch (error) { console.error('Profiles load failed:', error); }
+    }, 100);
   }, [mapProfileToUser]);
 
-  const fetchSupabaseProfiles = useCallback(async () => {
-    if (profilesDebounceTimerRef.current) clearTimeout(profilesDebounceTimerRef.current);
-    return new Promise<void>(resolve => {
-      profilesDebounceTimerRef.current = setTimeout(async () => {
-        await fetchSupabaseProfilesNow();
-        resolve();
-      }, 300);
-    });
-  }, [fetchSupabaseProfilesNow]);
-
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!supabase || !isSupabaseConfigured) return;
     let mounted = true;
-    (async () => {
-      const { data: { session } } = await supabase!.auth.getSession();
+    void supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
-      setCurrentUserId(session?.user?.id || '');
-      setIsLoggedIn(Boolean(session?.user));
-      await fetchSupabaseProfiles();
-    })();
-    const { data: { subscription } } = supabase!.auth.onAuthStateChange(async (_event, session) => {
-      if (!mounted) return;
-      setCurrentUserId(session?.user?.id || '');
-      setIsLoggedIn(Boolean(session?.user));
-      void fetchSupabaseProfiles();
+      setCurrentUserId(data.session?.user?.id || '');
+      setIsLoggedIn(Boolean(data.session?.user));
+      void fetchProfiles();
     });
-    const channel = supabase!.channel('profiles-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void fetchSupabaseProfiles()).subscribe();
-    return () => { mounted = false; if (profilesDebounceTimerRef.current) clearTimeout(profilesDebounceTimerRef.current); subscription.unsubscribe(); supabase!.removeChannel(channel); };
-  }, [fetchSupabaseProfiles]);
+    const { data: auth } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUserId(session?.user?.id || '');
+      setIsLoggedIn(Boolean(session?.user));
+      void fetchProfiles();
+    });
+    const channel = supabase.channel('profiles-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void fetchProfiles()).subscribe();
+    return () => { mounted = false; if (profilesTimer.current) clearTimeout(profilesTimer.current); auth.subscription.unsubscribe(); void supabase.removeChannel(channel); };
+  }, [fetchProfiles]);
 
-  const currentUser = users.find(u => u.id === currentUserId) || EMPTY_USER;
+  const currentUser = users.find(user => user.id === currentUserId) || EMPTY_USER;
+
+  const updateUserPresence = useCallback(async (presencia: UserPresence) => {
+    if (!currentUserId || !supabase) return;
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      const token = sessionResult.data.session?.access_token;
+      if (!token) throw new Error('No hay una sesión activa');
+      const response = await fetch(`/api/profiles/${encodeURIComponent(currentUserId)}/presence`, {
+        method: 'PATCH',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        credentials: 'omit',
+        body: JSON.stringify({ presence: presencia })
+      });
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        throw new Error(`Presence update failed (${response.status})${detail ? `: ${detail}` : ''}`);
+      }
+      setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, presencia, online: presencia !== 'invisible', chatEstado: presencia === 'invisible' ? '0' : '1' } : user));
+      localStorage.setItem('inkorium:presence', presencia);
+    } catch (error) {
+      console.error('Presence update failed:', error);
+    }
+  }, [currentUserId]);
+
   const noop = useCallback((..._args: any[]) => {}, []);
-  const isFriend = useCallback(() => false, []);
-  const hasPendingRequest = useCallback(() => false, []);
-  const getFriendsOf = useCallback(() => [], []);
-  const pushNotification = useCallback((notif: InkoriumNotification) => { setNotifications(prev => [notif, ...prev]); if (notif.userId === currentUserId) { playNotificationChime(); setToasts(prev => [notif, ...prev].slice(0, 4)); } }, [currentUserId]);
   const setActiveTab = useCallback((tab: InkoriumContextType['activeTab']) => setActiveTabState(tab), []);
   const viewUserProfile = useCallback((id: string) => { setSelectedUserId(id); setActiveTabState('perfil'); }, []);
   const viewPhoto = useCallback((id: string | null) => setSelectedPhotoId(id), []);
@@ -188,31 +160,26 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const login = useCallback((_email: string, _password?: string) => ({ success: isLoggedIn }), [isLoggedIn]);
   const loginAsUser = useCallback((id: string) => { setCurrentUserId(id); setIsLoggedIn(true); }, []);
   const logout = useCallback(() => { if (supabase) void supabase.auth.signOut(); setCurrentUserId(''); setIsLoggedIn(false); }, []);
-  const setCurrentUser = useCallback((id: string) => setCurrentUserId(id), []);
-  const setIsRealtime = useCallback((enabled: boolean) => { setIsRealtimeSimulationEnabledState(enabled); playClickSound(); }, []);
+  const setCurrentUserById = useCallback((id: string) => setCurrentUserId(id), []);
+  const setIsRealtime = useCallback((enabled: boolean) => setIsRealtimeSimulationEnabledState(enabled), []);
+  const pushNotification = useCallback((notif: InkoriumNotification) => setNotifications(prev => [notif, ...prev]), []);
 
-  return (
-    <InkoriumContext.Provider value={{
-      currentUser, users, photos, albums, feed, wallComments, messages, friendRequests, friendships, chatMessages,
-      notifications, toasts, accessLogs, activities, activeChatWindows, activeTab, selectedUserId, selectedPhotoId,
-      selectedAlbumId, unreadMessagesCount: 0, unreadNotificationsCount: 0, pendingRequestsCount: 0,
-      isRealtimeSimulationEnabled, isLoggedIn, setActiveTab, viewUserProfile, viewPhoto, viewAlbum,
-      setCurrentUserById: setCurrentUser, login, loginAsUser, logout,
-      publishStatus: noop, updateStatusText: noop, updateUserPresence: noop, likeFeedItem: noop, commentFeedItem: noop,
-      postWallComment: noop, deleteWallComment: noop, uploadPhoto: noop, addPhotoTag: noop, removePhotoTag: noop,
-      addPhotoComment: noop, likePhoto: noop, setPhotoAsAvatar: noop, deletePhoto: noop, createAlbum: noop,
-      renameAlbum: noop, deleteAlbum: noop, sendFriendRequest: noop, acceptFriendRequest: noop, ignoreFriendRequest: noop,
-      isFriend, hasPendingRequest, getFriendsOf, sendPrivateMessage: noop, markMessageAsRead: noop, deleteMessage: noop,
-      openChatWith: noop, closeChat: noop, toggleMinimizeChat: noop, sendChatMessage: noop, setChatEstado: noop,
-      logUserActivity: noop, deleteUserActivity: noop, getUserActivities: getFriendsOf, pushNotification,
-      dismissToast: noop, markNotificationAsRead: noop, markAllNotificationsAsRead: noop, deleteNotification: noop,
-      setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage: noop, simulateWallComment: noop,
-      simulateFriendRequest: noop, simulatePhotoInteraction: noop, updateUserData: noop, resetToDefaultData: noop,
-      registerNewUser: noop
-    }}>
-      {children}
-    </InkoriumContext.Provider>
-  );
+  return <InkoriumContext.Provider value={{
+    currentUser, users, photos, albums, feed, wallComments, messages, friendRequests, friendships, chatMessages,
+    notifications, toasts, accessLogs, activities, activeChatWindows, activeTab, selectedUserId, selectedPhotoId, selectedAlbumId,
+    unreadMessagesCount: 0, unreadNotificationsCount: 0, pendingRequestsCount: 0, isRealtimeSimulationEnabled, isLoggedIn,
+    setActiveTab, viewUserProfile, viewPhoto, viewAlbum, setCurrentUserById, login, loginAsUser, logout,
+    publishStatus: noop, updateStatusText: noop, updateUserPresence, likeFeedItem: noop, commentFeedItem: noop,
+    postWallComment: noop, deleteWallComment: noop, uploadPhoto: noop, addPhotoTag: noop, removePhotoTag: noop,
+    addPhotoComment: noop, likePhoto: noop, setPhotoAsAvatar: noop, deletePhoto: noop, createAlbum: noop,
+    renameAlbum: noop, deleteAlbum: noop, sendFriendRequest: noop, acceptFriendRequest: noop, ignoreFriendRequest: noop,
+    isFriend: () => false, hasPendingRequest: () => false, getFriendsOf: () => [], sendPrivateMessage: noop,
+    markMessageAsRead: noop, deleteMessage: noop, openChatWith: noop, closeChat: noop, toggleMinimizeChat: noop,
+    sendChatMessage: noop, setChatEstado: noop, logUserActivity: noop, deleteUserActivity: noop, getUserActivities: () => [],
+    pushNotification, dismissToast: noop, markNotificationAsRead: noop, markAllNotificationsAsRead: noop, deleteNotification: noop,
+    setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage: noop, simulateWallComment: noop,
+    simulateFriendRequest: noop, simulatePhotoInteraction: noop, updateUserData: noop, resetToDefaultData: noop, registerNewUser: noop
+  }}>{children}</InkoriumContext.Provider>;
 };
 
 export const useInkorium = () => {
