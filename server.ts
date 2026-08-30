@@ -57,13 +57,18 @@ app.get('/api/storage/status', (req, res) => {
   });
 });
 
+function getSupabaseConfig() {
+  const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://zllwzmfsfzfedorljgtg.supabase.co').replace(/\/+$/, '');
+  const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  return { supabaseUrl, supabaseKey };
+}
+
 // Same-origin proxy for public Supabase profile reads.
 // This avoids browser CORS failures from the Supabase REST gateway while keeping
 // the normal Supabase client/auth/realtime setup for the rest of the app.
 app.get('/api/profiles', async (req, res) => {
   try {
-    const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://zllwzmfsfzfedorljgtg.supabase.co').replace(/\/+$/, '');
-    const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
 
     if (!supabaseKey) {
       return res.status(503).json({
@@ -81,7 +86,6 @@ app.get('/api/profiles', async (req, res) => {
       }
     }
 
-    // Keep profile access bounded and default to the same projection used by the app.
     if (!query.has('select')) {
       query.set('select', 'id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at');
     }
@@ -108,6 +112,55 @@ app.get('/api/profiles', async (req, res) => {
   }
 });
 
+// Same-origin profile presence update. The browser sends only its short-lived
+// Supabase access token to this endpoint. Express forwards that token to Supabase,
+// so RLS still enforces auth.uid() = profile id without exposing a direct CORS call.
+app.patch('/api/profiles/:id/presence', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const profileId = String(req.params.id || '').trim();
+    const presence = String(req.body?.presence || '').trim().toLowerCase();
+    const authorization = String(req.headers.authorization || '').trim();
+
+    if (!supabaseKey) {
+      return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+    }
+    if (!profileId || !['conectado', 'ausente', 'ocupado', 'invisible'].includes(presence)) {
+      return res.status(400).json({ error: 'INVALID_PRESENCE' });
+    }
+    if (!authorization.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    }
+
+    const token = authorization.slice('Bearer '.length).trim();
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profileId)}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({ presence })
+    });
+
+    const body = await upstream.text();
+    if (!upstream.ok) {
+      res.status(upstream.status);
+      res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json');
+      return res.send(body);
+    }
+
+    return res.status(204).end();
+  } catch (err: any) {
+    console.error('Supabase presence proxy failed:', err);
+    return res.status(502).json({
+      error: 'SUPABASE_PRESENCE_PROXY_FAILED',
+      message: err?.message || 'Unable to update profile presence.'
+    });
+  }
+});
+
 // Upload API route for Hetzner S3 Object Storage
 app.post('/api/upload', upload.single('file'), async (req, res) => {
   try {
@@ -121,7 +174,6 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     const hetzner = getHetznerS3Client();
 
     if (!hetzner) {
-      // Return notice that Hetzner credentials are not yet defined in environment
       return res.status(503).json({
         error: 'HETZNER_STORAGE_NOT_CONFIGURED',
         message: 'Hetzner S3 Object Storage credentials (HETZNER_S3_ENDPOINT, HETZNER_S3_ACCESS_KEY_ID, HETZNER_S3_SECRET_ACCESS_KEY) are not set in environment.'
@@ -136,12 +188,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       Key: key,
       Body: file.buffer,
       ContentType: file.mimetype || 'image/jpeg',
-      ACL: 'public-read' // Make accessible for public image serving
+      ACL: 'public-read'
     });
 
     await hetzner.client.send(command);
 
-    // Build the public URL for the uploaded file in Hetzner Object Storage
     let publicUrl: string;
     if (hetzner.publicUrlBase) {
       const cleanBase = hetzner.publicUrlBase.replace(/\/+$/, '');
@@ -168,7 +219,6 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 });
 
 async function startServer() {
-  // Vite middleware setup
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
