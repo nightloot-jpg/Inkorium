@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://zllwzmfsfzfedorljgtg.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_npJmIHQP_g2ApAu-7fqQAQ_dse7H5Jj';
+const PRIVATE_MESSAGES_FUNCTION = `${SUPABASE_URL}/functions/v1/private-messages`;
 
 const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL).trim();
 const supabaseKey = String(
@@ -26,6 +27,36 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
     const isProfilesRequest =
       parsed.origin === supabaseUrl &&
       parsed.pathname.replace(/\/+$/, '') === '/rest/v1/profiles';
+    const isPrivateMessagesRequest =
+      parsed.origin === supabaseUrl &&
+      parsed.pathname.replace(/\/+$/, '') === '/rest/v1/private_messages';
+
+    if (isPrivateMessagesRequest && typeof window !== 'undefined') {
+      const headers = new Headers(init?.headers || request?.headers || undefined);
+      const proxyUrl = `${PRIVATE_MESSAGES_FUNCTION}${parsed.search}`;
+      let body: BodyInit | undefined = init?.body;
+
+      if (body === undefined && request && requestMethod !== 'GET' && requestMethod !== 'HEAD') {
+        try {
+          body = await request.clone().arrayBuffer();
+        } catch {
+          body = undefined;
+        }
+      }
+
+      return fetch(proxyUrl, {
+        method: requestMethod,
+        headers: {
+          Authorization: headers.get('authorization') || '',
+          Accept: headers.get('accept') || 'application/json',
+          'Content-Type': headers.get('content-type') || 'application/json',
+          Prefer: headers.get('prefer') || '',
+          'X-Client-Info': headers.get('x-client-info') || ''
+        },
+        credentials: 'omit',
+        body
+      });
+    }
 
     if (isProfilesRequest && typeof window !== 'undefined') {
       if (requestMethod === 'GET') {
@@ -99,7 +130,7 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
       }
     }
   } catch (error) {
-    console.warn('Supabase profile transport fallback:', error);
+    console.warn('Supabase profile/private-messages transport fallback:', error);
   }
 
   return fetch(input, init);
