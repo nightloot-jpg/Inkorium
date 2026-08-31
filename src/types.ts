@@ -1,5 +1,7 @@
 export type Gender = 'h' | 'm' | 'otro';
 
+export type ThemeMode = 'light' | 'dark' | 'auto';
+
 export type UserPresence = 'conectado' | 'ausente' | 'ocupado' | 'invisible';
 
 export type RelationshipStatus = 'Soltero/a' | 'Con pareja' | 'En una relación' | 'Casado/a' | 'Es complicado' | 'De fiesta en fiesta';

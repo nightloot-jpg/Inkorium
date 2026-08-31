@@ -1,1 +1,87 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Smooth transition for theme toggling */
+*, ::before, ::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base Dark Mode overrides for seamless retro experience */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #0b1120;
+  color: #e2e8f0;
+}
+
+/* Global dark overrides for standard cards, inputs, and sidebars */
+.dark .bg-white {
+  background-color: #1e293b !important;
+  color: #f1f5f9;
+}
+
+.dark .bg-\[\#f0f4f8\],
+.dark .bg-\[\#f4f7fa\],
+.dark .bg-\[\#f9fafb\],
+.dark .bg-gray-50 {
+  background-color: #0f172a !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #334155 !important;
+}
+
+.dark .bg-gray-200 {
+  background-color: #475569 !important;
+}
+
+.dark .border-\[\#ccd5df\],
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: #334155 !important;
+}
+
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important;
+}
+
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-400 {
+  color: #64748b !important;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: #60a5fa !important;
+}
+
+.dark .hover\:bg-blue-50:hover,
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-100:hover {
+  background-color: #334155 !important;
+}

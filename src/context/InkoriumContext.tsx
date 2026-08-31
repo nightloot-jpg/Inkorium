@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence } from '../types';
+import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
 import { fetchPhotos, insertPhoto } from '../lib/photosApi';
@@ -14,6 +14,7 @@ interface InkoriumContextType {
   composeRecipientId: string | null;
   unreadMessagesCount: number; unreadNotificationsCount: number; pendingRequestsCount: number;
   isRealtimeSimulationEnabled: boolean; isLoggedIn: boolean;
+  theme: ThemeMode; isDarkMode: boolean; setTheme: (theme: ThemeMode) => void; toggleTheme: () => void;
   setActiveTab: (tab: InkoriumContextType['activeTab']) => void; viewUserProfile: (userId: string) => void;
   openComposeMessage: (recipientId?: string) => void;
   viewPhoto: (photoId: string | null) => void; viewAlbum: (albumId: string | null) => void; setCurrentUserById: (userId: string) => void;
@@ -130,6 +131,69 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
   const [activeChatWindows, setActiveChatWindows] = useState<ChatWindow[]>([]);
+
+  // Dark/Light Theme state with LocalStorage persistence
+  const [theme, setThemeState] = useState<ThemeMode>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:theme');
+      if (saved === 'dark' || saved === 'light' || saved === 'auto') return saved as ThemeMode;
+    }
+    return 'light';
+  });
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const saved = localStorage.getItem('inkorium:theme');
+    if (saved === 'dark') return true;
+    if (saved === 'light') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+
+    const computeAndApply = () => {
+      let darkActive = false;
+      if (theme === 'dark') {
+        darkActive = true;
+      } else if (theme === 'light') {
+        darkActive = false;
+      } else {
+        darkActive = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+
+      setIsDarkMode(darkActive);
+      if (darkActive) {
+        root.classList.add('dark');
+        body.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+        body.classList.remove('dark');
+      }
+    };
+
+    computeAndApply();
+
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('inkorium:theme', theme);
+    }
+
+    if (theme === 'auto') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const listener = () => computeAndApply();
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
+    }
+  }, [theme]);
+
+  const setTheme = useCallback((newTheme: ThemeMode) => {
+    setThemeState(newTheme);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setThemeState(prev => (prev === 'dark' ? 'light' : 'dark'));
+  }, []);
 
   // Sync users to localStorage
   useEffect(() => {
@@ -1322,7 +1386,9 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       notifications, toasts, accessLogs, activities, activeChatWindows, activeTab, selectedUserId, selectedPhotoId, selectedAlbumId,
       composeRecipientId,
       unreadMessagesCount, unreadNotificationsCount, pendingRequestsCount,
-      isRealtimeSimulationEnabled, isLoggedIn, setActiveTab, viewUserProfile, openComposeMessage, viewPhoto, viewAlbum, setCurrentUserById,
+      isRealtimeSimulationEnabled, isLoggedIn,
+      theme, isDarkMode, setTheme, toggleTheme,
+      setActiveTab, viewUserProfile, openComposeMessage, viewPhoto, viewAlbum, setCurrentUserById,
       login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence,
       likeFeedItem, commentFeedItem, postWallComment, deleteWallComment,
       uploadPhoto, addPhotoTag, removePhotoTag, addPhotoComment, likePhoto,

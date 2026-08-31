@@ -3,11 +3,11 @@ import { useInkorium } from '../context/InkoriumContext';
 import { 
   Home, User as UserIcon, Users, Image as ImageIcon, Mail, 
   Settings, Bell, Volume2, VolumeX, Search, LogOut, Check,
-  UserPlus, MessageSquare, Sparkles
+  UserPlus, MessageSquare, Sparkles, Moon, Sun, Palette
 } from 'lucide-react';
 import { isSoundEnabled, toggleSound } from '../utils/sound';
 
-export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => {
+export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => void }> = ({ onOpenAuth, onOpenUpload }) => {
   const { 
     currentUser, 
     users, 
@@ -31,7 +31,10 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
     simulateFriendRequest,
     simulatePhotoInteraction,
     isRealtimeSimulationEnabled,
-    setIsRealtimeSimulationEnabled
+    setIsRealtimeSimulationEnabled,
+    theme,
+    isDarkMode,
+    toggleTheme
   } = useInkorium();
 
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
@@ -218,6 +221,14 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
 
         <div className="flex items-center space-x-1 sm:space-x-2 text-xs">
           <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded hover:bg-[#2f5988] text-blue-100 hover:text-white transition cursor-pointer"
+            title={isDarkMode ? 'Modo Noche Activo (Clic para cambiar a Día)' : 'Modo Día Activo (Clic para cambiar a Noche)'}
+          >
+            {isDarkMode ? <Moon className="w-4 h-4 text-indigo-200" /> : <Sun className="w-4 h-4 text-amber-300" />}
+          </button>
+
+          <button
             onClick={handleToggleSound}
             className="p-1.5 rounded hover:bg-[#2f5988] text-blue-100 hover:text-white transition cursor-pointer"
             title={soundOn ? 'Sonidos activados (Clic para silenciar)' : 'Sonidos silenciados (Clic para activar)'}
@@ -403,6 +414,21 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
                   >
                     <Settings className="w-4 h-4 text-gray-600" />
                     <span>Ajustes de Cuenta</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      toggleTheme();
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center justify-between cursor-pointer font-medium"
+                  >
+                    <div className="flex items-center gap-2">
+                      {isDarkMode ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+                      <span>Tema ({theme === 'auto' ? 'Automático' : isDarkMode ? 'Modo Oscuro' : 'Modo Claro'})</span>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold">
+                      {isDarkMode ? '🌙' : '☀️'}
+                    </span>
                   </button>
                 </div>
 
