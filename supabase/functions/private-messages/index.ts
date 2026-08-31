@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://inkorium.es",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, prefer, range",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, prefer, range, accept-profile, content-profile, x-retry-count",
   "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
   "Vary": "Origin"
 };
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     Accept: req.headers.get("accept") || "application/json"
   };
 
-  for (const name of ["content-type", "prefer", "range", "x-client-info"]) {
+  for (const name of ["content-type", "prefer", "range", "x-client-info", "accept-profile", "content-profile"]) {
     const value = req.headers.get(name);
     if (value) upstreamHeaders[name] = value;
   }
