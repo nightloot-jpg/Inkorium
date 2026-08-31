@@ -14,10 +14,17 @@ create table if not exists public.private_messages (
 create index if not exists private_messages_recipient_created_idx on public.private_messages(recipient_id, created_at desc);
 create index if not exists private_messages_sender_created_idx on public.private_messages(sender_id, created_at desc);
 alter table public.private_messages enable row level security;
+
+drop policy if exists "private messages select participants" on public.private_messages;
+drop policy if exists "private messages insert as sender" on public.private_messages;
+drop policy if exists "private messages recipient can mark read" on public.private_messages;
+drop policy if exists "private messages participants can delete" on public.private_messages;
+
 create policy "private messages select participants" on public.private_messages for select using (auth.uid() = sender_id or auth.uid() = recipient_id);
 create policy "private messages insert as sender" on public.private_messages for insert to authenticated with check (auth.uid() = sender_id);
 create policy "private messages recipient can mark read" on public.private_messages for update to authenticated using (auth.uid() = recipient_id) with check (auth.uid() = recipient_id);
 create policy "private messages participants can delete" on public.private_messages for delete to authenticated using (auth.uid() = sender_id or auth.uid() = recipient_id);
+
 create or replace function public.set_private_message_updated_at() returns trigger language plpgsql as $$ begin new.updated_at = now(); return new; end; $$;
 drop trigger if exists private_messages_updated_at on public.private_messages;
 create trigger private_messages_updated_at before update on public.private_messages for each row execute function public.set_private_message_updated_at();
