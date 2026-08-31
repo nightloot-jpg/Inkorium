@@ -12,6 +12,7 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
     currentUser, 
     users, 
     activeTab, 
+    selectedUserId,
     setActiveTab, 
     unreadMessagesCount, 
     unreadNotificationsCount, 
@@ -44,7 +45,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
   const userMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
@@ -87,19 +87,17 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
   };
 
   const totalBadgeCount = unreadMessagesCount + unreadNotificationsCount + pendingRequestsCount;
+  const isViewingOwnProfile = activeTab === 'perfil' && selectedUserId === currentUser.id;
 
   return (
     <header className="sticky top-0 z-40 bg-[#3869A0] text-white shadow-md border-b border-[#2b5380]">
       <div className="w-full max-w-[1720px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between h-[48px]">
-        {/* Left: Brand Logo & Navigation */}
         <div className="flex items-center space-x-1 sm:space-x-4">
-          {/* Inkorium Logo */}
           <button 
             onClick={() => setActiveTab('inicio')}
             className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[#2f5988] transition text-left group cursor-pointer"
             title="Inkorium - Ir a Inicio"
           >
-            {/* Retro Smiley Logo */}
             <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-inner group-hover:scale-105 transition">
               <span className="text-[#3869A0] text-xs font-black select-none tracking-tighter">:)</span>
             </div>
@@ -108,7 +106,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
             </span>
           </button>
 
-          {/* Primary Navigation Tabs */}
           <nav className="hidden md:flex items-center space-x-1 text-[13px] font-semibold">
             <button
               onClick={() => setActiveTab('inicio')}
@@ -121,11 +118,9 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
             </button>
 
             <button
-              onClick={() => {
-                setActiveTab('perfil');
-              }}
+              onClick={() => viewUserProfile(currentUser.id)}
               className={`px-3 py-1.5 rounded flex items-center gap-1.5 transition cursor-pointer ${
-                activeTab === 'perfil' ? 'bg-[#294e77] text-white shadow-inner' : 'text-blue-100 hover:bg-[#2f5988] hover:text-white'
+                isViewingOwnProfile ? 'bg-[#294e77] text-white shadow-inner' : 'text-blue-100 hover:bg-[#2f5988] hover:text-white'
               }`}
             >
               <UserIcon className="w-4 h-4" />
@@ -169,7 +164,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
           </nav>
         </div>
 
-        {/* Center: Search Box */}
         <div className="relative flex-1 max-w-[240px] lg:max-w-[280px] mx-2 hidden sm:block" ref={searchRef}>
           <div className="relative">
             <input
@@ -183,7 +177,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
             <Search className="w-3.5 h-3.5 text-blue-200 absolute left-2.5 top-2 pointer-events-none" />
           </div>
 
-          {/* Search Dropdown */}
           {showSearchResults && searchResults.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white text-gray-800 rounded shadow-xl border border-gray-200 py-1 z-50 max-h-[300px] overflow-y-auto">
               <div className="text-[11px] font-semibold text-gray-400 px-3 py-1 uppercase tracking-wider">Gente</div>
@@ -208,9 +201,7 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
           )}
         </div>
 
-        {/* Right Action Icons & User Profile */}
         <div className="flex items-center space-x-1 sm:space-x-2 text-xs">
-          {/* Retro Sound toggle */}
           <button
             onClick={handleToggleSound}
             className="p-1.5 rounded hover:bg-[#2f5988] text-blue-100 hover:text-white transition cursor-pointer"
@@ -219,7 +210,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
             {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-red-300" />}
           </button>
 
-          {/* Notifications Dropdown */}
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setShowNotifications(!showNotifications)}
@@ -252,7 +242,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
                 </div>
 
                 <div className="max-h-[360px] overflow-y-auto divide-y divide-gray-100">
-                  {/* Friend Requests banner if any */}
                   {pendingRequestsCount > 0 && (
                     <div 
                       onClick={() => {
@@ -271,7 +260,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
                     </div>
                   )}
 
-                  {/* Notifications list */}
                   {notifications.filter(n => n.userId === currentUser.id).length === 0 ? (
                     <div className="p-8 text-center text-gray-400">
                       <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300 opacity-60" />
@@ -310,11 +298,9 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
                           )}
                           <span className="text-[10px] text-gray-400 mt-1 block font-normal">{notif.fecha}</span>
                         </div>
-                        
                         {!notif.leido && (
                           <div className="w-2 h-2 rounded-full bg-[#3869A0] mt-2 flex-shrink-0" title="No leído"></div>
                         )}
-
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -342,7 +328,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
             )}
           </div>
 
-          {/* User Profile Avatar & Menu */}
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
@@ -360,7 +345,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
 
             {showUserMenu && (
               <div className="absolute right-0 mt-1 w-64 bg-white text-gray-800 rounded shadow-2xl border border-gray-200 z-50 py-1 text-xs">
-                {/* User Card Header */}
                 <div className="px-3 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 flex items-center gap-2.5">
                   <img src={currentUser.avatar} alt="" className="w-10 h-10 rounded object-cover border-2 border-white shadow" />
                   <div className="overflow-hidden">
@@ -372,7 +356,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
                   </div>
                 </div>
 
-                {/* Menu items */}
                 <div className="py-1">
                   <button
                     onClick={() => {
@@ -397,7 +380,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
                   </button>
                 </div>
 
-                {/* Bottom Actions */}
                 <div className="border-t border-gray-200 py-1">
                   <button
                     onClick={() => {
@@ -416,7 +398,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
         </div>
       </div>
 
-      {/* Mobile Secondary Tab Navigation */}
       <div className="md:hidden flex items-center justify-around bg-[#2e5785] border-t border-[#23456c] py-1.5 px-2 text-[11px]">
         <button 
           onClick={() => setActiveTab('inicio')} 
@@ -426,8 +407,8 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
           <span>Inicio</span>
         </button>
         <button 
-          onClick={() => setActiveTab('perfil')} 
-          className={`flex flex-col items-center gap-0.5 ${activeTab === 'perfil' ? 'text-white font-bold' : 'text-blue-200'}`}
+          onClick={() => viewUserProfile(currentUser.id)} 
+          className={`flex flex-col items-center gap-0.5 ${isViewingOwnProfile ? 'text-white font-bold' : 'text-blue-200'}`}
         >
           <UserIcon className="w-4 h-4" />
           <span>Perfil</span>
