@@ -315,7 +315,7 @@ app.post('/api/posts', async (req, res) => {
   } catch (err: any) { console.error('Supabase create post failed:', err); return res.status(502).json({ error: 'SUPABASE_POST_CREATE_FAILED', message: err?.message || 'Unable to create post.' }); }
 });
 
-app.post('/api/upload', upload.single('file'), async (req, res) => {
+app.post('/api/upload', upload.single('file') as any, async (req: express.Request, res: express.Response) => {
   try {
     const file = req.file; const folder = String(req.body.folder || 'photos').trim().toLowerCase();
     if (!file) return res.status(400).json({ error: 'NO_FILE' });

@@ -86,26 +86,3 @@ supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseKey, {
 }) : null;
 
 export { supabase };
-
-if (typeof window !== 'undefined') {
-  const nativeFetch = window.fetch.bind(window);
-  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-    try {
-      const request = input instanceof Request ? input : null;
-      const requestUrl = typeof input === 'string' ? input : request?.url || String(input);
-      const parsed = new URL(requestUrl, window.location.origin);
-      const isStatusProxyRequest = parsed.pathname.startsWith('/api/profiles/') && parsed.pathname.endsWith('/status');
-      if (isStatusProxyRequest) {
-        const headers = new Headers(init?.headers || request?.headers || undefined);
-        const authorization = headers.get('authorization') || '';
-        const accessToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '';
-        headers.delete('authorization'); headers.delete('cookie');
-        let body: Record<string, unknown> = {};
-        try { if (typeof init?.body === 'string') body = JSON.parse(init.body) || {}; else if (request) body = JSON.parse(await request.clone().text()) || {}; } catch { body = {}; }
-        if (accessToken) body.access_token = accessToken;
-        return nativeFetch(input, { ...init, credentials: 'omit', headers, body: JSON.stringify(body) });
-      }
-    } catch (error) { console.warn('Inkorium status transport fallback:', error); }
-    return nativeFetch(input, init);
-  };
-}

@@ -96,7 +96,7 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
       }
 
       if (data?.user) {
-        await supabase.from('profiles').upsert({
+        await (supabase.from('profiles') as any).upsert({
           id: data.user.id,
           nombre: regNombre.trim(),
           apellidos: regApellidos.trim(),

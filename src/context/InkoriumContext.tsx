@@ -65,9 +65,9 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     profilesTimer.current = setTimeout(async () => {
       try {
         const response = await fetch('/api/profiles?select=id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at&limit=1000', { cache: 'no-store', headers: { Accept: 'application/json' } });
-        if (!response.ok) return; const data = await response.json(); if (!Array.isArray(data)) return;
-        const mapped = data.map(mapProfileToUser); const storedPresence = localStorage.getItem('inkorium:presence') as UserPresence | null;
-        setUsers(storedPresence && ['conectado','ausente','ocupado','invisible'].includes(storedPresence) ? mapped.map(user => user.id === currentUserId ? { ...user, presencia: storedPresence, online: storedPresence !== 'invisible', chatEstado: storedPresence === 'invisible' ? '0' : '1' } : user) : mapped);
+        if (!response.ok) return; const data = (await response.json()) as any[]; if (!Array.isArray(data)) return;
+        const mapped: User[] = data.map(mapProfileToUser); const storedPresence = localStorage.getItem('inkorium:presence') as UserPresence | null;
+        setUsers(storedPresence && ['conectado','ausente','ocupado','invisible'].includes(storedPresence) ? mapped.map((user: User) => user.id === currentUserId ? { ...user, presencia: storedPresence, online: storedPresence !== 'invisible', chatEstado: storedPresence === 'invisible' ? '0' : '1' } : user) : mapped);
       } catch (error) { console.error('Profiles load failed:', error); }
     }, 100);
   }, [mapProfileToUser, currentUserId]);
