@@ -142,6 +142,33 @@ app.patch('/api/profiles/:id/avatar', async (req, res) => {
   } catch (err: any) { console.error('Supabase avatar proxy failed:', err); return res.status(502).json({ error: 'SUPABASE_AVATAR_PROXY_FAILED', message: err?.message || 'Unable to update avatar.' }); }
 });
 
+app.patch('/api/profiles/:id/status', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey, serviceRoleKey, jwtSecret } = getSupabaseConfig();
+    const profileId = String(req.params.id || '').trim();
+    const status = String(req.body?.status || '').trim().slice(0, 140);
+    const token = extractToken(req);
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+    if (!profileId) return res.status(400).json({ error: 'INVALID_PROFILE_ID' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const authorId = await verifySupabaseJwt(token, supabaseUrl, jwtSecret);
+    if (!authorId || authorId !== profileId) return res.status(403).json({ error: 'FORBIDDEN' });
+    const key = serviceRoleKey || supabaseKey;
+    const authorization = serviceRoleKey ? `Bearer ${serviceRoleKey}` : `Bearer ${token}`;
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profileId)}`, {
+      method: 'PATCH',
+      headers: { apikey: key, Authorization: authorization, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ user_status: status, updated_at: new Date().toISOString() })
+    });
+    const body = await upstream.text();
+    if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+    return res.status(200).json({ success: true, user_status: status });
+  } catch (err: any) {
+    console.error('Supabase profile status proxy failed:', err);
+    return res.status(502).json({ error: 'SUPABASE_STATUS_PROXY_FAILED', message: err?.message || 'Unable to update status.' });
+  }
+});
+
 app.get('/api/posts', async (_req, res) => {
   try {
     const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig(); const key = serviceRoleKey || supabaseKey; if (!key) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
