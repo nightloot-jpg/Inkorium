@@ -114,6 +114,101 @@ function formatFeedDate(value: string): string {
 
 function normalizePostDates(data: unknown) { return Array.isArray(data) ? data.map((row: any) => ({ ...row, created_at: formatFeedDate(String(row.created_at || '')) })) : data; }
 
+app.get('/api/private-messages', async (req, res) => {
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  try {
+    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const token = extractToken(req);
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (Array.isArray(value)) value.forEach((item) => query.append(key, String(item)));
+      else if (value != null) query.set(key, String(value));
+    }
+    if (!query.has('select')) query.set('select', 'id,sender_id,recipient_id,subject,body,is_read,created_at');
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    const body = await upstream.text();
+    return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+  } catch (err: any) {
+    console.error('Private messages proxy failed:', err);
+    return res.status(502).json({ error: 'SUPABASE_PRIVATE_MESSAGES_PROXY_FAILED', message: err?.message || 'Unable to load private messages.' });
+  }
+});
+
+app.post('/api/private-messages', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const token = extractToken(req);
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?select=id,sender_id,recipient_id,subject,body,is_read,created_at`, {
+      method: 'POST',
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: req.headers.prefer || 'return=representation' },
+      body: JSON.stringify(req.body)
+    });
+    const body = await upstream.text();
+    return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+  } catch (err: any) {
+    console.error('Private messages insert proxy failed:', err);
+    return res.status(502).json({ error: 'SUPABASE_PRIVATE_MESSAGES_PROXY_FAILED', message: err?.message || 'Unable to send private message.' });
+  }
+});
+
+app.patch('/api/private-messages', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const token = extractToken(req);
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (Array.isArray(value)) value.forEach((item) => query.append(key, String(item)));
+      else if (value != null) query.set(key, String(value));
+    }
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
+      method: 'PATCH',
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: req.headers.prefer || 'return=minimal' },
+      body: JSON.stringify(req.body)
+    });
+    const body = await upstream.text();
+    return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+  } catch (err: any) {
+    console.error('Private messages update proxy failed:', err);
+    return res.status(502).json({ error: 'SUPABASE_PRIVATE_MESSAGES_PROXY_FAILED', message: err?.message || 'Unable to update private message.' });
+  }
+});
+
+app.delete('/api/private-messages', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const token = extractToken(req);
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (Array.isArray(value)) value.forEach((item) => query.append(key, String(item)));
+      else if (value != null) query.set(key, String(value));
+    }
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
+      method: 'DELETE',
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', Prefer: req.headers.prefer || 'return=minimal' }
+    });
+    const body = await upstream.text();
+    return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+  } catch (err: any) {
+    console.error('Private messages delete proxy failed:', err);
+    return res.status(502).json({ error: 'SUPABASE_PRIVATE_MESSAGES_PROXY_FAILED', message: err?.message || 'Unable to delete private message.' });
+  }
+});
+
 app.get('/api/profiles', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig(); if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
@@ -172,62 +267,4 @@ app.post('/api/photos', async (req, res) => {
 
     if (action === 'create') {
       const albumId = req.body?.album_id ? String(req.body.album_id).trim() : null;
-      const url = String(req.body?.url || '').trim(); const caption = req.body?.caption == null ? null : String(req.body.caption).slice(0, 500);
-      const visibility = ['public', 'friends', 'private'].includes(String(req.body?.visibility)) ? String(req.body.visibility) : 'public';
-      if (!url) return res.status(400).json({ error: 'INVALID_PHOTO_URL' });
-
-      if (albumId) {
-        const albumResponse = await fetch(`${supabaseUrl}/rest/v1/albums?id=eq.${encodeURIComponent(albumId)}&select=id,user_id`, { headers: dbHeaders });
-        const albumBody = await albumResponse.text();
-        if (!albumResponse.ok) return res.status(albumResponse.status).type(albumResponse.headers.get('content-type') || 'application/json').send(albumBody);
-        let albums: any[] = []; try { albums = JSON.parse(albumBody); } catch { return res.status(502).json({ error: 'SUPABASE_ALBUM_INVALID_RESPONSE' }); }
-        if (!albums[0] || String(albums[0].user_id) !== userId) return res.status(403).json({ error: 'INVALID_ALBUM' });
-      }
-
-      const upstream = await fetch(`${supabaseUrl}/rest/v1/photos`, { method: 'POST', headers: { ...dbHeaders, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ user_id: userId, album_id: albumId, storage_path: url, url, caption, visibility }) });
-      const body = await upstream.text();
-      if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
-      try { const data = JSON.parse(body); const row = Array.isArray(data) ? data[0] : data; return row ? res.status(201).json(row) : res.status(502).json({ error: 'SUPABASE_PHOTO_CREATE_EMPTY' }); } catch { return res.status(502).json({ error: 'SUPABASE_PHOTO_CREATE_INVALID_RESPONSE' }); }
-    }
-    return res.status(400).json({ error: 'INVALID_ACTION' });
-  } catch (err: any) { console.error('Supabase photos proxy failed:', err); return res.status(502).json({ error: 'SUPABASE_PHOTOS_PROXY_FAILED', message: err?.message || 'Unable to process photos.' }); }
-});
-
-app.get('/api/posts', async (_req, res) => {
-  try {
-    const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig(); const key = serviceRoleKey || supabaseKey; if (!key) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
-    const upstream = await fetch(`${supabaseUrl}/rest/v1/posts?select=id,author_id,content,visibility,media_data,created_at,updated_at&order=created_at.desc&limit=100`, { headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' } });
-    const body = await upstream.text(); if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body); try { return res.status(200).json(normalizePostDates(JSON.parse(body))); } catch { return res.status(502).json({ error: 'SUPABASE_POSTS_INVALID_RESPONSE' }); }
-  } catch (err: any) { console.error('Supabase posts proxy failed:', err); return res.status(502).json({ error: 'SUPABASE_POSTS_PROXY_FAILED', message: err?.message || 'Unable to load posts.' }); }
-});
-
-app.post('/api/posts', async (req, res) => {
-  try {
-    const { supabaseUrl, supabaseKey, serviceRoleKey, jwtSecret } = getSupabaseConfig(); const content = String(req.body?.content || '').trim(); const mediaUrl = req.body?.media_url ? String(req.body.media_url).trim() : null; const token = extractToken(req);
-    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' }); if (!serviceRoleKey) return res.status(503).json({ error: 'SUPABASE_SERVICE_ROLE_NOT_CONFIGURED', message: 'Server-side Supabase service role key is not configured.' });
-    if (!content && !mediaUrl) return res.status(400).json({ error: 'EMPTY_POST' }); if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
-    const authorId = await verifySupabaseJwt(token, supabaseUrl, jwtSecret); if (!authorId) return res.status(401).json({ error: 'INVALID_AUTH_TOKEN' });
-    const insert = await fetch(`${supabaseUrl}/rest/v1/posts`, { method: 'POST', headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ author_id: authorId, content, visibility: 'public', media_data: mediaUrl ? { url: mediaUrl } : null }) });
-    const body = await insert.text(); if (!insert.ok) return res.status(insert.status).type(insert.headers.get('content-type') || 'application/json').send(body);
-    try { const rows = JSON.parse(body); const row = Array.isArray(rows) ? rows[0] : rows; return res.status(201).json(row ? { ...row, created_at: formatFeedDate(String(row.created_at || '')) } : row); } catch { return res.status(502).json({ error: 'SUPABASE_POST_CREATE_INVALID_RESPONSE' }); }
-  } catch (err: any) { console.error('Supabase create post failed:', err); return res.status(502).json({ error: 'SUPABASE_POST_CREATE_FAILED', message: err?.message || 'Unable to create post.' }); }
-});
-
-app.post('/api/upload', upload.single('file'), async (req, res) => {
-  try {
-    const file = req.file; const folder = String(req.body.folder || 'photos'); if (!file) return res.status(400).json({ error: 'NO_FILE' }); const hetzner = getHetznerS3Client();
-    if (!hetzner) return res.status(503).json({ error: 'HETZNER_STORAGE_NOT_CONFIGURED', message: 'Hetzner S3 Object Storage credentials are not set in environment.' });
-    const fileExt = file.originalname.split('.').pop() || 'jpg'; const key = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-    await hetzner.client.send(new PutObjectCommand({ Bucket: hetzner.bucket, Key: key, Body: file.buffer, ContentType: file.mimetype || 'image/jpeg', ACL: 'public-read' }));
-    const publicUrl = hetzner.publicUrlBase ? `${hetzner.publicUrlBase.replace(/\/+$/, '')}/${key}` : `${hetzner.endpoint.replace(/\/+$/, '')}/${hetzner.bucket}/${key}`;
-    return res.json({ success: true, url: publicUrl, key, bucket: hetzner.bucket, provider: 'hetzner' });
-  } catch (err: any) { console.error('Error uploading file to Hetzner Object Storage:', err); return res.status(500).json({ error: 'UPLOAD_FAILED', message: err?.message || 'Error al subir el archivo.' }); }
-});
-
-async function startServer() {
-  if (process.env.NODE_ENV !== 'production') { const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' }); app.use(vite.middlewares); }
-  else { const distPath = path.join(process.cwd(), 'dist'); app.use(express.static(distPath)); app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html'))); }
-  app.listen(PORT, '0.0.0.0', () => console.log(`Inkorium Server running on port ${PORT}`));
-}
-
-startServer();
+     ...
