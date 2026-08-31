@@ -46,6 +46,9 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isRealtimeSimulationEnabled, setIsRealtimeSimulationEnabledState] = useState(false); const [isLoggedIn, setIsLoggedIn] = useState(false); const [activeTab, setActiveTabState] = useState<InkoriumContextType['activeTab']>('inicio');
   const [selectedUserId, setSelectedUserId] = useState(''); const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null); const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null); const [activeChatWindows, setActiveChatWindows] = useState<ChatWindow[]>([]);
 
+  // Keep currentUser initialized before callbacks/effects that depend on it.
+  const currentUser = users.find(user => user.id === currentUserId) || EMPTY_USER;
+
   const mapProfileToUser = useCallback((p: any): User => {
     const username = String(p.username ?? '').trim(); const fullName = String(p.full_name ?? p.fullname ?? '').trim(); const parts = fullName ? fullName.split(/\s+/) : [];
     const nombre = String(p.nombre ?? parts[0] ?? username ?? `Usuario_${String(p.id).slice(0, 6)}`).trim(); const apellidos = String(p.apellidos ?? parts.slice(1).join(' ')).trim();
@@ -105,7 +108,6 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => { if (users.length > 0 || isSupabaseConfigured) void fetchAndMapPosts(); }, [users.length, fetchAndMapPosts]);
   useEffect(() => { if (currentUserId && isSupabaseConfigured) void fetchAndMapPhotos(); }, [currentUserId, fetchAndMapPhotos]);
 
-  const currentUser = users.find(user => user.id === currentUserId) || EMPTY_USER;
   const updateUserPresence = useCallback((presencia: UserPresence) => { if (!currentUserId) return; setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, presencia, online: presencia !== 'invisible', chatEstado: presencia === 'invisible' ? '0' : '1' } : user)); localStorage.setItem('inkorium:presence', presencia); }, [currentUserId]);
   const publishStatus = useCallback((statusText: string, attachedPhotoUrl?: string) => { if (!statusText.trim() && !attachedPhotoUrl) return; void createPost(statusText.trim(), attachedPhotoUrl).then(row => { const author = users.find(u => u.id === row.author_id) || currentUser; const photoUrl = row.media_data && typeof row.media_data === 'object' && 'url' in (row.media_data as any) ? String((row.media_data as any).url || '') : attachedPhotoUrl || ''; const item: FeedItem = { id: row.id, tipo: photoUrl ? 'foto' : 'estado', propietarioId: row.author_id, propietarioNombre: `${author.nombre} ${author.apellidos}`.trim() || 'Usuario', propietarioAvatar: author.avatar, datos: row.content, fotoUrl: photoUrl || undefined, fecha: row.created_at, likes: [], comentarios: [] }; setFeed(prev => [item, ...prev]); }).catch(error => { console.error('Post create failed:', error); const message = error instanceof Error ? error.message : String(error); alert(`No se ha podido publicar. ${message}`); }); }, [currentUser, users]);
   const uploadPhoto = useCallback((titulo: string, albumId: string | null, archivoUrl: string) => {
