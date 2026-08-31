@@ -317,6 +317,49 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [users]);
 
+  const fetchAndMapPrivateMessages = useCallback(async () => {
+    if (!isSupabaseConfigured || !currentUserId) return;
+    try {
+      const session = await supabase?.auth.getSession().catch(() => null);
+      const token = session?.data?.session?.access_token;
+      const res = await fetch('/api/private-messages?order=created_at.desc&limit=100', {
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped: PrivateMessage[] = data.map((row: any) => {
+            const sender = users.find(u => u.id === row.sender_id || u.username === row.sender_id);
+            const recipient = users.find(u => u.id === row.recipient_id || u.username === row.recipient_id);
+            return {
+              id: String(row.id),
+              emisorId: String(row.sender_id),
+              emisorNombre: sender ? (sender.full_name || `${sender.nombre} ${sender.apellidos}`.trim() || sender.nombre) : 'Usuario',
+              emisorAvatar: sender?.avatar || '',
+              receptorId: String(row.recipient_id),
+              receptorNombre: recipient ? (recipient.full_name || `${recipient.nombre} ${recipient.apellidos}`.trim() || recipient.nombre) : 'Usuario',
+              asunto: String(row.subject || 'Sin asunto'),
+              mensaje: String(row.body || ''),
+              fecha: row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : 'Recientemente',
+              leido: Boolean(row.is_read)
+            };
+          });
+
+          setMessages(prev => {
+            const dbIds = new Set(mapped.map(m => m.id));
+            const localNonDb = prev.filter(m => !dbIds.has(m.id));
+            return [...mapped, ...localNonDb];
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load private messages from Supabase:', e);
+    }
+  }, [isSupabaseConfigured, currentUserId, users]);
+
   useEffect(() => {
     if (!supabase || !isSupabaseConfigured) return;
     let mounted = true;
@@ -355,6 +398,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const profilesChannel = supabase.channel('profiles-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void fetchProfiles()).subscribe();
     const photosChannel = supabase.channel('photos-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, () => void fetchAndMapPhotos()).subscribe();
+    const messagesChannel = supabase.channel('messages-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages' }, () => void fetchAndMapPrivateMessages()).subscribe();
 
     return () => {
       mounted = false;
@@ -362,11 +406,13 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       auth.subscription.unsubscribe();
       void supabase.removeChannel(profilesChannel);
       void supabase.removeChannel(photosChannel);
+      void supabase.removeChannel(messagesChannel);
     };
-  }, [fetchProfiles, fetchAndMapPhotos]);
+  }, [fetchProfiles, fetchAndMapPhotos, fetchAndMapPrivateMessages]);
 
   useEffect(() => { if (users.length > 0 || isSupabaseConfigured) void fetchAndMapPosts(); }, [users.length, fetchAndMapPosts]);
   useEffect(() => { if (currentUserId && isSupabaseConfigured) void fetchAndMapPhotos(); }, [currentUserId, fetchAndMapPhotos]);
+  useEffect(() => { if (currentUserId && isSupabaseConfigured) void fetchAndMapPrivateMessages(); }, [currentUserId, isSupabaseConfigured, fetchAndMapPrivateMessages]);
 
   const updateUserPresence = useCallback((presencia: UserPresence) => {
     if (!currentUserId) return;

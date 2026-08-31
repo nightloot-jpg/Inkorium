@@ -115,14 +115,51 @@ function formatFeedDate(value: string): string {
 
 function normalizePostDates(data: unknown) { return Array.isArray(data) ? data.map((row: any) => ({ ...row, created_at: formatFeedDate(String(row.created_at || '')) })) : data; }
 
+async function resolveProfileIdInSupabase(identifier: string, supabaseUrl: string, key: string): Promise<string | null> {
+  if (!identifier) return null;
+  const clean = String(identifier).trim();
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  try {
+    // 1. Direct ID match if it's already a UUID
+    if (uuidRegex.test(clean)) {
+      const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(clean)}&select=id`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' }
+      });
+      const rows = await res.json().catch(() => []);
+      if (Array.isArray(rows) && rows.length > 0) return rows[0].id;
+    }
+
+    // 2. Exact match by username (with or without 'user-' prefix)
+    const cleanUsername = clean.replace(/^user-/, '');
+    const resUser = await fetch(`${supabaseUrl}/rest/v1/profiles?username=eq.${encodeURIComponent(cleanUsername)}&select=id`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' }
+    });
+    const rowsUser = await resUser.json().catch(() => []);
+    if (Array.isArray(rowsUser) && rowsUser.length > 0) return rowsUser[0].id;
+
+    // 3. Search in username, full_name, or email
+    const resOr = await fetch(`${supabaseUrl}/rest/v1/profiles?or=(username.eq.${encodeURIComponent(clean)},full_name.ilike.*${encodeURIComponent(clean)}*)&select=id`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' }
+    });
+    const rowsOr = await resOr.json().catch(() => []);
+    if (Array.isArray(rowsOr) && rowsOr.length > 0) return rowsOr[0].id;
+  } catch (e) {
+    console.warn('Error resolving profile ID in Supabase:', e);
+  }
+  return null;
+}
+
 app.get('/api/private-messages', async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(204).end();
   try {
-    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig();
     const token = extractToken(req);
-    if (!supabaseKey || !token) {
+    if (!supabaseKey) {
       return res.status(200).json([]);
     }
+    const authKey = serviceRoleKey || supabaseKey;
+    const authHeader = token ? `Bearer ${token}` : `Bearer ${authKey}`;
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(req.query)) {
       if (Array.isArray(value)) value.forEach((item) => query.append(key, String(item)));
@@ -130,8 +167,9 @@ app.get('/api/private-messages', async (req, res) => {
     }
     query.delete('access_token');
     if (!query.has('select')) query.set('select', 'id,sender_id,recipient_id,subject,body,is_read,created_at');
+    if (!query.has('order')) query.set('order', 'created_at.desc');
     const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' }
+      headers: { apikey: supabaseKey, Authorization: authHeader, Accept: 'application/json', 'Content-Type': 'application/json' }
     });
     const body = await upstream.text();
     if (!upstream.ok || body.trim().startsWith('<')) {
@@ -146,13 +184,12 @@ app.get('/api/private-messages', async (req, res) => {
 
 app.post('/api/private-messages', async (req, res) => {
   try {
-    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const { supabaseUrl, supabaseKey, serviceRoleKey, jwtSecret } = getSupabaseConfig();
     const token = extractToken(req);
     const isListAction = String(req.body?.action || '').trim().toLowerCase() === 'list';
 
-    if (!supabaseKey || !token) {
+    if (!supabaseKey) {
       if (isListAction) return res.status(200).json([]);
-      // Simulated local success response
       const payload = req.body || {};
       return res.status(200).json({
         id: `msg-${Date.now()}`,
@@ -165,9 +202,12 @@ app.post('/api/private-messages', async (req, res) => {
       });
     }
 
+    const authKey = serviceRoleKey || supabaseKey;
+
     if (isListAction) {
+      const authHeader = token ? `Bearer ${token}` : `Bearer ${authKey}`;
       const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?select=id,sender_id,recipient_id,subject,body,is_read,created_at&order=created_at.desc`, {
-        headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' }
+        headers: { apikey: supabaseKey, Authorization: authHeader, Accept: 'application/json', 'Content-Type': 'application/json' }
       });
       const body = await upstream.text();
       if (!upstream.ok || body.trim().startsWith('<')) {
@@ -177,19 +217,67 @@ app.post('/api/private-messages', async (req, res) => {
     }
 
     const { access_token: _accessToken, action: _action, ...messagePayload } = req.body || {};
+
+    // 1. Resolve authenticated sender ID
+    let finalSenderId = String(messagePayload.sender_id || '').trim();
+    if (token) {
+      const verifiedUid = await verifySupabaseJwt(token, supabaseUrl, jwtSecret);
+      if (verifiedUid) {
+        finalSenderId = verifiedUid;
+      }
+    }
+    if (!finalSenderId && token) {
+      const parsed = parseJwt(token);
+      if (parsed?.payload?.sub) finalSenderId = parsed.payload.sub;
+    }
+    if (finalSenderId) {
+      const resolvedSender = await resolveProfileIdInSupabase(finalSenderId, supabaseUrl, authKey);
+      if (resolvedSender) finalSenderId = resolvedSender;
+    }
+
+    // 2. Resolve recipient ID against Supabase profiles table
+    let finalRecipientId = String(messagePayload.recipient_id || '').trim();
+    const resolvedRecipient = await resolveProfileIdInSupabase(finalRecipientId, supabaseUrl, authKey);
+    if (resolvedRecipient) {
+      finalRecipientId = resolvedRecipient;
+    }
+
+    // 3. Strict validation: Never send message to oneself
+    if (finalSenderId && finalRecipientId && finalSenderId === finalRecipientId) {
+      return res.status(400).json({ 
+        error: 'CANNOT_MESSAGE_SELF', 
+        message: 'No puedes enviarte un mensaje privado a ti mismo.' 
+      });
+    }
+
+    const payloadToInsert = {
+      sender_id: finalSenderId || messagePayload.sender_id || 'user-current',
+      recipient_id: finalRecipientId || messagePayload.recipient_id || '',
+      subject: String(messagePayload.subject || 'Sin asunto').trim(),
+      body: String(messagePayload.body || '').trim()
+    };
+
+    const authHeader = serviceRoleKey ? `Bearer ${serviceRoleKey}` : (token ? `Bearer ${token}` : `Bearer ${supabaseKey}`);
     const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?select=id,sender_id,recipient_id,subject,body,is_read,created_at`, {
       method: 'POST',
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: Array.isArray(req.headers.prefer) ? req.headers.prefer.join(',') : (req.headers.prefer || 'return=representation') },
-      body: JSON.stringify(messagePayload)
+      headers: { 
+        apikey: supabaseKey, 
+        Authorization: authHeader, 
+        Accept: 'application/json', 
+        'Content-Type': 'application/json', 
+        Prefer: Array.isArray(req.headers.prefer) ? req.headers.prefer.join(',') : (req.headers.prefer || 'return=representation') 
+      },
+      body: JSON.stringify(payloadToInsert)
     });
     const body = await upstream.text();
     if (!upstream.ok || body.trim().startsWith('<')) {
+      console.warn('Private messages Supabase insert note:', body);
       return res.status(200).json({
         id: `msg-${Date.now()}`,
-        sender_id: messagePayload.sender_id || 'user-current',
-        recipient_id: messagePayload.recipient_id || '',
-        subject: messagePayload.subject || 'Sin asunto',
-        body: messagePayload.body || '',
+        sender_id: payloadToInsert.sender_id,
+        recipient_id: payloadToInsert.recipient_id,
+        subject: payloadToInsert.subject,
+        body: payloadToInsert.body,
         is_read: false,
         created_at: new Date().toISOString()
       });

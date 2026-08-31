@@ -4,6 +4,7 @@ import { User, ChatWindow, ChatMessage, UserPresence } from '../types';
 import { getFullConversation, appendMessageToConversation, formatChatDateDivider } from '../lib/chatHistory';
 import EmoticonPicker from './EmoticonPicker';
 import { playMessageSound } from '../utils/sound';
+import { supabase } from '../lib/supabase';
 
 const PAGE_SIZE = 10;
 
@@ -124,7 +125,8 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   const handleSend = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const text = inputText.trim();
-    if (!text) return;
+    if (!text || !currentUser.id || !targetUser.id) return;
+    if (targetUser.id === currentUser.id) return;
 
     const newMsg: ChatMessage = {
       id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -147,6 +149,31 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     } catch {
       // audio error safely ignored
     }
+
+    // Persist chat message to backend / Supabase
+    void (async () => {
+      try {
+        if (supabase) {
+          const session = await supabase.auth.getSession().catch(() => null);
+          const token = session?.data?.session?.access_token;
+          await fetch('/api/private-messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({
+              sender_id: currentUser.id,
+              recipient_id: targetUser.id,
+              subject: 'Chat instantáneo',
+              body: text
+            })
+          }).catch(() => null);
+        }
+      } catch (err) {
+        console.warn('Chat remote sync error:', err);
+      }
+    })();
   };
 
   const handleInsertEmoticon = (val: string) => {

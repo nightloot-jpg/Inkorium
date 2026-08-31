@@ -68,11 +68,24 @@ function getStorageConversationKey(userA: string, userB: string): string {
 }
 
 export function generateInitialHistoryForPair(currentUserId: string, targetUserId: string, targetUserName: string): ChatMessage[] {
-  const isCarlos = targetUserName.toLowerCase().includes('carlos') || targetUserId.includes('2');
-  const isLaura = targetUserName.toLowerCase().includes('laura') || targetUserId.includes('3');
-  
-  const templateKey = isCarlos ? 'carlos' : isLaura ? 'laura' : 'default';
-  const templates = CONVERSATION_SEEDS[templateKey] || CONVERSATION_SEEDS.default;
+  const targetLower = (targetUserName || '').toLowerCase();
+  const idLower = (targetUserId || '').toLowerCase();
+
+  const isCarlos = targetLower.includes('carlos') || idLower.includes('carlos') || idLower === 'user-2';
+  const isLaura = targetLower.includes('laura') || idLower.includes('laura') || idLower === 'user-3';
+  const isElena = targetLower.includes('elena') || idLower.includes('elena') || idLower === 'user-1' || idLower === '1';
+
+  let templates: SeedMessageTemplate[] = [];
+  if (isCarlos) {
+    templates = CONVERSATION_SEEDS.carlos;
+  } else if (isLaura) {
+    templates = CONVERSATION_SEEDS.laura;
+  } else if (isElena) {
+    templates = CONVERSATION_SEEDS.default;
+  } else {
+    // Real Supabase users (like Bárbara) start with a fresh, clean chat history
+    return [];
+  }
 
   return templates.map((t, idx) => {
     const timestamp = now - t.offsetMs;
