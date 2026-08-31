@@ -137,6 +137,11 @@ export interface Friendship {
   fecha: string;
 }
 
+export interface ChatWindow {
+  targetUserId: string;
+  minimized: boolean;
+}
+
 export interface ChatMessage {
   id: string;
   emisorId: string;
@@ -144,6 +149,7 @@ export interface ChatMessage {
   mensaje: string;
   fecha: string;
   leido: boolean;
+  timestamp?: number;
 }
 
 export interface InkoriumNotification {
