@@ -114,6 +114,96 @@ function formatFeedDate(value: string): string {
 
 function normalizePostDates(data: unknown) { return Array.isArray(data) ? data.map((row: any) => ({ ...row, created_at: formatFeedDate(String(row.created_at || '')) })) : data; }
 
+app.get('/api/private-messages', async (req, res) => {
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  try {
+    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const token = extractToken(req);
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (Array.isArray(value)) value.forEach((item) => query.append(key, String(item)));
+      else if (value != null) query.set(key, String(value));
+    }
+    if (!query.has('select')) query.set('select', 'id,sender_id,recipient_id,subject,body,is_read,created_at');
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' }
+    });
+    const body = await upstream.text();
+    return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+  } catch (err: any) {
+    console.error('Private messages proxy failed:', err);
+    return res.status(502).json({ error: 'SUPABASE_PRIVATE_MESSAGES_PROXY_FAILED', message: err?.message || 'Unable to load private messages.' });
+  }
+});
+
+app.post('/api/private-messages', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const token = extractToken(req);
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?select=id,sender_id,recipient_id,subject,body,is_read,created_at`, {
+      method: 'POST',
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: req.headers.prefer || 'return=representation' },
+      body: JSON.stringify(req.body)
+    });
+    const body = await upstream.text();
+    return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+  } catch (err: any) {
+    console.error('Private messages insert proxy failed:', err);
+    return res.status(502).json({ error: 'SUPABASE_PRIVATE_MESSAGES_PROXY_FAILED', message: err?.message || 'Unable to send private message.' });
+  }
+});
+
+app.patch('/api/private-messages', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const token = extractToken(req);
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (Array.isArray(value)) value.forEach((item) => query.append(key, String(item)));
+      else if (value != null) query.set(key, String(value));
+    }
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
+      method: 'PATCH',
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: req.headers.prefer || 'return=minimal' },
+      body: JSON.stringify(req.body)
+    });
+    const body = await upstream.text();
+    return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+  } catch (err: any) {
+    console.error('Private messages update proxy failed:', err);
+    return res.status(502).json({ error: 'SUPABASE_PRIVATE_MESSAGES_PROXY_FAILED', message: err?.message || 'Unable to update private message.' });
+  }
+});
+
+app.delete('/api/private-messages', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const token = extractToken(req);
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (Array.isArray(value)) value.forEach((item) => query.append(key, String(item)));
+      else if (value != null) query.set(key, String(value));
+    }
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
+      method: 'DELETE',
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', Prefer: req.headers.prefer || 'return=minimal' }
+    });
+    const body = await upstream.text();
+    return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+  } catch (err: any) {
+    console.error('Private messages delete proxy failed:', err);
+    return res.status(502).json({ error: 'SUPABASE_PRIVATE_MESSAGES_PROXY_FAILED', message: err?.message || 'Unable to delete private message.' });
+  }
+});
+
 app.get('/api/profiles', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig(); if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
