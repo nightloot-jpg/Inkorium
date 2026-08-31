@@ -26,7 +26,7 @@ async function requestPhotos<T>(body: Record<string, unknown>): Promise<T> {
   const response = await fetch('/api/photos', {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-    credentials: 'omit',
+    credentials: 'same-origin',
     cache: 'no-store',
     body: JSON.stringify({ ...body, access_token: token }),
   });
@@ -37,18 +37,12 @@ async function requestPhotos<T>(body: Record<string, unknown>): Promise<T> {
     try {
       const parsed = JSON.parse(raw);
       detail = parsed.message || parsed.error || raw;
-    } catch {
-      // Keep the upstream response when it is not JSON.
-    }
+    } catch {}
     const compact = typeof detail === 'string' ? detail.replace(/\s+/g, ' ').slice(0, 500) : '';
     throw new Error(`${response.status}: ${compact || 'respuesta vacía del servidor'}`);
   }
-
-  try {
-    return (raw ? JSON.parse(raw) : null) as T;
-  } catch {
-    throw new Error('PHOTOS_API_INVALID_RESPONSE');
-  }
+  try { return (raw ? JSON.parse(raw) : null) as T; }
+  catch { throw new Error('PHOTOS_API_INVALID_RESPONSE'); }
 }
 
 export async function fetchPhotos(): Promise<PhotoRow[]> {
