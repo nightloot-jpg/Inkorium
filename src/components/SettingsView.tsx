@@ -420,10 +420,12 @@ export const SettingsView: React.FC = () => {
                     <Bell className="w-4 h-4 text-[#3869A0]" />
                     <span>Configuración de Notificaciones y Avisos</span>
                   </h2>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[10px] flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    Activo
-                  </span>
+                  <button
+                    onClick={() => setActiveTab('notificaciones')}
+                    className="px-3 py-1 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold rounded text-xs transition cursor-pointer shadow-xs"
+                  >
+                    Abrir Centro de Avisos Detallado →
+                  </button>
                 </div>
 
                 {/* Sound & Audio preferences */}

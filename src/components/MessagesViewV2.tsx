@@ -1,117 +1,26 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Inbox, Mail, Reply, Send, SendHorizontal, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, Inbox, Mail, Reply, Send, SendHorizontal, Trash2, ChevronDown } from 'lucide-react';
 import { useInkorium } from '../context/InkoriumContext';
-import { supabase } from '../lib/supabase';
 import { PrivateMessage } from '../types';
-import { INITIAL_MESSAGES } from '../data/mockData';
-
-const STORAGE_KEY = 'inkorium:private_messages';
-
-function getStoredMessages(): PrivateMessage[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {
-    // ignore
-  }
-  return INITIAL_MESSAGES;
-}
-
-function saveStoredMessages(list: PrivateMessage[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    // ignore
-  }
-}
-
-type DbMessage = {
-  id: string;
-  sender_id: string;
-  recipient_id: string;
-  subject: string;
-  body: string;
-  is_read: boolean;
-  created_at: string;
-};
 
 export const MessagesViewV2: React.FC = () => {
-  const { currentUser, users, viewUserProfile } = useInkorium();
-  const [messages, setMessages] = useState<PrivateMessage[]>(() => getStoredMessages());
+  const {
+    currentUser,
+    users,
+    messages,
+    sendPrivateMessage,
+    markMessageAsRead,
+    deleteMessage,
+    viewUserProfile
+  } = useInkorium();
+
   const [mode, setMode] = useState<'recibidos' | 'enviados' | 'enviar'>('recibidos');
   const [selectedMessage, setSelectedMessage] = useState<PrivateMessage | null>(null);
   const [targetUserId, setTargetUserId] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState('');
-
-  const userMap = useMemo(() => new Map(users.map(u => [u.id, u])), [users]);
-
-  const mapMessage = useCallback((r: DbMessage): PrivateMessage => {
-    const s = userMap.get(r.sender_id);
-    const t = userMap.get(r.recipient_id);
-    return {
-      id: r.id,
-      emisorId: r.sender_id,
-      emisorNombre: s ? `${s.nombre} ${s.apellidos}`.trim() : 'Usuario',
-      emisorAvatar: s?.avatar || '',
-      receptorId: r.recipient_id,
-      receptorNombre: t ? `${t.nombre} ${t.apellidos}`.trim() : 'Usuario',
-      asunto: r.subject || 'Sin asunto',
-      mensaje: r.body,
-      fecha: new Date(r.created_at).toLocaleString('es-ES'),
-      leido: Boolean(r.is_read)
-    };
-  }, [userMap]);
-
-  const loadMessages = useCallback(async () => {
-    if (!supabase || !currentUser?.id) return;
-    try {
-      const { data, error: e } = await (supabase.from('private_messages') as any)
-        .select('id,sender_id,recipient_id,subject,body,is_read,created_at')
-        .order('created_at', { ascending: false });
-
-      if (!e && Array.isArray(data) && data.length > 0) {
-        const mapped = (data as unknown as DbMessage[]).map(mapMessage);
-        setMessages(prev => {
-          const mergedMap = new Map<string, PrivateMessage>();
-          mapped.forEach((m: PrivateMessage) => mergedMap.set(m.id, m));
-          prev.forEach((m: PrivateMessage) => {
-            if (!mergedMap.has(m.id)) mergedMap.set(m.id, m);
-          });
-          const result = Array.from(mergedMap.values());
-          saveStoredMessages(result);
-          return result;
-        });
-      }
-    } catch (err) {
-      // Gracefully fall back to local storage without throwing UI error
-      console.warn('Private messages remote sync skipped:', err);
-    }
-  }, [currentUser?.id, mapMessage]);
-
-  useEffect(() => {
-    void loadMessages();
-  }, [loadMessages]);
-
-  useEffect(() => {
-    if (!supabase || !currentUser?.id) return;
-    try {
-      const ch = supabase
-        .channel(`private-messages-${currentUser.id}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages', filter: `recipient_id=eq.${currentUser.id}` }, () => void loadMessages())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages', filter: `sender_id=eq.${currentUser.id}` }, () => void loadMessages())
-        .subscribe();
-      return () => { void supabase.removeChannel(ch); };
-    } catch {
-      // ignore
-    }
-  }, [currentUser?.id, loadMessages]);
+  const [visibleCount, setVisibleCount] = useState(15);
 
   const isCurrentRecipient = (m: PrivateMessage) => {
     return (
@@ -137,93 +46,39 @@ export const MessagesViewV2: React.FC = () => {
   const sent = messages.filter(isCurrentSender);
   const others = users.filter(u => u.id !== currentUser.id && u.username !== currentUser.username);
 
-  const open = async (m: PrivateMessage) => {
+  const open = (m: PrivateMessage) => {
     setSelectedMessage(m);
-    if (m.leido || !isCurrentRecipient(m)) return;
-
-    setMessages(prev => {
-      const updated = prev.map(x => x.id === m.id ? { ...x, leido: true } : x);
-      saveStoredMessages(updated);
-      return updated;
-    });
-    setSelectedMessage(prev => (prev ? { ...prev, leido: true } : prev));
-
-    if (supabase) {
-      try {
-        await (supabase.from('private_messages') as any)
-          .update({ is_read: true })
-          .eq('id', m.id)
-          .eq('recipient_id', currentUser.id);
-      } catch {
-        // local update already succeeded
-      }
+    if (!m.leido && isCurrentRecipient(m)) {
+      markMessageAsRead(m.id);
     }
   };
 
-  const send = async (e: React.FormEvent) => {
+  const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    const b = body.trim();
-    if (!targetUserId || !b || sending) return;
+    const cleanBody = body.trim();
+    if (!targetUserId || !cleanBody || sending) return;
+
     setSending(true);
-    setError('');
-
-    const targetUser = userMap.get(targetUserId);
-    const newMsg: PrivateMessage = {
-      id: `msg-${Date.now()}`,
-      emisorId: currentUser.id,
-      emisorNombre: `${currentUser.nombre} ${currentUser.apellidos}`.trim(),
-      emisorAvatar: currentUser.avatar,
-      receptorId: targetUserId,
-      receptorNombre: targetUser ? `${targetUser.nombre} ${targetUser.apellidos}`.trim() : 'Usuario',
-      asunto: subject.trim().slice(0, 200) || 'Sin asunto',
-      mensaje: b,
-      fecha: 'Ahora mismo',
-      leido: false
-    };
-
-    setMessages(prev => {
-      const updated = [newMsg, ...prev];
-      saveStoredMessages(updated);
-      return updated;
-    });
+    sendPrivateMessage(targetUserId, subject.trim() || 'Sin asunto', cleanBody);
 
     setTargetUserId('');
     setSubject('');
     setBody('');
     setMode('enviados');
-    setSending(false);
-
-    if (supabase && currentUser.id) {
-      try {
-        await (supabase.from('private_messages') as any).insert({
-          sender_id: currentUser.id,
-          recipient_id: targetUserId,
-          subject: newMsg.asunto,
-          body: b
-        });
-      } catch (err) {
-        console.warn('Supabase remote message insert skipped:', err);
-      }
-    }
-  };
-
-  const del = async (m: PrivateMessage) => {
-    if (!confirm('¿Borrar este mensaje?')) return;
-    setMessages(prev => {
-      const updated = prev.filter(x => x.id !== m.id);
-      saveStoredMessages(updated);
-      return updated;
-    });
     setSelectedMessage(null);
+    setSending(false);
+  };
 
-    if (supabase) {
-      try {
-        await (supabase.from('private_messages') as any).delete().eq('id', m.id);
-      } catch {
-        // ignore
-      }
+  const handleDelete = (m: PrivateMessage) => {
+    if (!confirm('¿Deseas eliminar este mensaje?')) return;
+    deleteMessage(m.id);
+    if (selectedMessage?.id === m.id) {
+      setSelectedMessage(null);
     }
   };
+
+  const currentList = mode === 'enviados' ? sent : received;
+  const displayedList = currentList.slice(0, visibleCount);
 
   return (
     <div className="w-full max-w-[1720px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-6 lg:px-8 py-4">
@@ -248,7 +103,7 @@ export const MessagesViewV2: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => { setMode('recibidos'); setSelectedMessage(null); }}
+                onClick={() => { setMode('recibidos'); setSelectedMessage(null); setVisibleCount(15); }}
                 className={`w-full text-left px-3 py-2.5 flex items-center justify-between cursor-pointer transition ${
                   mode === 'recibidos' && !selectedMessage ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 text-gray-800'
                 }`}
@@ -263,7 +118,7 @@ export const MessagesViewV2: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => { setMode('enviados'); setSelectedMessage(null); }}
+                onClick={() => { setMode('enviados'); setSelectedMessage(null); setVisibleCount(15); }}
                 className={`w-full text-left px-3 py-2.5 flex items-center justify-between cursor-pointer transition ${
                   mode === 'enviados' && !selectedMessage ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 text-gray-800'
                 }`}
@@ -288,15 +143,7 @@ export const MessagesViewV2: React.FC = () => {
         {/* Right Content Area */}
         <div className="md:col-span-8 lg:col-span-9">
           <div className="bg-white rounded border border-[#ccd5df] p-4 shadow-xs min-h-[400px]">
-            {error && (
-              <div className="mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                {error}
-              </div>
-            )}
-
-            {loading ? (
-              <div className="text-center py-16 text-gray-400 text-xs">Cargando mensajes...</div>
-            ) : selectedMessage ? (
+            {selectedMessage ? (
               /* Message Detail View */
               <div className="space-y-4 text-xs">
                 <div className="flex items-center justify-between pb-3 border-b border-gray-200">
@@ -327,7 +174,7 @@ export const MessagesViewV2: React.FC = () => {
                     )}
                     <button
                       type="button"
-                      onClick={() => void del(selectedMessage)}
+                      onClick={() => handleDelete(selectedMessage)}
                       className="p-1 text-gray-400 hover:text-red-600 cursor-pointer"
                       title="Eliminar mensaje"
                     >
@@ -370,7 +217,7 @@ export const MessagesViewV2: React.FC = () => {
                   <SendHorizontal className="w-4 h-4 text-[#3869A0]" />
                   <span>Redactar nuevo mensaje privado</span>
                 </h2>
-                <form onSubmit={send} className="space-y-3">
+                <form onSubmit={handleSend} className="space-y-3">
                   <div>
                     <label className="font-bold text-gray-700 block mb-1">Para (Destinatario):</label>
                     <select
@@ -431,46 +278,61 @@ export const MessagesViewV2: React.FC = () => {
                 <h2 className="font-bold text-sm text-gray-900 pb-2 border-b border-gray-200">
                   {mode === 'enviados' ? `Mensajes Enviados (${sent.length})` : `Mensajes Recibidos (${received.length})`}
                 </h2>
-                {(mode === 'enviados' ? sent : received).length === 0 ? (
+                {currentList.length === 0 ? (
                   <div className="text-center py-16 text-gray-400 text-xs">
                     {mode === 'enviados' ? 'No has enviado ningún mensaje todavía.' : 'Tu bandeja de entrada está vacía.'}
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-100">
-                    {(mode === 'enviados' ? sent : received).map(m => (
-                      <div
-                        key={m.id}
-                        onClick={() => void open(m)}
-                        className={`py-2.5 px-2 rounded cursor-pointer flex items-center justify-between gap-3 transition ${
-                          !m.leido && mode === 'recibidos' ? 'bg-blue-50/80 font-semibold' : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden flex-1">
-                          <img
-                            src={mode === 'enviados' ? currentUser.avatar : m.emisorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
-                            alt=""
-                            className="w-8 h-8 rounded object-cover border border-gray-300 shrink-0"
-                          />
-                          <div className="overflow-hidden min-w-0">
-                            {mode === 'recibidos' ? (
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-[#3869A0] text-xs truncate">{m.emisorNombre}</span>
-                                {!m.leido && (
-                                  <span className="bg-[#3869A0] text-white text-[9px] font-bold px-1.5 rounded-full shrink-0">
-                                    Nuevo
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <p className="font-bold text-gray-900 text-xs truncate">Para: {m.receptorNombre}</p>
-                            )}
-                            <p className="text-gray-900 text-xs font-medium truncate">{m.asunto}</p>
-                            <p className="text-[11px] text-gray-500 truncate">{m.mensaje}</p>
+                  <div className="space-y-2">
+                    <div className="divide-y divide-gray-100">
+                      {displayedList.map(m => (
+                        <div
+                          key={m.id}
+                          onClick={() => open(m)}
+                          className={`py-2.5 px-2 rounded cursor-pointer flex items-center justify-between gap-3 transition ${
+                            !m.leido && mode === 'recibidos' ? 'bg-blue-50/80 font-semibold' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 overflow-hidden flex-1">
+                            <img
+                              src={mode === 'enviados' ? currentUser.avatar : m.emisorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                              alt=""
+                              className="w-8 h-8 rounded object-cover border border-gray-300 shrink-0"
+                            />
+                            <div className="overflow-hidden min-w-0">
+                              {mode === 'recibidos' ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-[#3869A0] text-xs truncate">{m.emisorNombre}</span>
+                                  {!m.leido && (
+                                    <span className="bg-[#3869A0] text-white text-[9px] font-bold px-1.5 rounded-full shrink-0">
+                                      Nuevo
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="font-bold text-gray-900 text-xs truncate">Para: {m.receptorNombre}</p>
+                              )}
+                              <p className="text-gray-900 text-xs font-medium truncate">{m.asunto}</p>
+                              <p className="text-[11px] text-gray-500 truncate">{m.mensaje}</p>
+                            </div>
                           </div>
+                          <span className="text-[10px] text-gray-400 shrink-0 whitespace-nowrap">{m.fecha}</span>
                         </div>
-                        <span className="text-[10px] text-gray-400 shrink-0 whitespace-nowrap">{m.fecha}</span>
+                      ))}
+                    </div>
+
+                    {currentList.length > displayedList.length && (
+                      <div className="pt-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => setVisibleCount(prev => prev + 15)}
+                          className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-[#3869A0] font-bold rounded text-xs inline-flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                          <span>Cargar mensajes anteriores ({currentList.length - displayedList.length} restantes)</span>
+                        </button>
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>

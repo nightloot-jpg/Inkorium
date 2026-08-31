@@ -161,6 +161,21 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
                 </span>
               )}
             </button>
+
+            <button
+              onClick={() => setActiveTab('notificaciones')}
+              className={`px-3 py-1.5 rounded flex items-center gap-1.5 transition relative cursor-pointer ${
+                activeTab === 'notificaciones' ? 'bg-[#294e77] text-white shadow-inner' : 'text-blue-100 hover:bg-[#2f5988] hover:text-white'
+              }`}
+            >
+              <Bell className="w-4 h-4" />
+              <span>Avisos</span>
+              {unreadNotificationsCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow animate-pulse">
+                  {unreadNotificationsCount}
+                </span>
+              )}
+            </button>
           </nav>
         </div>
 
@@ -318,10 +333,10 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
 
                 <div className="bg-gray-100 px-3 py-2 text-center border-t border-gray-200">
                   <button 
-                    onClick={() => { setActiveTab('ajustes'); setShowNotifications(false); }}
-                    className="text-[11px] text-[#3869A0] font-semibold hover:underline"
+                    onClick={() => { setActiveTab('notificaciones'); setShowNotifications(false); }}
+                    className="text-[11px] text-[#3869A0] font-bold hover:underline cursor-pointer"
                   >
-                    Ver historial completo de notificaciones
+                    Ver centro de notificaciones e historial completo →
                   </button>
                 </div>
               </div>
@@ -366,6 +381,17 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
                   >
                     <UserIcon className="w-4 h-4 text-[#3869A0]" />
                     <span>Mi Perfil y Tablón</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab('notificaciones');
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center gap-2 cursor-pointer font-medium"
+                  >
+                    <Bell className="w-4 h-4 text-[#3869A0]" />
+                    <span>Notificaciones y Avisos</span>
                   </button>
 
                   <button
@@ -436,6 +462,18 @@ export const Navbar: React.FC<{ onOpenAuth: () => void }> = ({ onOpenAuth }) => 
           {unreadMessagesCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full">
               {unreadMessagesCount}
+            </span>
+          )}
+        </button>
+        <button 
+          onClick={() => setActiveTab('notificaciones')} 
+          className={`flex flex-col items-center gap-0.5 relative ${activeTab === 'notificaciones' ? 'text-white font-bold' : 'text-blue-200'}`}
+        >
+          <Bell className="w-4 h-4" />
+          <span>Avisos</span>
+          {unreadNotificationsCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full">
+              {unreadNotificationsCount}
             </span>
           )}
         </button>

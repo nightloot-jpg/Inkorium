@@ -65,20 +65,29 @@ export interface Photo {
 
 export interface Album {
   id: string;
-  userId: string;
+  userId?: string;
+  propietarioId?: string;
   nombre: string;
   descripcion?: string;
+  portada?: string;
+  numFotos?: number;
   fecha: string;
 }
 
 export interface WallComment {
   id: string;
-  emisorId: string;
-  emisorNombre: string;
-  emisorAvatar: string;
-  receptorId: string;
-  comentario: string;
+  emisorId?: string;
+  autorId?: string;
+  emisorNombre?: string;
+  autorNombre?: string;
+  emisorAvatar?: string;
+  autorAvatar?: string;
+  receptorId?: string;
+  propietarioId?: string;
+  comentario?: string;
+  texto?: string;
   fecha: string;
+  likes?: string[];
 }
 
 export interface FeedItem {
@@ -98,9 +107,12 @@ export interface FeedItem {
   likes: string[]; // userIds
   comentarios: {
     id: string;
-    userId: string;
-    nombre: string;
-    avatar: string;
+    autorId?: string;
+    userId?: string;
+    nombre?: string;
+    autorNombre?: string;
+    avatar?: string;
+    autorAvatar?: string;
     texto: string;
     fecha: string;
   }[];
@@ -127,7 +139,7 @@ export interface FriendRequest {
   emisorProvincia: string;
   receptorId: string;
   fecha: string;
-  estado: 'pendiente' | 'aceptada' | 'ignorada';
+  estado: 'pendiente' | 'aceptada' | 'ignorada' | 'rechazada';
 }
 
 export interface Friendship {
@@ -158,13 +170,18 @@ export interface InkoriumNotification {
   fromUserId: string;
   fromUserName: string;
   fromUserAvatar: string;
-  tipo: 'peticion' | 'mp' | 'tablon' | 'foto' | 'etiqueta' | 'like';
+  tipo: 'peticion' | 'mp' | 'tablon' | 'foto' | 'foto_comentario' | 'etiqueta' | 'like';
   mensaje: string;
   enlace: string;
   leido: boolean;
   fecha: string;
   detalle?: string;
   targetId?: string;
+  targetPreview?: string;
+  photoThumbnail?: string;
+  targetPhotoUrl?: string;
+  timestamp?: number;
+  estadoPeticion?: 'pendiente' | 'aceptada' | 'rechazada' | 'ignorada';
 }
 
 export interface AccessLog {
