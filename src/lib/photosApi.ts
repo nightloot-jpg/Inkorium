@@ -14,7 +14,7 @@ export interface PhotoRow {
 
 async function invokePhotos<T>(body: Record<string, unknown>): Promise<T> {
   if (!supabase) throw new Error('SUPABASE_NOT_CONFIGURED');
-  const { data, error } = await supabase.functions.invoke('photos-api-v2', { body });
+  const { data, error } = await supabase.functions.invoke('photos-api-v3', { body });
   if (error) throw new Error(error.message || 'PHOTOS_API_FAILED');
   return data as T;
 }
