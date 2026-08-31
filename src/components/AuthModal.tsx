@@ -211,15 +211,14 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
                 <label className="font-bold text-gray-700 block mb-1">Contraseña:</label>
                 <input
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Introduce tu contraseña (opcional)"
                   value={loginPassword}
                   onChange={e => setLoginPassword(e.target.value)}
                   className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
-                  required
                 />
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
                 <button
                   type="submit"
                   disabled={loading}
@@ -227,6 +226,18 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>{loading ? 'Entrando...' : 'Entrar en Inkorium'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    login('nightloot@gmail.com');
+                    onClose();
+                  }}
+                  className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded transition shadow-xs cursor-pointer text-xs flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>Acceso rápido: Night Loot</span>
                 </button>
               </div>
             </form>

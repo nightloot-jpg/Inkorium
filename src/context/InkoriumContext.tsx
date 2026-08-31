@@ -83,7 +83,28 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const response = await fetch('/api/profiles?select=id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at&limit=1000', { cache: 'no-store', headers: { Accept: 'application/json' } });
         if (!response.ok) return; const data = (await response.json()) as any[]; if (!Array.isArray(data)) return;
         const mapped: User[] = data.map(mapProfileToUser); const storedPresence = localStorage.getItem('inkorium:presence') as UserPresence | null;
-        setUsers(storedPresence && ['conectado','ausente','ocupado','invisible'].includes(storedPresence) ? mapped.map((user: User) => user.id === currentUserId ? { ...user, presencia: storedPresence, online: storedPresence !== 'invisible', chatEstado: storedPresence === 'invisible' ? '0' : '1' } : user) : (mapped.length > 0 ? mapped : INITIAL_USERS));
+        setUsers(prevUsers => {
+          const storedPresence = localStorage.getItem('inkorium:presence') as UserPresence | null;
+          let combined = mapped.length > 0 ? mapped : INITIAL_USERS;
+          
+          // Keep current user in list if not in mapped
+          const existingCurrent = prevUsers.find(u => u.id === currentUserId);
+          if (existingCurrent && !combined.some(u => u.id === currentUserId)) {
+            combined = [existingCurrent, ...combined];
+          }
+
+          // Also keep initial default users if mapped is missing them
+          for (const initUser of INITIAL_USERS) {
+            if (!combined.some(u => u.id === initUser.id || (u.email && u.email === initUser.email))) {
+              combined.push(initUser);
+            }
+          }
+
+          if (storedPresence && ['conectado','ausente','ocupado','invisible'].includes(storedPresence)) {
+            return combined.map((user: User) => user.id === currentUserId ? { ...user, presencia: storedPresence, online: storedPresence !== 'invisible', chatEstado: storedPresence === 'invisible' ? '0' : '1' } : user);
+          }
+          return combined;
+        });
       } catch (error) { console.error('Profiles load failed:', error); }
     }, 100);
   }, [mapProfileToUser, currentUserId]);
@@ -128,12 +149,51 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [users]);
 
   useEffect(() => {
-    if (!supabase || !isSupabaseConfigured) return; let mounted = true;
-    void supabase.auth.getSession().then(({ data }) => { if (!mounted) return; setCurrentUserId(data.session?.user?.id || ''); setIsLoggedIn(Boolean(data.session?.user)); void fetchProfiles(); });
-    const { data: auth } = supabase.auth.onAuthStateChange((_event, session) => { setCurrentUserId(session?.user?.id || ''); setIsLoggedIn(Boolean(session?.user)); void fetchProfiles(); });
+    if (!supabase || !isSupabaseConfigured) return;
+    let mounted = true;
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      if (data.session?.user) {
+        setCurrentUserId(data.session.user.id);
+        setIsLoggedIn(true);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('inkorium:user_id', data.session.user.id);
+          localStorage.setItem('inkorium:is_logged_in', 'true');
+        }
+      }
+      void fetchProfiles();
+    });
+
+    const { data: auth } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
+        setIsLoggedIn(true);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('inkorium:user_id', session.user.id);
+          localStorage.setItem('inkorium:is_logged_in', 'true');
+        }
+        void fetchProfiles();
+      } else if (event === 'SIGNED_OUT') {
+        const storedLoggedIn = typeof localStorage !== 'undefined' ? localStorage.getItem('inkorium:is_logged_in') === 'true' : false;
+        if (!storedLoggedIn) {
+          setCurrentUserId('');
+          setIsLoggedIn(false);
+        }
+      }
+    });
+
     const profilesChannel = supabase.channel('profiles-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void fetchProfiles()).subscribe();
     const photosChannel = supabase.channel('photos-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, () => void fetchAndMapPhotos()).subscribe();
-    return () => { mounted = false; if (profilesTimer.current) clearTimeout(profilesTimer.current); auth.subscription.unsubscribe(); void supabase.removeChannel(profilesChannel); void supabase.removeChannel(photosChannel); };
+
+    return () => {
+      mounted = false;
+      if (profilesTimer.current) clearTimeout(profilesTimer.current);
+      auth.subscription.unsubscribe();
+      void supabase.removeChannel(profilesChannel);
+      void supabase.removeChannel(photosChannel);
+    };
   }, [fetchProfiles, fetchAndMapPhotos]);
 
   useEffect(() => { if (users.length > 0 || isSupabaseConfigured) void fetchAndMapPosts(); }, [users.length, fetchAndMapPosts]);

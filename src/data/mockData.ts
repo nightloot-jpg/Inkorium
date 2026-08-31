@@ -5,6 +5,30 @@ import {
 
 export const INITIAL_USERS: User[] = [
   {
+    id: 'user-nightloot',
+    username: 'nightloot',
+    full_name: 'Night Loot',
+    nombre: 'Night',
+    apellidos: 'Loot',
+    email: 'nightloot@gmail.com',
+    sexo: 'h',
+    fnac: '1998-06-15',
+    provincia: 'Madrid',
+    ciudad: 'Madrid',
+    estado: '¡Conectado a Inkorium! 🚀✨',
+    estadoFecha: 'Ahora mismo',
+    presencia: 'conectado',
+    situacionSentimental: 'Soltero/a',
+    ocupacion: 'Desarrollador & Creador',
+    intereses: 'Tecnología, desarrollo web, música indie, videojuegos retro, fotografía',
+    musica: 'Daft Punk, Vetusta Morla, The Midnight, M83',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+    fechaReg: '01/01/2007',
+    online: true,
+    ultimoAcceso: 'Ahora mismo',
+    chatEstado: '1'
+  },
+  {
     id: 'user-laura',
     username: 'laurasanz',
     full_name: 'Laura Sanz',

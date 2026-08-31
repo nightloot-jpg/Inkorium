@@ -77,7 +77,33 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
       return fetch(`${window.location.origin}/api/private-messages${parsed.search}`, proxyOptions);
     }
   } catch (error) { console.warn('Supabase transport fallback:', error); }
-  return fetch(input, init);
+  
+  try {
+    const res = await fetch(input, init);
+    const contentType = res.headers.get('content-type') || '';
+    // If Supabase returned HTML (e.g. iframe cookie check, gateway auth error), intercept and return safe JSON
+    if (contentType.includes('text/html')) {
+      const text = await res.text();
+      if (text.includes('<title>Cookie check</title>') || text.trim().startsWith('<')) {
+        return new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' }
+        });
+      }
+      return new Response(text, {
+        status: res.status,
+        statusText: res.statusText,
+        headers: res.headers
+      });
+    }
+    return res;
+  } catch (err) {
+    console.warn('Supabase fetch network error:', err);
+    return new Response(JSON.stringify([]), {
+      status: 200,
+      headers: { 'content-type': 'application/json' }
+    });
+  }
 };
 
 supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseKey, {

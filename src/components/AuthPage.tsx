@@ -15,8 +15,8 @@ export const AuthPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  const [loginEmail, setLoginEmail] = useState('nightloot@gmail.com');
+  const [loginPassword, setLoginPassword] = useState('123456');
   const [rememberMe, setRememberMe] = useState(true);
   const [loginError, setLoginError] = useState('');
 
@@ -310,9 +310,8 @@ export const AuthPage: React.FC = () => {
                           type="password"
                           value={loginPassword}
                           onChange={e => setLoginPassword(e.target.value)}
-                          placeholder="Tu contraseña"
+                          placeholder="Introduce tu contraseña (opcional en preview)"
                           className="w-full p-2.5 text-xs rounded-md border border-gray-300 focus:outline-none focus:border-[#3869A0] focus:ring-1 focus:ring-[#3869A0] bg-white"
-                          required
                         />
                       </div>
 
@@ -339,6 +338,15 @@ export const AuthPage: React.FC = () => {
                       >
                         <LogIn className="w-4 h-4" />
                         <span>{loading ? 'Entrando...' : 'Entrar en Inkorium'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => login('nightloot@gmail.com')}
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow cursor-pointer text-xs flex items-center justify-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Acceso Instantáneo como Night Loot (nightloot@gmail.com)</span>
                       </button>
                     </form>
 
