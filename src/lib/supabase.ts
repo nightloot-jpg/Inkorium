@@ -28,6 +28,51 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
     const isProfilesRequest =
       parsed.origin === supabaseUrl &&
       parsed.pathname.replace(/\/+$/, '') === '/rest/v1/profiles';
+    const isPrivateMessagesRequest =
+      parsed.origin === supabaseUrl &&
+      parsed.pathname.replace(/\/+$/, '') === '/rest/v1/private_messages';
+
+    if (typeof window !== 'undefined' && isPrivateMessagesRequest) {
+      let accessToken = '';
+      const headers = new Headers(init?.headers || request?.headers || undefined);
+      const authorization = headers.get('authorization') || '';
+      if (authorization.startsWith('Bearer ')) {
+        accessToken = authorization.slice('Bearer '.length).trim();
+      }
+
+      if (!accessToken) {
+        try {
+          const sessionResult = await supabase?.auth.getSession();
+          accessToken = sessionResult?.data.session?.access_token || '';
+        } catch {
+          accessToken = '';
+        }
+      }
+
+      if (accessToken) {
+        let body: BodyInit | null | undefined = init?.body;
+        if (body == null && request && requestMethod !== 'GET' && requestMethod !== 'HEAD') {
+          try {
+            body = await request.clone().text();
+          } catch {
+            body = null;
+          }
+        }
+
+        return fetch(`${window.location.origin}/api/private-messages${parsed.search}`, {
+          method: requestMethod,
+          headers: {
+            Accept: 'application/json',
+            ...(requestMethod !== 'GET' && requestMethod !== 'HEAD'
+              ? { 'Content-Type': 'application/json' }
+              : {}),
+            Authorization: `Bearer ${accessToken}`
+          },
+          credentials: 'omit',
+          body
+        });
+      }
+    }
 
     if (isProfilesRequest && typeof window !== 'undefined') {
       if (requestMethod === 'GET') {
