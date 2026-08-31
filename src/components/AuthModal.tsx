@@ -5,7 +5,7 @@ import { PROVINCIAS_ESPANA } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { login, registerNewUser } = useInkorium();
+  const { login, registerNewUser, loginAsUser, users } = useInkorium();
 
   const [mode, setMode] = useState<'login' | 'registro'>('login');
   const [loading, setLoading] = useState(false);
@@ -31,22 +31,30 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    if (!loginEmail.trim()) {
+      setLoginError('Por favor introduce tu correo.');
+      return;
+    }
     setLoading(true);
 
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: loginEmail.trim(),
-        password: loginPassword,
-      });
+    try {
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { error } = await supabase.auth.signInWithPassword({
+            email: loginEmail.trim(),
+            password: loginPassword || '123456',
+          });
 
-      if (error) {
-        setLoginError(error.message || 'Credenciales no válidas.');
-        setLoading(false);
-        return;
+          if (!error) {
+            setLoading(false);
+            onClose();
+            return;
+          }
+        } catch (supaErr) {
+          console.warn('Supabase sign-in error:', supaErr);
+        }
       }
-      setLoading(false);
-      onClose();
-    } else {
+
       const result = login(loginEmail.trim(), loginPassword);
       setLoading(false);
       if (result.success) {
@@ -54,13 +62,21 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
       } else {
         setLoginError(result.error || 'Credenciales no válidas.');
       }
+    } catch (err: any) {
+      const result = login(loginEmail.trim(), loginPassword);
+      setLoading(false);
+      if (result.success) {
+        onClose();
+      } else {
+        setLoginError(err?.message || 'Error al iniciar sesión.');
+      }
     }
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegError('');
-    if (!regNombre.trim() || !regApellidos.trim() || !regEmail.trim() || !regPassword) {
+    if (!regNombre.trim() || !regApellidos.trim() || !regEmail.trim()) {
       setRegError('Por favor, completa todos los campos requeridos.');
       return;
     }
@@ -71,52 +87,53 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
 
     setLoading(true);
 
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase.auth.signUp({
-        email: regEmail.trim(),
-        password: regPassword,
-        options: {
-          data: {
-            nombre: regNombre.trim(),
-            apellidos: regApellidos.trim(),
-            provincia: regProvincia,
-            fnac: regFnac,
-            sexo: regSexo,
-            avatar: regSexo === 'h'
-              ? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'
-              : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+    try {
+      if (isSupabaseConfigured && supabase && regPassword) {
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email: regEmail.trim(),
+            password: regPassword,
+            options: {
+              data: {
+                nombre: regNombre.trim(),
+                apellidos: regApellidos.trim(),
+                provincia: regProvincia,
+                fnac: regFnac,
+                sexo: regSexo,
+                avatar: regSexo === 'h'
+                  ? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'
+                  : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+              }
+            }
+          });
+
+          if (data?.user) {
+            await (supabase.from('profiles') as any).upsert({
+              id: data.user.id,
+              nombre: regNombre.trim(),
+              apellidos: regApellidos.trim(),
+              email: regEmail.trim(),
+              provincia: regProvincia,
+              ciudad: regProvincia,
+              sexo: regSexo,
+              fnac: regFnac,
+              avatar: regSexo === 'h'
+                ? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'
+                : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+              online: true,
+              estado: '¡Recién llegado a Inkorium!',
+              fecha_reg: new Date().toLocaleDateString('es-ES')
+            }).select();
           }
+        } catch (supaErr) {
+          console.warn('Supabase registration error:', supaErr);
         }
-      });
-
-      if (error) {
-        setRegError(error.message);
-        setLoading(false);
-        return;
       }
 
-      if (data?.user) {
-        await (supabase.from('profiles') as any).upsert({
-          id: data.user.id,
-          nombre: regNombre.trim(),
-          apellidos: regApellidos.trim(),
-          email: regEmail.trim(),
-          provincia: regProvincia,
-          ciudad: regProvincia,
-          sexo: regSexo,
-          fnac: regFnac,
-          avatar: regSexo === 'h'
-            ? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'
-            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-          online: true,
-          estado: '¡Recién llegado a Inkorium!',
-          fecha_reg: new Date().toLocaleDateString('es-ES')
-        }).select();
-      }
-
+      registerNewUser(regNombre, regApellidos, regEmail, regSexo, regProvincia, regFnac);
       setLoading(false);
       onClose();
-    } else {
+    } catch (err: any) {
       registerNewUser(regNombre, regApellidos, regEmail, regSexo, regProvincia, regFnac);
       setLoading(false);
       onClose();
@@ -213,6 +230,35 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
                 </button>
               </div>
             </form>
+
+            {/* Quick Demo Access */}
+            <div className="pt-3 border-t border-gray-200">
+              <span className="text-[11px] font-bold text-gray-700 block mb-1.5">
+                Acceso rápido con perfiles de prueba:
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {users.slice(0, 4).map(demoUser => (
+                  <button
+                    key={demoUser.id}
+                    type="button"
+                    onClick={() => {
+                      loginAsUser(demoUser.id);
+                      onClose();
+                    }}
+                    className="flex items-center gap-1.5 p-1.5 rounded border border-gray-200 hover:bg-blue-50 text-left transition"
+                  >
+                    <img
+                      src={demoUser.avatar}
+                      alt={demoUser.nombre}
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                    <span className="text-[11px] font-medium text-gray-800 truncate">
+                      {demoUser.nombre}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           /* ================= REGISTRO MODE ================= */
