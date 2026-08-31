@@ -14,7 +14,7 @@ export interface PhotoRow {
 
 async function invokePhotos<T>(body: Record<string, unknown>): Promise<T> {
   if (!supabase) throw new Error('SUPABASE_NOT_CONFIGURED');
-  const { data, error } = await supabase.functions.invoke('photos-api', { body });
+  const { data, error } = await supabase.functions.invoke('photos-api-v2', { body });
   if (error) throw new Error(error.message || 'PHOTOS_API_FAILED');
   return data as T;
 }
@@ -32,5 +32,11 @@ export async function insertPhoto(input: {
   visibility?: 'public' | 'friends' | 'private';
 }): Promise<PhotoRow> {
   if (!input.userId) throw new Error('AUTH_REQUIRED');
-  return invokePhotos<PhotoRow>({ action: 'create', album_id: input.albumId ?? null, url: input.url, caption: input.caption ?? null, visibility: input.visibility ?? 'public' });
+  return invokePhotos<PhotoRow>({
+    action: 'create',
+    album_id: input.albumId ?? null,
+    url: input.url,
+    caption: input.caption ?? null,
+    visibility: input.visibility ?? 'public',
+  });
 }
