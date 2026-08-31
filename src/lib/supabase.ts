@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://zllwzmfsfzfedorljgtg.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_npJmIHQP_g2ApAu-7fqQAQ_dse7H5Jj';
-const PRIVATE_MESSAGES_PATH = '/api/private-messages';
 
 const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL).trim();
 const supabaseKey = String(
@@ -29,36 +28,6 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
     const isProfilesRequest =
       parsed.origin === supabaseUrl &&
       parsed.pathname.replace(/\/+$/, '') === '/rest/v1/profiles';
-    const isPrivateMessagesRequest =
-      parsed.origin === supabaseUrl &&
-      parsed.pathname.replace(/\/+$/, '') === '/rest/v1/private_messages';
-
-    if (isPrivateMessagesRequest && typeof window !== 'undefined') {
-      const headers = new Headers(init?.headers || request?.headers || undefined);
-      const proxyUrl = `${window.location.origin}${PRIVATE_MESSAGES_PATH}${parsed.search}`;
-      let body: BodyInit | undefined = init?.body;
-
-      if (body === undefined && request && requestMethod !== 'GET' && requestMethod !== 'HEAD') {
-        try {
-          body = await request.clone().arrayBuffer();
-        } catch {
-          body = undefined;
-        }
-      }
-
-      return fetch(proxyUrl, {
-        method: requestMethod,
-        headers: {
-          Authorization: headers.get('authorization') || '',
-          Accept: headers.get('accept') || 'application/json',
-          'Content-Type': headers.get('content-type') || 'application/json',
-          Prefer: headers.get('prefer') || '',
-          'X-Client-Info': headers.get('x-client-info') || ''
-        },
-        credentials: 'same-origin',
-        body
-      });
-    }
 
     if (isProfilesRequest && typeof window !== 'undefined') {
       if (requestMethod === 'GET') {
