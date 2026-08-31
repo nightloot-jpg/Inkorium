@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://zllwzmfsfzfedorljgtg.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_npJmIHQP_g2ApAu-7fqQAQ_dse7H5Jj';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_npJmIHQP_g2ApAu-7fqQAQ_d2p';
 
 const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL).trim();
 const supabaseKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || SUPABASE_PUBLISHABLE_KEY).trim();
@@ -53,19 +53,27 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
       let accessToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '';
       if (!accessToken) { try { accessToken = (await supabase?.auth.getSession())?.data.session?.access_token || ''; } catch { accessToken = ''; } }
 
-      headers.set('authorization', `Bearer ${accessToken}`);
-
       let rawBody = '';
       try { if (typeof init?.body === 'string') rawBody = init.body; else if (request && request.body) rawBody = await request.clone().text(); } catch { rawBody = ''; }
+      let body: Record<string, unknown> = {};
+      try { body = rawBody ? JSON.parse(rawBody) : {}; } catch { body = {}; }
+      body.access_token = accessToken;
+
+      if (requestMethod === 'GET') {
+        return fetch(`${window.location.origin}/api/private-messages`, {
+          method: 'POST',
+          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+          credentials: 'omit',
+          body: JSON.stringify({ action: 'list', access_token: accessToken }),
+        });
+      }
 
       const proxyOptions: RequestInit = {
         method: requestMethod,
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
         credentials: 'omit',
       };
-      if (['POST', 'PATCH'].includes(requestMethod) && rawBody) {
-        proxyOptions.body = rawBody;
-      }
+      if (['POST', 'PATCH', 'DELETE'].includes(requestMethod)) proxyOptions.body = JSON.stringify(body);
       return fetch(`${window.location.origin}/api/private-messages${parsed.search}`, proxyOptions);
     }
   } catch (error) { console.warn('Supabase transport fallback:', error); }
