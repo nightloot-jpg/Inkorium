@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://zllwzmfsfzfedorljgtg.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_npJmIHQP_g2ApAu-7fqQAQ_dse7H5Jj';
+const PRIVATE_MESSAGES_FUNCTION = `${SUPABASE_URL}/functions/v1/private-messages`;
 
 const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL).trim();
 const supabaseKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || SUPABASE_PUBLISHABLE_KEY).trim();
@@ -18,68 +19,50 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
   try {
     const parsed = new URL(requestUrl);
     const isProfilesRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/profiles';
+    const isPrivateMessagesRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/private_messages';
 
-    // Private messages must go directly to Supabase. The previous same-origin
-    // proxy copied the Supabase JWT into the Authorization header sent to the
-    // Hetzner/Vercel front door, which could exceed its header limit and cause
-    // 431 Request Header Fields Too Large. Supabase REST supports browser CORS,
-    // so there is no reason to route this endpoint through our proxy.
-    if (parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/private_messages') {
-      return fetch(input, init);
+    if (isPrivateMessagesRequest && typeof window !== 'undefined') {
+      const headers = new Headers(init?.headers || request?.headers || undefined);
+      headers.set('Accept', headers.get('Accept') || 'application/json');
+      if (init?.body !== undefined && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+      const functionUrl = `${PRIVATE_MESSAGES_FUNCTION}${parsed.search}`;
+      return fetch(functionUrl, { ...init, headers, credentials: 'omit' });
     }
 
     if (isProfilesRequest && typeof window !== 'undefined') {
       if (requestMethod === 'GET') {
         return fetch(`${window.location.origin}/api/profiles${parsed.search}`, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          credentials: 'omit',
-          cache: 'no-store'
+          method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit', cache: 'no-store'
         });
       }
-
       if (requestMethod === 'PATCH') {
         const headers = new Headers(init?.headers || request?.headers || undefined);
         const queryId = parsed.searchParams.get('id') || '';
         const match = queryId.match(/^eq\.(.+)$/);
         let rawBody = '';
-        try {
-          if (typeof init?.body === 'string') rawBody = init.body;
-          else if (request) rawBody = await request.clone().text();
-        } catch { rawBody = ''; }
-
+        try { if (typeof init?.body === 'string') rawBody = init.body; else if (request) rawBody = await request.clone().text(); } catch { rawBody = ''; }
         let body: Record<string, unknown> = {};
         try { body = rawBody ? JSON.parse(rawBody) : {}; } catch { body = {}; }
         const presence = typeof body.presence === 'string' ? body.presence.trim().toLowerCase() : '';
         const authorization = headers.get('authorization') || '';
         let accessToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '';
-        if (!accessToken) {
-          try { accessToken = (await supabase?.auth.getSession())?.data.session?.access_token || ''; } catch { accessToken = ''; }
-        }
-
+        if (!accessToken) { try { accessToken = (await supabase?.auth.getSession())?.data.session?.access_token || ''; } catch { accessToken = ''; } }
         if (match && presence && ['conectado', 'ausente', 'ocupado', 'invisible'].includes(presence) && accessToken) {
           return fetch(`${window.location.origin}/api/profiles/${encodeURIComponent(match[1])}/presence`, {
-            method: 'PATCH',
-            headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-            credentials: 'omit',
+            method: 'PATCH', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, credentials: 'omit',
             body: JSON.stringify({ presence, access_token: accessToken })
           });
         }
       }
     }
-  } catch (error) {
-    console.warn('Supabase transport fallback:', error);
-  }
-
+  } catch (error) { console.warn('Supabase transport fallback:', error); }
   return fetch(input, init);
 };
 
-supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: true, autoRefreshToken: true },
-      global: { fetch: profileAwareFetch }
-    })
-  : null;
+supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseKey, {
+  auth: { persistSession: true, autoRefreshToken: true },
+  global: { fetch: profileAwareFetch }
+}) : null;
 
 export { supabase };
 
@@ -91,32 +74,17 @@ if (typeof window !== 'undefined') {
       const requestUrl = typeof input === 'string' ? input : request?.url || String(input);
       const parsed = new URL(requestUrl, window.location.origin);
       const isStatusProxyRequest = parsed.pathname.startsWith('/api/profiles/') && parsed.pathname.endsWith('/status');
-
       if (isStatusProxyRequest) {
         const headers = new Headers(init?.headers || request?.headers || undefined);
         const authorization = headers.get('authorization') || '';
         const accessToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '';
-        headers.delete('authorization');
-        headers.delete('cookie');
-
+        headers.delete('authorization'); headers.delete('cookie');
         let body: Record<string, unknown> = {};
-        try {
-          if (typeof init?.body === 'string') body = JSON.parse(init.body) || {};
-          else if (request) body = JSON.parse(await request.clone().text()) || {};
-        } catch { body = {}; }
-
+        try { if (typeof init?.body === 'string') body = JSON.parse(init.body) || {}; else if (request) body = JSON.parse(await request.clone().text()) || {}; } catch { body = {}; }
         if (accessToken) body.access_token = accessToken;
-        return nativeFetch(input, {
-          ...init,
-          credentials: 'omit',
-          headers,
-          body: JSON.stringify(body)
-        });
+        return nativeFetch(input, { ...init, credentials: 'omit', headers, body: JSON.stringify(body) });
       }
-    } catch (error) {
-      console.warn('Inkorium status transport fallback:', error);
-    }
-
+    } catch (error) { console.warn('Inkorium status transport fallback:', error); }
     return nativeFetch(input, init);
   };
 }
