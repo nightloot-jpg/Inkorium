@@ -145,45 +145,26 @@ app.patch('/api/profiles/:id/avatar', async (req, res) => {
 app.patch('/api/profiles/:id/status', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey, serviceRoleKey, jwtSecret } = getSupabaseConfig();
-    const profileId = String(req.params.id || '').trim();
-    const status = String(req.body?.status || '').trim().slice(0, 140);
-    const token = extractToken(req);
-    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
-    if (!profileId) return res.status(400).json({ error: 'INVALID_PROFILE_ID' });
-    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
-    const authorId = await verifySupabaseJwt(token, supabaseUrl, jwtSecret);
-    if (!authorId || authorId !== profileId) return res.status(403).json({ error: 'FORBIDDEN' });
-    const key = serviceRoleKey || supabaseKey;
-    const authorization = serviceRoleKey ? `Bearer ${serviceRoleKey}` : `Bearer ${token}`;
-    const upstream = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profileId)}`, {
-      method: 'PATCH',
-      headers: { apikey: key, Authorization: authorization, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify({ user_status: status, updated_at: new Date().toISOString() })
-    });
-    const body = await upstream.text();
-    if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
-    return res.status(200).json({ success: true, user_status: status });
-  } catch (err: any) {
-    console.error('Supabase profile status proxy failed:', err);
-    return res.status(502).json({ error: 'SUPABASE_STATUS_PROXY_FAILED', message: err?.message || 'Unable to update status.' });
-  }
+    const profileId = String(req.params.id || '').trim(); const status = String(req.body?.status || '').trim().slice(0, 140); const token = extractToken(req);
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' }); if (!profileId) return res.status(400).json({ error: 'INVALID_PROFILE_ID' }); if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const authorId = await verifySupabaseJwt(token, supabaseUrl, jwtSecret); if (!authorId || authorId !== profileId) return res.status(403).json({ error: 'FORBIDDEN' });
+    const key = serviceRoleKey || supabaseKey; const authorization = serviceRoleKey ? `Bearer ${serviceRoleKey}` : `Bearer ${token}`;
+    const upstream = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profileId)}`, { method: 'PATCH', headers: { apikey: key, Authorization: authorization, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ user_status: status, updated_at: new Date().toISOString() }) });
+    const body = await upstream.text(); if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body); return res.status(200).json({ success: true, user_status: status });
+  } catch (err: any) { console.error('Supabase profile status proxy failed:', err); return res.status(502).json({ error: 'SUPABASE_STATUS_PROXY_FAILED', message: err?.message || 'Unable to update status.' }); }
 });
 
 app.post('/api/photos', async (req, res) => {
   try {
-    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
-    const token = extractToken(req);
-    const action = String(req.body?.action || 'list').trim().toLowerCase();
-    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
-    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
-
-    const userId = await verifySupabaseJwt(token, supabaseUrl, getSupabaseConfig().jwtSecret);
-    if (!userId) return res.status(401).json({ error: 'INVALID_AUTH_TOKEN' });
+    const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig();
+    const token = extractToken(req); const action = String(req.body?.action || 'list').trim().toLowerCase();
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' }); if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const userId = await verifySupabaseJwt(token, supabaseUrl, getSupabaseConfig().jwtSecret); if (!userId) return res.status(401).json({ error: 'INVALID_AUTH_TOKEN' });
+    if (!serviceRoleKey) return res.status(503).json({ error: 'SUPABASE_SERVICE_ROLE_NOT_CONFIGURED', message: 'Server-side Supabase service role key is required for photo persistence.' });
+    const dbHeaders = { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, Accept: 'application/json' };
 
     if (action === 'list') {
-      const upstream = await fetch(`${supabaseUrl}/rest/v1/photos?select=id,user_id,album_id,storage_path,url,caption,visibility,created_at,updated_at&order=created_at.desc`, {
-        headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json' }
-      });
+      const upstream = await fetch(`${supabaseUrl}/rest/v1/photos?select=id,user_id,album_id,storage_path,url,caption,visibility,created_at,updated_at&order=created_at.desc`, { headers: dbHeaders });
       const body = await upstream.text();
       if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
       try { const data = JSON.parse(body); return res.status(200).json(Array.isArray(data) ? data : []); } catch { return res.status(502).json({ error: 'SUPABASE_PHOTOS_INVALID_RESPONSE' }); }
@@ -191,40 +172,25 @@ app.post('/api/photos', async (req, res) => {
 
     if (action === 'create') {
       const albumId = req.body?.album_id ? String(req.body.album_id).trim() : null;
-      const url = String(req.body?.url || '').trim();
-      const caption = req.body?.caption == null ? null : String(req.body.caption).slice(0, 500);
+      const url = String(req.body?.url || '').trim(); const caption = req.body?.caption == null ? null : String(req.body.caption).slice(0, 500);
       const visibility = ['public', 'friends', 'private'].includes(String(req.body?.visibility)) ? String(req.body.visibility) : 'public';
       if (!url) return res.status(400).json({ error: 'INVALID_PHOTO_URL' });
 
       if (albumId) {
-        const albumResponse = await fetch(`${supabaseUrl}/rest/v1/albums?id=eq.${encodeURIComponent(albumId)}&select=id,user_id`, {
-          headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json' }
-        });
+        const albumResponse = await fetch(`${supabaseUrl}/rest/v1/albums?id=eq.${encodeURIComponent(albumId)}&select=id,user_id`, { headers: dbHeaders });
         const albumBody = await albumResponse.text();
         if (!albumResponse.ok) return res.status(albumResponse.status).type(albumResponse.headers.get('content-type') || 'application/json').send(albumBody);
-        let albums: any[] = [];
-        try { albums = JSON.parse(albumBody); } catch { return res.status(502).json({ error: 'SUPABASE_ALBUM_INVALID_RESPONSE' }); }
+        let albums: any[] = []; try { albums = JSON.parse(albumBody); } catch { return res.status(502).json({ error: 'SUPABASE_ALBUM_INVALID_RESPONSE' }); }
         if (!albums[0] || String(albums[0].user_id) !== userId) return res.status(403).json({ error: 'INVALID_ALBUM' });
       }
 
-      const upstream = await fetch(`${supabaseUrl}/rest/v1/photos`, {
-        method: 'POST',
-        headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify({ user_id: userId, album_id: albumId, storage_path: url, url, caption, visibility })
-      });
+      const upstream = await fetch(`${supabaseUrl}/rest/v1/photos`, { method: 'POST', headers: { ...dbHeaders, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ user_id: userId, album_id: albumId, storage_path: url, url, caption, visibility }) });
       const body = await upstream.text();
       if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
-      try {
-        const data = JSON.parse(body); const row = Array.isArray(data) ? data[0] : data;
-        return row ? res.status(201).json(row) : res.status(502).json({ error: 'SUPABASE_PHOTO_CREATE_EMPTY' });
-      } catch { return res.status(502).json({ error: 'SUPABASE_PHOTO_CREATE_INVALID_RESPONSE' }); }
+      try { const data = JSON.parse(body); const row = Array.isArray(data) ? data[0] : data; return row ? res.status(201).json(row) : res.status(502).json({ error: 'SUPABASE_PHOTO_CREATE_EMPTY' }); } catch { return res.status(502).json({ error: 'SUPABASE_PHOTO_CREATE_INVALID_RESPONSE' }); }
     }
-
     return res.status(400).json({ error: 'INVALID_ACTION' });
-  } catch (err: any) {
-    console.error('Supabase photos proxy failed:', err);
-    return res.status(502).json({ error: 'SUPABASE_PHOTOS_PROXY_FAILED', message: err?.message || 'Unable to process photos.' });
-  }
+  } catch (err: any) { console.error('Supabase photos proxy failed:', err); return res.status(502).json({ error: 'SUPABASE_PHOTOS_PROXY_FAILED', message: err?.message || 'Unable to process photos.' }); }
 });
 
 app.get('/api/posts', async (_req, res) => {
