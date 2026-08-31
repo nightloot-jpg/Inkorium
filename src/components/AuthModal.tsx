@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { LogIn, UserPlus, Sparkles, Check, X, AlertCircle } from 'lucide-react';
 import { PROVINCIAS_ESPANA } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import {
+  validateName,
+  validateSurname,
+  validateEmail,
+  validatePassword,
+  validateBirthDate,
+  calculatePasswordStrength
+} from '../utils/validation';
 
 export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { login, registerNewUser, loginAsUser, users } = useInkorium();
@@ -25,6 +33,27 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
   const [regSexo, setRegSexo] = useState<'h' | 'm'>('h');
   const [regTos, setRegTos] = useState(true);
   const [regError, setRegError] = useState('');
+  const [regTouched, setRegTouched] = useState<Record<string, boolean>>({});
+
+  // Real-time validations
+  const nameValidation = useMemo(() => validateName(regNombre), [regNombre]);
+  const surnameValidation = useMemo(() => validateSurname(regApellidos), [regApellidos]);
+  const emailValidation = useMemo(() => validateEmail(regEmail, users), [regEmail, users]);
+  const passwordValidation = useMemo(() => validatePassword(regPassword), [regPassword]);
+  const passwordStrength = useMemo(() => calculatePasswordStrength(regPassword), [regPassword]);
+  const birthDateValidation = useMemo(() => validateBirthDate(regFnac), [regFnac]);
+
+  const isRegisterFormValid = 
+    nameValidation.isValid &&
+    surnameValidation.isValid &&
+    emailValidation.isValid &&
+    passwordValidation.isValid &&
+    birthDateValidation.isValid &&
+    regTos;
+
+  const markTouched = (field: string) => {
+    setRegTouched(prev => ({ ...prev, [field]: true }));
+  };
 
   if (!isOpen) return null;
 
@@ -76,10 +105,41 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegError('');
-    if (!regNombre.trim() || !regApellidos.trim() || !regEmail.trim()) {
-      setRegError('Por favor, completa todos los campos requeridos.');
+
+    setRegTouched({
+      nombre: true,
+      apellidos: true,
+      email: true,
+      password: true,
+      fnac: true,
+      tos: true
+    });
+
+    if (!nameValidation.isValid) {
+      setRegError(nameValidation.message || 'El nombre no es válido.');
       return;
     }
+
+    if (!surnameValidation.isValid) {
+      setRegError(surnameValidation.message || 'Los apellidos no son válidos.');
+      return;
+    }
+
+    if (!emailValidation.isValid) {
+      setRegError(emailValidation.message || 'El correo no es válido.');
+      return;
+    }
+
+    if (!passwordValidation.isValid) {
+      setRegError(passwordValidation.message || 'La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+
+    if (!birthDateValidation.isValid) {
+      setRegError(birthDateValidation.message || 'Fecha de nacimiento no válida.');
+      return;
+    }
+
     if (!regTos) {
       setRegError('Debes aceptar los términos y condiciones de uso.');
       return;
@@ -284,64 +344,162 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
             <form onSubmit={handleRegisterSubmit} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
-                  <label className="font-bold text-gray-700 block mb-1">Nombre:</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-gray-700">Nombre:</label>
+                    {regTouched.nombre && (
+                      <span className={`text-[10px] flex items-center gap-0.5 font-medium ${
+                        nameValidation.isValid ? 'text-emerald-600' : 'text-red-600'
+                      }`}>
+                        {nameValidation.isValid ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     placeholder="Tu nombre"
                     value={regNombre}
-                    onChange={e => setRegNombre(e.target.value)}
-                    className="w-full p-1.5 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                    onChange={e => { setRegNombre(e.target.value); markTouched('nombre'); }}
+                    onBlur={() => markTouched('nombre')}
+                    className={`w-full p-1.5 text-xs rounded border transition bg-white focus:outline-none ${
+                      regTouched.nombre
+                        ? nameValidation.isValid
+                          ? 'border-emerald-400 focus:border-emerald-500'
+                          : 'border-red-400 bg-red-50/30 focus:border-red-500'
+                        : 'border-gray-300 focus:border-[#3869A0]'
+                    }`}
                     required
                   />
+                  {regTouched.nombre && !nameValidation.isValid && (
+                    <p className="text-[10px] text-red-600 mt-0.5">{nameValidation.message}</p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="font-bold text-gray-700 block mb-1">Apellidos:</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-gray-700">Apellidos:</label>
+                    {regTouched.apellidos && (
+                      <span className={`text-[10px] flex items-center gap-0.5 font-medium ${
+                        surnameValidation.isValid ? 'text-emerald-600' : 'text-red-600'
+                      }`}>
+                        {surnameValidation.isValid ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     placeholder="Tus apellidos"
                     value={regApellidos}
-                    onChange={e => setRegApellidos(e.target.value)}
-                    className="w-full p-1.5 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                    onChange={e => { setRegApellidos(e.target.value); markTouched('apellidos'); }}
+                    onBlur={() => markTouched('apellidos')}
+                    className={`w-full p-1.5 text-xs rounded border transition bg-white focus:outline-none ${
+                      regTouched.apellidos
+                        ? surnameValidation.isValid
+                          ? 'border-emerald-400 focus:border-emerald-500'
+                          : 'border-red-400 bg-red-50/30 focus:border-red-500'
+                        : 'border-gray-300 focus:border-[#3869A0]'
+                    }`}
                     required
                   />
+                  {regTouched.apellidos && !surnameValidation.isValid && (
+                    <p className="text-[10px] text-red-600 mt-0.5">{surnameValidation.message}</p>
+                  )}
                 </div>
               </div>
 
               <div>
-                <label className="font-bold text-gray-700 block mb-1">Email:</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-gray-700">Email:</label>
+                  {regTouched.email && (
+                    <span className={`text-[10px] flex items-center gap-0.5 font-medium ${
+                      emailValidation.isValid ? 'text-emerald-600' : 'text-red-600'
+                    }`}>
+                      {emailValidation.isValid ? <><Check className="w-3 h-3" /> Válido</> : <><X className="w-3 h-3" /> No válido</>}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="email"
                   placeholder="tu@email.com"
                   value={regEmail}
-                  onChange={e => setRegEmail(e.target.value)}
-                  className="w-full p-1.5 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                  onChange={e => { setRegEmail(e.target.value); markTouched('email'); }}
+                  onBlur={() => markTouched('email')}
+                  className={`w-full p-1.5 text-xs rounded border transition bg-white focus:outline-none ${
+                    regTouched.email
+                      ? emailValidation.isValid
+                        ? 'border-emerald-400 focus:border-emerald-500'
+                        : 'border-red-400 bg-red-50/30 focus:border-red-500'
+                      : 'border-gray-300 focus:border-[#3869A0]'
+                  }`}
                   required
                 />
+                {regTouched.email && !emailValidation.isValid && (
+                  <p className="text-[10px] text-red-600 mt-0.5">{emailValidation.message}</p>
+                )}
               </div>
 
               <div>
-                <label className="font-bold text-gray-700 block mb-1">Contraseña:</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-gray-700">Contraseña:</label>
+                  {regPassword && (
+                    <span className={`text-[10px] font-bold ${
+                      passwordStrength.score >= 3 ? 'text-emerald-600' : passwordStrength.score === 2 ? 'text-amber-600' : 'text-red-500'
+                    }`}>
+                      {passwordStrength.label}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="password"
                   placeholder="Mínimo 6 caracteres"
                   value={regPassword}
-                  onChange={e => setRegPassword(e.target.value)}
-                  className="w-full p-1.5 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                  onChange={e => { setRegPassword(e.target.value); markTouched('password'); }}
+                  onBlur={() => markTouched('password')}
+                  className={`w-full p-1.5 text-xs rounded border transition bg-white focus:outline-none ${
+                    regTouched.password
+                      ? passwordValidation.isValid
+                        ? 'border-emerald-400 focus:border-emerald-500'
+                        : 'border-red-400 bg-red-50/30 focus:border-red-500'
+                      : 'border-gray-300 focus:border-[#3869A0]'
+                  }`}
                   required
                 />
+                {regPassword && (
+                  <div className="mt-1 w-full bg-gray-200 h-1 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-300 ${passwordStrength.color}`}
+                      style={{ width: `${passwordStrength.percent}%` }}
+                    />
+                  </div>
+                )}
+                {regTouched.password && !passwordValidation.isValid && (
+                  <p className="text-[10px] text-red-600 mt-0.5">{passwordValidation.message}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
-                  <label className="font-bold text-gray-700 block mb-1">Fecha de nacimiento:</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-gray-700">Fecha de nacimiento:</label>
+                    {birthDateValidation.isValid && birthDateValidation.age !== undefined && (
+                      <span className="text-[10px] text-emerald-600 font-medium">({birthDateValidation.age} años)</span>
+                    )}
+                  </div>
                   <input
                     type="date"
                     value={regFnac}
-                    onChange={e => setRegFnac(e.target.value)}
-                    className="w-full p-1.5 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                    onChange={e => { setRegFnac(e.target.value); markTouched('fnac'); }}
+                    onBlur={() => markTouched('fnac')}
+                    max={new Date().toISOString().split('T')[0]}
+                    className={`w-full p-1.5 text-xs rounded border transition bg-white focus:outline-none ${
+                      regTouched.fnac && !birthDateValidation.isValid
+                        ? 'border-red-400 bg-red-50/30 focus:border-red-500'
+                        : 'border-gray-300 focus:border-[#3869A0]'
+                    }`}
                     required
                   />
+                  {regTouched.fnac && !birthDateValidation.isValid && (
+                    <p className="text-[10px] text-red-600 mt-0.5">{birthDateValidation.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -349,7 +507,7 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
                   <select
                     value={regProvincia}
                     onChange={e => setRegProvincia(e.target.value)}
-                    className="w-full p-1.5 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] bg-white"
+                    className="w-full p-1.5 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] bg-white cursor-pointer"
                   >
                     {PROVINCIAS_ESPANA.map(p => (
                       <option key={p} value={p}>{p}</option>
@@ -361,21 +519,23 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
               <div>
                 <label className="font-bold text-gray-700 block mb-1">Sexo:</label>
                 <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-1.5 cursor-pointer font-medium">
+                  <label className="flex items-center gap-1.5 cursor-pointer font-medium hover:text-[#3869A0]">
                     <input
                       type="radio"
                       name="modal_sexo"
                       checked={regSexo === 'h'}
                       onChange={() => setRegSexo('h')}
+                      className="cursor-pointer text-[#3869A0]"
                     />
                     <span>Hombre (Chico)</span>
                   </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer font-medium">
+                  <label className="flex items-center gap-1.5 cursor-pointer font-medium hover:text-[#3869A0]">
                     <input
                       type="radio"
                       name="modal_sexo"
                       checked={regSexo === 'm'}
                       onChange={() => setRegSexo('m')}
+                      className="cursor-pointer text-[#3869A0]"
                     />
                     <span>Mujer (Chica)</span>
                   </label>
@@ -383,21 +543,29 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
               </div>
 
               <div className="pt-1">
-                <label className="flex items-center gap-2 cursor-pointer text-gray-600">
+                <label className="flex items-center gap-2 cursor-pointer text-gray-600 hover:text-gray-900">
                   <input
                     type="checkbox"
                     checked={regTos}
-                    onChange={e => setRegTos(e.target.checked)}
+                    onChange={e => { setRegTos(e.target.checked); markTouched('tos'); }}
+                    className="cursor-pointer rounded text-[#3869A0]"
                   />
                   <span>Acepto los términos y condiciones de uso</span>
                 </label>
+                {regTouched.tos && !regTos && (
+                  <p className="text-[10px] text-red-600 mt-0.5">Debes aceptar los términos para registrarte.</p>
+                )}
               </div>
 
               <div className="pt-2">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold rounded transition shadow-xs cursor-pointer text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  className={`w-full py-2 text-white font-bold rounded transition shadow-xs cursor-pointer text-xs flex items-center justify-center gap-1.5 ${
+                    isRegisterFormValid
+                      ? 'bg-emerald-600 hover:bg-emerald-700'
+                      : 'bg-[#3869A0] hover:bg-[#2c537f]'
+                  } disabled:opacity-50`}
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>{loading ? 'Creando cuenta...' : 'Completar registro'}</span>

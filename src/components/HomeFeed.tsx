@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { FeedItem, UserPresence } from '../types';
 import { uploadMediaFile } from '../lib/storage';
+import { validateImageFile, formatFileSize, FileValidationResult } from '../utils/validation';
 
 export const PRESENCE_MAP: Record<UserPresence, { label: string; dot: string; text: string; bg: string }> = {
   conectado: { label: 'Conectado', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' },
@@ -57,20 +58,38 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
 
   const currentPresence: UserPresence = currentUser.presencia || (currentUser.online ? 'conectado' : 'invisible');
 
+  const [feedFileValidation, setFeedFileValidation] = useState<FileValidationResult | null>(null);
+  const [feedFileError, setFeedFileError] = useState<string | null>(null);
+  const [feedFileName, setFeedFileName] = useState<string>('');
+
   const feedFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFeedFileSelect = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor selecciona una imagen válida.');
-      return;
-    }
+    setFeedFileError(null);
+    setFeedFileName(file.name);
     setIsUploadingPhoto(true);
     setShowPhotoInput(true);
+
     try {
+      const validation = await validateImageFile(file, {
+        maxSizeBytes: 8 * 1024 * 1024, // 8 MB para estados
+        maxWidth: 5000,
+        maxHeight: 5000
+      });
+
+      setFeedFileValidation(validation);
+
+      if (!validation.isValid) {
+        setFeedFileError(validation.message || 'El archivo seleccionado no es válido.');
+        setIsUploadingPhoto(false);
+        return;
+      }
+
       const url = await uploadMediaFile(file, 'wall');
       setAttachedPhotoUrl(url);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error subiendo foto al estado:', err);
+      setFeedFileError('Error al procesar la imagen seleccionada.');
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -82,6 +101,9 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
     publishStatus(statusText, attachedPhotoUrl || undefined);
     setStatusText('');
     setAttachedPhotoUrl('');
+    setFeedFileValidation(null);
+    setFeedFileError(null);
+    setFeedFileName('');
     setShowPhotoInput(false);
   };
 
@@ -398,12 +420,24 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                   <label className="font-bold text-gray-800 block text-[11px]">Adjuntar foto a tu estado:</label>
                   <button
                     type="button"
-                    onClick={() => { setShowPhotoInput(false); setAttachedPhotoUrl(''); }}
+                    onClick={() => {
+                      setShowPhotoInput(false);
+                      setAttachedPhotoUrl('');
+                      setFeedFileError(null);
+                      setFeedFileValidation(null);
+                    }}
                     className="text-gray-400 hover:text-gray-600 text-xs font-bold cursor-pointer"
                   >
                     ✕
                   </button>
                 </div>
+
+                {feedFileError && (
+                  <div className="p-2 bg-red-50 border border-red-200 rounded text-red-700 text-[11px] flex items-center gap-1.5">
+                    <X className="w-3.5 h-3.5 flex-shrink-0 text-red-600" />
+                    <span>{feedFileError}</span>
+                  </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row items-center gap-2">
                   <input
@@ -423,7 +457,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                     {isUploadingPhoto ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Subiendo foto...</span>
+                        <span>Validando y subiendo...</span>
                       </>
                     ) : (
                       <>
@@ -438,8 +472,11 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                   <input
                     type="url"
                     placeholder="https://..."
-                    value={attachedPhotoUrl.startsWith('data:') ? 'Foto local cargada' : attachedPhotoUrl}
-                    onChange={e => setAttachedPhotoUrl(e.target.value)}
+                    value={attachedPhotoUrl.startsWith('data:') ? 'Foto local validada' : attachedPhotoUrl}
+                    onChange={e => {
+                      setAttachedPhotoUrl(e.target.value);
+                      setFeedFileError(null);
+                    }}
                     disabled={attachedPhotoUrl.startsWith('data:')}
                     className="flex-1 w-full p-1.5 text-xs bg-white rounded border border-gray-300 focus:outline-none"
                   />
@@ -448,12 +485,23 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                 {attachedPhotoUrl && (
                   <div className="mt-1 flex items-center gap-2 p-1.5 bg-white rounded border border-gray-200">
                     <img src={attachedPhotoUrl} alt="Preview" className="w-14 h-14 object-cover rounded border border-gray-300 shadow-2xs" />
-                    <div>
-                      <span className="text-[11px] font-bold text-emerald-700 block">✓ Foto adjuntada lista para publicar</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Foto verificada y lista para publicar
+                      </span>
+                      {feedFileName && (
+                        <p className="text-[10px] text-gray-500 truncate mt-0.5">
+                          {feedFileName}
+                        </p>
+                      )}
                       <button 
                         type="button" 
-                        onClick={() => setAttachedPhotoUrl('')}
-                        className="text-red-500 text-[10px] hover:underline font-semibold cursor-pointer mt-0.5"
+                        onClick={() => {
+                          setAttachedPhotoUrl('');
+                          setFeedFileValidation(null);
+                          setFeedFileName('');
+                        }}
+                        className="text-red-500 text-[10px] hover:underline font-semibold cursor-pointer mt-0.5 block"
                       >
                         Quitar foto
                       </button>

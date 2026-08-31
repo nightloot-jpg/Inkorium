@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
-import { Upload, Image as ImageIcon, Plus, Check, Sliders, Loader2, RefreshCw, Camera, AlertCircle } from 'lucide-react';
+import { Upload, Image as ImageIcon, Plus, Check, Sliders, Loader2, RefreshCw, Camera, AlertCircle, FileCheck, ShieldCheck } from 'lucide-react';
 import { PhotoEditorControls } from './PhotoEditorControls';
 import { PhotoEditState, DEFAULT_EDIT_STATE, bakeEditedImage } from '../utils/imageEditor';
 import { uploadMediaFile } from '../lib/storage';
+import { validateImageFile, formatFileSize, FileValidationResult } from '../utils/validation';
 
 export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { albums, currentUser, uploadPhoto, createAlbum } = useInkorium();
@@ -12,6 +13,8 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
   const [albumId, setAlbumId] = useState<string>('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileValidation, setFileValidation] = useState<FileValidationResult | null>(null);
+  const [isValidatingFile, setIsValidatingFile] = useState(false);
   const [editState, setEditState] = useState<PhotoEditState>({ ...DEFAULT_EDIT_STATE });
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -23,26 +26,48 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
 
   if (!isOpen) return null;
 
-  const handleFileUpload = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setErrorMessage('Por favor, selecciona un archivo de imagen válido (JPG, PNG, GIF o WEBP).');
-      return;
-    }
+  const handleFileUpload = async (file: File) => {
     setErrorMessage(null);
-    setSelectedFile(file);
+    setIsValidatingFile(true);
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        setPhotoUrl(e.target.result as string);
-        setEditState({ ...DEFAULT_EDIT_STATE });
-        if (!title) {
-          const autoTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
-          setTitle(autoTitle);
-        }
+    try {
+      const validation = await validateImageFile(file, {
+        maxSizeBytes: 12 * 1024 * 1024, // 12 MB
+        maxWidth: 6000,
+        maxHeight: 6000
+      });
+
+      setFileValidation(validation);
+
+      if (!validation.isValid) {
+        setErrorMessage(validation.message || 'El archivo seleccionado no es válido.');
+        setIsValidatingFile(false);
+        return;
       }
-    };
-    reader.readAsDataURL(file);
+
+      setSelectedFile(file);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setPhotoUrl(e.target.result as string);
+          setEditState({ ...DEFAULT_EDIT_STATE });
+          if (!title) {
+            const autoTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+            setTitle(autoTitle);
+          }
+        }
+        setIsValidatingFile(false);
+      };
+      reader.onerror = () => {
+        setErrorMessage('No se pudo leer el archivo seleccionado.');
+        setIsValidatingFile(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      setErrorMessage('Error al validar la imagen seleccionada.');
+      setIsValidatingFile(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -201,6 +226,29 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
                 editState={editState}
                 onChange={setEditState}
               />
+
+              {/* File validation info badge */}
+              {selectedFile && (
+                <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-emerald-50/70 border border-emerald-200 rounded text-[11px] text-emerald-800">
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    <span>Archivo verificado con éxito: <strong>{selectedFile.name}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2 text-emerald-700 text-[10px]">
+                    <span className="bg-emerald-100 px-1.5 py-0.5 rounded font-mono">
+                      {formatFileSize(selectedFile.size)}
+                    </span>
+                    {fileValidation?.dimensions && (
+                      <span className="bg-emerald-100 px-1.5 py-0.5 rounded font-mono">
+                        {fileValidation.dimensions.width} × {fileValidation.dimensions.height} px
+                      </span>
+                    )}
+                    <span className="bg-emerald-100 px-1.5 py-0.5 rounded uppercase font-bold">
+                      {selectedFile.type.split('/')[1]}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

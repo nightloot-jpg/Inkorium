@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
-import { Camera, Upload, Check, X, Loader2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Camera, Upload, Check, X, Loader2, ZoomIn, ZoomOut, ShieldCheck } from 'lucide-react';
 import { uploadMediaFile } from '../lib/storage';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { validateImageFile, formatFileSize, FileValidationResult } from '../utils/validation';
 
 interface AvatarModalProps {
   isOpen: boolean;
@@ -74,6 +75,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({ isOpen, onClose }) => 
 
   const [previewUrl, setPreviewUrl] = useState<string>(currentUser.avatar || '');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileValidation, setFileValidation] = useState<FileValidationResult | null>(null);
   const [zoom, setZoom] = useState<number>(1);
   const [filter, setFilter] = useState<'normal' | 'vintage' | 'contrast' | 'bw'>('normal');
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -84,22 +86,38 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({ isOpen, onClose }) => 
 
   if (!isOpen) return null;
 
-  const handleFileSelect = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setErrorMsg('Por favor selecciona una imagen válida (JPG, PNG, GIF o WEBP).');
-      return;
-    }
+  const handleFileSelect = async (file: File) => {
     setErrorMsg(null);
-    setSelectedFile(file);
+    try {
+      const validation = await validateImageFile(file, {
+        maxSizeBytes: 10 * 1024 * 1024,
+        maxWidth: 5000,
+        maxHeight: 5000
+      });
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        setPreviewUrl(e.target.result as string);
-        setZoom(1);
+      setFileValidation(validation);
+
+      if (!validation.isValid) {
+        setErrorMsg(validation.message || 'El archivo seleccionado no es válido.');
+        return;
       }
-    };
-    reader.readAsDataURL(file);
+
+      setSelectedFile(file);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setPreviewUrl(e.target.result as string);
+          setZoom(1);
+        }
+      };
+      reader.onerror = () => {
+        setErrorMsg('Error al leer el archivo de imagen.');
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      setErrorMsg('No se pudo validar la foto seleccionada.');
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -203,6 +221,18 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({ isOpen, onClose }) => 
             </div>
           </div>}
         </div>
+
+        {selectedFile && (
+          <div className="flex items-center justify-between p-2 bg-emerald-50 border border-emerald-200 rounded text-[11px] text-emerald-800">
+            <div className="flex items-center gap-1.5 font-medium">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>Foto verificada: <strong>{selectedFile.name}</strong></span>
+            </div>
+            <span className="font-mono bg-emerald-100 px-1.5 py-0.5 rounded text-[10px]">
+              {formatFileSize(selectedFile.size)}
+            </span>
+          </div>
+        )}
 
         <div onDragOver={e => { e.preventDefault(); setIsDragOver(true); }} onDragLeave={() => setIsDragOver(false)} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition ${isDragOver ? 'border-[#3869A0] bg-blue-50' : 'border-gray-300 hover:bg-gray-50'}`}>
           <input ref={fileInputRef} type="file" accept="image/*" onChange={e => e.target.files?.[0] && handleFileSelect(e.target.files[0])} className="hidden" />
