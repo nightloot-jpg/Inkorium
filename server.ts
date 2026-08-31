@@ -21,8 +21,8 @@ function getHetznerS3Client(): { client: S3Client; bucket: string; endpoint: str
   const region = process.env.HETZNER_S3_REGION || 'hel1';
   const publicUrlBase = process.env.HETZNER_S3_PUBLIC_URL;
   if (!endpoint || !accessKeyId || !secretAccessKey) return null;
-  if (!s3Client) s3Client = new S3Client({ endpoint, region, credentials: { accessKeyId, secretAccessKey }, forcePathStyle: true });
-  return { client: s3Client, bucket, endpoint, publicUrlBase };
+  if (!s3Client) s3Client = new S3Client({ endpoint: endpoint.replace(/\/+$/, ''), region, credentials: { accessKeyId, secretAccessKey }, forcePathStyle: false });
+  return { client: s3Client, bucket, endpoint: endpoint.replace(/\/+$/, ''), publicUrlBase };
 }
 
 app.get('/api/storage/status', (_req, res) => {
@@ -305,13 +305,34 @@ app.post('/api/posts', async (req, res) => {
 
 app.post('/api/upload', upload.single('file'), async (req, res) => {
   try {
-    const file = req.file; const folder = String(req.body.folder || 'photos'); if (!file) return res.status(400).json({ error: 'NO_FILE' }); const hetzner = getHetznerS3Client();
+    const file = req.file; const folder = String(req.body.folder || 'photos').trim().toLowerCase();
+    if (!file) return res.status(400).json({ error: 'NO_FILE' });
+    if (!['avatars', 'photos', 'wall'].includes(folder)) return res.status(400).json({ error: 'INVALID_FOLDER' });
+    const hetzner = getHetznerS3Client();
     if (!hetzner) return res.status(503).json({ error: 'HETZNER_STORAGE_NOT_CONFIGURED', message: 'Hetzner S3 Object Storage credentials are not set in environment.' });
-    const fileExt = file.originalname.split('.').pop() || 'jpg'; const key = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-    await hetzner.client.send(new PutObjectCommand({ Bucket: hetzner.bucket, Key: key, Body: file.buffer, ContentType: file.mimetype || 'image/jpeg', ACL: 'public-read' }));
-    const publicUrl = hetzner.publicUrlBase ? `${hetzner.publicUrlBase.replace(/\/+$/, '')}/${key}` : `${hetzner.endpoint.replace(/\/+$/, '')}/${hetzner.bucket}/${key}`;
+    const fileExt = (file.originalname.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const key = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt || 'jpg'}`;
+    await hetzner.client.send(new PutObjectCommand({
+      Bucket: hetzner.bucket,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype || 'image/jpeg',
+      CacheControl: 'public, max-age=31536000, immutable'
+    }));
+    let publicUrl: string;
+    if (hetzner.publicUrlBase) {
+      publicUrl = `${hetzner.publicUrlBase.replace(/\/+$/, '')}/${key}`;
+    } else {
+      const endpointUrl = new URL(`${hetzner.endpoint}/`);
+      publicUrl = `${endpointUrl.protocol}//${hetzner.bucket}.${endpointUrl.host}/${key}`;
+    }
     return res.json({ success: true, url: publicUrl, key, bucket: hetzner.bucket, provider: 'hetzner' });
-  } catch (err: any) { console.error('Error uploading file to Hetzner Object Storage:', err); return res.status(500).json({ error: 'UPLOAD_FAILED', message: err?.message || 'Error al subir el archivo.' }); }
+  } catch (err: any) {
+    console.error('Error uploading file to Hetzner Object Storage:', err);
+    const code = err?.Code || err?.name || 'UNKNOWN';
+    const message = err?.message || 'Error al subir el archivo.';
+    return res.status(500).json({ error: 'UPLOAD_FAILED', code, message });
+  }
 });
 
 async function startServer() {
