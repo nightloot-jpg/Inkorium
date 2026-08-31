@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import EmoticonPicker from './EmoticonPicker';
 import { useInkorium } from '../context/InkoriumContext';
 import { 
   Send, Image as ImageIcon, Smile, MessageCircle, Heart, 
@@ -43,6 +44,8 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
   const [attachedPhotoUrl, setAttachedPhotoUrl] = useState('');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [showPhotoInput, setShowPhotoInput] = useState(false);
+  const [showEmoticonPicker, setShowEmoticonPicker] = useState(false);
+  const statusTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [activeFilter, setActiveFilter] = useState<'todos' | 'estados' | 'fotos' | 'tablon'>('todos');
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
@@ -381,6 +384,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
 
           <form onSubmit={handlePublish} className="mt-2 space-y-2">
             <textarea
+              ref={statusTextareaRef}
               value={statusText}
               onChange={e => setStatusText(e.target.value)}
               placeholder="Escribe tu estado para que lo vean todos tus amigos..."
@@ -471,15 +475,40 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                   <span className="text-[11px]">Foto</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setStatusText(prev => prev + ' :)')}
-                  className="flex items-center gap-1 hover:text-[#3869A0] px-2 py-1 rounded hover:bg-gray-100 transition cursor-pointer"
-                  title="Añadir emoticono retro"
-                >
-                  <Smile className="w-3.5 h-3.5 text-gray-600" />
-                  <span className="text-[11px]">Emoticono</span>
-                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmoticonPicker(prev => !prev)}
+                    className="flex items-center gap-1 hover:text-[#3869A0] px-2 py-1 rounded hover:bg-gray-100 transition cursor-pointer"
+                    title="Añadir emoticono"
+                  >
+                    <Smile className="w-3.5 h-3.5 text-gray-600" />
+                    <span className="text-[11px]">Emoticono</span>
+                  </button>
+
+                  {showEmoticonPicker && (
+                    <EmoticonPicker
+                      onClose={() => setShowEmoticonPicker(false)}
+                      onSelect={(value) => {
+                        const field = statusTextareaRef.current;
+                        if (field) {
+                          const start = field.selectionStart ?? statusText.length;
+                          const end = field.selectionEnd ?? statusText.length;
+                          const next = statusText.slice(0, start) + value + statusText.slice(end);
+                          setStatusText(next);
+                          requestAnimationFrame(() => {
+                            field.focus();
+                            const caret = start + value.length;
+                            field.setSelectionRange(caret, caret);
+                          });
+                        } else {
+                          setStatusText(prev => `${prev}${value}`);
+                        }
+                        setShowEmoticonPicker(false);
+                      }}
+                    />
+                  )}
+                </div>
               </div>
 
               <button
