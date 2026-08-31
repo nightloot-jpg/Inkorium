@@ -95,7 +95,19 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const userAlbums = albums.filter(a => a.userId === profileUser.id);
 
   // Wall comments for this user
-  const userWallComments = wallComments.filter(w => w.receptorId === profileUser.id);
+  const userWallComments = useMemo(() => {
+    return wallComments.filter(w => {
+      const targetId = w.receptorId || w.propietarioId;
+      if (!targetId) return false;
+      return (
+        targetId === profileUser.id ||
+        (profileUser.username && targetId === profileUser.username) ||
+        (profileUser.id === 'user-nightloot' && targetId === 'nightloot') ||
+        (profileUser.id === 'nightloot' && targetId === 'user-nightloot') ||
+        (isOwnProfile && (targetId === currentUser.id || targetId === 'nightloot' || targetId === 'user-nightloot'))
+      );
+    });
+  }, [wallComments, profileUser.id, profileUser.username, isOwnProfile, currentUser.id]);
 
   // Calculate age from fnac
   const birthYear = parseInt(profileUser.fnac.split('-')[0], 10) || 1993;
@@ -971,41 +983,52 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                     Todavía no hay comentarios en este tablón. ¡Sé el primero en firmar!
                   </div>
                 ) : (
-                  userWallComments.map(comment => (
-                    <div key={comment.id} className="pt-3 first:pt-0 flex items-start gap-3 group">
-                      <img
-                        src={comment.emisorAvatar}
-                        alt={comment.emisorNombre}
-                        className="w-10 h-10 rounded object-cover border border-gray-300 cursor-pointer hover:opacity-90 flex-shrink-0"
-                        onClick={() => viewUserProfile(comment.emisorId)}
-                      />
-                      <div className="flex-1 bg-[#f9fafb] p-2.5 rounded border border-gray-200 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span
-                            onClick={() => viewUserProfile(comment.emisorId)}
-                            className="font-bold text-[#3869A0] hover:underline cursor-pointer text-xs"
-                          >
-                            {comment.emisorNombre}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-gray-400">{comment.fecha}</span>
-                            {(isOwnProfile || comment.emisorId === currentUser.id) && (
-                              <button
-                                onClick={() => deleteWallComment(comment.id)}
-                                className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer"
-                                title="Borrar comentario del tablón"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
+                  userWallComments.map(comment => {
+                    const authorId = comment.autorId || comment.emisorId || '';
+                    const authorName = comment.autorNombre || comment.emisorNombre || 'Usuario';
+                    const authorAvatar = comment.autorAvatar || comment.emisorAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80';
+                    const commentText = comment.texto || comment.comentario || '';
+                    const canDelete = isOwnProfile || authorId === currentUser.id || (currentUser.id === 'user-nightloot' && authorId === 'nightloot') || (currentUser.id === 'nightloot' && authorId === 'user-nightloot');
+
+                    return (
+                      <div key={comment.id} className="pt-3 first:pt-0 flex items-start gap-3 group">
+                        <img
+                          src={authorAvatar}
+                          alt={authorName}
+                          className="w-10 h-10 rounded object-cover border border-gray-300 cursor-pointer hover:opacity-90 flex-shrink-0"
+                          onClick={() => authorId && viewUserProfile(authorId)}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80';
+                          }}
+                        />
+                        <div className="flex-1 bg-[#f9fafb] p-2.5 rounded border border-gray-200 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span
+                              onClick={() => authorId && viewUserProfile(authorId)}
+                              className="font-bold text-[#3869A0] hover:underline cursor-pointer text-xs"
+                            >
+                              {authorName}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-gray-400">{comment.fecha}</span>
+                              {canDelete && (
+                                <button
+                                  onClick={() => deleteWallComment(comment.id)}
+                                  className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                  title="Borrar comentario del tablón"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </div>
+                          <p className="text-gray-800 text-xs whitespace-pre-line leading-relaxed">
+                            {commentText}
+                          </p>
                         </div>
-                        <p className="text-gray-800 text-xs whitespace-pre-line leading-relaxed">
-                          {comment.comentario}
-                        </p>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

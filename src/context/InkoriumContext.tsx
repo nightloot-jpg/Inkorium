@@ -925,35 +925,106 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // ================= WALL & FEED ACTIONS =================
   const postWallComment = useCallback((propietarioId: string, texto: string) => {
-    if (!currentUserId || !texto.trim()) return;
+    const cleanText = texto.trim();
+    if (!currentUserId || !cleanText || !propietarioId) return;
+
+    // Resolver usuario destinatario por id, username o alias
+    const targetUser = users.find(u => 
+      u.id === propietarioId || 
+      u.username === propietarioId || 
+      (u.id === 'user-nightloot' && propietarioId === 'nightloot') ||
+      (u.id === 'nightloot' && propietarioId === 'user-nightloot')
+    );
+    const resolvedPropietarioId = targetUser?.id || propietarioId;
+    const resolvedPropietarioName = targetUser 
+      ? (targetUser.full_name || `${targetUser.nombre} ${targetUser.apellidos}`.trim() || targetUser.nombre)
+      : 'Usuario';
+    const resolvedPropietarioAvatar = targetUser?.avatar || '';
+
+    const authorName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const authorAvatar = currentUser.avatar || '';
+
     const newComment: WallComment = {
-      id: `wc-${Date.now()}`,
-      propietarioId,
+      id: `wc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      propietarioId: resolvedPropietarioId,
+      receptorId: resolvedPropietarioId,
       autorId: currentUserId,
-      autorNombre: `${currentUser.nombre} ${currentUser.apellidos}`.trim() || 'Usuario',
-      autorAvatar: currentUser.avatar || '',
-      texto: texto.trim(),
+      emisorId: currentUserId,
+      autorNombre: authorName,
+      emisorNombre: authorName,
+      autorAvatar: authorAvatar,
+      emisorAvatar: authorAvatar,
+      texto: cleanText,
+      comentario: cleanText,
       fecha: 'Ahora mismo',
       likes: []
     };
+
     setWallComments(prev => [newComment, ...prev]);
-    if (propietarioId !== currentUserId) {
+
+    // Añadir al feed de novedades como evento de tablón
+    const newFeedItem: FeedItem = {
+      id: `feed-wall-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      tipo: 'tablon',
+      propietarioId: resolvedPropietarioId,
+      propietarioNombre: resolvedPropietarioName,
+      propietarioAvatar: resolvedPropietarioAvatar,
+      visitanteId: currentUserId,
+      visitanteNombre: authorName,
+      visitanteAvatar: authorAvatar,
+      datos: cleanText,
+      fecha: 'Ahora mismo',
+      likes: [],
+      comentarios: []
+    };
+    setFeed(prev => [newFeedItem, ...prev]);
+
+    // Notificación en tiempo real si se firma en el tablón de otra persona
+    const isSelf = 
+      resolvedPropietarioId === currentUserId ||
+      resolvedPropietarioId === currentUser.id ||
+      (currentUser.username && resolvedPropietarioId === currentUser.username) ||
+      (currentUser.id === 'user-nightloot' && resolvedPropietarioId === 'nightloot') ||
+      (currentUser.id === 'nightloot' && resolvedPropietarioId === 'user-nightloot');
+
+    if (!isSelf) {
       pushNotification({
         id: `notif-wall-${Date.now()}`,
         tipo: 'tablon',
-        userId: propietarioId,
+        userId: resolvedPropietarioId,
         fromUserId: currentUserId,
-        fromUserName: `${currentUser.nombre} ${currentUser.apellidos}`.trim() || 'Usuario',
-        fromUserAvatar: currentUser.avatar,
+        fromUserName: authorName,
+        fromUserAvatar: authorAvatar,
         mensaje: 'ha firmado en tu tablón.',
         enlace: 'perfil',
         targetId: newComment.id,
-        targetPreview: texto.trim().slice(0, 80),
+        targetPreview: cleanText.slice(0, 80),
         fecha: 'Ahora mismo',
         leido: false
       });
     }
-  }, [currentUserId, currentUser, pushNotification]);
+
+    // Feedback inmediato de confirmación para quien firma
+    setToasts(prev => [
+      {
+        id: `toast-wall-${Date.now()}`,
+        tipo: 'tablon',
+        userId: currentUserId,
+        fromUserId: currentUserId,
+        fromUserName: authorName,
+        fromUserAvatar: authorAvatar,
+        mensaje: isSelf
+          ? 'Has publicado una firma en tu propio tablón.'
+          : `Has firmado en el tablón de ${resolvedPropietarioName}.`,
+        enlace: 'perfil',
+        targetId: newComment.id,
+        targetPreview: cleanText.slice(0, 80),
+        fecha: 'Ahora mismo',
+        leido: true
+      },
+      ...prev.slice(0, 3)
+    ]);
+  }, [currentUserId, currentUser, users, pushNotification]);
 
   const deleteWallComment = useCallback((commentId: string) => {
     setWallComments(prev => prev.filter(c => c.id !== commentId));
@@ -1153,13 +1224,20 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const randomFriend = users.find(u => u.id !== currentUserId) || users[1];
     if (!randomFriend) return;
     const commentId = `wc-sim-${Date.now()}`;
+    const authorName = `${randomFriend.nombre} ${randomFriend.apellidos}`.trim();
+    const commentText = '¡Esa foto de perfil está genial! Saludos nostálgicos ;)';
     const newComment: WallComment = {
       id: commentId,
       propietarioId: currentUserId,
+      receptorId: currentUserId,
       autorId: randomFriend.id,
-      autorNombre: `${randomFriend.nombre} ${randomFriend.apellidos}`.trim(),
+      emisorId: randomFriend.id,
+      autorNombre: authorName,
+      emisorNombre: authorName,
       autorAvatar: randomFriend.avatar,
-      texto: '¡Esa foto de perfil está genial! Saludos!',
+      emisorAvatar: randomFriend.avatar,
+      texto: commentText,
+      comentario: commentText,
       fecha: 'Ahora mismo',
       likes: []
     };
@@ -1169,12 +1247,12 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       tipo: 'tablon',
       userId: currentUserId,
       fromUserId: randomFriend.id,
-      fromUserName: `${randomFriend.nombre} ${randomFriend.apellidos}`.trim(),
+      fromUserName: authorName,
       fromUserAvatar: randomFriend.avatar,
       mensaje: 'ha firmado en tu tablón.',
       enlace: 'perfil',
       targetId: commentId,
-      targetPreview: newComment.texto,
+      targetPreview: commentText,
       fecha: 'Ahora mismo',
       leido: false
     });
