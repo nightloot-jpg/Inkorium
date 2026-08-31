@@ -98,24 +98,35 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const updateStatusText = useCallback(async (statusText: string) => {
     if (!currentUserId || !supabase) return;
     const nextStatus = statusText.trim().slice(0, 140);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ user_status: nextStatus, updated_at: new Date().toISOString() })
-      .eq('id', currentUserId);
-    if (error) {
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      const accessToken = sessionResult.data.session?.access_token;
+      if (!accessToken) throw new Error('AUTH_REQUIRED');
+      const response = await fetch(`/api/profiles/${encodeURIComponent(currentUserId)}/status`, {
+        method: 'PATCH',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      if (!response.ok) {
+        let detail = '';
+        try { const body = await response.json(); detail = body?.message || body?.error || ''; } catch { /* ignore malformed error response */ }
+        throw new Error(detail || `STATUS_UPDATE_FAILED_${response.status}`);
+      }
+      const result = await response.json();
+      const savedStatus = String(result?.user_status ?? nextStatus).slice(0, 140);
+      setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, estado: savedStatus, estadoFecha: 'Reciente' } : user));
+      void fetchProfiles();
+    } catch (error) {
       console.error('Profile status update failed:', error);
       alert('No se ha podido guardar el estado. Inténtalo de nuevo.');
-      return;
     }
-    setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, estado: nextStatus, estadoFecha: 'Reciente' } : user));
-    void fetchProfiles();
   }, [currentUserId, fetchProfiles]);
   const noop = useCallback((..._args: any[]) => {}, []);
   const setActiveTab = useCallback((tab: InkoriumContextType['activeTab']) => setActiveTabState(tab), []); const viewUserProfile = useCallback((id: string) => { setSelectedUserId(id); setActiveTabState('perfil'); }, []); const viewPhoto = useCallback((id: string | null) => setSelectedPhotoId(id), []); const viewAlbum = useCallback((id: string | null) => setSelectedAlbumId(id), []);
   const login = useCallback((_email: string, _password?: string) => ({ success: isLoggedIn }), [isLoggedIn]); const loginAsUser = useCallback((id: string) => { setCurrentUserId(id); setIsLoggedIn(true); }, []); const logout = useCallback(() => { if (supabase) void supabase.auth.signOut(); setCurrentUserId(''); setIsLoggedIn(false); }, []); const setCurrentUserById = useCallback((id: string) => setCurrentUserId(id), []);
   const setIsRealtime = useCallback((enabled: boolean) => setIsRealtimeSimulationEnabledState(enabled), []); const pushNotification = useCallback((notif: InkoriumNotification) => setNotifications(prev => [notif, ...prev]), []);
 
-  return <InkoriumContext.Provider value={{ currentUser, users, photos, albums, feed, wallComments, messages, friendRequests, friendships, chatMessages, notifications, toasts, accessLogs, activities, activeChatWindows, activeTab, selectedUserId, selectedPhotoId, selectedAlbumId, unreadMessagesCount: 0, unreadNotificationsCount: 0, pendingRequestsCount: 0, isRealtimeSimulationEnabled, isLoggedIn, setActiveTab, viewUserProfile, viewPhoto, viewAlbum, setCurrentUserById, login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence, likeFeedItem: noop, commentFeedItem: noop, postWallComment: noop, deleteWallComment: noop, uploadPhoto: noop, addPhotoTag: noop, removePhotoTag: noop, addPhotoComment: noop, likePhoto: noop, setPhotoAsAvatar: noop, deletePhoto: noop, createAlbum: noop, renameAlbum: noop, deleteAlbum: noop, sendFriendRequest: noop, acceptFriendRequest: noop, ignoreFriendRequest: noop, isFriend: () => false, hasPendingRequest: () => false, getFriendsOf: () => [], sendPrivateMessage: noop, markMessageAsRead: noop, deleteMessage: noop, openChatWith: noop, closeChat: noop, toggleMinimizeChat: noop, sendChatMessage: noop, setChatEstado: noop, logUserActivity: noop, deleteUserActivity: noop, getUserActivities: () => [], pushNotification, dismissToast: noop, markNotificationAsRead: noop, markAllNotificationsAsRead: noop, deleteNotification: noop, setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage: noop, simulateWallComment: noop, simulateFriendRequest: noop, simulatePhotoInteraction: noop, updateUserData, resetToDefaultData: noop, registerNewUser: noop }}>{children}</InkoriumContext.Provider>;
+  return <InkoriumContext.Provider value={{ currentUser, users, photos, albums, feed, wallComments, messages, friendRequests, friendships, chatMessages, notifications, toasts, accessLogs, activities, activeChatWindows, activeTab, selectedUserId, selectedPhotoId, selectedAlbumId, unreadMessagesCount: 0, unreadNotificationsCount: 0, pendingRequestsCount: 0, isRealtimeSimulationEnabled, isLoggedIn, setActiveTab, viewUserProfile, viewPhoto, viewAlbum, setCurrentUserById, login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence, likeFeedItem: noop, commentFeedItem: noop, postWallComment: noop, deleteWallComment: noop, uploadPhoto: noop, addPhotoTag: noop, removePhotoTag: noop, addPhotoComment: noop, likePhoto: noop, setPhotoAsAvatar: noop, deletePhoto: noop, createAlbum: noop, renameAlbum: noop, deleteAlbum: noop, sendFriendRequest: noop, acceptFriendRequest: noop, ignoreFriendRequest: noop, isFriend: () => false, hasPendingRequest: () => false, getFriendsOf: () => [], sendPrivateMessage: noop, markMessageAsRead: noop, deleteMessage: noop, sendChatMessage: noop, openChatWith: noop, closeChat: noop, toggleMinimizeChat: noop, setChatEstado: noop, logUserActivity: noop, deleteUserActivity: noop, getUserActivities: () => [], pushNotification, dismissToast: noop, markNotificationAsRead: noop, markAllNotificationsAsRead: noop, deleteNotification: noop, setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage: noop, simulateWallComment: noop, simulateFriendRequest: noop, simulatePhotoInteraction: noop, updateUserData, resetToDefaultData: noop, registerNewUser: noop }}>{children}</InkoriumContext.Provider>;
 };
 
 export const useInkorium = () => { const ctx = useContext(InkoriumContext); if (!ctx) throw new Error('useInkorium debe usarse dentro de InkoriumProvider'); return ctx; };
