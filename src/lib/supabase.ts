@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://zllwzmfsfzfedorljgtg.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_npJmIHQP_g2ApAu-7fqQAQ_dse7H5Jj';
-const PRIVATE_MESSAGES_FUNCTION = `${SUPABASE_URL}/functions/v1/private-messages`;
 
 const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL).trim();
 const supabaseKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || SUPABASE_PUBLISHABLE_KEY).trim();
@@ -19,15 +18,6 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
   try {
     const parsed = new URL(requestUrl);
     const isProfilesRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/profiles';
-    const isPrivateMessagesRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/private_messages';
-
-    if (isPrivateMessagesRequest && typeof window !== 'undefined') {
-      const headers = new Headers(init?.headers || request?.headers || undefined);
-      headers.set('Accept', headers.get('Accept') || 'application/json');
-      if (init?.body !== undefined && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-      const functionUrl = `${PRIVATE_MESSAGES_FUNCTION}${parsed.search}`;
-      return fetch(functionUrl, { ...init, headers, credentials: 'omit' });
-    }
 
     if (isProfilesRequest && typeof window !== 'undefined') {
       if (requestMethod === 'GET') {
