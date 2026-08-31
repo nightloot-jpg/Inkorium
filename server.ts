@@ -169,6 +169,64 @@ app.patch('/api/profiles/:id/status', async (req, res) => {
   }
 });
 
+app.post('/api/photos', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const token = extractToken(req);
+    const action = String(req.body?.action || 'list').trim().toLowerCase();
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+
+    const userId = await verifySupabaseJwt(token, supabaseUrl, getSupabaseConfig().jwtSecret);
+    if (!userId) return res.status(401).json({ error: 'INVALID_AUTH_TOKEN' });
+
+    if (action === 'list') {
+      const upstream = await fetch(`${supabaseUrl}/rest/v1/photos?select=id,user_id,album_id,storage_path,url,caption,visibility,created_at,updated_at&order=created_at.desc`, {
+        headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json' }
+      });
+      const body = await upstream.text();
+      if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+      try { const data = JSON.parse(body); return res.status(200).json(Array.isArray(data) ? data : []); } catch { return res.status(502).json({ error: 'SUPABASE_PHOTOS_INVALID_RESPONSE' }); }
+    }
+
+    if (action === 'create') {
+      const albumId = req.body?.album_id ? String(req.body.album_id).trim() : null;
+      const url = String(req.body?.url || '').trim();
+      const caption = req.body?.caption == null ? null : String(req.body.caption).slice(0, 500);
+      const visibility = ['public', 'friends', 'private'].includes(String(req.body?.visibility)) ? String(req.body.visibility) : 'public';
+      if (!url) return res.status(400).json({ error: 'INVALID_PHOTO_URL' });
+
+      if (albumId) {
+        const albumResponse = await fetch(`${supabaseUrl}/rest/v1/albums?id=eq.${encodeURIComponent(albumId)}&select=id,user_id`, {
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        });
+        const albumBody = await albumResponse.text();
+        if (!albumResponse.ok) return res.status(albumResponse.status).type(albumResponse.headers.get('content-type') || 'application/json').send(albumBody);
+        let albums: any[] = [];
+        try { albums = JSON.parse(albumBody); } catch { return res.status(502).json({ error: 'SUPABASE_ALBUM_INVALID_RESPONSE' }); }
+        if (!albums[0] || String(albums[0].user_id) !== userId) return res.status(403).json({ error: 'INVALID_ALBUM' });
+      }
+
+      const upstream = await fetch(`${supabaseUrl}/rest/v1/photos`, {
+        method: 'POST',
+        headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify({ user_id: userId, album_id: albumId, storage_path: url, url, caption, visibility })
+      });
+      const body = await upstream.text();
+      if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+      try {
+        const data = JSON.parse(body); const row = Array.isArray(data) ? data[0] : data;
+        return row ? res.status(201).json(row) : res.status(502).json({ error: 'SUPABASE_PHOTO_CREATE_EMPTY' });
+      } catch { return res.status(502).json({ error: 'SUPABASE_PHOTO_CREATE_INVALID_RESPONSE' }); }
+    }
+
+    return res.status(400).json({ error: 'INVALID_ACTION' });
+  } catch (err: any) {
+    console.error('Supabase photos proxy failed:', err);
+    return res.status(502).json({ error: 'SUPABASE_PHOTOS_PROXY_FAILED', message: err?.message || 'Unable to process photos.' });
+  }
+});
+
 app.get('/api/posts', async (_req, res) => {
   try {
     const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig(); const key = serviceRoleKey || supabaseKey; if (!key) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
