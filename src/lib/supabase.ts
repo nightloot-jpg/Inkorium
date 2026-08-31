@@ -10,11 +10,7 @@ const supabaseKey = String(
   SUPABASE_PUBLISHABLE_KEY
 ).trim();
 
-export const isSupabaseConfigured = Boolean(
-  supabaseUrl &&
-  supabaseKey &&
-  !supabaseUrl.includes('your-project')
-);
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey && !supabaseUrl.includes('your-project'));
 
 let supabase: ReturnType<typeof createClient> | null = null;
 
@@ -25,20 +21,14 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
 
   try {
     const parsed = new URL(requestUrl);
-    const isProfilesRequest =
-      parsed.origin === supabaseUrl &&
-      parsed.pathname.replace(/\/+$/, '') === '/rest/v1/profiles';
-    const isPrivateMessagesRequest =
-      parsed.origin === supabaseUrl &&
-      parsed.pathname.replace(/\/+$/, '') === '/rest/v1/private_messages';
+    const isProfilesRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/profiles';
+    const isPrivateMessagesRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/private_messages';
 
     if (typeof window !== 'undefined' && isPrivateMessagesRequest) {
-      let accessToken = '';
       const headers = new Headers(init?.headers || request?.headers || undefined);
+      let accessToken = '';
       const authorization = headers.get('authorization') || '';
-      if (authorization.startsWith('Bearer ')) {
-        accessToken = authorization.slice('Bearer '.length).trim();
-      }
+      if (authorization.startsWith('Bearer ')) accessToken = authorization.slice('Bearer '.length).trim();
 
       if (!accessToken) {
         try {
@@ -49,97 +39,48 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
         }
       }
 
-      if (accessToken) {
-        let body: BodyInit | null | undefined = init?.body;
-        if (body == null && request && requestMethod !== 'GET' && requestMethod !== 'HEAD') {
-          try {
-            body = await request.clone().text();
-          } catch {
-            body = null;
-          }
-        }
-
-        return fetch(`${window.location.origin}/api/private-messages${parsed.search}`, {
-          method: requestMethod,
-          headers: {
-            Accept: 'application/json',
-            ...(requestMethod !== 'GET' && requestMethod !== 'HEAD'
-              ? { 'Content-Type': 'application/json' }
-              : {}),
-            Authorization: `Bearer ${accessToken}`
-          },
-          credentials: 'omit',
-          body
-        });
+      let body: BodyInit | null | undefined = init?.body;
+      if (body == null && request && requestMethod !== 'GET' && requestMethod !== 'HEAD') {
+        try { body = await request.clone().text(); } catch { body = null; }
       }
+
+      const proxyHeaders: Record<string, string> = { Accept: 'application/json' };
+      if (requestMethod !== 'GET' && requestMethod !== 'HEAD') proxyHeaders['Content-Type'] = 'application/json';
+      if (accessToken) proxyHeaders.Authorization = `Bearer ${accessToken}`;
+
+      // Always use the same-origin proxy. If the session is not ready, let the
+      // server return 401 instead of falling back to a browser CORS request.
+      return fetch(`${window.location.origin}/api/private-messages${parsed.search}`, {
+        method: requestMethod,
+        headers: proxyHeaders,
+        credentials: 'omit',
+        body
+      });
     }
 
     if (isProfilesRequest && typeof window !== 'undefined') {
       if (requestMethod === 'GET') {
-        const proxyUrl = `${window.location.origin}/api/profiles${parsed.search}`;
-        return fetch(proxyUrl, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          credentials: 'omit',
-          cache: 'no-store'
-        });
+        return fetch(`${window.location.origin}/api/profiles${parsed.search}`, { method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit', cache: 'no-store' });
       }
 
       if (requestMethod === 'PATCH') {
         const headers = new Headers(init?.headers || request?.headers || undefined);
         const queryId = parsed.searchParams.get('id') || '';
         const match = queryId.match(/^eq\.(.+)$/);
-
         let rawBody = '';
-        try {
-          if (typeof init?.body === 'string') {
-            rawBody = init.body;
-          } else if (request) {
-            rawBody = await request.clone().text();
-          }
-        } catch {
-          rawBody = '';
-        }
-
+        try { if (typeof init?.body === 'string') rawBody = init.body; else if (request) rawBody = await request.clone().text(); } catch { rawBody = ''; }
         let body: Record<string, unknown> = {};
-        try {
-          body = rawBody ? JSON.parse(rawBody) : {};
-        } catch {
-          body = {};
-        }
-
+        try { body = rawBody ? JSON.parse(rawBody) : {}; } catch { body = {}; }
         const presence = typeof body.presence === 'string' ? body.presence.trim().toLowerCase() : '';
         const authorization = headers.get('authorization') || '';
-
-        if (
-          match &&
-          presence &&
-          ['conectado', 'ausente', 'ocupado', 'invisible'].includes(presence)
-        ) {
-          let accessToken = authorization.startsWith('Bearer ')
-            ? authorization.slice('Bearer '.length).trim()
-            : '';
-
+        if (match && presence && ['conectado', 'ausente', 'ocupado', 'invisible'].includes(presence)) {
+          let accessToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '';
           if (!accessToken) {
-            try {
-              const sessionResult = await supabase?.auth.getSession();
-              accessToken = sessionResult?.data.session?.access_token || '';
-            } catch {
-              accessToken = '';
-            }
+            try { accessToken = (await supabase?.auth.getSession())?.data.session?.access_token || ''; } catch { accessToken = ''; }
           }
-
           if (accessToken) {
-            const proxyUrl = `${window.location.origin}/api/profiles/${encodeURIComponent(match[1])}/presence`;
-            return fetch(proxyUrl, {
-              method: 'PATCH',
-              headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${accessToken}`
-              },
-              credentials: 'omit',
-              body: JSON.stringify({ presence })
+            return fetch(`${window.location.origin}/api/profiles/${encodeURIComponent(match[1])}/presence`, {
+              method: 'PATCH', headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, credentials: 'omit', body: JSON.stringify({ presence })
             });
           }
         }
@@ -152,17 +93,10 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
   return fetch(input, init);
 };
 
-supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-      global: {
-        fetch: profileAwareFetch,
-      },
-    })
-  : null;
+supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseKey, {
+  auth: { persistSession: true, autoRefreshToken: true },
+  global: { fetch: profileAwareFetch }
+}) : null;
 
 export { supabase };
 
@@ -181,19 +115,9 @@ if (typeof window !== 'undefined') {
         headers.delete('authorization');
         headers.delete('cookie');
         let body: Record<string, unknown> = {};
-        try {
-          if (typeof init?.body === 'string') body = JSON.parse(init.body) || {};
-          else if (request) body = JSON.parse(await request.clone().text()) || {};
-        } catch {
-          body = {};
-        }
+        try { if (typeof init?.body === 'string') body = JSON.parse(init.body) || {}; else if (request) body = JSON.parse(await request.clone().text()) || {}; } catch { body = {}; }
         if (accessToken) body.access_token = accessToken;
-        return nativeFetch(input, {
-          ...init,
-          credentials: 'omit',
-          headers,
-          body: JSON.stringify(body)
-        });
+        return nativeFetch(input, { ...init, credentials: 'omit', headers, body: JSON.stringify(body) });
       }
     } catch (error) {
       console.warn('Inkorium status transport fallback:', error);
