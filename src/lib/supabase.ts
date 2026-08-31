@@ -81,7 +81,6 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
   try {
     const res = await fetch(input, init);
     const contentType = res.headers.get('content-type') || '';
-    // If Supabase returned HTML (e.g. iframe cookie check, gateway auth error), intercept and return safe JSON
     if (contentType.includes('text/html')) {
       const text = await res.text();
       if (text.includes('<title>Cookie check</title>') || text.trim().startsWith('<')) {
@@ -110,5 +109,64 @@ supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: true, autoRefreshToken: true },
   global: { fetch: profileAwareFetch }
 }) : null;
+
+// The private-message UI also makes native fetch() calls to /api/private-messages.
+// Normalize those requests here so authentication is sent in the JSON body instead
+// of the Authorization header, avoiding 431 responses from the reverse proxy.
+if (typeof window !== 'undefined') {
+  const nativeFetch = window.fetch.bind(window);
+  const privateMessagesTransport: typeof fetch = async (input, init) => {
+    const request = input instanceof Request ? input : null;
+    const requestUrl = typeof input === 'string' ? input : request?.url || String(input);
+    try {
+      const parsed = new URL(requestUrl, window.location.origin);
+      if (parsed.origin === window.location.origin && parsed.pathname.replace(/\/+$/, '') === '/api/private-messages') {
+        const headers = new Headers(init?.headers || request?.headers || undefined);
+        const authorization = headers.get('authorization') || '';
+        let accessToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '';
+        if (!accessToken) {
+          try { accessToken = (await supabase?.auth.getSession())?.data.session?.access_token || ''; } catch { accessToken = ''; }
+        }
+
+        let rawBody = '';
+        try {
+          if (typeof init?.body === 'string') rawBody = init.body;
+          else if (request) rawBody = await request.clone().text();
+        } catch { rawBody = ''; }
+
+        let body: Record<string, unknown> = {};
+        try { body = rawBody ? JSON.parse(rawBody) : {}; } catch { body = {}; }
+        body.access_token = accessToken;
+        headers.delete('authorization');
+        headers.set('Accept', 'application/json');
+        headers.set('Content-Type', 'application/json');
+
+        const method = String(init?.method || request?.method || 'GET').toUpperCase();
+        if (method === 'GET') {
+          return nativeFetch(`${window.location.origin}/api/private-messages`, {
+            method: 'POST',
+            headers,
+            credentials: 'omit',
+            body: JSON.stringify({ action: 'list', access_token: accessToken }),
+          });
+        }
+
+        if (['POST', 'PATCH', 'DELETE'].includes(method)) {
+          return nativeFetch(`${window.location.origin}/api/private-messages${parsed.search}`, {
+            method,
+            headers,
+            credentials: 'omit',
+            body: JSON.stringify(body),
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('Private message transport normalization failed:', error);
+    }
+    return nativeFetch(input, init);
+  };
+
+  window.fetch = privateMessagesTransport;
+}
 
 export { supabase };
