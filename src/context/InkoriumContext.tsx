@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, InkoriumNotification, AccessLog, UserActivity, UserPresence } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
+import { fetchPhotos, insertPhoto } from '../lib/photosApi';
 
 interface ChatWindow { targetUserId: string; minimized: boolean; }
 interface InkoriumContextType {
@@ -68,6 +69,17 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, 100);
   }, [mapProfileToUser, currentUserId]);
 
+  const mapPhotoToPhoto = useCallback((row: any): Photo => {
+    const uploader = users.find(u => u.id === String(row.user_id));
+    return { id: String(row.id), uploaderId: String(row.user_id), uploaderName: uploader ? `${uploader.nombre} ${uploader.apellidos}`.trim() : 'Usuario', albumId: row.album_id ?? null, albumName: undefined, archivo: String(row.url || ''), titulo: String(row.caption || 'Sin título'), fecha: row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : 'Recientemente', etiquetas: [], comentarios: [], likes: [] };
+  }, [users]);
+
+  const fetchAndMapPhotos = useCallback(async () => {
+    if (!supabase || !currentUserId) return;
+    try { const rows = await fetchPhotos(); setPhotos(rows.map(mapPhotoToPhoto)); }
+    catch (error) { console.error('Photos load failed:', error); }
+  }, [currentUserId, mapPhotoToPhoto]);
+
   const fetchAndMapPosts = useCallback(async () => {
     try {
       const rows = await fetchPosts(100);
@@ -85,15 +97,24 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!supabase || !isSupabaseConfigured) return; let mounted = true;
     void supabase.auth.getSession().then(({ data }) => { if (!mounted) return; setCurrentUserId(data.session?.user?.id || ''); setIsLoggedIn(Boolean(data.session?.user)); void fetchProfiles(); });
     const { data: auth } = supabase.auth.onAuthStateChange((_event, session) => { setCurrentUserId(session?.user?.id || ''); setIsLoggedIn(Boolean(session?.user)); void fetchProfiles(); });
-    const channel = supabase.channel('profiles-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void fetchProfiles()).subscribe();
-    return () => { mounted = false; if (profilesTimer.current) clearTimeout(profilesTimer.current); auth.subscription.unsubscribe(); void supabase.removeChannel(channel); };
-  }, [fetchProfiles]);
+    const profilesChannel = supabase.channel('profiles-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void fetchProfiles()).subscribe();
+    const photosChannel = supabase.channel('photos-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, () => void fetchAndMapPhotos()).subscribe();
+    return () => { mounted = false; if (profilesTimer.current) clearTimeout(profilesTimer.current); auth.subscription.unsubscribe(); void supabase.removeChannel(profilesChannel); void supabase.removeChannel(photosChannel); };
+  }, [fetchProfiles, fetchAndMapPhotos]);
 
   useEffect(() => { if (users.length > 0 || isSupabaseConfigured) void fetchAndMapPosts(); }, [users.length, fetchAndMapPosts]);
+  useEffect(() => { if (currentUserId && isSupabaseConfigured) void fetchAndMapPhotos(); }, [currentUserId, fetchAndMapPhotos]);
 
   const currentUser = users.find(user => user.id === currentUserId) || EMPTY_USER;
   const updateUserPresence = useCallback((presencia: UserPresence) => { if (!currentUserId) return; setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, presencia, online: presencia !== 'invisible', chatEstado: presencia === 'invisible' ? '0' : '1' } : user)); localStorage.setItem('inkorium:presence', presencia); }, [currentUserId]);
   const publishStatus = useCallback((statusText: string, attachedPhotoUrl?: string) => { if (!statusText.trim() && !attachedPhotoUrl) return; void createPost(statusText.trim(), attachedPhotoUrl).then(row => { const author = users.find(u => u.id === row.author_id) || currentUser; const photoUrl = row.media_data && typeof row.media_data === 'object' && 'url' in (row.media_data as any) ? String((row.media_data as any).url || '') : attachedPhotoUrl || ''; const item: FeedItem = { id: row.id, tipo: photoUrl ? 'foto' : 'estado', propietarioId: row.author_id, propietarioNombre: `${author.nombre} ${author.apellidos}`.trim() || 'Usuario', propietarioAvatar: author.avatar, datos: row.content, fotoUrl: photoUrl || undefined, fecha: row.created_at, likes: [], comentarios: [] }; setFeed(prev => [item, ...prev]); }).catch(error => { console.error('Post create failed:', error); const message = error instanceof Error ? error.message : String(error); alert(`No se ha podido publicar. ${message}`); }); }, [currentUser, users]);
+  const uploadPhoto = useCallback((titulo: string, albumId: string | null, archivoUrl: string) => {
+    if (!currentUserId || !archivoUrl) return;
+    const optimisticId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const optimistic: Photo = { id: optimisticId, uploaderId: currentUserId, uploaderName: `${currentUser.nombre} ${currentUser.apellidos}`.trim() || 'Usuario', albumId, archivo: archivoUrl, titulo: titulo || 'Sin título', fecha: new Date().toLocaleString('es-ES'), etiquetas: [], comentarios: [], likes: [] };
+    setPhotos(prev => [optimistic, ...prev]);
+    void insertPhoto({ userId: currentUserId, albumId, url: archivoUrl, caption: titulo || 'Sin título' }).then(row => { setPhotos(prev => [mapPhotoToPhoto(row), ...prev.filter(photo => photo.id !== optimisticId)]); }).catch(error => { console.error('Photo persistence failed:', error); setPhotos(prev => prev.filter(photo => photo.id !== optimisticId)); alert('La foto se ha subido al almacenamiento, pero no se pudo registrar en la galería. Inténtalo de nuevo.'); });
+  }, [currentUserId, currentUser, mapPhotoToPhoto]);
   const updateUserData = useCallback((data: Partial<User>) => { if (!currentUserId) return; setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, ...data } : user)); }, [currentUserId]);
   const updateStatusText = useCallback(async (statusText: string) => {
     if (!currentUserId || !supabase) return;
@@ -102,49 +123,21 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const sessionResult = await supabase.auth.getSession();
       const accessToken = sessionResult.data.session?.access_token;
       if (!accessToken) throw new Error('AUTH_REQUIRED');
-      const response = await fetch(`/api/profiles/${encodeURIComponent(currentUserId)}/status`, {
-        method: 'PATCH',
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ status: nextStatus })
-      });
-      if (!response.ok) {
-        let detail = '';
-        try { const body = await response.json(); detail = body?.message || body?.error || ''; } catch { /* ignore malformed error response */ }
-        throw new Error(detail || `STATUS_UPDATE_FAILED_${response.status}`);
-      }
-      const result = await response.json();
-      const savedStatus = String(result?.user_status ?? nextStatus).slice(0, 140);
-      setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, estado: savedStatus, estadoFecha: 'Reciente' } : user));
-      void fetchProfiles();
-    } catch (error) {
-      console.error('Profile status update failed:', error);
-      alert('No se ha podido guardar el estado. Inténtalo de nuevo.');
-    }
+      const response = await fetch(`/api/profiles/${encodeURIComponent(currentUserId)}/status`, { method: 'PATCH', headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ status: nextStatus }) });
+      if (!response.ok) { let detail = ''; try { const body = await response.json(); detail = body?.message || body?.error || ''; } catch { /* ignore malformed error response */ } throw new Error(detail || `STATUS_UPDATE_FAILED_${response.status}`); }
+      const result = await response.json(); const savedStatus = String(result?.user_status ?? nextStatus).slice(0, 140);
+      setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, estado: savedStatus, estadoFecha: 'Reciente' } : user)); void fetchProfiles();
+    } catch (error) { console.error('Profile status update failed:', error); alert('No se ha podido guardar el estado. Inténtalo de nuevo.'); }
   }, [currentUserId, fetchProfiles]);
-
-  const openChatWith = useCallback((targetUserId: string) => {
-    if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
-    setActiveChatWindows(prev => {
-      const existing = prev.find(win => win.targetUserId === targetUserId);
-      if (existing) return prev.map(win => win.targetUserId === targetUserId ? { ...win, minimized: false } : win);
-      return [...prev, { targetUserId, minimized: false }];
-    });
-  }, [currentUserId]);
+  const openChatWith = useCallback((targetUserId: string) => { if (!currentUserId || !targetUserId || targetUserId === currentUserId) return; setActiveChatWindows(prev => { const existing = prev.find(win => win.targetUserId === targetUserId); if (existing) return prev.map(win => win.targetUserId === targetUserId ? { ...win, minimized: false } : win); return [...prev, { targetUserId, minimized: false }]; }); }, [currentUserId]);
   const closeChat = useCallback((targetUserId: string) => { setActiveChatWindows(prev => prev.filter(win => win.targetUserId !== targetUserId)); }, []);
   const toggleMinimizeChat = useCallback((targetUserId: string) => { setActiveChatWindows(prev => prev.map(win => win.targetUserId === targetUserId ? { ...win, minimized: !win.minimized } : win)); }, []);
-  const sendChatMessage = useCallback((targetUserId: string, text: string) => {
-    const message = text.trim();
-    if (!currentUserId || !targetUserId || targetUserId === currentUserId || !message) return;
-    setChatMessages(prev => [...prev, { id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`, emisorId: currentUserId, receptorId: targetUserId, mensaje: message, fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }), leido: true }]);
-    setActiveChatWindows(prev => { const existing = prev.find(win => win.targetUserId === targetUserId); if (existing) return prev.map(win => win.targetUserId === targetUserId ? { ...win, minimized: false } : win); return [...prev, { targetUserId, minimized: false }]; });
-  }, [currentUserId]);
-
+  const sendChatMessage = useCallback((targetUserId: string, text: string) => { const message = text.trim(); if (!currentUserId || !targetUserId || targetUserId === currentUserId || !message) return; setChatMessages(prev => [...prev, { id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`, emisorId: currentUserId, receptorId: targetUserId, mensaje: message, fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }), leido: true }]); setActiveChatWindows(prev => { const existing = prev.find(win => win.targetUserId === targetUserId); if (existing) return prev.map(win => win.targetUserId === targetUserId ? { ...win, minimized: false } : win); return [...prev, { targetUserId, minimized: false }]; }); }, [currentUserId]);
   const noop = useCallback((..._args: any[]) => {}, []);
   const setActiveTab = useCallback((tab: InkoriumContextType['activeTab']) => setActiveTabState(tab), []); const viewUserProfile = useCallback((id: string) => { setSelectedUserId(id); setActiveTabState('perfil'); }, []); const viewPhoto = useCallback((id: string | null) => setSelectedPhotoId(id), []); const viewAlbum = useCallback((id: string | null) => setSelectedAlbumId(id), []);
   const login = useCallback((_email: string, _password?: string) => ({ success: isLoggedIn }), [isLoggedIn]); const loginAsUser = useCallback((id: string) => { setCurrentUserId(id); setIsLoggedIn(true); }, []); const logout = useCallback(() => { if (supabase) void supabase.auth.signOut(); setCurrentUserId(''); setIsLoggedIn(false); }, []); const setCurrentUserById = useCallback((id: string) => setCurrentUserId(id), []);
   const setIsRealtime = useCallback((enabled: boolean) => setIsRealtimeSimulationEnabledState(enabled), []); const pushNotification = useCallback((notif: InkoriumNotification) => setNotifications(prev => [notif, ...prev]), []);
-
-  return <InkoriumContext.Provider value={{ currentUser, users, photos, albums, feed, wallComments, messages, friendRequests, friendships, chatMessages, notifications, toasts, accessLogs, activities, activeChatWindows, activeTab, selectedUserId, selectedPhotoId, selectedAlbumId, unreadMessagesCount: 0, unreadNotificationsCount: 0, pendingRequestsCount: 0, isRealtimeSimulationEnabled, isLoggedIn, setActiveTab, viewUserProfile, viewPhoto, viewAlbum, setCurrentUserById, login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence, likeFeedItem: noop, commentFeedItem: noop, postWallComment: noop, deleteWallComment: noop, uploadPhoto: noop, addPhotoTag: noop, removePhotoTag: noop, addPhotoComment: noop, likePhoto: noop, setPhotoAsAvatar: noop, deletePhoto: noop, createAlbum: noop, renameAlbum: noop, deleteAlbum: noop, sendFriendRequest: noop, acceptFriendRequest: noop, ignoreFriendRequest: noop, isFriend: () => false, hasPendingRequest: () => false, getFriendsOf: () => [], sendPrivateMessage: noop, markMessageAsRead: noop, deleteMessage: noop, sendChatMessage, openChatWith, closeChat, toggleMinimizeChat, setChatEstado: noop, logUserActivity: noop, deleteUserActivity: noop, getUserActivities: () => [], pushNotification, dismissToast: noop, markNotificationAsRead: noop, markAllNotificationsAsRead: noop, deleteNotification: noop, setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage: noop, simulateWallComment: noop, simulateFriendRequest: noop, simulatePhotoInteraction: noop, updateUserData, resetToDefaultData: noop, registerNewUser: noop }}>{children}</InkoriumContext.Provider>;
+  return <InkoriumContext.Provider value={{ currentUser, users, photos, albums, feed, wallComments, messages, friendRequests, friendships, chatMessages, notifications, toasts, accessLogs, activities, activeChatWindows, activeTab, selectedUserId, selectedPhotoId, selectedAlbumId, unreadMessagesCount: 0, unreadNotificationsCount: 0, pendingRequestsCount: 0, isRealtimeSimulationEnabled, isLoggedIn, setActiveTab, viewUserProfile, viewPhoto, viewAlbum, setCurrentUserById, login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence, likeFeedItem: noop, commentFeedItem: noop, postWallComment: noop, deleteWallComment: noop, uploadPhoto, addPhotoTag: noop, removePhotoTag: noop, addPhotoComment: noop, likePhoto: noop, setPhotoAsAvatar: noop, deletePhoto: noop, createAlbum: noop, renameAlbum: noop, deleteAlbum: noop, sendFriendRequest: noop, acceptFriendRequest: noop, ignoreFriendRequest: noop, isFriend: () => false, hasPendingRequest: () => false, getFriendsOf: () => [], sendPrivateMessage: noop, markMessageAsRead: noop, deleteMessage: noop, sendChatMessage, openChatWith, closeChat, toggleMinimizeChat, setChatEstado: noop, logUserActivity: noop, deleteUserActivity: noop, getUserActivities: () => [], pushNotification, dismissToast: noop, markNotificationAsRead: noop, markAllNotificationsAsRead: noop, deleteNotification: noop, setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage: noop, simulateWallComment: noop, simulateFriendRequest: noop, simulatePhotoInteraction: noop, updateUserData, resetToDefaultData: noop, registerNewUser: noop }}>{children}</InkoriumContext.Provider>;
 };
 
 export const useInkorium = () => { const ctx = useContext(InkoriumContext); if (!ctx) throw new Error('useInkorium debe usarse dentro de InkoriumProvider'); return ctx; };
