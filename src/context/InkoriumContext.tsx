@@ -1,20 +1,33 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode } from '../types';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
 import { fetchPhotos, insertPhoto } from '../lib/photosApi';
 import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WALL_COMMENTS, INITIAL_FRIENDSHIPS, INITIAL_FRIEND_REQUESTS, INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_ACCESS_LOGS, INITIAL_ACTIVITIES } from '../data/mockData';
+import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
+import { musicAudioEngine } from '../utils/audioEngine';
 
 interface InkoriumContextType {
   currentUser: User; users: User[]; photos: Photo[]; albums: Album[]; feed: FeedItem[]; wallComments: WallComment[];
   messages: PrivateMessage[]; friendRequests: FriendRequest[]; friendships: Friendship[]; chatMessages: ChatMessage[];
   notifications: InkoriumNotification[]; toasts: InkoriumNotification[]; accessLogs: AccessLog[]; activities: UserActivity[];
-  activeChatWindows: ChatWindow[]; activeTab: 'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'notificaciones' | 'ajustes';
+  activeChatWindows: ChatWindow[]; activeTab: 'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'notificaciones' | 'ajustes' | 'musica';
   selectedUserId: string; selectedPhotoId: string | null; selectedAlbumId: string | null;
   composeRecipientId: string | null;
   unreadMessagesCount: number; unreadNotificationsCount: number; pendingRequestsCount: number;
   isRealtimeSimulationEnabled: boolean; isLoggedIn: boolean;
   theme: ThemeMode; isDarkMode: boolean; setTheme: (theme: ThemeMode) => void; toggleTheme: () => void;
+  // Music System
+  currentTrack: Track | null; isMusicPlaying: boolean; musicPosition: number; musicDuration: number;
+  musicVolume: number; isMusicMuted: boolean; isMusicShuffled: boolean; musicRepeatMode: RepeatMode;
+  musicPlaylist: Track[]; isMusicPlayerOpen: boolean; isMusicPlayerMinimized: boolean;
+  playTrack: (track: Track, openExpanded?: boolean) => void; pauseMusic: () => void; resumeMusic: () => void; togglePlayMusic: () => void;
+  nextTrack: () => void; prevTrack: () => void; seekMusic: (seconds: number) => void;
+  setMusicVolume: (volume: number) => void; toggleMusicMute: () => void;
+  toggleMusicShuffle: () => void; toggleMusicRepeat: () => void;
+  setIsMusicPlayerOpen: (open: boolean) => void; setIsMusicPlayerMinimized: (minimized: boolean) => void;
+  openMusicPlayer: (track?: Track, openExpanded?: boolean) => void; addCustomTrack: (track: Omit<Track, 'id'>) => void;
+  removeTrackFromPlaylist: (trackId: string) => void;
   setActiveTab: (tab: InkoriumContextType['activeTab']) => void; viewUserProfile: (userId: string) => void;
   openComposeMessage: (recipientId?: string) => void;
   viewPhoto: (photoId: string | null) => void; viewAlbum: (albumId: string | null) => void; setCurrentUserById: (userId: string) => void;
@@ -194,6 +207,251 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const toggleTheme = useCallback(() => {
     setThemeState(prev => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
+
+  // ==========================================
+  // MUSIC PLAYER STATE & CONTROLS
+  // ==========================================
+  const [musicPlaylist, setMusicPlaylist] = useState<Track[]>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:music_playlist');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return INITIAL_MUSIC_TRACKS;
+  });
+
+  const [currentTrack, setCurrentTrack] = useState<Track | null>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const savedId = localStorage.getItem('inkorium:current_track_id');
+      if (savedId) {
+        const found = INITIAL_MUSIC_TRACKS.find(t => t.id === savedId);
+        if (found) return found;
+      }
+    }
+    return INITIAL_MUSIC_TRACKS[0] || null;
+  });
+
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [musicPosition, setMusicPosition] = useState(0);
+  const [musicDuration, setMusicDuration] = useState(INITIAL_MUSIC_TRACKS[0]?.duration || 194);
+  const [musicVolume, setMusicVolumeState] = useState<number>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:music_volume');
+      if (saved) {
+        const parsed = parseFloat(saved);
+        if (!isNaN(parsed)) return parsed;
+      }
+    }
+    return 0.8;
+  });
+  const [isMusicMuted, setIsMusicMuted] = useState(false);
+  const [isMusicShuffled, setIsMusicShuffled] = useState(false);
+  const [musicRepeatMode, setMusicRepeatMode] = useState<RepeatMode>('all');
+  const [isMusicPlayerOpen, setIsMusicPlayerOpen] = useState(false);
+  const [isMusicPlayerMinimized, setIsMusicPlayerMinimized] = useState(true);
+
+  // Sync playlist to storage
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('inkorium:music_playlist', JSON.stringify(musicPlaylist));
+    }
+  }, [musicPlaylist]);
+
+  // Sync current track id
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined' && currentTrack) {
+      localStorage.setItem('inkorium:current_track_id', currentTrack.id);
+    }
+  }, [currentTrack]);
+
+  // Sync volume
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('inkorium:music_volume', String(musicVolume));
+    }
+    musicAudioEngine.setVolume(isMusicMuted ? 0 : musicVolume);
+  }, [musicVolume, isMusicMuted]);
+
+  // Music callbacks reference for nextTrack in engine onEnded
+  const playlistRef = useRef(musicPlaylist);
+  playlistRef.current = musicPlaylist;
+  const currentTrackRef = useRef(currentTrack);
+  currentTrackRef.current = currentTrack;
+  const shuffleRef = useRef(isMusicShuffled);
+  shuffleRef.current = isMusicShuffled;
+  const repeatRef = useRef(musicRepeatMode);
+  repeatRef.current = musicRepeatMode;
+
+  const nextTrackInternal = useCallback(() => {
+    const list = playlistRef.current;
+    const current = currentTrackRef.current;
+    if (list.length === 0) return;
+
+    if (repeatRef.current === 'one' && current) {
+      musicAudioEngine.play(current, 0);
+      return;
+    }
+
+    if (shuffleRef.current && list.length > 1) {
+      const remaining = list.filter(t => t.id !== current?.id);
+      const randomTrack = remaining[Math.floor(Math.random() * remaining.length)] || list[0];
+      setCurrentTrack(randomTrack);
+      setMusicPosition(0);
+      setMusicDuration(randomTrack.duration);
+      musicAudioEngine.play(randomTrack, 0);
+      return;
+    }
+
+    const currentIndex = current ? list.findIndex(t => t.id === current.id) : -1;
+    let nextIndex = currentIndex + 1;
+    if (nextIndex >= list.length) {
+      if (repeatRef.current === 'off') {
+        setIsMusicPlaying(false);
+        setMusicPosition(0);
+        return;
+      }
+      nextIndex = 0;
+    }
+
+    const nextTrk = list[nextIndex] || list[0];
+    setCurrentTrack(nextTrk);
+    setMusicPosition(0);
+    setMusicDuration(nextTrk.duration);
+    musicAudioEngine.play(nextTrk, 0);
+  }, []);
+
+  // Setup engine callbacks
+  useEffect(() => {
+    musicAudioEngine.setCallbacks(
+      (time, dur) => {
+        setMusicPosition(time);
+        setMusicDuration(dur);
+      },
+      () => {
+        nextTrackInternal();
+      },
+      (playing) => {
+        setIsMusicPlaying(playing);
+      }
+    );
+  }, [nextTrackInternal]);
+
+  const playTrack = useCallback((track: Track, openExpanded: boolean = false) => {
+    setCurrentTrack(track);
+    setMusicPosition(0);
+    setMusicDuration(track.duration);
+    setIsMusicPlayerOpen(true);
+    setIsMusicPlayerMinimized(!openExpanded);
+    // If not in playlist, add it
+    setMusicPlaylist(prev => {
+      if (prev.some(t => t.id === track.id)) return prev;
+      return [track, ...prev];
+    });
+    musicAudioEngine.play(track, 0);
+  }, []);
+
+  const pauseMusic = useCallback(() => {
+    musicAudioEngine.pause();
+    setIsMusicPlaying(false);
+  }, []);
+
+  const resumeMusic = useCallback(() => {
+    if (!currentTrack && musicPlaylist.length > 0) {
+      playTrack(musicPlaylist[0]);
+    } else {
+      musicAudioEngine.resume();
+    }
+  }, [currentTrack, musicPlaylist, playTrack]);
+
+  const togglePlayMusic = useCallback(() => {
+    if (isMusicPlaying) {
+      pauseMusic();
+    } else {
+      resumeMusic();
+    }
+  }, [isMusicPlaying, pauseMusic, resumeMusic]);
+
+  const nextTrack = useCallback(() => {
+    nextTrackInternal();
+  }, [nextTrackInternal]);
+
+  const prevTrack = useCallback(() => {
+    if (musicPosition > 3 && currentTrack) {
+      musicAudioEngine.seek(0);
+      setMusicPosition(0);
+      return;
+    }
+    const list = playlistRef.current;
+    const current = currentTrackRef.current;
+    if (list.length === 0) return;
+
+    const currentIndex = current ? list.findIndex(t => t.id === current.id) : 0;
+    let prevIndex = currentIndex - 1;
+    if (prevIndex < 0) {
+      prevIndex = list.length - 1;
+    }
+    const prevTrk = list[prevIndex] || list[0];
+    setCurrentTrack(prevTrk);
+    setMusicPosition(0);
+    setMusicDuration(prevTrk.duration);
+    musicAudioEngine.play(prevTrk, 0);
+  }, [musicPosition, currentTrack]);
+
+  const seekMusic = useCallback((seconds: number) => {
+    setMusicPosition(seconds);
+    musicAudioEngine.seek(seconds);
+  }, []);
+
+  const setMusicVolume = useCallback((val: number) => {
+    setMusicVolumeState(val);
+    if (isMusicMuted && val > 0) {
+      setIsMusicMuted(false);
+    }
+  }, [isMusicMuted]);
+
+  const toggleMusicMute = useCallback(() => {
+    setIsMusicMuted(prev => !prev);
+  }, []);
+
+  const toggleMusicShuffle = useCallback(() => {
+    setIsMusicShuffled(prev => !prev);
+  }, []);
+
+  const toggleMusicRepeat = useCallback(() => {
+    setMusicRepeatMode(prev => {
+      if (prev === 'off') return 'all';
+      if (prev === 'all') return 'one';
+      return 'off';
+    });
+  }, []);
+
+  const openMusicPlayer = useCallback((track?: Track, openExpanded: boolean = false) => {
+    setIsMusicPlayerOpen(true);
+    setIsMusicPlayerMinimized(!openExpanded);
+    if (track) {
+      playTrack(track, openExpanded);
+    }
+  }, [playTrack]);
+
+  const addCustomTrack = useCallback((trackData: Omit<Track, 'id'>) => {
+    const newTrack: Track = {
+      id: `track-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      ...trackData
+    };
+    setMusicPlaylist(prev => [newTrack, ...prev]);
+    playTrack(newTrack);
+  }, [playTrack]);
+
+  const removeTrackFromPlaylist = useCallback((trackId: string) => {
+    setMusicPlaylist(prev => prev.filter(t => t.id !== trackId));
+    if (currentTrack?.id === trackId) {
+      nextTrackInternal();
+    }
+  }, [currentTrack, nextTrackInternal]);
 
   // Sync users to localStorage
   useEffect(() => {
@@ -1388,6 +1646,17 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       unreadMessagesCount, unreadNotificationsCount, pendingRequestsCount,
       isRealtimeSimulationEnabled, isLoggedIn,
       theme, isDarkMode, setTheme, toggleTheme,
+      // Music System
+      currentTrack, isMusicPlaying, musicPosition, musicDuration,
+      musicVolume, isMusicMuted, isMusicShuffled, musicRepeatMode,
+      musicPlaylist, isMusicPlayerOpen, isMusicPlayerMinimized,
+      playTrack, pauseMusic, resumeMusic, togglePlayMusic,
+      nextTrack, prevTrack, seekMusic,
+      setMusicVolume, toggleMusicMute,
+      toggleMusicShuffle, toggleMusicRepeat,
+      setIsMusicPlayerOpen, setIsMusicPlayerMinimized,
+      openMusicPlayer, addCustomTrack,
+      removeTrackFromPlaylist,
       setActiveTab, viewUserProfile, openComposeMessage, viewPhoto, viewAlbum, setCurrentUserById,
       login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence,
       likeFeedItem, commentFeedItem, postWallComment, deleteWallComment,

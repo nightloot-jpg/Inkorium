@@ -2,6 +2,21 @@ export type Gender = 'h' | 'm' | 'otro';
 
 export type ThemeMode = 'light' | 'dark' | 'auto';
 
+export interface Track {
+  id: string;
+  title: string;
+  artist: string;
+  album?: string;
+  duration: number; // in seconds
+  coverUrl: string;
+  audioUrl?: string;
+  genre?: string;
+  year?: number;
+  synthStyle?: 'retro_pop' | 'chiptune' | 'electro' | 'lofi' | 'indie_rock' | 'ambient';
+}
+
+export type RepeatMode = 'off' | 'all' | 'one';
+
 export type UserPresence = 'conectado' | 'ausente' | 'ocupado' | 'invisible';
 
 export type RelationshipStatus = 'Soltero/a' | 'Con pareja' | 'En una relación' | 'Casado/a' | 'Es complicado' | 'De fiesta en fiesta';

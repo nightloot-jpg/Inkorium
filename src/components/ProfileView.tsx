@@ -44,7 +44,14 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     updateUserData,
     updateUserPresence,
     updateStatusText,
-    setActiveTab
+    setActiveTab,
+    // Music Player
+    musicPlaylist,
+    playTrack,
+    currentTrack,
+    isMusicPlaying,
+    togglePlayMusic,
+    openMusicPlayer
   } = useInkorium();
 
   const profileUser = users.find(u => u.id === selectedUserId) || currentUser;
@@ -852,12 +859,79 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                 )}
 
                 {profileUser.musica && (
-                  <div className="pt-1 border-t border-gray-100">
-                    <span className="text-gray-400 font-medium block mb-0.5 flex items-center gap-1">
-                      <Music className="w-3 h-3 text-[#3869A0]" />
-                      <span>Música favorita:</span>
+                  <div className="pt-2 border-t border-gray-100 dark:border-slate-800">
+                    <span className="text-gray-400 font-medium block mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Music className="w-3.5 h-3.5 text-[#3869A0] dark:text-blue-400" />
+                        <span>Música / Canción del Perfil:</span>
+                      </span>
+                      <span className="text-[10px] text-[#3869A0] font-bold">♪ Myspace/Tuenti Vibe</span>
                     </span>
-                    <p className="text-gray-700">{profileUser.musica}</p>
+                    
+                    {/* Interactive Profile Song Player Box */}
+                    {(() => {
+                      const matchedTrack = musicPlaylist.find(t => 
+                        profileUser.musica?.toLowerCase().includes(t.title.toLowerCase()) || 
+                        profileUser.musica?.toLowerCase().includes(t.artist.toLowerCase())
+                      ) || musicPlaylist[Math.abs(profileUser.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % musicPlaylist.length] || musicPlaylist[0];
+
+                      const isThisTrackPlaying = isMusicPlaying && currentTrack?.id === matchedTrack?.id;
+
+                      return (
+                        <div className="mt-1 p-2 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-blue-950/40 border border-blue-200 dark:border-blue-900/60 shadow-2xs space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-[#3869A0]/40 flex-shrink-0">
+                              <img 
+                                src={matchedTrack?.coverUrl} 
+                                alt="" 
+                                className={`w-full h-full object-cover ${isThisTrackPlaying ? 'animate-spin' : ''}`}
+                                style={{ animationDuration: '4s' }}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-[11px] text-gray-900 dark:text-white truncate">
+                                {matchedTrack?.title}
+                              </p>
+                              <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                                {matchedTrack?.artist} • {matchedTrack?.genre}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 border-t border-blue-100 dark:border-slate-700/60">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isThisTrackPlaying) {
+                                  togglePlayMusic();
+                                } else if (matchedTrack) {
+                                  playTrack(matchedTrack);
+                                }
+                              }}
+                              className="px-2.5 py-1 rounded bg-[#3869A0] hover:bg-[#2c537f] text-white text-[10px] font-bold flex items-center gap-1 transition cursor-pointer shadow-xs"
+                            >
+                              {isThisTrackPlaying ? (
+                                <>
+                                  <span>⏸ Pausar</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>▶ Escuchar canción</span>
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => openMusicPlayer(matchedTrack)}
+                              className="text-[10px] text-[#3869A0] dark:text-blue-400 hover:underline font-semibold cursor-pointer"
+                            >
+                              Abrir reproductor
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 

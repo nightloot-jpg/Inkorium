@@ -8,12 +8,14 @@ import { PeopleSearch } from './components/PeopleSearch';
 import { MessagesView } from './components/MessagesView';
 import { NotificationsView } from './components/NotificationsView';
 import { SettingsView } from './components/SettingsView';
+import { MusicView } from './components/MusicView';
 import { PhotoLightbox } from './components/PhotoLightbox';
 import { UploadModal } from './components/UploadModal';
 import { AuthModal } from './components/AuthModal';
 import { AuthPage } from './components/AuthPage';
 import { ChatBar } from './components/ChatBar';
 import { NotificationToasts } from './components/NotificationToasts';
+import { FloatingMusicPlayer } from './components/FloatingMusicPlayer';
 
 const InkoriumAppContent: React.FC = () => {
   const { activeTab, setActiveTab, isLoggedIn, logout } = useInkorium();
@@ -42,6 +44,7 @@ const InkoriumAppContent: React.FC = () => {
         {activeTab === 'mensajes' && <MessagesView />}
         {activeTab === 'notificaciones' && <NotificationsView />}
         {activeTab === 'ajustes' && <SettingsView />}
+        {activeTab === 'musica' && <MusicView />}
       </main>
 
       {/* Footer */}
@@ -59,6 +62,7 @@ const InkoriumAppContent: React.FC = () => {
             <button onClick={() => setActiveTab('perfil')} className="hover:underline text-gray-600 cursor-pointer">Mi Perfil</button>
             <button onClick={() => setActiveTab('fotos')} className="hover:underline text-gray-600 cursor-pointer">Fotos</button>
             <button onClick={() => setActiveTab('gente')} className="hover:underline text-gray-600 cursor-pointer">Buscar Gente</button>
+            <button onClick={() => setActiveTab('musica')} className="hover:underline text-[#3869A0] font-semibold cursor-pointer">Música</button>
             <button onClick={() => setActiveTab('notificaciones')} className="hover:underline text-gray-600 cursor-pointer">Avisos</button>
             <button onClick={() => setActiveTab('ajustes')} className="hover:underline text-gray-600 cursor-pointer">Ajustes</button>
             <button onClick={() => setIsAuthOpen(true)} className="hover:underline text-[#3869A0] font-semibold cursor-pointer">Cambiar cuenta</button>
@@ -70,6 +74,7 @@ const InkoriumAppContent: React.FC = () => {
       {/* Global Overlays & Real-time Live Toasts */}
       <NotificationToasts />
       <PhotoLightbox />
+      <FloatingMusicPlayer />
       <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       <ChatBar />

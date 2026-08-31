@@ -4,7 +4,7 @@ import { useInkorium } from '../context/InkoriumContext';
 import { 
   Send, Image as ImageIcon, Smile, MessageCircle, Heart, 
   UserPlus, Sparkles, Clock, CheckCircle2, ChevronRight,
-  Upload, Camera, Loader2, X, Edit2, Check, ChevronDown
+  Upload, Camera, Loader2, X, Edit2, Check, ChevronDown, Music, Disc
 } from 'lucide-react';
 import { FeedItem, UserPresence } from '../types';
 import { uploadMediaFile } from '../lib/storage';
@@ -39,7 +39,10 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
     isFriend,
     hasPendingRequest,
     openChatWith,
-    setChatEstado
+    setChatEstado,
+    musicPlaylist,
+    currentTrack,
+    isMusicPlaying
   } = useInkorium();
 
   const [statusText, setStatusText] = useState('');
@@ -324,6 +327,25 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
             >
               <Upload className="w-3.5 h-3.5" />
               <span>Subir fotos</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('musica')}
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 text-gray-700 flex items-center justify-between group cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Music className="w-3.5 h-3.5 text-[#3869A0] group-hover:scale-110 transition-transform" />
+                <span className="font-semibold text-gray-800">Música</span>
+              </div>
+              {isMusicPlaying ? (
+                <div className="flex items-center gap-1">
+                  <Disc className="w-3 h-3 text-[#3869A0] animate-spin" style={{ animationDuration: '3s' }} />
+                  <span className="text-[10px] text-[#3869A0] font-bold">Sonando</span>
+                </div>
+              ) : (
+                <span className="text-[10px] bg-blue-100 text-[#3869A0] px-1.5 py-0.5 rounded-full font-bold">
+                  {musicPlaylist.length}
+                </span>
+              )}
             </button>
             <button 
               onClick={() => setActiveTab('gente')}
