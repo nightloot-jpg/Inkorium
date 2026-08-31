@@ -126,6 +126,7 @@ app.get('/api/private-messages', async (req, res) => {
       if (Array.isArray(value)) value.forEach((item) => query.append(key, String(item)));
       else if (value != null) query.set(key, String(value));
     }
+    query.delete('access_token');
     if (!query.has('select')) query.set('select', 'id,sender_id,recipient_id,subject,body,is_read,created_at');
     const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
       headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' }
@@ -144,10 +145,20 @@ app.post('/api/private-messages', async (req, res) => {
     const token = extractToken(req);
     if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
     if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+
+    if (String(req.body?.action || '').trim().toLowerCase() === 'list') {
+      const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?select=id,sender_id,recipient_id,subject,body,is_read,created_at&order=created_at.desc`, {
+        headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' }
+      });
+      const body = await upstream.text();
+      return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
+    }
+
+    const { access_token: _accessToken, action: _action, ...messagePayload } = req.body || {};
     const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?select=id,sender_id,recipient_id,subject,body,is_read,created_at`, {
       method: 'POST',
       headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: Array.isArray(req.headers.prefer) ? req.headers.prefer.join(',') : (req.headers.prefer || 'return=representation') },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(messagePayload)
     });
     const body = await upstream.text();
     return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
@@ -168,10 +179,11 @@ app.patch('/api/private-messages', async (req, res) => {
       if (Array.isArray(value)) value.forEach((item) => query.append(key, String(item)));
       else if (value != null) query.set(key, String(value));
     }
+    const { access_token: _accessToken, ...messagePayload } = req.body || {};
     const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
       method: 'PATCH',
       headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: Array.isArray(req.headers.prefer) ? req.headers.prefer.join(',') : (req.headers.prefer || 'return=minimal') },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(messagePayload)
     });
     const body = await upstream.text();
     return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
