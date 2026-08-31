@@ -10,7 +10,19 @@ const app = express();
 const PORT = 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+const ALLOWED_UPLOAD_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'];
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_UPLOAD_MIME_TYPES.includes(file.mimetype.toLowerCase())) {
+      return cb(new Error('INVALID_MIME_TYPE'));
+    }
+    cb(null, true);
+  }
+});
 let s3Client: S3Client | null = null;
 let jwksCache: { expiresAt: number; keys: any[] } | null = null;
 
@@ -472,47 +484,65 @@ app.post('/api/posts', async (req, res) => {
   } catch (err: any) { console.error('Supabase create post failed:', err); return res.status(502).json({ error: 'SUPABASE_POST_CREATE_FAILED', message: err?.message || 'Unable to create post.' }); }
 });
 
-app.post('/api/upload', upload.single('file') as any, async (req: express.Request, res: express.Response) => {
-  try {
-    const file = req.file; const folder = String(req.body.folder || 'photos').trim().toLowerCase();
-    if (!file) return res.status(400).json({ error: 'NO_FILE' });
-    if (!['avatars', 'photos', 'wall'].includes(folder)) return res.status(400).json({ error: 'INVALID_FOLDER' });
-    const hetzner = getHetznerS3Client();
-    if (!hetzner) {
-      const mime = file.mimetype || 'image/jpeg';
-      const base64 = file.buffer.toString('base64');
-      const dataUrl = `data:${mime};base64,${base64}`;
-      return res.json({ success: true, url: dataUrl, key: `inline-${Date.now()}`, provider: 'inline' });
+app.post('/api/upload', (req: express.Request, res: express.Response) => {
+  (upload.single('file') as any)(req, res, async (err: any) => {
+    if (err) {
+      if (err.message === 'INVALID_MIME_TYPE') {
+        return res.status(400).json({ error: 'INVALID_FILE_TYPE', message: 'Formato no permitido. Solo se aceptan imágenes (JPG, PNG, WebP, GIF, AVIF).' });
+      }
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'FILE_TOO_LARGE', message: 'El archivo excede el límite máximo de 25MB.' });
+      }
+      return res.status(400).json({ error: 'UPLOAD_ERROR', message: err.message || 'Error al procesar el archivo.' });
     }
-    const fileExt = (file.originalname.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const key = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt || 'jpg'}`;
-    await hetzner.client.send(new PutObjectCommand({
-      Bucket: hetzner.bucket,
-      Key: key,
-      Body: file.buffer,
-      ContentType: file.mimetype || 'image/jpeg',
-      CacheControl: 'public, max-age=31536000, immutable'
-    }));
-    let publicUrl: string;
-    if (hetzner.publicUrlBase) {
-      publicUrl = `${hetzner.publicUrlBase.replace(/\/+$/, '')}/${key}`;
-    } else {
-      const endpointUrl = new URL(`${hetzner.endpoint}/`);
-      publicUrl = `${endpointUrl.protocol}//${hetzner.bucket}.${endpointUrl.host}/${key}`;
+
+    try {
+      const file = req.file;
+      const folder = String(req.body.folder || 'photos').trim().toLowerCase();
+      if (!file) return res.status(400).json({ error: 'NO_FILE', message: 'No se ha adjuntado ningún archivo.' });
+      if (!['avatars', 'photos', 'wall'].includes(folder)) return res.status(400).json({ error: 'INVALID_FOLDER' });
+      
+      const rawExt = (file.originalname.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const fileExt = ALLOWED_EXTENSIONS.includes(rawExt) ? rawExt : 'jpg';
+
+      const hetzner = getHetznerS3Client();
+      if (!hetzner) {
+        const mime = file.mimetype || 'image/jpeg';
+        const base64 = file.buffer.toString('base64');
+        const dataUrl = `data:${mime};base64,${base64}`;
+        return res.json({ success: true, url: dataUrl, key: `inline-${Date.now()}`, provider: 'inline' });
+      }
+
+      const key = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      await hetzner.client.send(new PutObjectCommand({
+        Bucket: hetzner.bucket,
+        Key: key,
+        Body: file.buffer,
+        ContentType: file.mimetype || 'image/jpeg',
+        CacheControl: 'public, max-age=31536000, immutable'
+      }));
+
+      let publicUrl: string;
+      if (hetzner.publicUrlBase) {
+        publicUrl = `${hetzner.publicUrlBase.replace(/\/+$/, '')}/${key}`;
+      } else {
+        const endpointUrl = new URL(`${hetzner.endpoint}/`);
+        publicUrl = `${endpointUrl.protocol}//${hetzner.bucket}.${endpointUrl.host}/${key}`;
+      }
+      return res.json({ success: true, url: publicUrl, key, bucket: hetzner.bucket, provider: 'hetzner' });
+    } catch (uploadErr: any) {
+      console.error('Error uploading file to Hetzner Object Storage, using inline fallback:', uploadErr);
+      if (req.file) {
+        const mime = req.file.mimetype || 'image/jpeg';
+        const base64 = req.file.buffer.toString('base64');
+        const dataUrl = `data:${mime};base64,${base64}`;
+        return res.json({ success: true, url: dataUrl, key: `fallback-${Date.now()}`, provider: 'fallback' });
+      }
+      const code = uploadErr?.Code || uploadErr?.name || 'UNKNOWN';
+      const message = uploadErr?.message || 'Error al subir el archivo.';
+      return res.status(500).json({ error: 'UPLOAD_FAILED', code, message });
     }
-    return res.json({ success: true, url: publicUrl, key, bucket: hetzner.bucket, provider: 'hetzner' });
-  } catch (err: any) {
-    console.error('Error uploading file to Hetzner Object Storage, using inline fallback:', err);
-    if (req.file) {
-      const mime = req.file.mimetype || 'image/jpeg';
-      const base64 = req.file.buffer.toString('base64');
-      const dataUrl = `data:${mime};base64,${base64}`;
-      return res.json({ success: true, url: dataUrl, key: `fallback-${Date.now()}`, provider: 'fallback' });
-    }
-    const code = err?.Code || err?.name || 'UNKNOWN';
-    const message = err?.message || 'Error al subir el archivo.';
-    return res.status(500).json({ error: 'UPLOAD_FAILED', code, message });
-  }
+  });
 });
 
 async function startServer() {
