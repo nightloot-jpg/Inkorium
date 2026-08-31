@@ -26,6 +26,7 @@ interface InkoriumContextType {
   setPhotoAsAvatar: (photoId: string) => void; deletePhoto: (photoId: string) => void; createAlbum: (nombre: string, descripcion?: string) => void;
   renameAlbum: (albumId: string, nuevoNombre: string) => void; deleteAlbum: (albumId: string) => void;
   sendFriendRequest: (targetUserId: string) => void; acceptFriendRequest: (requestId: string) => void; ignoreFriendRequest: (requestId: string) => void;
+  removeFriendship: (targetUserId: string) => void; cancelFriendRequest: (targetUserId: string) => void;
   isFriend: (userId1: string, userId2: string) => boolean; hasPendingRequest: (fromId: string, toId: string) => boolean; getFriendsOf: (userId: string) => User[];
   sendPrivateMessage: (receptorId: string, asunto: string, mensaje: string) => void; markMessageAsRead: (messageId: string) => void; deleteMessage: (messageId: string) => void;
   openChatWith: (targetUserId: string) => void; closeChat: (targetUserId: string) => void; toggleMinimizeChat: (targetUserId: string) => void;
@@ -719,6 +720,19 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     ));
   }, []);
 
+  const cancelFriendRequest = useCallback((targetUserId: string) => {
+    setFriendRequests(prev => prev.filter(r => !(r.emisorId === currentUserId && r.receptorId === targetUserId && r.estado === 'pendiente')));
+  }, [currentUserId]);
+
+  const removeFriendship = useCallback((targetUserId: string) => {
+    setFriendships(prev => prev.filter(f => 
+      !((f.user1 === currentUserId && f.user2 === targetUserId) || (f.user1 === targetUserId && f.user2 === currentUserId))
+    ));
+    setFriendRequests(prev => prev.filter(r => 
+      !((r.emisorId === currentUserId && r.receptorId === targetUserId) || (r.emisorId === targetUserId && r.receptorId === currentUserId))
+    ));
+  }, [currentUserId]);
+
   const sendFriendRequest = useCallback((targetUserId: string) => {
     if (!currentUserId || targetUserId === currentUserId) return;
     const newReq: FriendRequest = {
@@ -1235,7 +1249,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       likeFeedItem, commentFeedItem, postWallComment, deleteWallComment,
       uploadPhoto, addPhotoTag, removePhotoTag, addPhotoComment, likePhoto,
       setPhotoAsAvatar, deletePhoto, createAlbum, renameAlbum, deleteAlbum,
-      sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, isFriend, hasPendingRequest, getFriendsOf,
+      sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, removeFriendship, cancelFriendRequest, isFriend, hasPendingRequest, getFriendsOf,
       sendPrivateMessage, markMessageAsRead, deleteMessage,
       sendChatMessage, openChatWith, closeChat, toggleMinimizeChat, setChatEstado,
       logUserActivity, deleteUserActivity, getUserActivities,

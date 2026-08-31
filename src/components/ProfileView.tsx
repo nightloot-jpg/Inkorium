@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { ActivityLog } from './ActivityLog';
 import { AvatarModal } from './AvatarModal';
 import { 
   UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon, 
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
-  Trash2, Send, Check, Shield, UserCheck, Camera, Upload, ChevronDown
+  Trash2, Send, Check, Shield, UserCheck, Camera, Upload, ChevronDown,
+  Users, UserMinus, UserX, Clock, Search, X, ShieldAlert, CheckCheck
 } from 'lucide-react';
-import { UserPresence } from '../types';
+import { UserPresence, User } from '../types';
 
 const PRESENCE_CONFIG: Record<UserPresence, { label: string; dot: string; text: string; bg: string }> = {
   conectado: { label: 'Conectado', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' },
@@ -24,12 +25,17 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     photos,
     albums,
     wallComments,
+    friendRequests,
     postWallComment,
     deleteWallComment,
     viewUserProfile,
     viewPhoto,
     viewAlbum,
     sendFriendRequest,
+    acceptFriendRequest,
+    ignoreFriendRequest,
+    removeFriendship,
+    cancelFriendRequest,
     isFriend,
     hasPendingRequest,
     getFriendsOf,
@@ -45,7 +51,30 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const isOwnProfile = profileUser.id === currentUser.id;
   const friendsList = getFriendsOf(profileUser.id);
   const alreadyFriend = isFriend(currentUser.id, profileUser.id);
-  const pendingReq = hasPendingRequest(currentUser.id, profileUser.id);
+  const pendingOutgoingReq = hasPendingRequest(currentUser.id, profileUser.id);
+  
+  // Pending incoming request from this profile to current user
+  const incomingReqFromProfile = useMemo(() => {
+    return friendRequests.find(
+      r => r.emisorId === profileUser.id && 
+           (r.receptorId === currentUser.id || r.receptorId === 'nightloot') && 
+           r.estado === 'pendiente'
+    );
+  }, [friendRequests, profileUser.id, currentUser.id]);
+
+  // Current user's all incoming pending requests (to display in Amigos tab if on own profile)
+  const allMyPendingRequests = useMemo(() => {
+    return friendRequests.filter(
+      r => (r.receptorId === currentUser.id || r.receptorId === 'nightloot') && 
+           r.estado === 'pendiente'
+    );
+  }, [friendRequests, currentUser.id]);
+
+  // Profile View Sub-tab
+  const [profileSubTab, setProfileSubTab] = useState<'perfil' | 'amigos' | 'fotos'>('perfil');
+  const [friendSearchQuery, setFriendSearchQuery] = useState('');
+  const [friendFilter, setFriendFilter] = useState<'todos' | 'online' | 'solicitudes'>('todos');
+  const [confirmRemoveFriendId, setConfirmRemoveFriendId] = useState<string | null>(null);
 
   const [wallInput, setWallInput] = useState('');
   const [editingStatus, setEditingStatus] = useState(false);
@@ -71,6 +100,21 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   // Calculate age from fnac
   const birthYear = parseInt(profileUser.fnac.split('-')[0], 10) || 1993;
   const userAge = new Date().getFullYear() - birthYear;
+
+  // Filtered friends list for the Amigos tab
+  const filteredFriends = useMemo(() => {
+    return friendsList.filter(friend => {
+      if (friendFilter === 'online' && !friend.online && friend.presencia !== 'conectado') return false;
+      if (friendSearchQuery.trim()) {
+        const q = friendSearchQuery.toLowerCase();
+        const fullName = `${friend.nombre} ${friend.apellidos}`.toLowerCase();
+        const city = (friend.ciudad || friend.provincia || '').toLowerCase();
+        const username = (friend.username || '').toLowerCase();
+        return fullName.includes(q) || city.includes(q) || username.includes(q);
+      }
+      return true;
+    });
+  }, [friendsList, friendFilter, friendSearchQuery]);
 
   const handleSendWall = (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,19 +280,63 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
             {!isOwnProfile ? (
               <>
-                {alreadyFriend ? (
-                  <div className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-300 rounded text-xs font-bold">
-                    <UserCheck className="w-3.5 h-3.5" />
-                    <span>Sois amigos</span>
+                {/* 1. If incoming friend request from this user */}
+                {incomingReqFromProfile ? (
+                  <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-300 rounded p-1">
+                    <span className="text-[11px] text-amber-800 font-medium px-1.5">Te envió solicitud:</span>
+                    <button
+                      onClick={() => acceptFriendRequest(incomingReqFromProfile.id)}
+                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold flex items-center gap-1 transition cursor-pointer shadow-2xs"
+                      title="Aceptar solicitud de amistad"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Aceptar</span>
+                    </button>
+                    <button
+                      onClick={() => ignoreFriendRequest(incomingReqFromProfile.id)}
+                      className="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded text-xs font-medium transition cursor-pointer"
+                      title="Rechazar / ignorar solicitud"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Rechazar</span>
+                    </button>
                   </div>
-                ) : pendingReq ? (
-                  <div className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">
-                    Petición enviada
+                ) : alreadyFriend ? (
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-300 rounded text-xs font-bold">
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>Sois amigos</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`¿Seguro que deseas eliminar a ${profileUser.nombre} de tu lista de amigos?`)) {
+                          removeFriendship(profileUser.id);
+                        }
+                      }}
+                      className="px-2 py-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded border border-transparent hover:border-red-200 transition text-xs cursor-pointer"
+                      title="Eliminar de amigos"
+                    >
+                      <UserMinus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : pendingOutgoingReq ? (
+                  <div className="flex items-center gap-1 bg-gray-100 border border-gray-300 rounded p-0.5">
+                    <span className="px-2.5 py-1 text-gray-600 text-xs font-medium flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Petición enviada</span>
+                    </span>
+                    <button
+                      onClick={() => cancelFriendRequest(profileUser.id)}
+                      className="px-2 py-1 bg-white hover:bg-red-50 text-red-600 hover:text-red-700 text-[11px] font-semibold rounded border border-gray-200 hover:border-red-200 transition cursor-pointer"
+                      title="Cancelar solicitud de amistad"
+                    >
+                      Cancelar
+                    </button>
                   </div>
                 ) : (
                   <button
                     onClick={() => sendFriendRequest(profileUser.id)}
-                    className="px-3 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                    className="px-3.5 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
                     <span>Añadir amigo</span>
@@ -298,267 +386,707 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
             )}
           </div>
         </div>
+
+        {/* ================= PROFILE SUB-TABS NAVIGATION ================= */}
+        <div className="flex items-center gap-2 border-t border-gray-200 mt-4 pt-3 text-xs font-bold">
+          <button
+            onClick={() => setProfileSubTab('perfil')}
+            className={`px-3.5 py-1.5 rounded flex items-center gap-1.5 transition cursor-pointer ${
+              profileSubTab === 'perfil'
+                ? 'bg-[#3869A0] text-white shadow-xs'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Perfil & Tablón</span>
+          </button>
+
+          <button
+            onClick={() => setProfileSubTab('amigos')}
+            className={`px-3.5 py-1.5 rounded flex items-center gap-1.5 transition cursor-pointer ${
+              profileSubTab === 'amigos'
+                ? 'bg-[#3869A0] text-white shadow-xs'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Amigos</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
+              profileSubTab === 'amigos' ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'
+            }`}>
+              {friendsList.length}
+            </span>
+            {isOwnProfile && allMyPendingRequests.length > 0 && (
+              <span className="bg-amber-500 text-white text-[10px] px-1.5 py-0.2 rounded-full animate-pulse">
+                {allMyPendingRequests.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setProfileSubTab('fotos')}
+            className={`px-3.5 py-1.5 rounded flex items-center gap-1.5 transition cursor-pointer ${
+              profileSubTab === 'fotos'
+                ? 'bg-[#3869A0] text-white shadow-xs'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>Fotos & Álbumes</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
+              profileSubTab === 'fotos' ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'
+            }`}>
+              {userPhotos.length + taggedPhotos.length}
+            </span>
+          </button>
+        </div>
       </div>
 
-      {/* ================= THREE COLUMN PROFILE CONTENT ================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* ================= LEFT COLUMN: PERSONAL INFO ================= */}
-        <div className="lg:col-span-3 space-y-4">
-          {/* Datos Personales Card */}
-          <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-3">
-            <div className="font-bold text-gray-800 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#3869A0]" />
-              <span>Información personal</span>
-            </div>
-
-            <div className="space-y-2 text-gray-700">
-              <div className="flex items-start justify-between">
-                <span className="text-gray-400 font-medium">Nombre:</span>
-                <span className="font-semibold text-right">{profileUser.nombre} {profileUser.apellidos}</span>
+      {/* ================= TAB CONTENT: AMIGOS DEDICATED VIEW ================= */}
+      {profileSubTab === 'amigos' && (
+        <div className="space-y-4">
+          {/* Top Bar for Friends Search & Filters */}
+          <div className="bg-white rounded border border-[#ccd5df] p-3.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded bg-[#3869A0]/10 text-[#3869A0] flex items-center justify-center font-bold">
+                <Users className="w-4 h-4" />
               </div>
-              <div className="flex items-start justify-between">
-                <span className="text-gray-400 font-medium">Cumpleaños:</span>
-                <span className="font-semibold text-right">{profileUser.fnac} ({userAge} años)</span>
-              </div>
-              <div className="flex items-start justify-between">
-                <span className="text-gray-400 font-medium">Sexo:</span>
-                <span className="font-semibold text-right">{profileUser.sexo === 'h' ? 'Chico (Hombre)' : 'Chica (Mujer)'}</span>
-              </div>
-              <div className="flex items-start justify-between">
-                <span className="text-gray-400 font-medium">Provincia:</span>
-                <span className="font-semibold text-right">{profileUser.provincia}</span>
-              </div>
-              <div className="flex items-start justify-between">
-                <span className="text-gray-400 font-medium">Situación:</span>
-                <span className="font-semibold text-right text-[#3869A0]">{profileUser.situacionSentimental}</span>
-              </div>
-
-              {profileUser.ocupacion && (
-                <div className="pt-1 border-t border-gray-100">
-                  <span className="text-gray-400 font-medium block mb-0.5">Ocupación / Estudios:</span>
-                  <p className="font-semibold text-gray-800">{profileUser.ocupacion}</p>
-                </div>
-              )}
-
-              {profileUser.intereses && (
-                <div className="pt-1 border-t border-gray-100">
-                  <span className="text-gray-400 font-medium block mb-0.5">Intereses y aficiones:</span>
-                  <p className="text-gray-700">{profileUser.intereses}</p>
-                </div>
-              )}
-
-              {profileUser.musica && (
-                <div className="pt-1 border-t border-gray-100">
-                  <span className="text-gray-400 font-medium block mb-0.5 flex items-center gap-1">
-                    <Music className="w-3 h-3 text-[#3869A0]" />
-                    <span>Música favorita:</span>
-                  </span>
-                  <p className="text-gray-700">{profileUser.musica}</p>
-                </div>
-              )}
-
-              <div className="pt-2 border-t border-gray-100 text-[10px] text-gray-400">
-                Registrado en Inkorium el {profileUser.fechaReg}
+              <div>
+                <h2 className="font-bold text-sm text-gray-900">
+                  {isOwnProfile ? 'Mis amigos en Inkorium' : `Lista de amigos de ${profileUser.nombre}`}
+                </h2>
+                <p className="text-[11px] text-gray-500">
+                  Total de {friendsList.length} {friendsList.length === 1 ? 'amigo conectado' : 'amigos conectados'} en la red
+                </p>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* ================= CENTER COLUMN: ALBUMS & TABLÓN (WALL) ================= */}
-        <div className="lg:col-span-6 space-y-4">
-          {/* Albums & Tagged Photos Preview */}
-          <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-3">
-            <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-[#3869A0]" />
-                <span>Fotos y Álbumes ({userPhotos.length + taggedPhotos.length} fotos)</span>
-              </span>
-              <button
-                onClick={() => setActiveTab('fotos')}
-                className="text-[11px] text-[#3869A0] hover:underline font-semibold cursor-pointer"
-              >
-                Ver todos los álbumes
-              </button>
-            </div>
-
-            {/* Quick mini albums showcase */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {/* Fotos subidas */}
-              <div 
-                onClick={() => setActiveTab('fotos')}
-                className="border border-gray-200 rounded p-2 hover:bg-blue-50/50 cursor-pointer transition text-center group"
-              >
-                <div className="h-28 rounded bg-gray-100 overflow-hidden mb-1.5 flex items-center justify-center border">
-                  {userPhotos[0] ? (
-                    <img src={userPhotos[0].archivo} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                  ) : (
-                    <ImageIcon className="w-8 h-8 text-gray-300" />
-                  )}
-                </div>
-                <p className="font-bold text-[#3869A0] group-hover:underline text-[11px] truncate">Fotos subidas</p>
-                <span className="text-[10px] text-gray-400">{userPhotos.length} foto(s)</span>
-              </div>
-
-              {/* Fotos etiquetadas */}
-              <div 
-                onClick={() => setActiveTab('fotos')}
-                className="border border-gray-200 rounded p-2 hover:bg-blue-50/50 cursor-pointer transition text-center group"
-              >
-                <div className="h-28 rounded bg-gray-100 overflow-hidden mb-1.5 flex items-center justify-center border">
-                  {taggedPhotos[0] ? (
-                    <img src={taggedPhotos[0].archivo} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                  ) : (
-                    <ImageIcon className="w-8 h-8 text-gray-300" />
-                  )}
-                </div>
-                <p className="font-bold text-[#3869A0] group-hover:underline text-[11px] truncate">Fotos etiquetadas</p>
-                <span className="text-[10px] text-gray-400">{taggedPhotos.length} foto(s)</span>
-              </div>
-
-              {/* Custom albums */}
-              {userAlbums.slice(0, 2).map(alb => {
-                const albPhoto = photos.find(p => p.albumId === alb.id);
-                return (
-                  <div 
-                    key={alb.id}
-                    onClick={() => viewAlbum(alb.id)}
-                    className="border border-gray-200 rounded p-2 hover:bg-blue-50/50 cursor-pointer transition text-center group"
+            {/* Search and Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar entre amigos..."
+                  value={friendSearchQuery}
+                  onChange={e => setFriendSearchQuery(e.target.value)}
+                  className="p-1.5 pl-7 pr-3 text-xs rounded border border-gray-300 bg-gray-50 focus:bg-white focus:outline-none focus:border-[#3869A0] w-48 sm:w-60"
+                />
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2 top-2" />
+                {friendSearchQuery && (
+                  <button
+                    onClick={() => setFriendSearchQuery('')}
+                    className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
                   >
-                    <div className="h-28 rounded bg-gray-100 overflow-hidden mb-1.5 flex items-center justify-center border">
-                      {albPhoto ? (
-                        <img src={albPhoto.archivo} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                      ) : (
-                        <ImageIcon className="w-8 h-8 text-gray-300" />
-                      )}
-                    </div>
-                    <p className="font-bold text-[#3869A0] group-hover:underline text-[11px] truncate">{alb.nombre}</p>
-                    <span className="text-[10px] text-gray-400">Álbum personal</span>
-                  </div>
-                );
-              })}
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded border border-gray-200">
+                <button
+                  onClick={() => setFriendFilter('todos')}
+                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition cursor-pointer ${
+                    friendFilter === 'todos' ? 'bg-white text-[#3869A0] shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Todos ({friendsList.length})
+                </button>
+                <button
+                  onClick={() => setFriendFilter('online')}
+                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition cursor-pointer ${
+                    friendFilter === 'online' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  En línea ({friendsList.filter(f => f.online || f.presencia === 'conectado').length})
+                </button>
+                {isOwnProfile && allMyPendingRequests.length > 0 && (
+                  <button
+                    onClick={() => setFriendFilter('solicitudes')}
+                    className={`px-2.5 py-1 rounded text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                      friendFilter === 'solicitudes' ? 'bg-amber-500 text-white shadow-xs' : 'text-amber-700 bg-amber-100/60 hover:bg-amber-100'
+                    }`}
+                  >
+                    <span>Solicitudes</span>
+                    <span className="px-1 py-0.2 bg-white text-amber-800 rounded-full text-[9px] font-bold">
+                      {allMyPendingRequests.length}
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* ================= TABLÓN DE COMENTARIOS (WALL) ================= */}
-          <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-3">
-            <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5 text-[#3869A0]" />
-                <span>Tablón de firmas de {profileUser.nombre} ({userWallComments.length})</span>
-              </span>
-            </div>
+          {/* Pending Friend Requests Section (if on own profile or if filter selected) */}
+          {isOwnProfile && (friendFilter === 'solicitudes' || friendFilter === 'todos') && allMyPendingRequests.length > 0 && (
+            <div className="bg-amber-50/80 rounded border border-amber-200 p-4 shadow-xs space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-amber-200">
+                <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                  <UserPlus className="w-4 h-4 text-amber-700" />
+                  <span>Solicitudes de amistad pendientes ({allMyPendingRequests.length})</span>
+                </div>
+                <span className="text-[11px] text-amber-700 font-medium">
+                  Personas que quieren agregarte a sus amigos
+                </span>
+              </div>
 
-            {/* Input to write on wall */}
-            <form onSubmit={handleSendWall} className="space-y-2">
-              <textarea
-                value={wallInput}
-                onChange={e => setWallInput(e.target.value)}
-                placeholder={`Escribe algo en el tablón de ${isOwnProfile ? 'tu perfil' : profileUser.nombre}...`}
-                rows={2}
-                className="w-full p-2.5 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3869A0] focus:border-[#3869A0] resize-none"
-              />
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] text-gray-400">
-                  ¡Déjale una firma o saludo nostálgico! :)
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {allMyPendingRequests.map(req => (
+                  <div key={req.id} className="bg-white rounded border border-amber-200 p-3 shadow-xs space-y-2 flex flex-col justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <img
+                        src={req.emisorAvatar}
+                        alt={req.emisorNombre}
+                        className="w-11 h-11 rounded object-cover border border-gray-300 cursor-pointer hover:opacity-90 flex-shrink-0"
+                        onClick={() => viewUserProfile(req.emisorId)}
+                      />
+                      <div className="min-w-0">
+                        <h4
+                          onClick={() => viewUserProfile(req.emisorId)}
+                          className="font-bold text-xs text-[#3869A0] hover:underline cursor-pointer truncate"
+                        >
+                          {req.emisorNombre}
+                        </h4>
+                        <p className="text-[10px] text-gray-500 truncate flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-gray-400" />
+                          <span>{req.emisorProvincia || 'España'}</span>
+                        </p>
+                        <span className="text-[9px] text-gray-400">{req.fecha}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 pt-2 border-t border-gray-100">
+                      <button
+                        onClick={() => acceptFriendRequest(req.id)}
+                        className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer shadow-xs"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Aceptar</span>
+                      </button>
+                      <button
+                        onClick={() => ignoreFriendRequest(req.id)}
+                        className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium transition cursor-pointer"
+                        title="Rechazar solicitud"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Rechazar</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Friends Grid */}
+          {friendFilter !== 'solicitudes' && (
+            <div className="bg-white rounded border border-[#ccd5df] p-4 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                <span className="font-bold text-xs text-gray-800">
+                  {friendFilter === 'online' ? 'Amigos conectados ahora' : 'Todos los amigos'} ({filteredFriends.length})
                 </span>
                 <button
-                  type="submit"
-                  disabled={!wallInput.trim()}
-                  className="px-3.5 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] disabled:bg-gray-300 text-white font-bold text-xs rounded transition flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed shadow-xs"
+                  onClick={() => setActiveTab('gente')}
+                  className="text-xs text-[#3869A0] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
                 >
-                  <Send className="w-3 h-3" />
-                  <span>Firmar tablón</span>
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Buscar más gente para añadir</span>
                 </button>
               </div>
-            </form>
 
-            {/* Wall Comments Stream */}
-            <div className="divide-y divide-gray-100 pt-2 space-y-3">
-              {userWallComments.length === 0 ? (
-                <div className="py-8 text-center text-gray-400 text-xs">
-                  Todavía no hay comentarios en este tablón. ¡Sé el primero en firmar!
+              {filteredFriends.length === 0 ? (
+                <div className="text-center py-12 px-4 space-y-2">
+                  <Users className="w-10 h-10 text-gray-300 mx-auto" />
+                  <p className="font-bold text-gray-700 text-sm">
+                    {friendSearchQuery
+                      ? 'No se encontraron amigos que coincidan con la búsqueda.'
+                      : friendsList.length === 0
+                      ? (isOwnProfile ? 'Aún no tienes amigos agregados en tu perfil.' : `${profileUser.nombre} todavía no tiene amigos agregados.`)
+                      : 'No hay amigos con los filtros seleccionados.'}
+                  </p>
+                  <p className="text-gray-400 text-xs max-w-sm mx-auto">
+                    {isOwnProfile && friendsList.length === 0
+                      ? 'Explora la sección "Gente" para enviar solicitudes de amistad a otros usuarios.'
+                      : 'Puedes restablecer la búsqueda para ver todos los contactos.'}
+                  </p>
+                  {isOwnProfile && friendsList.length === 0 && (
+                    <button
+                      onClick={() => setActiveTab('gente')}
+                      className="mt-2 px-4 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white rounded text-xs font-bold transition shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Ir a Buscar Gente</span>
+                    </button>
+                  )}
                 </div>
               ) : (
-                userWallComments.map(comment => (
-                  <div key={comment.id} className="pt-3 first:pt-0 flex items-start gap-3 group">
-                    <img
-                      src={comment.emisorAvatar}
-                      alt={comment.emisorNombre}
-                      className="w-10 h-10 rounded object-cover border border-gray-300 cursor-pointer hover:opacity-90 flex-shrink-0"
-                      onClick={() => viewUserProfile(comment.emisorId)}
-                    />
-                    <div className="flex-1 bg-[#f9fafb] p-2.5 rounded border border-gray-200 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span
-                          onClick={() => viewUserProfile(comment.emisorId)}
-                          className="font-bold text-[#3869A0] hover:underline cursor-pointer text-xs"
-                        >
-                          {comment.emisorNombre}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-gray-400">{comment.fecha}</span>
-                          {(isOwnProfile || comment.emisorId === currentUser.id) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
+                  {filteredFriends.map(friend => {
+                    const isOnline = friend.online || friend.presencia === 'conectado';
+                    return (
+                      <div
+                        key={friend.id}
+                        className="border border-gray-200 hover:border-[#3869A0] rounded-lg p-3 bg-white shadow-2xs hover:shadow-md transition flex flex-col justify-between group"
+                      >
+                        <div>
+                          <div
+                            onClick={() => viewUserProfile(friend.id)}
+                            className="cursor-pointer space-y-2"
+                          >
+                            <div className="aspect-square rounded bg-gray-100 overflow-hidden relative border border-gray-200">
+                              <img
+                                src={friend.avatar}
+                                alt={friend.nombre}
+                                className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80';
+                                }}
+                              />
+                              <span
+                                className={`absolute top-2 right-2 w-2.5 h-2.5 rounded-full ring-2 ring-white shadow ${
+                                  isOnline ? 'bg-emerald-500' : 'bg-gray-400'
+                                }`}
+                                title={isOnline ? 'Conectado' : 'Desconectado'}
+                              />
+                            </div>
+
+                            <div>
+                              <h3 className="font-bold text-xs text-[#3869A0] group-hover:underline truncate" title={`${friend.nombre} ${friend.apellidos}`}>
+                                {friend.nombre} {friend.apellidos}
+                              </h3>
+                              {friend.username && (
+                                <p className="text-[10px] text-gray-400 font-mono truncate">
+                                  @{friend.username}
+                                </p>
+                              )}
+                              <p className="text-[11px] text-gray-500 truncate flex items-center gap-1 mt-0.5">
+                                <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                                <span>{friend.ciudad || friend.provincia || 'España'}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          {friend.estado && (
+                            <p className="text-[10px] text-gray-600 line-clamp-2 italic mt-2 bg-gray-50 p-1.5 rounded border border-gray-100">
+                              "{friend.estado}"
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Friend Card Action Buttons */}
+                        <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between gap-1.5 text-xs">
+                          <button
+                            onClick={() => openChatWith(friend.id)}
+                            className="flex-1 py-1 px-2 bg-[#e8f0fe] hover:bg-[#d2e3fc] text-[#3869A0] font-semibold text-[11px] rounded transition flex items-center justify-center gap-1 cursor-pointer"
+                            title="Abrir chat en directo"
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                            <span>Chat</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              sendPrivateMessage(friend.id, 'Hola', '¡Hola! ¿Qué tal estás?');
+                              setActiveTab('mensajes');
+                            }}
+                            className="py-1 px-2 bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 text-[11px] rounded transition flex items-center justify-center cursor-pointer"
+                            title="Enviar mensaje privado"
+                          >
+                            <Mail className="w-3 h-3 text-[#3869A0]" />
+                          </button>
+
+                          {isOwnProfile && (
                             <button
-                              onClick={() => deleteWallComment(comment.id)}
-                              className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer"
-                              title="Borrar comentario del tablón"
+                              onClick={() => {
+                                if (window.confirm(`¿Seguro que deseas eliminar a ${friend.nombre} de tu lista de amigos?`)) {
+                                  removeFriendship(friend.id);
+                                }
+                              }}
+                              className="py-1 px-2 bg-white hover:bg-red-50 text-gray-400 hover:text-red-600 border border-gray-200 hover:border-red-200 text-[11px] rounded transition cursor-pointer"
+                              title="Eliminar de amigos"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <UserMinus className="w-3 h-3" />
                             </button>
                           )}
                         </div>
                       </div>
-                      <p className="text-gray-800 text-xs whitespace-pre-line leading-relaxed">
-                        {comment.comentario}
-                      </p>
-                    </div>
-                  </div>
-                ))
+                    );
+                  })}
+                </div>
               )}
             </div>
-          </div>
+          )}
         </div>
+      )}
 
-        {/* ================= RIGHT COLUMN: FRIENDS & ACTIVITY LOG WIDGET ================= */}
-        <div className="lg:col-span-3 space-y-4">
-          {/* Friends Grid */}
-          <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs">
-            <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 mb-2.5 flex items-center justify-between">
-              <span>Amigos de {profileUser.nombre} ({friendsList.length})</span>
-            </div>
-
-            {friendsList.length === 0 ? (
-              <p className="text-gray-400 py-3 text-center">Todavía no tiene amigos agregados.</p>
-            ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {friendsList.slice(0, 9).map(friend => (
-                  <div
-                    key={friend.id}
-                    onClick={() => viewUserProfile(friend.id)}
-                    className="cursor-pointer group text-center space-y-1"
-                  >
-                    <img
-                      src={friend.avatar}
-                      alt={friend.nombre}
-                      className="w-full aspect-square object-cover rounded border border-gray-200 group-hover:opacity-80 transition"
-                    />
-                    <p className="text-[10px] font-semibold text-[#3869A0] group-hover:underline truncate">
-                      {friend.nombre}
-                    </p>
-                  </div>
-                ))}
-              </div>
+      {/* ================= TAB CONTENT: FOTOS DEDICATED VIEW ================= */}
+      {profileSubTab === 'fotos' && (
+        <div className="bg-white rounded border border-[#ccd5df] p-4 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+            <h2 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-[#3869A0]" />
+              <span>Fotos y Álbumes de {profileUser.nombre} ({userPhotos.length + taggedPhotos.length})</span>
+            </h2>
+            {isOwnProfile && (
+              <button
+                onClick={onOpenUpload}
+                className="px-3 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Subir nueva foto</span>
+              </button>
             )}
           </div>
 
-          {/* ================= REGISTRO DE ACTIVIDAD (ACTIVITY LOG WIDGET) ================= */}
-          <ActivityLog 
-            userId={profileUser.id} 
-            userName={profileUser.nombre} 
-            isOwnProfile={isOwnProfile} 
-          />
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-bold text-xs text-gray-700 mb-2">Fotos subidas ({userPhotos.length})</h3>
+              {userPhotos.length === 0 ? (
+                <p className="text-gray-400 text-xs py-4 text-center">No hay fotos subidas por este usuario.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {userPhotos.map(photo => (
+                    <div
+                      key={photo.id}
+                      onClick={() => viewPhoto(photo.id)}
+                      className="aspect-square rounded overflow-hidden border border-gray-200 hover:border-[#3869A0] cursor-pointer group relative bg-gray-100"
+                    >
+                      <img
+                        src={photo.archivo}
+                        alt={photo.titulo}
+                        className="w-full h-full object-cover group-hover:scale-105 transition"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-end p-2 text-white text-[10px]">
+                        <span className="truncate">{photo.titulo || 'Foto'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {taggedPhotos.length > 0 && (
+              <div className="pt-3 border-t border-gray-100">
+                <h3 className="font-bold text-xs text-gray-700 mb-2">Fotos donde aparece etiquetado ({taggedPhotos.length})</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {taggedPhotos.map(photo => (
+                    <div
+                      key={photo.id}
+                      onClick={() => viewPhoto(photo.id)}
+                      className="aspect-square rounded overflow-hidden border border-gray-200 hover:border-[#3869A0] cursor-pointer group relative bg-gray-100"
+                    >
+                      <img
+                        src={photo.archivo}
+                        alt={photo.titulo}
+                        className="w-full h-full object-cover group-hover:scale-105 transition"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-end p-2 text-white text-[10px]">
+                        <span className="truncate">{photo.titulo || 'Foto'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ================= TAB CONTENT: PERFIL & TABLÓN (CLASSIC 3-COLUMN VIEW) ================= */}
+      {profileSubTab === 'perfil' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* ================= LEFT COLUMN: PERSONAL INFO ================= */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* Datos Personales Card */}
+            <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-3">
+              <div className="font-bold text-gray-800 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#3869A0]" />
+                <span>Información personal</span>
+              </div>
+
+              <div className="space-y-2 text-gray-700">
+                <div className="flex items-start justify-between">
+                  <span className="text-gray-400 font-medium">Nombre:</span>
+                  <span className="font-semibold text-right">{profileUser.nombre} {profileUser.apellidos}</span>
+                </div>
+                <div className="flex items-start justify-between">
+                  <span className="text-gray-400 font-medium">Cumpleaños:</span>
+                  <span className="font-semibold text-right">{profileUser.fnac} ({userAge} años)</span>
+                </div>
+                <div className="flex items-start justify-between">
+                  <span className="text-gray-400 font-medium">Sexo:</span>
+                  <span className="font-semibold text-right">{profileUser.sexo === 'h' ? 'Chico (Hombre)' : 'Chica (Mujer)'}</span>
+                </div>
+                <div className="flex items-start justify-between">
+                  <span className="text-gray-400 font-medium">Provincia:</span>
+                  <span className="font-semibold text-right">{profileUser.provincia}</span>
+                </div>
+                <div className="flex items-start justify-between">
+                  <span className="text-gray-400 font-medium">Situación:</span>
+                  <span className="font-semibold text-right text-[#3869A0]">{profileUser.situacionSentimental}</span>
+                </div>
+
+                {profileUser.ocupacion && (
+                  <div className="pt-1 border-t border-gray-100">
+                    <span className="text-gray-400 font-medium block mb-0.5">Ocupación / Estudios:</span>
+                    <p className="font-semibold text-gray-800">{profileUser.ocupacion}</p>
+                  </div>
+                )}
+
+                {profileUser.intereses && (
+                  <div className="pt-1 border-t border-gray-100">
+                    <span className="text-gray-400 font-medium block mb-0.5">Intereses y aficiones:</span>
+                    <p className="text-gray-700">{profileUser.intereses}</p>
+                  </div>
+                )}
+
+                {profileUser.musica && (
+                  <div className="pt-1 border-t border-gray-100">
+                    <span className="text-gray-400 font-medium block mb-0.5 flex items-center gap-1">
+                      <Music className="w-3 h-3 text-[#3869A0]" />
+                      <span>Música favorita:</span>
+                    </span>
+                    <p className="text-gray-700">{profileUser.musica}</p>
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-gray-100 text-[10px] text-gray-400">
+                  Registrado en Inkorium el {profileUser.fechaReg}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ================= CENTER COLUMN: ALBUMS & TABLÓN (WALL) ================= */}
+          <div className="lg:col-span-6 space-y-4">
+            {/* Albums & Tagged Photos Preview */}
+            <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-3">
+              <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-[#3869A0]" />
+                  <span>Fotos y Álbumes ({userPhotos.length + taggedPhotos.length} fotos)</span>
+                </span>
+                <button
+                  onClick={() => setProfileSubTab('fotos')}
+                  className="text-[11px] text-[#3869A0] hover:underline font-semibold cursor-pointer"
+                >
+                  Ver galería completa
+                </button>
+              </div>
+
+              {/* Quick mini albums showcase */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {/* Fotos subidas */}
+                <div 
+                  onClick={() => setProfileSubTab('fotos')}
+                  className="border border-gray-200 rounded p-2 hover:bg-blue-50/50 cursor-pointer transition text-center group"
+                >
+                  <div className="h-28 rounded bg-gray-100 overflow-hidden mb-1.5 flex items-center justify-center border">
+                    {userPhotos[0] ? (
+                      <img src={userPhotos[0].archivo} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-gray-300" />
+                    )}
+                  </div>
+                  <p className="font-bold text-[#3869A0] group-hover:underline text-[11px] truncate">Fotos subidas</p>
+                  <span className="text-[10px] text-gray-400">{userPhotos.length} foto(s)</span>
+                </div>
+
+                {/* Fotos etiquetadas */}
+                <div 
+                  onClick={() => setProfileSubTab('fotos')}
+                  className="border border-gray-200 rounded p-2 hover:bg-blue-50/50 cursor-pointer transition text-center group"
+                >
+                  <div className="h-28 rounded bg-gray-100 overflow-hidden mb-1.5 flex items-center justify-center border">
+                    {taggedPhotos[0] ? (
+                      <img src={taggedPhotos[0].archivo} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-gray-300" />
+                    )}
+                  </div>
+                  <p className="font-bold text-[#3869A0] group-hover:underline text-[11px] truncate">Fotos etiquetadas</p>
+                  <span className="text-[10px] text-gray-400">{taggedPhotos.length} foto(s)</span>
+                </div>
+
+                {/* Custom albums */}
+                {userAlbums.slice(0, 2).map(alb => {
+                  const albPhoto = photos.find(p => p.albumId === alb.id);
+                  return (
+                    <div 
+                      key={alb.id}
+                      onClick={() => viewAlbum(alb.id)}
+                      className="border border-gray-200 rounded p-2 hover:bg-blue-50/50 cursor-pointer transition text-center group"
+                    >
+                      <div className="h-28 rounded bg-gray-100 overflow-hidden mb-1.5 flex items-center justify-center border">
+                        {albPhoto ? (
+                          <img src={albPhoto.archivo} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" />
+                        ) : (
+                          <ImageIcon className="w-8 h-8 text-gray-300" />
+                        )}
+                      </div>
+                      <p className="font-bold text-[#3869A0] group-hover:underline text-[11px] truncate">{alb.nombre}</p>
+                      <span className="text-[10px] text-gray-400">Álbum personal</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ================= TABLÓN DE COMENTARIOS (WALL) ================= */}
+            <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-3">
+              <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-[#3869A0]" />
+                  <span>Tablón de firmas de {profileUser.nombre} ({userWallComments.length})</span>
+                </span>
+              </div>
+
+              {/* Input to write on wall */}
+              <form onSubmit={handleSendWall} className="space-y-2">
+                <textarea
+                  value={wallInput}
+                  onChange={e => setWallInput(e.target.value)}
+                  placeholder={`Escribe algo en el tablón de ${isOwnProfile ? 'tu perfil' : profileUser.nombre}...`}
+                  rows={2}
+                  className="w-full p-2.5 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3869A0] focus:border-[#3869A0] resize-none"
+                />
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-gray-400">
+                    ¡Déjale una firma o saludo nostálgico! :)
+                  </span>
+                  <button
+                    type="submit"
+                    disabled={!wallInput.trim()}
+                    className="px-3.5 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] disabled:bg-gray-300 text-white font-bold text-xs rounded transition flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed shadow-xs"
+                  >
+                    <Send className="w-3 h-3" />
+                    <span>Firmar tablón</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Wall Comments Stream */}
+              <div className="divide-y divide-gray-100 pt-2 space-y-3">
+                {userWallComments.length === 0 ? (
+                  <div className="py-8 text-center text-gray-400 text-xs">
+                    Todavía no hay comentarios en este tablón. ¡Sé el primero en firmar!
+                  </div>
+                ) : (
+                  userWallComments.map(comment => (
+                    <div key={comment.id} className="pt-3 first:pt-0 flex items-start gap-3 group">
+                      <img
+                        src={comment.emisorAvatar}
+                        alt={comment.emisorNombre}
+                        className="w-10 h-10 rounded object-cover border border-gray-300 cursor-pointer hover:opacity-90 flex-shrink-0"
+                        onClick={() => viewUserProfile(comment.emisorId)}
+                      />
+                      <div className="flex-1 bg-[#f9fafb] p-2.5 rounded border border-gray-200 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span
+                            onClick={() => viewUserProfile(comment.emisorId)}
+                            className="font-bold text-[#3869A0] hover:underline cursor-pointer text-xs"
+                          >
+                            {comment.emisorNombre}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-gray-400">{comment.fecha}</span>
+                            {(isOwnProfile || comment.emisorId === currentUser.id) && (
+                              <button
+                                onClick={() => deleteWallComment(comment.id)}
+                                className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                title="Borrar comentario del tablón"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-gray-800 text-xs whitespace-pre-line leading-relaxed">
+                          {comment.comentario}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ================= RIGHT COLUMN: FRIENDS & ACTIVITY LOG WIDGET ================= */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* Friends Quick Widget */}
+            <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2.5">
+              <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-[#3869A0]" />
+                  <span>Amigos de {profileUser.nombre} ({friendsList.length})</span>
+                </span>
+                <button
+                  onClick={() => setProfileSubTab('amigos')}
+                  className="text-[11px] text-[#3869A0] hover:underline font-semibold cursor-pointer"
+                >
+                  Ver todos
+                </button>
+              </div>
+
+              {friendsList.length === 0 ? (
+                <div className="py-4 text-center text-gray-400 text-xs space-y-1">
+                  <p>Todavía no tiene amigos agregados.</p>
+                  {isOwnProfile && (
+                    <button
+                      onClick={() => setActiveTab('gente')}
+                      className="text-[#3869A0] hover:underline text-[11px] font-semibold block mx-auto mt-1 cursor-pointer"
+                    >
+                      Buscar personas para añadir
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {friendsList.slice(0, 9).map(friend => (
+                    <div
+                      key={friend.id}
+                      onClick={() => viewUserProfile(friend.id)}
+                      className="cursor-pointer group text-center space-y-1"
+                    >
+                      <div className="relative">
+                        <img
+                          src={friend.avatar}
+                          alt={friend.nombre}
+                          className="w-full aspect-square object-cover rounded border border-gray-200 group-hover:opacity-80 transition"
+                        />
+                        <span
+                          className={`absolute bottom-1 right-1 w-2 h-2 rounded-full ring-1 ring-white ${
+                            friend.online || friend.presencia === 'conectado' ? 'bg-emerald-500' : 'bg-gray-400'
+                          }`}
+                        />
+                      </div>
+                      <p className="text-[10px] font-semibold text-[#3869A0] group-hover:underline truncate">
+                        {friend.nombre}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {friendsList.length > 9 && (
+                <button
+                  onClick={() => setProfileSubTab('amigos')}
+                  className="w-full py-1.5 bg-gray-50 hover:bg-gray-100 text-[#3869A0] font-semibold text-[11px] rounded border border-gray-200 transition cursor-pointer text-center"
+                >
+                  Ver los {friendsList.length} amigos →
+                </button>
+              )}
+            </div>
+
+            {/* ================= REGISTRO DE ACTIVIDAD (ACTIVITY LOG WIDGET) ================= */}
+            <ActivityLog 
+              userId={profileUser.id} 
+              userName={profileUser.nombre} 
+              isOwnProfile={isOwnProfile} 
+            />
+          </div>
+        </div>
+      )}
 
       {/* ================= PRIVATE MESSAGE MODAL ================= */}
       {showDirectMessageModal && (
