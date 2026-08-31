@@ -12,16 +12,25 @@ export interface PhotoRow {
   updated_at: string;
 }
 
-export async function fetchPhotos(): Promise<PhotoRow[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase.from('photos').select('id,user_id,album_id,storage_path,url,caption,visibility,created_at,updated_at').order('created_at', { ascending: false });
-  if (error) throw error;
-  return Array.isArray(data) ? (data as PhotoRow[]) : [];
+async function invokePhotos<T>(body: Record<string, unknown>): Promise<T> {
+  if (!supabase) throw new Error('SUPABASE_NOT_CONFIGURED');
+  const { data, error } = await supabase.functions.invoke('photos-api', { body });
+  if (error) throw new Error(error.message || 'PHOTOS_API_FAILED');
+  return data as T;
 }
 
-export async function insertPhoto(input: { userId: string; albumId?: string | null; url: string; caption?: string | null; visibility?: 'public' | 'friends' | 'private' }): Promise<PhotoRow> {
-  if (!supabase) throw new Error('SUPABASE_NOT_CONFIGURED');
-  const { data, error } = await supabase.from('photos').insert({ user_id: input.userId, album_id: input.albumId ?? null, storage_path: input.url, url: input.url, caption: input.caption ?? null, visibility: input.visibility ?? 'public' }).select('id,user_id,album_id,storage_path,url,caption,visibility,created_at,updated_at').single();
-  if (error) throw error;
-  return data as PhotoRow;
+export async function fetchPhotos(): Promise<PhotoRow[]> {
+  const data = await invokePhotos<PhotoRow[]>({ action: 'list' });
+  return Array.isArray(data) ? data : [];
+}
+
+export async function insertPhoto(input: {
+  userId: string;
+  albumId?: string | null;
+  url: string;
+  caption?: string | null;
+  visibility?: 'public' | 'friends' | 'private';
+}): Promise<PhotoRow> {
+  if (!input.userId) throw new Error('AUTH_REQUIRED');
+  return invokePhotos<PhotoRow>({ action: 'create', album_id: input.albumId ?? null, url: input.url, caption: input.caption ?? null, visibility: input.visibility ?? 'public' });
 }
