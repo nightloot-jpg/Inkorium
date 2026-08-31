@@ -18,6 +18,7 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
   try {
     const parsed = new URL(requestUrl);
     const isProfilesRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/profiles';
+    const isPrivateMessagesRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/private_messages';
 
     if (isProfilesRequest && typeof window !== 'undefined') {
       if (requestMethod === 'GET') {
@@ -44,6 +45,28 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
           });
         }
       }
+    }
+
+    if (isPrivateMessagesRequest && typeof window !== 'undefined') {
+      const headers = new Headers(init?.headers || request?.headers || undefined);
+      const authorization = headers.get('authorization') || '';
+      let accessToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '';
+      if (!accessToken) { try { accessToken = (await supabase?.auth.getSession())?.data.session?.access_token || ''; } catch { accessToken = ''; } }
+
+      headers.set('authorization', `Bearer ${accessToken}`);
+
+      let rawBody = '';
+      try { if (typeof init?.body === 'string') rawBody = init.body; else if (request && request.body) rawBody = await request.clone().text(); } catch { rawBody = ''; }
+
+      const proxyOptions: RequestInit = {
+        method: requestMethod,
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        credentials: 'omit',
+      };
+      if (['POST', 'PATCH'].includes(requestMethod) && rawBody) {
+        proxyOptions.body = rawBody;
+      }
+      return fetch(`${window.location.origin}/api/private-messages${parsed.search}`, proxyOptions);
     }
   } catch (error) { console.warn('Supabase transport fallback:', error); }
   return fetch(input, init);

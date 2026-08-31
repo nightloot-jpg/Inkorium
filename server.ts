@@ -146,7 +146,7 @@ app.post('/api/private-messages', async (req, res) => {
     if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
     const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?select=id,sender_id,recipient_id,subject,body,is_read,created_at`, {
       method: 'POST',
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: req.headers.prefer || 'return=representation' },
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: Array.isArray(req.headers.prefer) ? req.headers.prefer.join(',') : (req.headers.prefer || 'return=representation') },
       body: JSON.stringify(req.body)
     });
     const body = await upstream.text();
@@ -170,7 +170,7 @@ app.patch('/api/private-messages', async (req, res) => {
     }
     const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
       method: 'PATCH',
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: req.headers.prefer || 'return=minimal' },
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json', Prefer: Array.isArray(req.headers.prefer) ? req.headers.prefer.join(',') : (req.headers.prefer || 'return=minimal') },
       body: JSON.stringify(req.body)
     });
     const body = await upstream.text();
@@ -194,7 +194,7 @@ app.delete('/api/private-messages', async (req, res) => {
     }
     const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
       method: 'DELETE',
-      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', Prefer: req.headers.prefer || 'return=minimal' }
+      headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', Prefer: Array.isArray(req.headers.prefer) ? req.headers.prefer.join(',') : (req.headers.prefer || 'return=minimal') }
     });
     const body = await upstream.text();
     return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);

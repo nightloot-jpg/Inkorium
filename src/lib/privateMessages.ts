@@ -20,7 +20,7 @@ export async function listPrivateMessages(): Promise<Message[]> {
 export async function markPrivateMessageRead(id: string, recipientId: string): Promise<void> {
   const { error } = await client()
     .from('private_messages')
-    .update({ is_read: true })
+    .update({ is_read: true } as never)
     .eq('id', id)
     .eq('recipient_id', recipientId);
 
@@ -35,7 +35,7 @@ export async function sendPrivateMessage(input: {
 }): Promise<Message | null> {
   const { data, error } = await client()
     .from('private_messages')
-    .insert(input)
+    .insert(input as never)
     .select('id,sender_id,recipient_id,subject,body,is_read,created_at')
     .maybeSingle();
 
