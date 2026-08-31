@@ -31,7 +31,12 @@ async function parseResponse(response: Response) {
     const compactDetail = typeof detail === 'string' ? detail.replace(/\s+/g, ' ').slice(0, 500) : '';
     throw new Error(`${response.status}: ${compactDetail || 'respuesta vacía del servidor'}`);
   }
-  return body ? JSON.parse(body) : null;
+  if (!body || !body.trim()) return null;
+  try {
+    return JSON.parse(body);
+  } catch {
+    throw new Error('El servidor devolvió una respuesta no válida (no es JSON).');
+  }
 }
 
 function isTransientGatewayStatus(status: number): boolean {
@@ -63,13 +68,32 @@ async function requestCreatePost(token: string, content: string, mediaUrl: strin
 
 export async function fetchPosts(limit = 100): Promise<ApiPost[]> {
   const safeLimit = Math.max(1, Math.min(100, Number(limit) || 100));
-  const response = await fetch(`/api/posts?limit=${encodeURIComponent(String(safeLimit))}`, {
-    headers: { Accept: 'application/json' },
-    credentials: 'omit',
-    cache: 'no-store',
-  });
-  const data = await parseResponse(response);
-  return Array.isArray(data) ? data as ApiPost[] : [];
+  try {
+    const response = await fetch(`/api/posts?limit=${encodeURIComponent(String(safeLimit))}`, {
+      headers: { Accept: 'application/json' },
+      credentials: 'omit',
+      cache: 'no-store',
+    });
+    const data = await parseResponse(response);
+    return Array.isArray(data) ? data as ApiPost[] : [];
+  } catch (error) {
+    // If API endpoint fails or returned HTML, try querying Supabase directly if available
+    if (supabase) {
+      try {
+        const { data, error: sbError } = await supabase
+          .from('posts')
+          .select('id,author_id,content,visibility,media_data,created_at,updated_at')
+          .order('created_at', { ascending: false })
+          .limit(safeLimit);
+        if (!sbError && Array.isArray(data)) {
+          return data as ApiPost[];
+        }
+      } catch {
+        // ignore fallback errors
+      }
+    }
+    return [];
+  }
 }
 
 export async function createPost(content: string, mediaUrl?: string): Promise<ApiPost> {

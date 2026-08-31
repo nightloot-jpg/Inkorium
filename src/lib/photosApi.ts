@@ -12,23 +12,34 @@ export interface PhotoRow {
   updated_at: string;
 }
 
-async function getAccessToken(): Promise<string> {
-  if (!supabase) throw new Error('SUPABASE_NOT_CONFIGURED');
-  const { data, error } = await supabase.auth.getSession();
-  if (error) throw new Error(error.message || 'AUTH_SESSION_FAILED');
-  const token = data.session?.access_token;
-  if (!token) throw new Error('AUTH_REQUIRED');
-  return token;
+async function getAccessToken(required = false): Promise<string | null> {
+  if (!supabase) {
+    if (required) throw new Error('SUPABASE_NOT_CONFIGURED');
+    return null;
+  }
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error && required) throw new Error(error.message || 'AUTH_SESSION_FAILED');
+    const token = data.session?.access_token || null;
+    if (!token && required) throw new Error('AUTH_REQUIRED');
+    return token;
+  } catch (err) {
+    if (required) throw err;
+    return null;
+  }
 }
 
-async function requestPhotos<T>(body: Record<string, unknown>): Promise<T> {
-  const token = await getAccessToken();
+async function requestPhotos<T>(body: Record<string, unknown>, requireAuth = false): Promise<T> {
+  const token = await getAccessToken(requireAuth);
+  const payload: Record<string, unknown> = { ...body };
+  if (token) payload.access_token = token;
+
   const response = await fetch('/api/photos', {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     credentials: 'same-origin',
     cache: 'no-store',
-    body: JSON.stringify({ ...body, access_token: token }),
+    body: JSON.stringify(payload),
   });
 
   const raw = await response.text().catch(() => '');
@@ -46,8 +57,24 @@ async function requestPhotos<T>(body: Record<string, unknown>): Promise<T> {
 }
 
 export async function fetchPhotos(): Promise<PhotoRow[]> {
-  const data = await requestPhotos<PhotoRow[]>({ action: 'list' });
-  return Array.isArray(data) ? data : [];
+  try {
+    const data = await requestPhotos<PhotoRow[]>({ action: 'list' }, false);
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    // If /api/photos fails, try direct Supabase query if available
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('photos')
+          .select('id,user_id,album_id,storage_path,url,caption,visibility,created_at,updated_at')
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data)) {
+          return data as PhotoRow[];
+        }
+      } catch {}
+    }
+    return [];
+  }
 }
 
 export async function insertPhoto(input: {
@@ -64,5 +91,5 @@ export async function insertPhoto(input: {
     url: input.url,
     caption: input.caption ?? null,
     visibility: input.visibility ?? 'public',
-  });
+  }, true);
 }

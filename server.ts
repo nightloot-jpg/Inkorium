@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import multer from 'multer';
@@ -32,7 +33,7 @@ app.get('/api/storage/status', (_req, res) => {
 
 function getSupabaseConfig() {
   const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://zllwzmfsfzfedorljgtg.supabase.co').replace(/\/+$/, '');
-  const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_npJmIHQP_g2ApAu-7fqQAQ_d2p';
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '';
   const jwtSecret = process.env.SUPABASE_JWT_SECRET || '';
   return { supabaseUrl, supabaseKey, serviceRoleKey, jwtSecret };
@@ -260,17 +261,22 @@ app.post('/api/photos', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig();
     const token = extractToken(req); const action = String(req.body?.action || 'list').trim().toLowerCase();
-    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' }); if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
-    const userId = await verifySupabaseJwt(token, supabaseUrl, getSupabaseConfig().jwtSecret); if (!userId) return res.status(401).json({ error: 'INVALID_AUTH_TOKEN' });
-    if (!serviceRoleKey) return res.status(503).json({ error: 'SUPABASE_SERVICE_ROLE_NOT_CONFIGURED', message: 'Server-side Supabase service role key is required for photo persistence.' });
-    const dbHeaders = { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, Accept: 'application/json' };
+    if (!supabaseKey) return res.status(503).json({ error: 'SUPABASE_NOT_CONFIGURED' });
 
     if (action === 'list') {
+      const apiKey = serviceRoleKey || supabaseKey;
+      const authHeader = serviceRoleKey ? `Bearer ${serviceRoleKey}` : (token ? `Bearer ${token}` : `Bearer ${supabaseKey}`);
+      const dbHeaders = { apikey: apiKey, Authorization: authHeader, Accept: 'application/json' };
       const upstream = await fetch(`${supabaseUrl}/rest/v1/photos?select=id,user_id,album_id,storage_path,url,caption,visibility,created_at,updated_at&order=created_at.desc`, { headers: dbHeaders });
       const body = await upstream.text();
       if (!upstream.ok) return res.status(upstream.status).type(upstream.headers.get('content-type') || 'application/json').send(body);
       try { const data = JSON.parse(body); return res.status(200).json(Array.isArray(data) ? data : []); } catch { return res.status(502).json({ error: 'SUPABASE_PHOTOS_INVALID_RESPONSE' }); }
     }
+
+    if (!token) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    const userId = await verifySupabaseJwt(token, supabaseUrl, getSupabaseConfig().jwtSecret); if (!userId) return res.status(401).json({ error: 'INVALID_AUTH_TOKEN' });
+    if (!serviceRoleKey) return res.status(503).json({ error: 'SUPABASE_SERVICE_ROLE_NOT_CONFIGURED', message: 'Server-side Supabase service role key is required for photo persistence.' });
+    const dbHeaders = { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, Accept: 'application/json' };
 
     if (action === 'create') {
       const albumId = req.body?.album_id ? String(req.body.album_id).trim() : null;

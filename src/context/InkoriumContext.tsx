@@ -3,6 +3,7 @@ import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendReques
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
 import { fetchPhotos, insertPhoto } from '../lib/photosApi';
+import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WALL_COMMENTS, INITIAL_FRIENDSHIPS, INITIAL_FRIEND_REQUESTS, INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_ACCESS_LOGS, INITIAL_ACTIVITIES } from '../data/mockData';
 
 interface ChatWindow { targetUserId: string; minimized: boolean; }
 interface InkoriumContextType {
@@ -36,18 +37,18 @@ interface InkoriumContextType {
 }
 
 const InkoriumContext = createContext<InkoriumContextType | undefined>(undefined);
-const EMPTY_USER: User = { id: '', nombre: '', apellidos: '', email: '', sexo: 'otro', fnac: '', provincia: '', ciudad: undefined, estado: '', estadoFecha: '', situacionSentimental: 'Soltero/a', avatar: '', fechaReg: '', online: false, ultimoAcceso: '', chatEstado: '0' };
+const EMPTY_USER: User = INITIAL_USERS[0] || { id: '', nombre: '', apellidos: '', email: '', sexo: 'otro', fnac: '', provincia: '', ciudad: undefined, estado: '', estadoFecha: '', situacionSentimental: 'Soltero/a', avatar: '', fechaReg: '', online: false, ultimoAcceso: '', chatEstado: '0' };
 
 export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useState<User[]>([]); const [currentUserId, setCurrentUserId] = useState('');
-  const [photos, setPhotos] = useState<Photo[]>([]); const [albums, setAlbums] = useState<Album[]>([]); const [feed, setFeed] = useState<FeedItem[]>([]); const [wallComments, setWallComments] = useState<WallComment[]>([]);
-  const [messages, setMessages] = useState<PrivateMessage[]>([]); const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]); const [friendships, setFriendships] = useState<Friendship[]>([]); const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [notifications, setNotifications] = useState<InkoriumNotification[]>([]); const [toasts, setToasts] = useState<InkoriumNotification[]>([]); const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]); const [activities, setActivities] = useState<UserActivity[]>([]);
+  const [users, setUsers] = useState<User[]>(INITIAL_USERS); const [currentUserId, setCurrentUserId] = useState(INITIAL_USERS[0]?.id || '');
+  const [photos, setPhotos] = useState<Photo[]>(INITIAL_PHOTOS); const [albums, setAlbums] = useState<Album[]>(INITIAL_ALBUMS); const [feed, setFeed] = useState<FeedItem[]>(INITIAL_FEED); const [wallComments, setWallComments] = useState<WallComment[]>(INITIAL_WALL_COMMENTS);
+  const [messages, setMessages] = useState<PrivateMessage[]>(INITIAL_MESSAGES); const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(INITIAL_FRIEND_REQUESTS); const [friendships, setFriendships] = useState<Friendship[]>(INITIAL_FRIENDSHIPS); const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [notifications, setNotifications] = useState<InkoriumNotification[]>(INITIAL_NOTIFICATIONS); const [toasts, setToasts] = useState<InkoriumNotification[]>([]); const [accessLogs, setAccessLogs] = useState<AccessLog[]>(INITIAL_ACCESS_LOGS); const [activities, setActivities] = useState<UserActivity[]>(INITIAL_ACTIVITIES);
   const [isRealtimeSimulationEnabled, setIsRealtimeSimulationEnabledState] = useState(false); const [isLoggedIn, setIsLoggedIn] = useState(false); const [activeTab, setActiveTabState] = useState<InkoriumContextType['activeTab']>('inicio');
   const [selectedUserId, setSelectedUserId] = useState(''); const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null); const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null); const [activeChatWindows, setActiveChatWindows] = useState<ChatWindow[]>([]);
 
   // Keep currentUser initialized before callbacks/effects that depend on it.
-  const currentUser = users.find(user => user.id === currentUserId) || EMPTY_USER;
+  const currentUser = users.find(user => user.id === currentUserId) || users[0] || EMPTY_USER;
 
   const mapProfileToUser = useCallback((p: any): User => {
     const username = String(p.username ?? '').trim(); const fullName = String(p.full_name ?? p.fullname ?? '').trim(); const parts = fullName ? fullName.split(/\s+/) : [];
@@ -67,7 +68,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const response = await fetch('/api/profiles?select=id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at&limit=1000', { cache: 'no-store', headers: { Accept: 'application/json' } });
         if (!response.ok) return; const data = (await response.json()) as any[]; if (!Array.isArray(data)) return;
         const mapped: User[] = data.map(mapProfileToUser); const storedPresence = localStorage.getItem('inkorium:presence') as UserPresence | null;
-        setUsers(storedPresence && ['conectado','ausente','ocupado','invisible'].includes(storedPresence) ? mapped.map((user: User) => user.id === currentUserId ? { ...user, presencia: storedPresence, online: storedPresence !== 'invisible', chatEstado: storedPresence === 'invisible' ? '0' : '1' } : user) : mapped);
+        setUsers(storedPresence && ['conectado','ausente','ocupado','invisible'].includes(storedPresence) ? mapped.map((user: User) => user.id === currentUserId ? { ...user, presencia: storedPresence, online: storedPresence !== 'invisible', chatEstado: storedPresence === 'invisible' ? '0' : '1' } : user) : (mapped.length > 0 ? mapped : INITIAL_USERS));
       } catch (error) { console.error('Profiles load failed:', error); }
     }, 100);
   }, [mapProfileToUser, currentUserId]);
@@ -78,22 +79,37 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [users]);
 
   const fetchAndMapPhotos = useCallback(async () => {
-    if (!supabase || !currentUserId) return;
-    try { const rows = await fetchPhotos(); setPhotos(rows.map(mapPhotoToPhoto)); }
-    catch (error) { console.error('Photos load failed:', error); }
-  }, [currentUserId, mapPhotoToPhoto]);
+    try {
+      const rows = await fetchPhotos();
+      if (rows && rows.length > 0) {
+        setPhotos(rows.map(mapPhotoToPhoto));
+      } else {
+        setPhotos(prev => (prev.length > 0 ? prev : INITIAL_PHOTOS));
+      }
+    } catch (error) {
+      console.warn('Photos load failed, using local photos:', error);
+      setPhotos(prev => (prev.length > 0 ? prev : INITIAL_PHOTOS));
+    }
+  }, [mapPhotoToPhoto]);
 
   const fetchAndMapPosts = useCallback(async () => {
     try {
       const rows = await fetchPosts(100);
-      const mapped: FeedItem[] = rows.map(row => {
-        const author = users.find(u => u.id === row.author_id);
-        let photoUrl = '';
-        if (row.media_data && typeof row.media_data === 'object' && 'url' in (row.media_data as any)) photoUrl = String((row.media_data as any).url || '');
-        return { id: row.id, tipo: photoUrl ? 'foto' : 'estado', propietarioId: row.author_id, propietarioNombre: author ? `${author.nombre} ${author.apellidos}`.trim() : 'Usuario', propietarioAvatar: author?.avatar || '', datos: row.content, fotoUrl: photoUrl || undefined, fecha: row.created_at, likes: [], comentarios: [] };
-      });
-      setFeed(mapped);
-    } catch (error) { console.error('Posts load failed:', error); }
+      if (rows && rows.length > 0) {
+        const mapped: FeedItem[] = rows.map(row => {
+          const author = users.find(u => u.id === row.author_id);
+          let photoUrl = '';
+          if (row.media_data && typeof row.media_data === 'object' && 'url' in (row.media_data as any)) photoUrl = String((row.media_data as any).url || '');
+          return { id: row.id, tipo: photoUrl ? 'foto' : 'estado', propietarioId: row.author_id, propietarioNombre: author ? `${author.nombre} ${author.apellidos}`.trim() : 'Usuario', propietarioAvatar: author?.avatar || '', datos: row.content, fotoUrl: photoUrl || undefined, fecha: row.created_at, likes: [], comentarios: [] };
+        });
+        setFeed(mapped);
+      } else {
+        setFeed(prev => (prev.length > 0 ? prev : INITIAL_FEED));
+      }
+    } catch (error) {
+      console.warn('Posts load failed, using local feed:', error);
+      setFeed(prev => (prev.length > 0 ? prev : INITIAL_FEED));
+    }
   }, [users]);
 
   useEffect(() => {
