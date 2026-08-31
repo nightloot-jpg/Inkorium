@@ -34,6 +34,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
     unreadNotificationsCount,
     pendingRequestsCount,
     setActiveTab,
+    openComposeMessage,
     sendFriendRequest,
     isFriend,
     hasPendingRequest,
@@ -332,7 +333,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
               <span>Buscar gente / amigos</span>
             </button>
             <button 
-              onClick={() => setActiveTab('mensajes')}
+              onClick={() => openComposeMessage()}
               className="w-full text-left px-3 py-2 hover:bg-blue-50 text-gray-700 flex items-center gap-2 cursor-pointer"
             >
               <MessageCircle className="w-3.5 h-3.5 text-gray-500" />

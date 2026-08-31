@@ -11,9 +11,11 @@ interface InkoriumContextType {
   notifications: InkoriumNotification[]; toasts: InkoriumNotification[]; accessLogs: AccessLog[]; activities: UserActivity[];
   activeChatWindows: ChatWindow[]; activeTab: 'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'notificaciones' | 'ajustes';
   selectedUserId: string; selectedPhotoId: string | null; selectedAlbumId: string | null;
+  composeRecipientId: string | null;
   unreadMessagesCount: number; unreadNotificationsCount: number; pendingRequestsCount: number;
   isRealtimeSimulationEnabled: boolean; isLoggedIn: boolean;
   setActiveTab: (tab: InkoriumContextType['activeTab']) => void; viewUserProfile: (userId: string) => void;
+  openComposeMessage: (recipientId?: string) => void;
   viewPhoto: (photoId: string | null) => void; viewAlbum: (albumId: string | null) => void; setCurrentUserById: (userId: string) => void;
   login: (email: string, password?: string) => { success: boolean; error?: string }; loginAsUser: (userId: string) => void; logout: () => void;
   publishStatus: (statusText: string, attachedPhotoUrl?: string) => void; updateStatusText: (statusText: string) => void;
@@ -123,6 +125,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(storedLoggedIn);
   const [activeTab, setActiveTabState] = useState<InkoriumContextType['activeTab']>('inicio');
   const [selectedUserId, setSelectedUserId] = useState('');
+  const [composeRecipientId, setComposeRecipientId] = useState<string | null>(null);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
   const [activeChatWindows, setActiveChatWindows] = useState<ChatWindow[]>([]);
@@ -497,8 +500,15 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   }, [currentUserId]);
 
-  const setActiveTab = useCallback((tab: InkoriumContextType['activeTab']) => setActiveTabState(tab), []);
+  const setActiveTab = useCallback((tab: InkoriumContextType['activeTab']) => {
+    if (tab !== 'mensajes') setComposeRecipientId(null);
+    setActiveTabState(tab);
+  }, []);
   const viewUserProfile = useCallback((id: string) => { setSelectedUserId(id); setActiveTabState('perfil'); }, []);
+  const openComposeMessage = useCallback((recipientId?: string) => {
+    setComposeRecipientId(recipientId || null);
+    setActiveTabState('mensajes');
+  }, []);
   const viewPhoto = useCallback((id: string | null) => setSelectedPhotoId(id), []);
   const viewAlbum = useCallback((id: string | null) => setSelectedAlbumId(id), []);
 
@@ -608,8 +618,19 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   const pushNotification = useCallback((notif: InkoriumNotification) => {
     setNotifications(prev => [notif, ...prev]);
-    setToasts(prev => [notif, ...prev.slice(0, 4)]);
-  }, []);
+    // Solo mostrar el popup emergente si la notificación va dirigida al usuario actual logueado
+    const isForCurrentUser = 
+      !notif.userId ||
+      notif.userId === currentUserId ||
+      notif.userId === currentUser.id ||
+      (currentUser.username && notif.userId === currentUser.username) ||
+      (currentUser.id === 'user-nightloot' && notif.userId === 'nightloot') ||
+      (currentUser.id === 'nightloot' && notif.userId === 'user-nightloot');
+
+    if (isForCurrentUser) {
+      setToasts(prev => [notif, ...prev.slice(0, 4)]);
+    }
+  }, [currentUserId, currentUser.id, currentUser.username]);
 
   const dismissToast = useCallback((toastId: string) => {
     setToasts(prev => prev.filter(t => t.id !== toastId));
@@ -704,14 +725,35 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const cleanText = mensaje.trim();
     if (!currentUserId || !receptorId || !cleanText) return;
 
-    const targetUser = users.find(u => u.id === receptorId || u.username === receptorId);
+    // Buscar destinatario por ID, username o email
+    const targetUser = users.find(u => 
+      u.id === receptorId || 
+      u.username === receptorId || 
+      (u.email && u.email.toLowerCase() === receptorId.toLowerCase())
+    );
     const resolvedReceptorId = targetUser?.id || receptorId;
-    const resolvedReceptorName = targetUser ? `${targetUser.nombre} ${targetUser.apellidos}`.trim() : 'Usuario';
+
+    // Protección anti auto-envío: evitar que el receptor sea el usuario actual
+    if (
+      resolvedReceptorId === currentUserId ||
+      resolvedReceptorId === currentUser.id ||
+      (currentUser.username && resolvedReceptorId === currentUser.username) ||
+      (currentUser.id === 'user-nightloot' && resolvedReceptorId === 'nightloot') ||
+      (currentUser.id === 'nightloot' && resolvedReceptorId === 'user-nightloot')
+    ) {
+      console.warn('No puedes enviarte un mensaje privado a ti mismo');
+      return;
+    }
+
+    const resolvedReceptorName = targetUser 
+      ? (targetUser.full_name || `${targetUser.nombre} ${targetUser.apellidos}`.trim() || targetUser.nombre)
+      : 'Usuario';
+    const resolvedReceptorAvatar = targetUser?.avatar || '';
 
     const newMsg: PrivateMessage = {
       id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       emisorId: currentUserId,
-      emisorNombre: `${currentUser.nombre} ${currentUser.apellidos}`.trim() || 'Usuario',
+      emisorNombre: currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario',
       emisorAvatar: currentUser.avatar || '',
       receptorId: resolvedReceptorId,
       receptorNombre: resolvedReceptorName,
@@ -723,13 +765,13 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     setMessages(prev => [newMsg, ...prev]);
 
-    // Notificación en tiempo real para el destinatario
+    // Notificación en tiempo real para el DESTINATARIO
     const notif: InkoriumNotification = {
       id: `notif-mp-${Date.now()}`,
       tipo: 'mp',
       userId: resolvedReceptorId,
       fromUserId: currentUserId,
-      fromUserName: `${currentUser.nombre} ${currentUser.apellidos}`.trim() || 'Usuario',
+      fromUserName: currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario',
       fromUserAvatar: currentUser.avatar,
       mensaje: `te ha enviado un mensaje privado: "${asunto.trim() || 'Sin asunto'}"`,
       enlace: 'mensajes',
@@ -739,6 +781,23 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       leido: false
     };
     pushNotification(notif);
+
+    // Toast de confirmación de envío para el usuario REMITENTE
+    setToasts(prev => [
+      {
+        id: `toast-sent-${Date.now()}`,
+        tipo: 'mp',
+        userId: currentUserId,
+        fromUserId: resolvedReceptorId,
+        fromUserName: resolvedReceptorName,
+        fromUserAvatar: resolvedReceptorAvatar,
+        mensaje: `Tu mensaje privado para ${resolvedReceptorName} ha sido enviado correctamente.`,
+        enlace: 'mensajes',
+        leido: true,
+        fecha: 'Ahora mismo',
+      },
+      ...prev.slice(0, 4)
+    ]);
 
     // Sincronizar en segundo plano si hay Supabase/backend disponible
     void (async () => {
@@ -1123,8 +1182,9 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     <InkoriumContext.Provider value={{
       currentUser, users, photos, albums, feed, wallComments, messages, friendRequests, friendships, chatMessages,
       notifications, toasts, accessLogs, activities, activeChatWindows, activeTab, selectedUserId, selectedPhotoId, selectedAlbumId,
+      composeRecipientId,
       unreadMessagesCount, unreadNotificationsCount, pendingRequestsCount,
-      isRealtimeSimulationEnabled, isLoggedIn, setActiveTab, viewUserProfile, viewPhoto, viewAlbum, setCurrentUserById,
+      isRealtimeSimulationEnabled, isLoggedIn, setActiveTab, viewUserProfile, openComposeMessage, viewPhoto, viewAlbum, setCurrentUserById,
       login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence,
       likeFeedItem, commentFeedItem, postWallComment, deleteWallComment,
       uploadPhoto, addPhotoTag, removePhotoTag, addPhotoComment, likePhoto,

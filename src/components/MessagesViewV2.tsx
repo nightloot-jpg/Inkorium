@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Inbox, Mail, Reply, Send, SendHorizontal, Trash2, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Inbox, Mail, Reply, Send, SendHorizontal, Trash2, ChevronDown, User as UserIcon } from 'lucide-react';
 import { useInkorium } from '../context/InkoriumContext';
 import { PrivateMessage } from '../types';
 
@@ -11,7 +11,8 @@ export const MessagesViewV2: React.FC = () => {
     sendPrivateMessage,
     markMessageAsRead,
     deleteMessage,
-    viewUserProfile
+    viewUserProfile,
+    composeRecipientId
   } = useInkorium();
 
   const [mode, setMode] = useState<'recibidos' | 'enviados' | 'enviar'>('recibidos');
@@ -21,6 +22,14 @@ export const MessagesViewV2: React.FC = () => {
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [visibleCount, setVisibleCount] = useState(15);
+
+  useEffect(() => {
+    if (composeRecipientId) {
+      setTargetUserId(composeRecipientId);
+      setMode('enviar');
+      setSelectedMessage(null);
+    }
+  }, [composeRecipientId]);
 
   const isCurrentRecipient = (m: PrivateMessage) => {
     return (
@@ -44,7 +53,16 @@ export const MessagesViewV2: React.FC = () => {
 
   const received = messages.filter(isCurrentRecipient);
   const sent = messages.filter(isCurrentSender);
-  const others = users.filter(u => u.id !== currentUser.id && u.username !== currentUser.username);
+  const others = users
+    .filter(u => 
+      u.id !== currentUser.id && 
+      u.username !== currentUser.username &&
+      !(currentUser.id === 'user-nightloot' && u.id === 'nightloot') &&
+      !(currentUser.id === 'nightloot' && u.id === 'user-nightloot')
+    )
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+  const selectedTargetUser = users.find(u => u.id === targetUserId || u.username === targetUserId);
 
   const open = (m: PrivateMessage) => {
     setSelectedMessage(m);
@@ -229,10 +247,28 @@ export const MessagesViewV2: React.FC = () => {
                       <option value="">Selecciona a un usuario de Inkorium...</option>
                       {others.map(u => (
                         <option key={u.id} value={u.id}>
-                          {u.nombre} {u.apellidos} ({u.provincia})
+                          {u.nombre} {u.apellidos} (@{u.username || u.id}) - {u.provincia}
                         </option>
                       ))}
                     </select>
+
+                    {selectedTargetUser && (
+                      <div className="mt-2 p-2 bg-blue-50/70 border border-blue-200 rounded flex items-center gap-2.5">
+                        <img 
+                          src={selectedTargetUser.avatar} 
+                          alt="" 
+                          className="w-7 h-7 rounded object-cover border border-blue-300"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-gray-800 text-xs truncate">
+                            {selectedTargetUser.nombre} {selectedTargetUser.apellidos}
+                          </p>
+                          <p className="text-[10px] text-gray-500 truncate">
+                            {selectedTargetUser.provincia} • {selectedTargetUser.ocupacion || 'Usuario de Inkorium'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="font-bold text-gray-700 block mb-1">Asunto:</label>

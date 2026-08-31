@@ -35,7 +35,19 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss, onAction }) => 
     return () => clearInterval(timer);
   }, [toast.id, onDismiss]);
 
+  const isSentConfirmation = toast.id.startsWith('toast-sent-');
+
   const getTheme = () => {
+    if (isSentConfirmation) {
+      return {
+        icon: <Check className="w-3.5 h-3.5 text-emerald-600" />,
+        badgeBg: 'bg-emerald-100 border-emerald-300 text-emerald-800',
+        title: 'Mensaje Enviado',
+        actionText: 'Ver enviados',
+        barColor: 'bg-emerald-600',
+        borderAccent: 'border-l-emerald-500'
+      };
+    }
     switch (toast.tipo) {
       case 'mp':
         return {
