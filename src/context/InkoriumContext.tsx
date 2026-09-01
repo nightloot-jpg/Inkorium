@@ -6,7 +6,7 @@ import { fetchPhotos, insertPhoto } from '../lib/photosApi';
 import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WALL_COMMENTS, INITIAL_FRIENDSHIPS, INITIAL_FRIEND_REQUESTS, INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_ACCESS_LOGS, INITIAL_ACTIVITIES } from '../data/mockData';
 import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
 import { musicAudioEngine } from '../utils/audioEngine';
-import { appendMessageToConversation } from '../lib/chatHistory';
+import { appendMessageToConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents } from '../lib/chatHistory';
 import { generateRetroChatReply, generateRetroPrivateMessageReply } from '../lib/retroChatReplies';
 import { playMessageSound } from '../utils/sound';
 
@@ -650,7 +650,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [users]);
 
   const fetchAndMapPrivateMessages = useCallback(async () => {
-    if (!isSupabaseConfigured || !currentUserId) return;
+    if (!currentUserId) return;
     try {
       const session = await supabase?.auth.getSession().catch(() => null);
       const token = session?.data?.session?.access_token;
@@ -688,9 +688,35 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       }
     } catch (e) {
-      console.warn('Failed to load private messages from Supabase:', e);
+      console.warn('Failed to load private messages:', e);
     }
-  }, [isSupabaseConfigured, currentUserId, users]);
+  }, [currentUserId, users]);
+
+  const fetchAndMapChatMessages = useCallback(async () => {
+    if (!currentUserId) return;
+    try {
+      const res = await fetch(`/api/chat-messages?userId=${encodeURIComponent(currentUserId)}`, {
+        headers: { Accept: 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setChatMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id));
+            const newMsgs = data.filter((m: any) => !existingIds.has(m.id));
+            if (newMsgs.length === 0) return prev;
+            newMsgs.forEach((msg: any) => {
+              const partnerId = normalizeUserId(msg.emisorId) === normalizeUserId(currentUserId) ? msg.receptorId : msg.emisorId;
+              appendMessageToConversation(currentUserId, partnerId, msg);
+            });
+            return [...prev, ...newMsgs];
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to sync chat messages from server:', e);
+    }
+  }, [currentUserId]);
 
   useEffect(() => {
     if (!supabase || !isSupabaseConfigured) return;
@@ -744,7 +770,62 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => { if (users.length > 0 || isSupabaseConfigured) void fetchAndMapPosts(); }, [users.length, fetchAndMapPosts]);
   useEffect(() => { if (currentUserId && isSupabaseConfigured) void fetchAndMapPhotos(); }, [currentUserId, fetchAndMapPhotos]);
-  useEffect(() => { if (currentUserId && isSupabaseConfigured) void fetchAndMapPrivateMessages(); }, [currentUserId, isSupabaseConfigured, fetchAndMapPrivateMessages]);
+  useEffect(() => { if (currentUserId) void fetchAndMapPrivateMessages(); }, [currentUserId, fetchAndMapPrivateMessages]);
+  useEffect(() => { if (currentUserId) void fetchAndMapChatMessages(); }, [currentUserId, fetchAndMapChatMessages]);
+
+  // Periodic background polling for real-time messages across devices/sessions
+  useEffect(() => {
+    if (!currentUserId) return;
+    const interval = setInterval(() => {
+      void fetchAndMapPrivateMessages();
+      void fetchAndMapChatMessages();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [currentUserId, fetchAndMapPrivateMessages, fetchAndMapChatMessages]);
+
+  // Cross-tab synchronization listener
+  useEffect(() => {
+    const unsubscribe = subscribeCrossTabEvents((event) => {
+      if (event.type === 'CHAT_MESSAGE') {
+        const { message, senderUserId } = event.payload;
+        const normCurrentUser = normalizeUserId(currentUserId);
+        const normRecipient = normalizeUserId(message.receptorId);
+        if (normRecipient === normCurrentUser && normalizeUserId(senderUserId) !== normCurrentUser) {
+          setChatMessages(prev => {
+            if (prev.some(m => m.id === message.id)) return prev;
+            return [...prev, message];
+          });
+          appendMessageToConversation(currentUserId, message.emisorId, message);
+          setActiveChatWindows(prev => {
+            const existing = prev.find(w => normalizeUserId(w.targetUserId) === normalizeUserId(message.emisorId));
+            if (existing) return prev;
+            return [...prev, { targetUserId: message.emisorId, minimized: false }];
+          });
+          try {
+            playMessageSound();
+          } catch {}
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
+              detail: { targetUserId: message.emisorId, message }
+            }));
+          }
+        }
+      } else if (event.type === 'PRIVATE_MESSAGE') {
+        const { message } = event.payload;
+        if (isMessageForCurrentUser(message)) {
+          setMessages(prev => {
+            if (prev.some(m => m.id === message.id)) return prev;
+            return [message, ...prev];
+          });
+          try {
+            playMessageSound();
+          } catch {}
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentUserId]);
 
   const updateUserPresence = useCallback((presencia: UserPresence) => {
     if (!currentUserId) return;
@@ -920,20 +1001,31 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // 2. Abrir o restaurar ventana de chat
     setActiveChatWindows(prev => {
-      const existing = prev.find(win => win.targetUserId === targetUserId);
-      if (existing) return prev.map(win => win.targetUserId === targetUserId ? { ...win, minimized: false } : win);
+      const existing = prev.find(win => normalizeUserId(win.targetUserId) === normalizeUserId(targetUserId));
+      if (existing) return prev.map(win => normalizeUserId(win.targetUserId) === normalizeUserId(targetUserId) ? { ...win, minimized: false } : win);
       return [...prev, { targetUserId, minimized: false }];
     });
 
-    // 3. Notificar a componentes activos
+    // 3. Notificar a componentes activos y otras pestañas
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
         detail: { targetUserId, message: newMsg }
       }));
     }
+    broadcastCrossTabEvent({
+      type: 'CHAT_MESSAGE',
+      payload: { message: newMsg, targetUserId, senderUserId: currentUserId }
+    });
 
-    // 4. Simulación interactiva de respuesta del contacto
-    const targetUser = users.find(u => u.id === targetUserId || u.username === targetUserId);
+    // 4. Sincronizar con el servidor en segundo plano
+    void fetch('/api/chat-messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newMsg)
+    }).catch(() => null);
+
+    // 5. Simulación interactiva de respuesta del contacto
+    const targetUser = users.find(u => u.id === targetUserId || u.username === targetUserId || normalizeUserId(u.id) === normalizeUserId(targetUserId));
     if (targetUser && isRealtimeSimulationEnabled) {
       // Indicar que el contacto está escribiendo tras breve pausa
       const typingTimer = setTimeout(() => {
@@ -942,6 +1034,10 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             detail: { targetUserId, isTyping: true }
           }));
         }
+        broadcastCrossTabEvent({
+          type: 'PEER_TYPING',
+          payload: { targetUserId, isTyping: true }
+        });
       }, 600);
 
       // Responder con mensaje retro tras 1.8 - 3.2 segundos
@@ -954,6 +1050,10 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             detail: { targetUserId, isTyping: false }
           }));
         }
+        broadcastCrossTabEvent({
+          type: 'PEER_TYPING',
+          payload: { targetUserId, isTyping: false }
+        });
 
         const replyText = generateRetroChatReply(targetUser.nombre, message);
         const replyMsg: ChatMessage = {
@@ -978,10 +1078,20 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             detail: { targetUserId, message: replyMsg }
           }));
         }
+        broadcastCrossTabEvent({
+          type: 'CHAT_MESSAGE',
+          payload: { message: replyMsg, targetUserId: currentUserId, senderUserId: targetUserId }
+        });
+
+        void fetch('/api/chat-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(replyMsg)
+        }).catch(() => null);
 
         // Si la ventana está minimizada o cerrada, mostrar toast y aviso
         setActiveChatWindows(currentWindows => {
-          const win = currentWindows.find(w => w.targetUserId === targetUserId);
+          const win = currentWindows.find(w => normalizeUserId(w.targetUserId) === normalizeUserId(targetUserId));
           if (!win || win.minimized) {
             pushNotification({
               id: `notif-chat-${Date.now()}`,
@@ -1254,6 +1364,11 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return updated;
     });
 
+    broadcastCrossTabEvent({
+      type: 'PRIVATE_MESSAGE',
+      payload: { message: newMsg, recipientId: resolvedReceptorId }
+    });
+
     // Notificación en tiempo real para el DESTINATARIO
     const notif: InkoriumNotification = {
       id: `notif-mp-${Date.now()}`,
@@ -1320,6 +1435,11 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return updated;
         });
 
+        broadcastCrossTabEvent({
+          type: 'PRIVATE_MESSAGE',
+          payload: { message: replyMsg, recipientId: currentUserId }
+        });
+
         try {
           playMessageSound();
         } catch {}
@@ -1341,26 +1461,24 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }, replyDelay);
     }
 
-    // Sincronizar en segundo plano si hay Supabase/backend disponible
+    // Sincronizar en segundo plano con la API / servidor
     void (async () => {
       try {
-        if (supabase) {
-          const session = await supabase.auth.getSession().catch(() => null);
-          const token = session?.data?.session?.access_token;
-          await fetch('/api/private-messages', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            },
-            body: JSON.stringify({
-              sender_id: currentUserId,
-              recipient_id: resolvedReceptorId,
-              subject: newMsg.asunto,
-              body: cleanText
-            })
-          }).catch(() => null);
-        }
+        const session = await supabase?.auth.getSession().catch(() => null);
+        const token = session?.data?.session?.access_token;
+        await fetch('/api/private-messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            sender_id: currentUserId,
+            recipient_id: resolvedReceptorId,
+            subject: newMsg.asunto,
+            body: cleanText
+          })
+        }).catch(() => null);
       } catch (err) {
         console.warn('Silent private message backend sync error:', err);
       }
@@ -1807,12 +1925,16 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Dynamic counts for current user
   const effectiveUserId = currentUserId || 'nightloot';
   const isMessageForCurrentUser = (m: PrivateMessage) => {
+    const normRec = normalizeUserId(m.receptorId);
+    const normCur = normalizeUserId(currentUser.id);
+    const normEff = normalizeUserId(effectiveUserId);
     return (
+      normRec === normCur ||
+      normRec === normEff ||
       m.receptorId === effectiveUserId ||
       m.receptorId === currentUser.id ||
       (currentUser.username && m.receptorId.toLowerCase() === currentUser.username.toLowerCase()) ||
-      (currentUser.email && m.receptorId.toLowerCase() === currentUser.email.toLowerCase()) ||
-      ((currentUser.id === 'user-nightloot' || currentUser.id === 'nightloot') && (m.receptorId === 'nightloot' || m.receptorId === 'user-nightloot'))
+      (currentUser.email && m.receptorId.toLowerCase() === currentUser.email.toLowerCase())
     );
   };
   const unreadMessagesCount = messages.filter(m => isMessageForCurrentUser(m) && !m.leido).length;

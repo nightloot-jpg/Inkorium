@@ -165,6 +165,7 @@ async function resolveProfileIdInSupabase(identifier: string, supabaseUrl: strin
 // In-memory fallback stores to guarantee 100% uptime even if Supabase is offline or misconfigured
 const inMemoryPosts: any[] = [];
 const inMemoryMessages: any[] = [];
+const inMemoryChatMessages: any[] = [];
 const inMemoryPhotos: any[] = [];
 
 app.get('/api/private-messages', async (req, res) => {
@@ -427,6 +428,74 @@ app.delete('/api/private-messages', async (req, res) => {
       return res.status(200).json({ success: true });
     }
   } catch (err: any) {
+    return res.status(200).json({ success: true });
+  }
+});
+
+// Chat Messages (Instant Messenger) API with memory persistence
+app.get('/api/chat-messages', async (req, res) => {
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  try {
+    const userA = String(req.query.userA || req.query.user1 || '').trim();
+    const userB = String(req.query.userB || req.query.user2 || '').trim();
+    const userId = String(req.query.userId || '').trim();
+
+    let filtered = inMemoryChatMessages;
+    if (userA && userB) {
+      filtered = inMemoryChatMessages.filter(
+        (m) =>
+          (m.emisorId === userA && m.receptorId === userB) ||
+          (m.emisorId === userB && m.receptorId === userA)
+      );
+    } else if (userId) {
+      filtered = inMemoryChatMessages.filter(
+        (m) => m.emisorId === userId || m.receptorId === userId
+      );
+    }
+
+    return res.status(200).json(filtered);
+  } catch (err: any) {
+    console.warn('Chat messages get error:', err?.message);
+    return res.status(200).json(inMemoryChatMessages);
+  }
+});
+
+app.post('/api/chat-messages', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const emisorId = String(payload.emisorId || payload.sender_id || payload.from || '').trim();
+    const receptorId = String(payload.receptorId || payload.recipient_id || payload.to || '').trim();
+    const mensaje = String(payload.mensaje || payload.message || payload.text || payload.body || '').trim();
+
+    if (!emisorId || !receptorId || !mensaje) {
+      return res.status(400).json({ error: 'INVALID_CHAT_PAYLOAD' });
+    }
+
+    const timestamp = payload.timestamp || Date.now();
+    const fecha = payload.fecha || new Date(timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const msgId = payload.id || `chat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+    const newChatMsg = {
+      id: msgId,
+      emisorId,
+      receptorId,
+      mensaje,
+      fecha,
+      timestamp,
+      leido: Boolean(payload.leido)
+    };
+
+    // Avoid duplicate message IDs in server memory
+    const existingIdx = inMemoryChatMessages.findIndex((m) => m.id === newChatMsg.id);
+    if (existingIdx !== -1) {
+      inMemoryChatMessages[existingIdx] = newChatMsg;
+    } else {
+      inMemoryChatMessages.push(newChatMsg);
+    }
+
+    return res.status(201).json(newChatMsg);
+  } catch (err: any) {
+    console.warn('Chat messages post error:', err?.message);
     return res.status(200).json({ success: true });
   }
 });

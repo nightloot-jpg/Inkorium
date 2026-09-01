@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { Minus, X, Send, Smile, ArrowDown, Loader2, CheckCheck, Clock, UserCheck } from 'lucide-react';
 import { User, ChatWindow, ChatMessage, UserPresence } from '../types';
-import { getFullConversation, formatChatDateDivider } from '../lib/chatHistory';
+import { getFullConversation, formatChatDateDivider, normalizeUserId, subscribeCrossTabEvents } from '../lib/chatHistory';
 import EmoticonPicker from './EmoticonPicker';
 import { useInkorium } from '../context/InkoriumContext';
 import { playMessageSound } from '../utils/sound';
@@ -55,20 +55,38 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
 
   // Listen to synchronized messages and typing events
   useEffect(() => {
-    const handleSync = (e: Event) => {
-      const customEvent = e as CustomEvent<{ targetUserId: string; message: ChatMessage }>;
-      if (customEvent.detail && (customEvent.detail.targetUserId === targetUser.id || customEvent.detail.message.emisorId === targetUser.id)) {
+    const isMessageForThisChat = (m: ChatMessage) => {
+      const normSender = normalizeUserId(m.emisorId);
+      const normRecipient = normalizeUserId(m.receptorId);
+      const normCurrent = normalizeUserId(currentUser.id);
+      const normTarget = normalizeUserId(targetUser.id);
+
+      return (
+        (normSender === normCurrent && normRecipient === normTarget) ||
+        (normSender === normTarget && normRecipient === normCurrent)
+      );
+    };
+
+    const handleIncomingMessage = (msg: ChatMessage) => {
+      if (isMessageForThisChat(msg)) {
         setAllMessages(prev => {
-          if (prev.some(m => m.id === customEvent.detail.message.id)) return prev;
-          return [...prev, customEvent.detail.message];
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
         });
         setVisibleCount(prev => prev + 1);
       }
     };
 
+    const handleSync = (e: Event) => {
+      const customEvent = e as CustomEvent<{ targetUserId: string; message: ChatMessage }>;
+      if (customEvent.detail?.message) {
+        handleIncomingMessage(customEvent.detail.message);
+      }
+    };
+
     const handleTyping = (e: Event) => {
       const customEvent = e as CustomEvent<{ targetUserId: string; isTyping: boolean }>;
-      if (customEvent.detail && customEvent.detail.targetUserId === targetUser.id) {
+      if (customEvent.detail && normalizeUserId(customEvent.detail.targetUserId) === normalizeUserId(targetUser.id)) {
         setIsPeerTyping(customEvent.detail.isTyping);
       }
     };
@@ -76,11 +94,23 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     window.addEventListener('inkorium:chat_message_sync', handleSync);
     window.addEventListener('inkorium:peer_typing', handleTyping);
 
+    // Cross-tab broadcast listener
+    const unsubscribeCrossTab = subscribeCrossTabEvents((event) => {
+      if (event.type === 'CHAT_MESSAGE') {
+        handleIncomingMessage(event.payload.message);
+      } else if (event.type === 'PEER_TYPING') {
+        if (normalizeUserId(event.payload.targetUserId) === normalizeUserId(targetUser.id)) {
+          setIsPeerTyping(event.payload.isTyping);
+        }
+      }
+    });
+
     return () => {
       window.removeEventListener('inkorium:chat_message_sync', handleSync);
       window.removeEventListener('inkorium:peer_typing', handleTyping);
+      unsubscribeCrossTab();
     };
-  }, [targetUser.id]);
+  }, [currentUser.id, targetUser.id]);
 
   // Compute sliced visible messages
   const visibleMessages = allMessages.slice(-visibleCount);

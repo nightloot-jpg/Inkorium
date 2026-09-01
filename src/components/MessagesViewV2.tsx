@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Inbox, Mail, Reply, Send, SendHorizontal, Trash2, ChevronDown, User as UserIcon } from 'lucide-react';
 import { useInkorium } from '../context/InkoriumContext';
 import { PrivateMessage } from '../types';
+import { normalizeUserId } from '../lib/chatHistory';
 
 export const MessagesViewV2: React.FC = () => {
   const {
@@ -33,28 +34,30 @@ export const MessagesViewV2: React.FC = () => {
   }, [composeRecipientId]);
 
   const isCurrentRecipient = (m: PrivateMessage) => {
+    const normRec = normalizeUserId(m.receptorId);
+    const normCur = normalizeUserId(currentUser.id);
+    const normCurId = normalizeUserId(currentUserId);
     return (
+      normRec === normCur ||
+      normRec === normCurId ||
       m.receptorId === currentUser.id ||
       m.receptorId === currentUser.username ||
       m.receptorId === currentUserId ||
-      (currentUser.email && m.receptorId.toLowerCase() === currentUser.email.toLowerCase()) ||
-      (currentUser.id === 'user-nightloot' && m.receptorId === 'nightloot') ||
-      (currentUser.id === 'nightloot' && m.receptorId === 'user-nightloot') ||
-      (currentUserId === 'user-nightloot' && m.receptorId === 'nightloot') ||
-      (currentUserId === 'nightloot' && m.receptorId === 'user-nightloot')
+      (currentUser.email && m.receptorId.toLowerCase() === currentUser.email.toLowerCase())
     );
   };
 
   const isCurrentSender = (m: PrivateMessage) => {
+    const normEmi = normalizeUserId(m.emisorId);
+    const normCur = normalizeUserId(currentUser.id);
+    const normCurId = normalizeUserId(currentUserId);
     return (
+      normEmi === normCur ||
+      normEmi === normCurId ||
       m.emisorId === currentUser.id ||
       m.emisorId === currentUser.username ||
       m.emisorId === currentUserId ||
-      (currentUser.email && m.emisorId.toLowerCase() === currentUser.email.toLowerCase()) ||
-      (currentUser.id === 'user-nightloot' && m.emisorId === 'nightloot') ||
-      (currentUser.id === 'nightloot' && m.emisorId === 'user-nightloot') ||
-      (currentUserId === 'user-nightloot' && m.emisorId === 'nightloot') ||
-      (currentUserId === 'nightloot' && m.emisorId === 'user-nightloot')
+      (currentUser.email && m.emisorId.toLowerCase() === currentUser.email.toLowerCase())
     );
   };
 

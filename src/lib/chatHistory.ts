@@ -2,6 +2,56 @@ import { ChatMessage } from '../types';
 
 const CHAT_STORAGE_KEY = 'inkorium:chat_history_store';
 
+// Helper to normalize user identifiers so aliases always map to the exact same conversation
+export function normalizeUserId(id: string): string {
+  if (!id) return '';
+  const trimmed = String(id).trim().toLowerCase();
+  if (trimmed === 'nightloot' || trimmed === 'user-nightloot') return 'user-nightloot';
+  if (trimmed === 'laura' || trimmed === 'laurasanz' || trimmed === 'user-laura' || trimmed === 'user-3') return 'user-laura';
+  if (trimmed === 'carlos' || trimmed === 'carlosruiz' || trimmed === 'user-carlos' || trimmed === 'user-2') return 'user-carlos';
+  if (trimmed === 'elena' || trimmed === 'elenaramos' || trimmed === 'user-elena' || trimmed === 'user-1' || trimmed === '1') return 'user-elena';
+  return trimmed;
+}
+
+// Cross-tab real-time sync channel
+let syncChannel: BroadcastChannel | null = null;
+try {
+  if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
+    syncChannel = new BroadcastChannel('inkorium_cross_tab_sync');
+  }
+} catch {
+  syncChannel = null;
+}
+
+export type InkoriumCrossTabEvent = 
+  | { type: 'CHAT_MESSAGE'; payload: { message: ChatMessage; targetUserId: string; senderUserId: string } }
+  | { type: 'PEER_TYPING'; payload: { targetUserId: string; isTyping: boolean } }
+  | { type: 'PRIVATE_MESSAGE'; payload: { message: any; recipientId: string } }
+  | { type: 'NOTIFICATION'; payload: { notification: any } };
+
+export function broadcastCrossTabEvent(event: InkoriumCrossTabEvent): void {
+  try {
+    if (syncChannel) {
+      syncChannel.postMessage(event);
+    }
+  } catch (err) {
+    console.warn('BroadcastChannel error:', err);
+  }
+}
+
+export function subscribeCrossTabEvents(listener: (event: InkoriumCrossTabEvent) => void): () => void {
+  if (!syncChannel) return () => {};
+  const handler = (e: MessageEvent<InkoriumCrossTabEvent>) => {
+    if (e.data && e.data.type) {
+      listener(e.data);
+    }
+  };
+  syncChannel.addEventListener('message', handler);
+  return () => {
+    syncChannel?.removeEventListener('message', handler);
+  };
+}
+
 // Helper to create timestamp offsets
 const now = Date.now();
 const ONE_HOUR = 3600 * 1000;
@@ -63,17 +113,20 @@ const CONVERSATION_SEEDS: Record<string, SeedMessageTemplate[]> = {
 };
 
 function getStorageConversationKey(userA: string, userB: string): string {
-  const [first, second] = [String(userA), String(userB)].sort();
+  const normA = normalizeUserId(userA);
+  const normB = normalizeUserId(userB);
+  const [first, second] = [normA, normB].sort();
   return `${CHAT_STORAGE_KEY}:${first}:${second}`;
 }
 
 export function generateInitialHistoryForPair(currentUserId: string, targetUserId: string, targetUserName: string): ChatMessage[] {
   const targetLower = (targetUserName || '').toLowerCase();
   const idLower = (targetUserId || '').toLowerCase();
+  const normTarget = normalizeUserId(targetUserId);
 
-  const isCarlos = targetLower.includes('carlos') || idLower.includes('carlos') || idLower === 'user-2';
-  const isLaura = targetLower.includes('laura') || idLower.includes('laura') || idLower === 'user-3';
-  const isElena = targetLower.includes('elena') || idLower.includes('elena') || idLower === 'user-1' || idLower === '1';
+  const isCarlos = targetLower.includes('carlos') || idLower.includes('carlos') || normTarget === 'user-carlos';
+  const isLaura = targetLower.includes('laura') || idLower.includes('laura') || normTarget === 'user-laura';
+  const isElena = targetLower.includes('elena') || idLower.includes('elena') || normTarget === 'user-elena';
 
   let templates: SeedMessageTemplate[] = [];
   if (isCarlos) {
@@ -83,7 +136,7 @@ export function generateInitialHistoryForPair(currentUserId: string, targetUserI
   } else if (isElena) {
     templates = CONVERSATION_SEEDS.default;
   } else {
-    // Real Supabase users (like Bárbara) start with a fresh, clean chat history
+    // Real Supabase users start with a fresh, clean chat history
     return [];
   }
 
@@ -138,6 +191,9 @@ export function saveFullConversation(currentUserId: string, targetUserId: string
 
 export function appendMessageToConversation(currentUserId: string, targetUserId: string, newMsg: ChatMessage): ChatMessage[] {
   const current = getFullConversation(currentUserId, targetUserId);
+  if (current.some(m => m.id === newMsg.id)) {
+    return current;
+  }
   const updated = [...current, newMsg];
   saveFullConversation(currentUserId, targetUserId, updated);
   return updated;
@@ -163,3 +219,4 @@ export function formatChatDateDivider(timestampOrDateStr: number | string | unde
 
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 }
+
