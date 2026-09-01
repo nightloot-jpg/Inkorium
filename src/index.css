@@ -2,86 +2,147 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Smooth transition for theme toggling */
-*, ::before, ::after {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: 150ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Base Dark Mode overrides for seamless retro experience */
+/* Base Dark Mode variables and structure */
 html.dark {
   color-scheme: dark;
 }
 
 html.dark body {
-  background-color: #0b1120;
+  background-color: #090d16;
   color: #e2e8f0;
 }
 
-/* Global dark overrides for standard cards, inputs, and sidebars */
+/* Custom Sleek Dark Scrollbar */
+html.dark ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #0b1120;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #27354d;
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3b4e6d;
+}
+
+/* Card & Surface Elevation Overrides */
 .dark .bg-white {
-  background-color: #1e293b !important;
+  background-color: #151f32 !important;
   color: #f1f5f9;
 }
 
 .dark .bg-\[\#f0f4f8\],
 .dark .bg-\[\#f4f7fa\],
 .dark .bg-\[\#f9fafb\],
-.dark .bg-gray-50 {
-  background-color: #0f172a !important;
+.dark .bg-gray-50,
+.dark .bg-slate-50 {
+  background-color: #0b1120 !important;
 }
 
-.dark .bg-gray-100 {
-  background-color: #334155 !important;
+.dark .bg-gray-100,
+.dark .bg-slate-100 {
+  background-color: #1e2c45 !important;
 }
 
-.dark .bg-gray-200 {
-  background-color: #475569 !important;
+.dark .bg-gray-200,
+.dark .bg-slate-200 {
+  background-color: #273752 !important;
 }
 
+/* Borders & Dividers */
 .dark .border-\[\#ccd5df\],
 .dark .border-gray-200,
-.dark .border-gray-300 {
-  border-color: #334155 !important;
+.dark .border-gray-300,
+.dark .border-slate-200,
+.dark .border-slate-300 {
+  border-color: #22324d !important;
 }
 
 .dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
-.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #334155 !important;
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #22324d !important;
 }
 
+/* Typography & Contrast */
 .dark .text-gray-900,
 .dark .text-gray-800,
-.dark .text-gray-700 {
-  color: #f1f5f9 !important;
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+.dark .text-gray-700,
+.dark .text-slate-700 {
+  color: #cbd5e1 !important;
 }
 
 .dark .text-gray-600,
-.dark .text-gray-500 {
+.dark .text-gray-500,
+.dark .text-slate-600,
+.dark .text-slate-500 {
   color: #94a3b8 !important;
 }
 
-.dark .text-gray-400 {
+.dark .text-gray-400,
+.dark .text-slate-400 {
   color: #64748b !important;
 }
 
+/* Form Controls & Inputs */
 .dark input:not([type="checkbox"]):not([type="radio"]),
 .dark select,
 .dark textarea {
-  background-color: #0f172a !important;
+  background-color: #0b1220 !important;
   color: #f1f5f9 !important;
-  border-color: #334155 !important;
+  border-color: #263857 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b !important;
 }
 
 .dark input:focus,
 .dark select:focus,
 .dark textarea:focus {
-  border-color: #60a5fa !important;
+  border-color: #3b82f6 !important;
+  outline: none;
+  box-shadow: 0 0 0 1px #3b82f6;
 }
 
+/* Interactive States & Hovers */
 .dark .hover\:bg-blue-50:hover,
 .dark .hover\:bg-gray-50:hover,
-.dark .hover\:bg-gray-100:hover {
-  background-color: #334155 !important;
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-100:hover {
+  background-color: #1a2840 !important;
 }
+
+/* Chat & Messages view in Dark Mode */
+.dark .bg-blue-50\/80 {
+  background-color: rgba(30, 58, 138, 0.35) !important;
+}
+
+.dark .hover\:bg-blue-100\/70:hover {
+  background-color: rgba(30, 58, 138, 0.5) !important;
+}
+
+.dark .bg-blue-50 {
+  background-color: rgba(30, 58, 138, 0.3) !important;
+}
+
+/* Retain classic brand accents */
+.dark .bg-blue-600,
+.dark .bg-\[\#3869A0\] {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+

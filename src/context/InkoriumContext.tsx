@@ -724,8 +724,11 @@ const addDeletedMessageIds = (ids: string[]) => {
     }
   }, [users]);
 
+  const isFetchingPrivateMsgsRef = useRef(false);
+
   const fetchAndMapPrivateMessages = useCallback(async () => {
-    if (!currentUserId) return;
+    if (!currentUserId || isFetchingPrivateMsgsRef.current) return;
+    isFetchingPrivateMsgsRef.current = true;
     const deletedIds = getDeletedMessageIds();
     try {
       const session = await supabase?.auth.getSession().catch(() => null);
@@ -735,9 +738,9 @@ const addDeletedMessageIds = (ids: string[]) => {
           Accept: 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         }
-      });
-      if (res.ok) {
-        const data = await res.json();
+      }).catch(() => null);
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
         if (Array.isArray(data) && data.length > 0) {
           const mapped: PrivateMessage[] = data
             .filter((row: any) => !deletedIds.has(String(row.id)))
@@ -767,8 +770,10 @@ const addDeletedMessageIds = (ids: string[]) => {
           });
         }
       }
-    } catch (e) {
-      console.warn('Failed to load private messages:', e);
+    } catch {
+      // Graceful fallback to local cache
+    } finally {
+      isFetchingPrivateMsgsRef.current = false;
     }
   }, [currentUserId, users]);
 
@@ -883,13 +888,30 @@ const addDeletedMessageIds = (ids: string[]) => {
     setNotifications(prev => prev.filter(n => n.id !== notifId));
   }, []);
 
+  const fetchAndMapPrivateMessagesRef = useRef(fetchAndMapPrivateMessages);
+  fetchAndMapPrivateMessagesRef.current = fetchAndMapPrivateMessages;
+
+  const fetchAndMapChatMessagesRef = useRef(fetchAndMapChatMessages);
+  fetchAndMapChatMessagesRef.current = fetchAndMapChatMessages;
+
+  const pushNotificationRef = useRef(pushNotification);
+  pushNotificationRef.current = pushNotification;
+
+  const usersRef = useRef(users);
+  usersRef.current = users;
+
   // Periodic background polling and Server-Sent Events (SSE) for instant real-time messaging
   useEffect(() => {
     if (!currentUserId) return;
+    
+    // Initial fetch on mount / user change
+    void fetchAndMapPrivateMessagesRef.current();
+    void fetchAndMapChatMessagesRef.current();
+
     const interval = setInterval(() => {
-      void fetchAndMapPrivateMessages();
-      void fetchAndMapChatMessages();
-    }, 3000);
+      void fetchAndMapPrivateMessagesRef.current();
+      void fetchAndMapChatMessagesRef.current();
+    }, 12000);
 
     // Instant Real-Time Push Stream via Server-Sent Events
     let eventSource: EventSource | null = null;
@@ -949,8 +971,9 @@ const addDeletedMessageIds = (ids: string[]) => {
             const emiId = String(raw.sender_id || raw.emisorId || '');
 
             if (normalizeUserId(recId) === normCur || normalizeUserId(emiId) === normCur) {
-              const sender = users.find(u => u.id === emiId || u.username === emiId);
-              const recipient = users.find(u => u.id === recId || u.username === recId);
+              const currentUsersList = usersRef.current;
+              const sender = currentUsersList.find(u => u.id === emiId || u.username === emiId);
+              const recipient = currentUsersList.find(u => u.id === recId || u.username === recId);
               const mapped: PrivateMessage = {
                 id: String(raw.id),
                 emisorId: emiId,
@@ -973,7 +996,7 @@ const addDeletedMessageIds = (ids: string[]) => {
                 try {
                   playMessageSound();
                 } catch {}
-                pushNotification({
+                pushNotificationRef.current({
                   id: `notif-sse-mp-${Date.now()}`,
                   tipo: 'mp',
                   userId: currentUserId,
@@ -1019,7 +1042,7 @@ const addDeletedMessageIds = (ids: string[]) => {
         eventSource.close();
       }
     };
-  }, [currentUserId, users, pushNotification, fetchAndMapPrivateMessages, fetchAndMapChatMessages]);
+  }, [currentUserId]);
 
   // Cross-tab synchronization listener
   useEffect(() => {
