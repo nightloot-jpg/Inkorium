@@ -6,6 +6,9 @@ import { fetchPhotos, insertPhoto } from '../lib/photosApi';
 import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WALL_COMMENTS, INITIAL_FRIENDSHIPS, INITIAL_FRIEND_REQUESTS, INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_ACCESS_LOGS, INITIAL_ACTIVITIES } from '../data/mockData';
 import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
 import { musicAudioEngine } from '../utils/audioEngine';
+import { appendMessageToConversation } from '../lib/chatHistory';
+import { generateRetroChatReply, generateRetroPrivateMessageReply } from '../lib/retroChatReplies';
+import { playMessageSound } from '../utils/sound';
 
 interface InkoriumContextType {
   currentUser: User; users: User[]; photos: Photo[]; albums: Album[]; feed: FeedItem[]; wallComments: WallComment[];
@@ -834,6 +837,40 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [currentUserId]);
 
+  const setIsRealtime = useCallback((enabled: boolean) => setIsRealtimeSimulationEnabledState(enabled), []);
+  
+  const pushNotification = useCallback((notif: InkoriumNotification) => {
+    setNotifications(prev => [notif, ...prev]);
+    // Solo mostrar el popup emergente si la notificación va dirigida al usuario actual logueado
+    const isForCurrentUser = 
+      !notif.userId ||
+      notif.userId === currentUserId ||
+      notif.userId === currentUser.id ||
+      (currentUser.username && notif.userId === currentUser.username) ||
+      (currentUser.id === 'user-nightloot' && notif.userId === 'nightloot') ||
+      (currentUser.id === 'nightloot' && notif.userId === 'user-nightloot');
+
+    if (isForCurrentUser) {
+      setToasts(prev => [notif, ...prev.slice(0, 4)]);
+    }
+  }, [currentUserId, currentUser.id, currentUser.username]);
+
+  const dismissToast = useCallback((toastId: string) => {
+    setToasts(prev => prev.filter(t => t.id !== toastId));
+  }, []);
+
+  const markNotificationAsRead = useCallback((notifId: string) => {
+    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: true } : n));
+  }, []);
+
+  const markAllNotificationsAsRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, leido: true })));
+  }, []);
+
+  const deleteNotification = useCallback((notifId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notifId));
+  }, []);
+
   const openChatWith = useCallback((targetUserId: string) => {
     if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
     setActiveChatWindows(prev => {
@@ -854,20 +891,107 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const sendChatMessage = useCallback((targetUserId: string, text: string) => {
     const message = text.trim();
     if (!currentUserId || !targetUserId || targetUserId === currentUserId || !message) return;
-    setChatMessages(prev => [...prev, {
-      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+
+    const msgId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const newMsg: ChatMessage = {
+      id: msgId,
       emisorId: currentUserId,
       receptorId: targetUserId,
       mensaje: message,
       fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
       leido: true
-    }]);
+    };
+
+    // 1. Guardar mensaje en historial local
+    appendMessageToConversation(currentUserId, targetUserId, newMsg);
+    setChatMessages(prev => [...prev, newMsg]);
+
+    // 2. Abrir o restaurar ventana de chat
     setActiveChatWindows(prev => {
       const existing = prev.find(win => win.targetUserId === targetUserId);
       if (existing) return prev.map(win => win.targetUserId === targetUserId ? { ...win, minimized: false } : win);
       return [...prev, { targetUserId, minimized: false }];
     });
-  }, [currentUserId]);
+
+    // 3. Notificar a componentes activos
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
+        detail: { targetUserId, message: newMsg }
+      }));
+    }
+
+    // 4. Simulación interactiva de respuesta del contacto
+    const targetUser = users.find(u => u.id === targetUserId || u.username === targetUserId);
+    if (targetUser && isRealtimeSimulationEnabled) {
+      // Indicar que el contacto está escribiendo tras breve pausa
+      const typingTimer = setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('inkorium:peer_typing', {
+            detail: { targetUserId, isTyping: true }
+          }));
+        }
+      }, 600);
+
+      // Responder con mensaje retro tras 1.8 - 3.2 segundos
+      const replyDelay = 1800 + Math.random() * 1400;
+      setTimeout(() => {
+        clearTimeout(typingTimer);
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('inkorium:peer_typing', {
+            detail: { targetUserId, isTyping: false }
+          }));
+        }
+
+        const replyText = generateRetroChatReply(targetUser.nombre, message);
+        const replyMsg: ChatMessage = {
+          id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          emisorId: targetUserId,
+          receptorId: currentUserId,
+          mensaje: replyText,
+          fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: Date.now(),
+          leido: true
+        };
+
+        appendMessageToConversation(currentUserId, targetUserId, replyMsg);
+        setChatMessages(prev => [...prev, replyMsg]);
+
+        try {
+          playMessageSound();
+        } catch {}
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
+            detail: { targetUserId, message: replyMsg }
+          }));
+        }
+
+        // Si la ventana está minimizada o cerrada, mostrar toast y aviso
+        setActiveChatWindows(currentWindows => {
+          const win = currentWindows.find(w => w.targetUserId === targetUserId);
+          if (!win || win.minimized) {
+            pushNotification({
+              id: `notif-chat-${Date.now()}`,
+              tipo: 'chat',
+              userId: currentUserId,
+              fromUserId: targetUserId,
+              fromUserName: `${targetUser.nombre} ${targetUser.apellidos}`.trim() || targetUser.nombre,
+              fromUserAvatar: targetUser.avatar,
+              mensaje: `te ha escrito en el chat: "${replyText}"`,
+              enlace: 'chat',
+              targetId: targetUserId,
+              targetPreview: replyText,
+              fecha: 'Ahora mismo',
+              leido: false
+            });
+          }
+          return currentWindows;
+        });
+      }, replyDelay);
+    }
+  }, [currentUserId, users, isRealtimeSimulationEnabled, pushNotification]);
 
   const setActiveTab = useCallback((tab: InkoriumContextType['activeTab']) => {
     if (tab !== 'mensajes') setComposeRecipientId(null);
@@ -981,40 +1105,6 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('inkorium:user_id', id);
     }
-  }, []);
-
-  const setIsRealtime = useCallback((enabled: boolean) => setIsRealtimeSimulationEnabledState(enabled), []);
-  
-  const pushNotification = useCallback((notif: InkoriumNotification) => {
-    setNotifications(prev => [notif, ...prev]);
-    // Solo mostrar el popup emergente si la notificación va dirigida al usuario actual logueado
-    const isForCurrentUser = 
-      !notif.userId ||
-      notif.userId === currentUserId ||
-      notif.userId === currentUser.id ||
-      (currentUser.username && notif.userId === currentUser.username) ||
-      (currentUser.id === 'user-nightloot' && notif.userId === 'nightloot') ||
-      (currentUser.id === 'nightloot' && notif.userId === 'user-nightloot');
-
-    if (isForCurrentUser) {
-      setToasts(prev => [notif, ...prev.slice(0, 4)]);
-    }
-  }, [currentUserId, currentUser.id, currentUser.username]);
-
-  const dismissToast = useCallback((toastId: string) => {
-    setToasts(prev => prev.filter(t => t.id !== toastId));
-  }, []);
-
-  const markNotificationAsRead = useCallback((notifId: string) => {
-    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: true } : n));
-  }, []);
-
-  const markAllNotificationsAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, leido: true })));
-  }, []);
-
-  const deleteNotification = useCallback((notifId: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== notifId));
   }, []);
 
   const acceptFriendRequest = useCallback((requestId: string) => {
@@ -1181,6 +1271,53 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...prev.slice(0, 4)
     ]);
 
+    // 5. Simulación interactiva de respuesta del contacto
+    if (targetUser && isRealtimeSimulationEnabled) {
+      const replyDelay = 3200 + Math.random() * 2000;
+      setTimeout(() => {
+        const { subject: replySub, body: replyBody } = generateRetroPrivateMessageReply(
+          targetUser.nombre,
+          newMsg.asunto,
+          cleanText
+        );
+
+        const replyMsgId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        const replyMsg: PrivateMessage = {
+          id: replyMsgId,
+          emisorId: resolvedReceptorId,
+          emisorNombre: resolvedReceptorName,
+          emisorAvatar: resolvedReceptorAvatar,
+          receptorId: currentUserId,
+          receptorNombre: currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre,
+          asunto: replySub,
+          mensaje: replyBody,
+          fecha: 'Ahora mismo',
+          leido: false
+        };
+
+        setMessages(prev => [replyMsg, ...prev]);
+
+        try {
+          playMessageSound();
+        } catch {}
+
+        pushNotification({
+          id: `notif-mp-${Date.now()}`,
+          tipo: 'mp',
+          userId: currentUserId,
+          fromUserId: resolvedReceptorId,
+          fromUserName: resolvedReceptorName,
+          fromUserAvatar: resolvedReceptorAvatar,
+          mensaje: `te ha respondido al mensaje privado: "${replySub}"`,
+          enlace: 'mensajes',
+          targetId: replyMsgId,
+          targetPreview: replyBody.slice(0, 80),
+          fecha: 'Ahora mismo',
+          leido: false
+        });
+      }, replyDelay);
+    }
+
     // Sincronizar en segundo plano si hay Supabase/backend disponible
     void (async () => {
       try {
@@ -1205,7 +1342,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.warn('Silent private message backend sync error:', err);
       }
     })();
-  }, [currentUserId, currentUser, users, pushNotification]);
+  }, [currentUserId, currentUser, users, isRealtimeSimulationEnabled, pushNotification]);
 
   const markMessageAsRead = useCallback((messageId: string) => {
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, leido: true } : m));
@@ -1634,9 +1771,18 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Dynamic counts for current user
   const effectiveUserId = currentUserId || 'nightloot';
-  const unreadMessagesCount = messages.filter(m => (m.receptorId === effectiveUserId || m.receptorId === currentUser.id) && !m.leido).length;
-  const unreadNotificationsCount = notifications.filter(n => (n.userId === effectiveUserId || n.userId === currentUser.id) && !n.leido).length;
-  const pendingRequestsCount = friendRequests.filter(r => (r.receptorId === effectiveUserId || r.receptorId === currentUser.id) && r.estado === 'pendiente').length;
+  const isMessageForCurrentUser = (m: PrivateMessage) => {
+    return (
+      m.receptorId === effectiveUserId ||
+      m.receptorId === currentUser.id ||
+      (currentUser.username && m.receptorId.toLowerCase() === currentUser.username.toLowerCase()) ||
+      (currentUser.email && m.receptorId.toLowerCase() === currentUser.email.toLowerCase()) ||
+      ((currentUser.id === 'user-nightloot' || currentUser.id === 'nightloot') && (m.receptorId === 'nightloot' || m.receptorId === 'user-nightloot'))
+    );
+  };
+  const unreadMessagesCount = messages.filter(m => isMessageForCurrentUser(m) && !m.leido).length;
+  const unreadNotificationsCount = notifications.filter(n => (n.userId === effectiveUserId || n.userId === currentUser.id || (n.userId === 'nightloot' && currentUser.id === 'user-nightloot')) && !n.leido).length;
+  const pendingRequestsCount = friendRequests.filter(r => (r.receptorId === effectiveUserId || r.receptorId === currentUser.id || (r.receptorId === 'nightloot' && currentUser.id === 'user-nightloot')) && r.estado === 'pendiente').length;
 
   return (
     <InkoriumContext.Provider value={{

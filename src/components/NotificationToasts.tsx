@@ -58,6 +58,15 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss, onAction }) => 
           barColor: 'bg-[#3869A0]',
           borderAccent: 'border-l-[#3869A0]'
         };
+      case 'chat':
+        return {
+          icon: <MessageSquare className="w-3.5 h-3.5 text-[#3869A0]" />,
+          badgeBg: 'bg-blue-100 border-blue-300 text-blue-800',
+          title: 'Chat Instantáneo',
+          actionText: 'Abrir chat',
+          barColor: 'bg-[#3869A0]',
+          borderAccent: 'border-l-[#3869A0]'
+        };
       case 'tablon':
         return {
           icon: <MessageSquare className="w-3.5 h-3.5 text-emerald-700" />,
@@ -219,15 +228,18 @@ export const NotificationToasts: React.FC = () => {
     viewUserProfile,
     currentUser,
     viewPhoto,
-    acceptFriendRequest,
-    friendRequests
+    openChatWith
   } = useInkorium();
 
   const handleAction = (toast: InkoriumNotification) => {
     markNotificationAsRead(toast.id);
     dismissToast(toast.id);
 
-    if (toast.enlace === 'mensajes' || toast.tipo === 'mp') {
+    if (toast.tipo === 'chat' || toast.enlace === 'chat') {
+      if (toast.fromUserId) {
+        openChatWith(toast.fromUserId);
+      }
+    } else if (toast.enlace === 'mensajes' || toast.tipo === 'mp') {
       setActiveTab('mensajes');
     } else if (toast.enlace === 'perfil' || toast.tipo === 'tablon') {
       viewUserProfile(currentUser.id);

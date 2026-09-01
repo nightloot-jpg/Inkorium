@@ -187,7 +187,7 @@ export interface InkoriumNotification {
   fromUserId: string;
   fromUserName: string;
   fromUserAvatar: string;
-  tipo: 'peticion' | 'mp' | 'tablon' | 'foto' | 'foto_comentario' | 'etiqueta' | 'like';
+  tipo: 'peticion' | 'mp' | 'tablon' | 'foto' | 'foto_comentario' | 'etiqueta' | 'like' | 'chat';
   mensaje: string;
   enlace: string;
   leido: boolean;
