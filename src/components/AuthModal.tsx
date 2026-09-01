@@ -278,7 +278,7 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
                 />
               </div>
 
-              <div className="pt-2 space-y-2">
+              <div className="pt-2">
                 <button
                   type="submit"
                   disabled={loading}
@@ -287,49 +287,8 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
                   <LogIn className="w-3.5 h-3.5" />
                   <span>{loading ? 'Entrando...' : 'Entrar en Inkorium'}</span>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    login('nightloot@gmail.com');
-                    onClose();
-                  }}
-                  className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded transition shadow-xs cursor-pointer text-xs flex items-center justify-center gap-1.5"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span>Acceso rápido: Night Loot</span>
-                </button>
               </div>
             </form>
-
-            {/* Quick Demo Access */}
-            <div className="pt-3 border-t border-gray-200">
-              <span className="text-[11px] font-bold text-gray-700 block mb-1.5">
-                Acceso rápido con perfiles de prueba:
-              </span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {users.slice(0, 4).map(demoUser => (
-                  <button
-                    key={demoUser.id}
-                    type="button"
-                    onClick={() => {
-                      loginAsUser(demoUser.id);
-                      onClose();
-                    }}
-                    className="flex items-center gap-1.5 p-1.5 rounded border border-gray-200 hover:bg-blue-50 text-left transition"
-                  >
-                    <img
-                      src={demoUser.avatar}
-                      alt={demoUser.nombre}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                    <span className="text-[11px] font-medium text-gray-800 truncate">
-                      {demoUser.nombre}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         ) : (
           /* ================= REGISTRO MODE ================= */

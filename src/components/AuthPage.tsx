@@ -24,8 +24,8 @@ export const AuthPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   // Login form state
-  const [loginEmail, setLoginEmail] = useState('nightloot@gmail.com');
-  const [loginPassword, setLoginPassword] = useState('123456');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [loginError, setLoginError] = useState('');
 
@@ -400,50 +400,7 @@ export const AuthPage: React.FC = () => {
                         <LogIn className="w-4 h-4" />
                         <span>{loading ? 'Entrando...' : 'Entrar en Inkorium'}</span>
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={() => login('nightloot@gmail.com')}
-                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow cursor-pointer text-xs flex items-center justify-center gap-1.5"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Acceso Instantáneo como Night Loot (nightloot@gmail.com)</span>
-                      </button>
                     </form>
-
-                    {/* Quick Access Demo Accounts */}
-                    <div className="pt-4 mt-2 border-t border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-gray-700 text-xs flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                          <span>Acceso directo (Cuentas de demostración):</span>
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {users.slice(0, 4).map(demoUser => (
-                          <button
-                            key={demoUser.id}
-                            type="button"
-                            onClick={() => loginAsUser(demoUser.id)}
-                            className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-[#3869A0] text-left transition cursor-pointer group"
-                          >
-                            <img
-                              src={demoUser.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80'}
-                              alt={demoUser.nombre}
-                              className="w-7 h-7 rounded-full object-cover border border-gray-300 group-hover:border-[#3869A0]"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <div className="font-bold text-[11px] text-gray-800 group-hover:text-[#3869A0] truncate">
-                                {demoUser.nombre} {demoUser.apellidos?.split(' ')[0] || ''}
-                              </div>
-                              <div className="text-[10px] text-gray-500 truncate">
-                                {demoUser.provincia || 'España'}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 ) : (
                   /* ================= REGISTER MODE ================= */

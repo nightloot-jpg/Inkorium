@@ -67,9 +67,7 @@ export const MessagesViewV2: React.FC = () => {
     .filter(u => 
       u.id !== currentUser.id && 
       u.username !== currentUser.username &&
-      u.id !== currentUserId &&
-      !(currentUser.id === 'user-nightloot' && u.id === 'nightloot') &&
-      !(currentUser.id === 'nightloot' && u.id === 'user-nightloot')
+      u.id !== currentUserId
     )
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 

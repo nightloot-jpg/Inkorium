@@ -56,7 +56,37 @@ interface InkoriumContextType {
 }
 
 const InkoriumContext = createContext<InkoriumContextType | undefined>(undefined);
-const EMPTY_USER: User = INITIAL_USERS[0] || { id: '', nombre: '', apellidos: '', email: '', sexo: 'otro', fnac: '', provincia: '', ciudad: undefined, estado: '', estadoFecha: '', situacionSentimental: 'Soltero/a', avatar: '', fechaReg: '', online: false, ultimoAcceso: '', chatEstado: '0' };
+const EMPTY_USER: User = { 
+  id: '', 
+  nombre: '', 
+  apellidos: '', 
+  email: '', 
+  sexo: 'otro', 
+  fnac: '', 
+  provincia: '', 
+  ciudad: undefined, 
+  estado: '', 
+  estadoFecha: '', 
+  situacionSentimental: 'Soltero/a', 
+  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80', 
+  fechaReg: '', 
+  online: false, 
+  ultimoAcceso: '', 
+  chatEstado: '0' 
+};
+
+const isMockId = (id: string | undefined | null): boolean => {
+  if (!id) return false;
+  const s = String(id).toLowerCase();
+  return (
+    s === 'user-1' || s === 'user-2' || s === 'user-3' || s === 'user-4' ||
+    s === 'user-5' || s === 'user-6' || s === 'user-7' || s === 'user-8' ||
+    s === 'user-9' || s === 'user-10' || s === 'user-11' || s === 'user-12' ||
+    s === '1' || s === '2' || s === '3' ||
+    s === 'user-nightloot' || s === 'nightloot' ||
+    s === 'user-elena' || s === 'user-carlos' || s === 'user-laura'
+  );
+};
 
 export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const storedUserId = typeof localStorage !== 'undefined' ? localStorage.getItem('inkorium:user_id') : null;
@@ -68,14 +98,20 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const clean = parsed.filter(u => !isMockId(u.id));
+            return clean;
+          }
         } catch {}
       }
     }
     return INITIAL_USERS;
   });
 
-  const [currentUserId, setCurrentUserId] = useState<string>(storedUserId || INITIAL_USERS[0]?.id || '');
+  const [currentUserId, setCurrentUserId] = useState<string>(() => {
+    if (storedUserId && !isMockId(storedUserId)) return storedUserId;
+    return '';
+  });
   const [photos, setPhotos] = useState<Photo[]>(INITIAL_PHOTOS);
   const [albums, setAlbums] = useState<Album[]>(INITIAL_ALBUMS);
   const [feed, setFeed] = useState<FeedItem[]>(INITIAL_FEED);
@@ -85,7 +121,9 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed;
+          if (Array.isArray(parsed)) {
+            return parsed.filter(w => !isMockId(w.autorId) && !isMockId(w.propietarioId) && !isMockId(w.receptorId));
+          }
         } catch {}
       }
     }
@@ -98,7 +136,9 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed.filter(m => !isMockId(m.emisorId) && !isMockId(m.receptorId));
+          }
         } catch {}
       }
     }
@@ -109,7 +149,10 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (typeof localStorage !== 'undefined') {
       const saved = localStorage.getItem('inkorium:friend_requests');
       if (saved) {
-        try { return JSON.parse(saved); } catch {}
+        try { 
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed.filter(r => !isMockId(r.emisorId) && !isMockId(r.receptorId));
+        } catch {}
       }
     }
     return INITIAL_FRIEND_REQUESTS;
@@ -119,7 +162,10 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (typeof localStorage !== 'undefined') {
       const saved = localStorage.getItem('inkorium:friendships');
       if (saved) {
-        try { return JSON.parse(saved); } catch {}
+        try { 
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed.filter(f => !isMockId(f.user1) && !isMockId(f.user2));
+        } catch {}
       }
     }
     return INITIAL_FRIENDSHIPS;
@@ -130,7 +176,10 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (typeof localStorage !== 'undefined') {
       const saved = localStorage.getItem('inkorium:notifications');
       if (saved) {
-        try { return JSON.parse(saved); } catch {}
+        try { 
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed.filter(n => !isMockId(n.userId) && !isMockId(n.fromUserId));
+        } catch {}
       }
     }
     return INITIAL_NOTIFICATIONS;
@@ -938,9 +987,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       !notif.userId ||
       notif.userId === currentUserId ||
       notif.userId === currentUser.id ||
-      (currentUser.username && notif.userId === currentUser.username) ||
-      (currentUser.id === 'user-nightloot' && notif.userId === 'nightloot') ||
-      (currentUser.id === 'nightloot' && notif.userId === 'user-nightloot');
+      (currentUser.username && notif.userId === currentUser.username);
 
     if (isForCurrentUser) {
       setToasts(prev => [notif, ...prev.slice(0, 4)]);
@@ -1023,96 +1070,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newMsg)
     }).catch(() => null);
-
-    // 5. Simulación interactiva de respuesta del contacto
-    const targetUser = users.find(u => u.id === targetUserId || u.username === targetUserId || normalizeUserId(u.id) === normalizeUserId(targetUserId));
-    if (targetUser && isRealtimeSimulationEnabled) {
-      // Indicar que el contacto está escribiendo tras breve pausa
-      const typingTimer = setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('inkorium:peer_typing', {
-            detail: { targetUserId, isTyping: true }
-          }));
-        }
-        broadcastCrossTabEvent({
-          type: 'PEER_TYPING',
-          payload: { targetUserId, isTyping: true }
-        });
-      }, 600);
-
-      // Responder con mensaje retro tras 1.8 - 3.2 segundos
-      const replyDelay = 1800 + Math.random() * 1400;
-      setTimeout(() => {
-        clearTimeout(typingTimer);
-
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('inkorium:peer_typing', {
-            detail: { targetUserId, isTyping: false }
-          }));
-        }
-        broadcastCrossTabEvent({
-          type: 'PEER_TYPING',
-          payload: { targetUserId, isTyping: false }
-        });
-
-        const replyText = generateRetroChatReply(targetUser.nombre, message);
-        const replyMsg: ChatMessage = {
-          id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          emisorId: targetUserId,
-          receptorId: currentUserId,
-          mensaje: replyText,
-          fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-          timestamp: Date.now(),
-          leido: true
-        };
-
-        appendMessageToConversation(currentUserId, targetUserId, replyMsg);
-        setChatMessages(prev => [...prev, replyMsg]);
-
-        try {
-          playMessageSound();
-        } catch {}
-
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
-            detail: { targetUserId, message: replyMsg }
-          }));
-        }
-        broadcastCrossTabEvent({
-          type: 'CHAT_MESSAGE',
-          payload: { message: replyMsg, targetUserId: currentUserId, senderUserId: targetUserId }
-        });
-
-        void fetch('/api/chat-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(replyMsg)
-        }).catch(() => null);
-
-        // Si la ventana está minimizada o cerrada, mostrar toast y aviso
-        setActiveChatWindows(currentWindows => {
-          const win = currentWindows.find(w => normalizeUserId(w.targetUserId) === normalizeUserId(targetUserId));
-          if (!win || win.minimized) {
-            pushNotification({
-              id: `notif-chat-${Date.now()}`,
-              tipo: 'chat',
-              userId: currentUserId,
-              fromUserId: targetUserId,
-              fromUserName: `${targetUser.nombre} ${targetUser.apellidos}`.trim() || targetUser.nombre,
-              fromUserAvatar: targetUser.avatar,
-              mensaje: `te ha escrito en el chat: "${replyText}"`,
-              enlace: 'chat',
-              targetId: targetUserId,
-              targetPreview: replyText,
-              fecha: 'Ahora mismo',
-              leido: false
-            });
-          }
-          return currentWindows;
-        });
-      }, replyDelay);
-    }
-  }, [currentUserId, users, isRealtimeSimulationEnabled, pushNotification]);
+  }, [currentUserId]);
 
   const setActiveTab = useCallback((tab: InkoriumContextType['activeTab']) => {
     if (tab !== 'mensajes') setComposeRecipientId(null);
@@ -1330,9 +1288,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (
       resolvedReceptorId === currentUserId ||
       resolvedReceptorId === currentUser.id ||
-      (currentUser.username && resolvedReceptorId === currentUser.username) ||
-      (currentUser.id === 'user-nightloot' && resolvedReceptorId === 'nightloot') ||
-      (currentUser.id === 'nightloot' && resolvedReceptorId === 'user-nightloot')
+      (currentUser.username && resolvedReceptorId === currentUser.username)
     ) {
       console.warn('No puedes enviarte un mensaje privado a ti mismo');
       return;
@@ -1402,64 +1358,6 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       },
       ...prev.slice(0, 4)
     ]);
-
-    // 5. Simulación interactiva de respuesta del contacto
-    if (targetUser && isRealtimeSimulationEnabled) {
-      const replyDelay = 3200 + Math.random() * 2000;
-      setTimeout(() => {
-        const { subject: replySub, body: replyBody } = generateRetroPrivateMessageReply(
-          targetUser.nombre,
-          newMsg.asunto,
-          cleanText
-        );
-
-        const replyMsgId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-        const replyMsg: PrivateMessage = {
-          id: replyMsgId,
-          emisorId: resolvedReceptorId,
-          emisorNombre: resolvedReceptorName,
-          emisorAvatar: resolvedReceptorAvatar,
-          receptorId: currentUserId,
-          receptorNombre: currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre,
-          asunto: replySub,
-          mensaje: replyBody,
-          fecha: 'Ahora mismo',
-          leido: false
-        };
-
-        setMessages(prev => {
-          const updated = [replyMsg, ...prev];
-          if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('inkorium:messages', JSON.stringify(updated));
-          }
-          return updated;
-        });
-
-        broadcastCrossTabEvent({
-          type: 'PRIVATE_MESSAGE',
-          payload: { message: replyMsg, recipientId: currentUserId }
-        });
-
-        try {
-          playMessageSound();
-        } catch {}
-
-        pushNotification({
-          id: `notif-mp-${Date.now()}`,
-          tipo: 'mp',
-          userId: currentUserId,
-          fromUserId: resolvedReceptorId,
-          fromUserName: resolvedReceptorName,
-          fromUserAvatar: resolvedReceptorAvatar,
-          mensaje: `te ha respondido al mensaje privado: "${replySub}"`,
-          enlace: 'mensajes',
-          targetId: replyMsgId,
-          targetPreview: replyBody.slice(0, 80),
-          fecha: 'Ahora mismo',
-          leido: false
-        });
-      }, replyDelay);
-    }
 
     // Sincronizar en segundo plano con la API / servidor
     void (async () => {
@@ -1543,9 +1441,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Resolver usuario destinatario por id, username o alias
     const targetUser = users.find(u => 
       u.id === propietarioId || 
-      u.username === propietarioId || 
-      (u.id === 'user-nightloot' && propietarioId === 'nightloot') ||
-      (u.id === 'nightloot' && propietarioId === 'user-nightloot')
+      u.username === propietarioId
     );
     const resolvedPropietarioId = targetUser?.id || propietarioId;
     const resolvedPropietarioName = targetUser 
@@ -1595,9 +1491,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const isSelf = 
       resolvedPropietarioId === currentUserId ||
       resolvedPropietarioId === currentUser.id ||
-      (currentUser.username && resolvedPropietarioId === currentUser.username) ||
-      (currentUser.id === 'user-nightloot' && resolvedPropietarioId === 'nightloot') ||
-      (currentUser.id === 'nightloot' && resolvedPropietarioId === 'user-nightloot');
+      (currentUser.username && resolvedPropietarioId === currentUser.username);
 
     if (!isSelf) {
       pushNotification({
@@ -1798,148 +1692,31 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setFeed(INITIAL_FEED);
   }, []);
 
-  // Realtime simulation events
-  const simulateIncomingMessage = useCallback(() => {
-    const randomFriend = users.find(u => u.id !== currentUserId) || users[1];
-    if (!randomFriend) return;
-    const msgId = `msg-sim-${Date.now()}`;
-    const newMsg: PrivateMessage = {
-      id: msgId,
-      emisorId: randomFriend.id,
-      emisorNombre: `${randomFriend.nombre} ${randomFriend.apellidos}`.trim(),
-      emisorAvatar: randomFriend.avatar,
-      receptorId: currentUserId,
-      receptorNombre: `${currentUser.nombre} ${currentUser.apellidos}`.trim(),
-      asunto: '¿Qué tal estás? :)',
-      mensaje: '¡Hola! Te escribía para ver si vas a salir luego por el centro.',
-      fecha: 'Ahora mismo',
-      leido: false
-    };
-    setMessages(prev => [newMsg, ...prev]);
-    pushNotification({
-      id: `notif-sim-mp-${Date.now()}`,
-      tipo: 'mp',
-      userId: currentUserId,
-      fromUserId: randomFriend.id,
-      fromUserName: `${randomFriend.nombre} ${randomFriend.apellidos}`.trim(),
-      fromUserAvatar: randomFriend.avatar,
-      mensaje: 'te ha enviado un mensaje privado: "¿Qué tal estás? :)"',
-      enlace: 'mensajes',
-      targetId: msgId,
-      targetPreview: newMsg.mensaje,
-      fecha: 'Ahora mismo',
-      leido: false
-    });
-  }, [currentUserId, currentUser, users, pushNotification]);
+  // Realtime simulation events (disabled to prevent mock injections)
+  const simulateIncomingMessage = useCallback(() => {}, []);
+  const simulateWallComment = useCallback(() => {}, []);
 
-  const simulateWallComment = useCallback(() => {
-    const randomFriend = users.find(u => u.id !== currentUserId) || users[1];
-    if (!randomFriend) return;
-    const commentId = `wc-sim-${Date.now()}`;
-    const authorName = `${randomFriend.nombre} ${randomFriend.apellidos}`.trim();
-    const commentText = '¡Esa foto de perfil está genial! Saludos nostálgicos ;)';
-    const newComment: WallComment = {
-      id: commentId,
-      propietarioId: currentUserId,
-      receptorId: currentUserId,
-      autorId: randomFriend.id,
-      emisorId: randomFriend.id,
-      autorNombre: authorName,
-      emisorNombre: authorName,
-      autorAvatar: randomFriend.avatar,
-      emisorAvatar: randomFriend.avatar,
-      texto: commentText,
-      comentario: commentText,
-      fecha: 'Ahora mismo',
-      likes: []
-    };
-    setWallComments(prev => [newComment, ...prev]);
-    pushNotification({
-      id: `notif-sim-wc-${Date.now()}`,
-      tipo: 'tablon',
-      userId: currentUserId,
-      fromUserId: randomFriend.id,
-      fromUserName: authorName,
-      fromUserAvatar: randomFriend.avatar,
-      mensaje: 'ha firmado en tu tablón.',
-      enlace: 'perfil',
-      targetId: commentId,
-      targetPreview: commentText,
-      fecha: 'Ahora mismo',
-      leido: false
-    });
-  }, [currentUserId, users, pushNotification]);
-
-  const simulateFriendRequest = useCallback(() => {
-    const candidate = users.find(u => u.id !== currentUserId && !friendships.some(f => (f.user1 === currentUserId && f.user2 === u.id) || (f.user2 === currentUserId && f.user1 === u.id))) || users[2];
-    if (!candidate) return;
-    const reqId = `req-sim-${Date.now()}`;
-    const newReq: FriendRequest = {
-      id: reqId,
-      emisorId: candidate.id,
-      emisorNombre: `${candidate.nombre} ${candidate.apellidos}`.trim(),
-      emisorAvatar: candidate.avatar,
-      emisorProvincia: candidate.provincia,
-      receptorId: currentUserId,
-      fecha: 'Ahora mismo',
-      estado: 'pendiente'
-    };
-    setFriendRequests(prev => [newReq, ...prev]);
-    pushNotification({
-      id: `notif-sim-req-${Date.now()}`,
-      tipo: 'peticion',
-      userId: currentUserId,
-      fromUserId: candidate.id,
-      fromUserName: `${candidate.nombre} ${candidate.apellidos}`.trim(),
-      fromUserAvatar: candidate.avatar,
-      mensaje: 'te ha enviado una petición de amistad.',
-      enlace: 'notificaciones',
-      targetId: reqId,
-      estadoPeticion: 'pendiente',
-      fecha: 'Ahora mismo',
-      leido: false
-    });
-  }, [currentUserId, users, friendships, pushNotification]);
-
-  const simulatePhotoInteraction = useCallback(() => {
-    const randomFriend = users.find(u => u.id !== currentUserId) || users[1];
-    if (!randomFriend || photos.length === 0) return;
-    const targetPhoto = photos[0];
-    pushNotification({
-      id: `notif-sim-photo-${Date.now()}`,
-      tipo: 'foto_comentario',
-      userId: currentUserId,
-      fromUserId: randomFriend.id,
-      fromUserName: `${randomFriend.nombre} ${randomFriend.apellidos}`.trim(),
-      fromUserAvatar: randomFriend.avatar,
-      mensaje: 'ha comentado en tu foto.',
-      enlace: 'fotos',
-      targetId: targetPhoto.id,
-      targetPreview: '¡Fotón!',
-      photoThumbnail: targetPhoto.archivo,
-      fecha: 'Ahora mismo',
-      leido: false
-    });
-  }, [currentUserId, users, photos, pushNotification]);
+  const simulateFriendRequest = useCallback(() => {}, []);
+  const simulatePhotoInteraction = useCallback(() => {}, []);
 
   // Dynamic counts for current user
-  const effectiveUserId = currentUserId || 'nightloot';
   const isMessageForCurrentUser = (m: PrivateMessage) => {
+    if (!currentUserId) return false;
     const normRec = normalizeUserId(m.receptorId);
     const normCur = normalizeUserId(currentUser.id);
-    const normEff = normalizeUserId(effectiveUserId);
+    const normCurId = normalizeUserId(currentUserId);
     return (
       normRec === normCur ||
-      normRec === normEff ||
-      m.receptorId === effectiveUserId ||
+      normRec === normCurId ||
+      m.receptorId === currentUserId ||
       m.receptorId === currentUser.id ||
       (currentUser.username && m.receptorId.toLowerCase() === currentUser.username.toLowerCase()) ||
       (currentUser.email && m.receptorId.toLowerCase() === currentUser.email.toLowerCase())
     );
   };
   const unreadMessagesCount = messages.filter(m => isMessageForCurrentUser(m) && !m.leido).length;
-  const unreadNotificationsCount = notifications.filter(n => (n.userId === effectiveUserId || n.userId === currentUser.id || (n.userId === 'nightloot' && currentUser.id === 'user-nightloot')) && !n.leido).length;
-  const pendingRequestsCount = friendRequests.filter(r => (r.receptorId === effectiveUserId || r.receptorId === currentUser.id || (r.receptorId === 'nightloot' && currentUser.id === 'user-nightloot')) && r.estado === 'pendiente').length;
+  const unreadNotificationsCount = notifications.filter(n => Boolean(currentUserId && (n.userId === currentUserId || n.userId === currentUser.id) && !n.leido)).length;
+  const pendingRequestsCount = friendRequests.filter(r => Boolean(currentUserId && (r.receptorId === currentUserId || r.receptorId === currentUser.id) && r.estado === 'pendiente')).length;
 
   return (
     <InkoriumContext.Provider value={{

@@ -86,7 +86,7 @@ export const NotificationsView: React.FC = () => {
   // Filter notifications for current user
   const userNotifications = useMemo(() => {
     return notifications.filter(
-      n => n.userId === currentUser.id || n.userId === 'nightloot' || !n.userId
+      n => n.userId === currentUser.id || !n.userId
     );
   }, [notifications, currentUser.id]);
 
@@ -124,7 +124,7 @@ export const NotificationsView: React.FC = () => {
   // Pending friend requests
   const pendingRequests = useMemo(() => {
     return friendRequests.filter(
-      r => (r.receptorId === currentUser.id || r.receptorId === 'nightloot') && r.estado === 'pendiente'
+      r => r.receptorId === currentUser.id && r.estado === 'pendiente'
     );
   }, [friendRequests, currentUser.id]);
 

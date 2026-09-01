@@ -151,7 +151,7 @@ export const PeopleSearch: React.FC = () => {
               <label className="font-bold text-gray-700 block mb-1">Nombre o @usuario</label>
               <input
                 type="text"
-                placeholder="Ej. Bárbara, nightloot..."
+                placeholder="Ej. Carlos, Laura..."
                 value={nombre}
                 onChange={e => { setNombre(e.target.value); setPage(1); }}
                 className="w-full p-2 rounded border border-gray-300 text-xs focus:outline-none focus:border-[#3869A0]"

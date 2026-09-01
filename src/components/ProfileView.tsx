@@ -64,7 +64,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const incomingReqFromProfile = useMemo(() => {
     return friendRequests.find(
       r => r.emisorId === profileUser.id && 
-           (r.receptorId === currentUser.id || r.receptorId === 'nightloot') && 
+           r.receptorId === currentUser.id && 
            r.estado === 'pendiente'
     );
   }, [friendRequests, profileUser.id, currentUser.id]);
@@ -72,7 +72,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   // Current user's all incoming pending requests (to display in Amigos tab if on own profile)
   const allMyPendingRequests = useMemo(() => {
     return friendRequests.filter(
-      r => (r.receptorId === currentUser.id || r.receptorId === 'nightloot') && 
+      r => r.receptorId === currentUser.id && 
            r.estado === 'pendiente'
     );
   }, [friendRequests, currentUser.id]);
@@ -109,9 +109,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
       return (
         targetId === profileUser.id ||
         (profileUser.username && targetId === profileUser.username) ||
-        (profileUser.id === 'user-nightloot' && targetId === 'nightloot') ||
-        (profileUser.id === 'nightloot' && targetId === 'user-nightloot') ||
-        (isOwnProfile && (targetId === currentUser.id || targetId === 'nightloot' || targetId === 'user-nightloot'))
+        (isOwnProfile && targetId === currentUser.id)
       );
     });
   }, [wallComments, profileUser.id, profileUser.username, isOwnProfile, currentUser.id]);
@@ -1062,7 +1060,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                     const authorName = comment.autorNombre || comment.emisorNombre || 'Usuario';
                     const authorAvatar = comment.autorAvatar || comment.emisorAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80';
                     const commentText = comment.texto || comment.comentario || '';
-                    const canDelete = isOwnProfile || authorId === currentUser.id || (currentUser.id === 'user-nightloot' && authorId === 'nightloot') || (currentUser.id === 'nightloot' && authorId === 'user-nightloot');
+                    const canDelete = isOwnProfile || authorId === currentUser.id;
 
                     return (
                       <div key={comment.id} className="pt-3 first:pt-0 flex items-start gap-3 group">
