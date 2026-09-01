@@ -132,19 +132,43 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return INITIAL_WALL_COMMENTS;
   });
 
+const getDeletedMessageIds = (): Set<string> => {
+  if (typeof localStorage === 'undefined') return new Set();
+  try {
+    const saved = localStorage.getItem('inkorium:deleted_message_ids');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return new Set(parsed);
+    }
+  } catch {}
+  return new Set();
+};
+
+const addDeletedMessageIds = (ids: string[]) => {
+  if (typeof localStorage === 'undefined' || ids.length === 0) return;
+  try {
+    const currentSet = getDeletedMessageIds();
+    ids.forEach(id => {
+      if (id) currentSet.add(id);
+    });
+    localStorage.setItem('inkorium:deleted_message_ids', JSON.stringify(Array.from(currentSet)));
+  } catch {}
+};
+
   const [messages, setMessages] = useState<PrivateMessage[]>(() => {
+    const deletedIds = getDeletedMessageIds();
     if (typeof localStorage !== 'undefined') {
       const saved = localStorage.getItem('inkorium:messages') || localStorage.getItem('inkorium:private_messages');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed.filter(m => !isMockId(m.emisorId) && !isMockId(m.receptorId));
+            return parsed.filter(m => !isMockId(m.emisorId) && !isMockId(m.receptorId) && !deletedIds.has(m.id));
           }
         } catch {}
       }
     }
-    return INITIAL_MESSAGES;
+    return INITIAL_MESSAGES.filter(m => !deletedIds.has(m.id));
   });
 
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(() => {
@@ -702,6 +726,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const fetchAndMapPrivateMessages = useCallback(async () => {
     if (!currentUserId) return;
+    const deletedIds = getDeletedMessageIds();
     try {
       const session = await supabase?.auth.getSession().catch(() => null);
       const token = session?.data?.session?.access_token;
@@ -714,27 +739,31 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          const mapped: PrivateMessage[] = data.map((row: any) => {
-            const sender = users.find(u => u.id === row.sender_id || u.username === row.sender_id);
-            const recipient = users.find(u => u.id === row.recipient_id || u.username === row.recipient_id);
-            return {
-              id: String(row.id),
-              emisorId: String(row.sender_id),
-              emisorNombre: sender ? (sender.full_name || `${sender.nombre} ${sender.apellidos}`.trim() || sender.nombre) : 'Usuario',
-              emisorAvatar: sender?.avatar || '',
-              receptorId: String(row.recipient_id),
-              receptorNombre: recipient ? (recipient.full_name || `${recipient.nombre} ${recipient.apellidos}`.trim() || recipient.nombre) : 'Usuario',
-              asunto: String(row.subject || 'Sin asunto'),
-              mensaje: String(row.body || ''),
-              fecha: row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : 'Recientemente',
-              leido: Boolean(row.is_read)
-            };
-          });
+          const mapped: PrivateMessage[] = data
+            .filter((row: any) => !deletedIds.has(String(row.id)))
+            .map((row: any) => {
+              const sender = users.find(u => u.id === row.sender_id || u.username === row.sender_id);
+              const recipient = users.find(u => u.id === row.recipient_id || u.username === row.recipient_id);
+              return {
+                id: String(row.id),
+                emisorId: String(row.sender_id),
+                emisorNombre: sender ? (sender.full_name || `${sender.nombre} ${sender.apellidos}`.trim() || sender.nombre) : 'Usuario',
+                emisorAvatar: sender?.avatar || '',
+                receptorId: String(row.recipient_id),
+                receptorNombre: recipient ? (recipient.full_name || `${recipient.nombre} ${recipient.apellidos}`.trim() || recipient.nombre) : 'Usuario',
+                asunto: String(row.subject || 'Sin asunto'),
+                mensaje: String(row.body || ''),
+                fecha: row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : 'Recientemente',
+                leido: Boolean(row.is_read)
+              };
+            });
 
           setMessages(prev => {
-            const dbIds = new Set(mapped.map(m => m.id));
-            const localNonDb = prev.filter(m => !dbIds.has(m.id));
-            return [...mapped, ...localNonDb];
+            const curDeleted = getDeletedMessageIds();
+            const validMapped = mapped.filter(m => !curDeleted.has(m.id));
+            const dbIds = new Set(validMapped.map(m => m.id));
+            const localNonDb = prev.filter(m => !dbIds.has(m.id) && !curDeleted.has(m.id));
+            return [...validMapped, ...localNonDb];
           });
         }
       }
@@ -913,6 +942,8 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           try {
             const raw = JSON.parse(e.data);
             if (!raw || !raw.id) return;
+            const deletedIds = getDeletedMessageIds();
+            if (deletedIds.has(String(raw.id))) return;
             const normCur = normalizeUserId(currentUserId);
             const recId = String(raw.recipient_id || raw.receptorId || '');
             const emiId = String(raw.sender_id || raw.emisorId || '');
@@ -1551,25 +1582,28 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const deleteMessage = useCallback((messageId: string) => {
+    if (!messageId) return;
+    addDeletedMessageIds([messageId]);
     setMessages(prev => {
       const updated = prev.filter(m => m.id !== messageId);
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('inkorium:messages', JSON.stringify(updated));
+        localStorage.setItem('inkorium:private_messages', JSON.stringify(updated));
       }
       return updated;
     });
     void (async () => {
       try {
-        if (supabase) {
-          const session = await supabase.auth.getSession().catch(() => null);
-          const token = session?.data?.session?.access_token;
-          await fetch(`/api/private-messages?id=eq.${encodeURIComponent(messageId)}`, {
-            method: 'DELETE',
-            headers: {
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            }
-          }).catch(() => null);
-        }
+        const session = await supabase?.auth.getSession().catch(() => null);
+        const token = session?.data?.session?.access_token;
+        await fetch(`/api/private-messages?id=eq.${encodeURIComponent(messageId)}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ id: messageId })
+        }).catch(() => null);
       } catch {}
     })();
   }, []);
@@ -1589,26 +1623,35 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return isFromCurToTarget || isFromTargetToCur;
       });
       removedIds = toRemove.map(m => m.id);
+      addDeletedMessageIds(removedIds);
       const updated = prev.filter(m => !removedIds.includes(m.id));
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('inkorium:messages', JSON.stringify(updated));
+        localStorage.setItem('inkorium:private_messages', JSON.stringify(updated));
       }
       return updated;
     });
 
     void (async () => {
       try {
-        if (supabase && removedIds.length > 0) {
-          const session = await supabase.auth.getSession().catch(() => null);
-          const token = session?.data?.session?.access_token;
-          for (const msgId of removedIds) {
-            await fetch(`/api/private-messages?id=eq.${encodeURIComponent(msgId)}`, {
-              method: 'DELETE',
-              headers: {
-                ...(token ? { Authorization: `Bearer ${token}` } : {})
-              }
-            }).catch(() => null);
-          }
+        const session = await supabase?.auth.getSession().catch(() => null);
+        const token = session?.data?.session?.access_token;
+        await fetch(`/api/private-messages?thread=${encodeURIComponent(targetUserId)}&currentUserId=${encodeURIComponent(currentUserId)}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ ids: removedIds, thread: targetUserId, currentUserId })
+        }).catch(() => null);
+
+        for (const msgId of removedIds) {
+          await fetch(`/api/private-messages?id=eq.${encodeURIComponent(msgId)}`, {
+            method: 'DELETE',
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            }
+          }).catch(() => null);
         }
       } catch {}
     })();

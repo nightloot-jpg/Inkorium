@@ -460,17 +460,28 @@ export const MessagesViewV2: React.FC = () => {
                                 )}
                               </button>
 
-                              <img
-                                src={mode === 'enviados' ? currentUser.avatar : m.emisorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
-                                alt=""
-                                className="w-8 h-8 rounded object-cover border border-gray-300 shrink-0"
-                              />
+                              <div className="relative shrink-0">
+                                <img
+                                  src={mode === 'enviados' ? currentUser.avatar : m.emisorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                                  alt=""
+                                  className="w-8 h-8 rounded object-cover border border-gray-300 shrink-0"
+                                />
+                                {!m.leido && mode === 'recibidos' && (
+                                  <span
+                                    className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-white"
+                                    title="Mensaje no leído"
+                                  />
+                                )}
+                              </div>
                               <div className="overflow-hidden min-w-0 flex-1">
                                 {mode === 'recibidos' ? (
                                   <div className="flex items-center gap-2">
-                                    <span className="font-bold text-[#3869A0] text-xs truncate">{m.emisorNombre}</span>
+                                    <span className={`text-xs truncate ${!m.leido ? 'font-black text-[#224e7a]' : 'font-bold text-[#3869A0]'}`}>
+                                      {m.emisorNombre}
+                                    </span>
                                     {!m.leido && (
-                                      <span className="bg-[#3869A0] text-white text-[9px] font-bold px-1.5 rounded-full shrink-0">
+                                      <span className="bg-[#1877f2] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 shadow-2xs flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                                         Nuevo
                                       </span>
                                     )}
@@ -478,8 +489,12 @@ export const MessagesViewV2: React.FC = () => {
                                 ) : (
                                   <p className="font-bold text-gray-900 text-xs truncate">Para: {m.receptorNombre}</p>
                                 )}
-                                <p className="text-gray-900 text-xs font-medium truncate">{m.asunto}</p>
-                                <p className="text-[11px] text-gray-500 truncate">{m.mensaje}</p>
+                                <p className={`text-xs truncate ${!m.leido && mode === 'recibidos' ? 'font-bold text-gray-950' : 'font-medium text-gray-800'}`}>
+                                  {m.asunto}
+                                </p>
+                                <p className={`text-[11px] truncate ${!m.leido && mode === 'recibidos' ? 'font-medium text-gray-700' : 'text-gray-500'}`}>
+                                  {m.mensaje}
+                                </p>
                               </div>
                             </div>
 

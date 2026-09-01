@@ -508,29 +508,69 @@ app.patch('/api/private-messages', async (req, res) => {
 
 app.delete('/api/private-messages', async (req, res) => {
   try {
-    const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+    const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig();
     const token = extractToken(req);
+    const bodyPayload = req.body || {};
 
     // Delete in-memory
-    const idParam = String(req.query.id || '');
-    if (idParam.startsWith('eq.')) {
-      const targetId = idParam.slice(3);
+    const idParam = String(req.query.id || bodyPayload.id || '');
+    const idsList = Array.isArray(bodyPayload.ids) ? bodyPayload.ids : [];
+    const threadTarget = String(req.query.thread || bodyPayload.thread || '');
+    const currentUserId = String(req.query.currentUserId || bodyPayload.currentUserId || '');
+
+    if (idParam) {
+      const targetId = idParam.startsWith('eq.') ? idParam.slice(3) : idParam;
       const idx = inMemoryMessages.findIndex(m => m.id === targetId);
       if (idx !== -1) inMemoryMessages.splice(idx, 1);
     }
 
-    if (!supabaseKey || !token) {
+    if (idsList.length > 0) {
+      const idSet = new Set(idsList);
+      for (let i = inMemoryMessages.length - 1; i >= 0; i--) {
+        if (idSet.has(inMemoryMessages[i].id)) {
+          inMemoryMessages.splice(i, 1);
+        }
+      }
+    }
+
+    if (threadTarget && currentUserId) {
+      for (let i = inMemoryMessages.length - 1; i >= 0; i--) {
+        const m = inMemoryMessages[i];
+        const isFromCurToTarget = (m.sender_id === currentUserId && m.recipient_id === threadTarget);
+        const isFromTargetToCur = (m.recipient_id === currentUserId && m.sender_id === threadTarget);
+        if (isFromCurToTarget || isFromTargetToCur) {
+          inMemoryMessages.splice(i, 1);
+        }
+      }
+    }
+
+    if (!supabaseKey) {
       return res.status(200).json({ success: true });
     }
+
+    const authKey = serviceRoleKey || supabaseKey;
+    const authHeader = serviceRoleKey ? `Bearer ${serviceRoleKey}` : (token ? `Bearer ${token}` : `Bearer ${supabaseKey}`);
+
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(req.query)) {
+      if (key === 'thread' || key === 'currentUserId') continue;
       if (Array.isArray(value)) value.forEach((item) => query.append(key, String(item)));
       else if (value != null) query.set(key, String(value));
     }
+
+    if (idParam && !query.has('id')) {
+      query.set('id', idParam.startsWith('eq.') ? idParam : `eq.${idParam}`);
+    }
+
     try {
       const upstream = await fetch(`${supabaseUrl}/rest/v1/private_messages?${query.toString()}`, {
         method: 'DELETE',
-        headers: { apikey: supabaseKey, Authorization: `Bearer ${token}`, Accept: 'application/json', Prefer: Array.isArray(req.headers.prefer) ? req.headers.prefer.join(',') : (req.headers.prefer || 'return=minimal') }
+        headers: {
+          apikey: supabaseKey,
+          Authorization: authHeader,
+          Accept: 'application/json',
+          Prefer: Array.isArray(req.headers.prefer) ? req.headers.prefer.join(',') : (req.headers.prefer || 'return=minimal')
+        }
       });
       const body = await upstream.text();
       if (!upstream.ok || body.trim().startsWith('<')) {

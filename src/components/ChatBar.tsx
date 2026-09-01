@@ -21,6 +21,7 @@ export const ChatBar: React.FC = () => {
     openChatWith,
     updateUserPresence,
     viewUserProfile,
+    messages,
   } = useInkorium();
 
   const [dockOpen, setDockOpen] = useState(false);
@@ -159,11 +160,20 @@ export const ChatBar: React.FC = () => {
                 ) : (
                   chatFriends.map((friend) => {
                     const dotColor = getUserPresenceDot(friend);
+                    const hasUnread = messages.some(
+                      (m) =>
+                        (m.emisorId === friend.id ||
+                          (friend.username && m.emisorId.toLowerCase() === friend.username.toLowerCase())) &&
+                        (m.receptorId === currentUser.id || m.receptorId === currentUser.username) &&
+                        !m.leido
+                    );
                     return (
                       <div
                         key={friend.id}
                         onClick={() => openChatWith(friend.id)}
-                        className="flex items-center justify-between p-1.5 rounded hover:bg-blue-50 cursor-pointer transition"
+                        className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition ${
+                          hasUnread ? 'bg-blue-50/80 hover:bg-blue-100/70' : 'hover:bg-blue-50'
+                        }`}
                       >
                         <div className="flex items-center gap-2 truncate">
                           <div className="relative flex-shrink-0">
@@ -175,14 +185,26 @@ export const ChatBar: React.FC = () => {
                             <span
                               className={`absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${dotColor}`}
                             />
+                            {hasUnread && (
+                              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-600 ring-1 ring-white" />
+                            )}
                           </div>
-                          <span className="font-semibold text-gray-800 truncate text-[11px]">
+                          <span
+                            className={`truncate text-[11px] ${
+                              hasUnread ? 'font-bold text-gray-950' : 'font-semibold text-gray-800'
+                            }`}
+                          >
                             {friend.nombre} {friend.apellidos}
                           </span>
                         </div>
-                        <span className="text-[10px] text-gray-400 flex-shrink-0 capitalize">
-                          {friend.presencia || (friend.online ? 'Online' : 'Off')}
-                        </span>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {hasUnread && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                          )}
+                          <span className="text-[10px] text-gray-400 capitalize">
+                            {friend.presencia || (friend.online ? 'Online' : 'Off')}
+                          </span>
+                        </div>
                       </div>
                     );
                   })
