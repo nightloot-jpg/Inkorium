@@ -41,7 +41,7 @@ export async function uploadMediaFile(
     response = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
-      credentials: 'same-origin'
+      credentials: 'omit'
     });
   } catch (error: any) {
     throw new Error(error?.message || 'No se pudo conectar con el servidor de almacenamiento.');

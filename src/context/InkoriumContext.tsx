@@ -628,7 +628,11 @@ const addDeletedMessageIds = (ids: string[]) => {
     if (profilesTimer.current) clearTimeout(profilesTimer.current);
     profilesTimer.current = setTimeout(async () => {
       try {
-        const response = await fetch('/api/profiles?select=id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at&limit=1000', { cache: 'no-store', headers: { Accept: 'application/json' } });
+        const response = await fetch('/api/profiles?select=id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at&limit=1000', {
+          cache: 'no-store',
+          credentials: 'omit',
+          headers: { Accept: 'application/json' }
+        });
         if (!response.ok) return;
         const data = (await response.json()) as any[];
         if (!Array.isArray(data)) return;
@@ -733,15 +737,37 @@ const addDeletedMessageIds = (ids: string[]) => {
     try {
       const session = await supabase?.auth.getSession().catch(() => null);
       const token = session?.data?.session?.access_token;
+      let data: any[] | null = null;
+
+      // 1. Fetch via GET with credentials: 'omit' to prevent large browser cookies from causing HTTP 431
       const res = await fetch('/api/private-messages?order=created_at.desc&limit=100', {
+        credentials: 'omit',
         headers: {
           Accept: 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         }
       }).catch(() => null);
+
       if (res && res.ok) {
-        const data = await res.json().catch(() => null);
-        if (Array.isArray(data) && data.length > 0) {
+        data = await res.json().catch(() => null);
+      } else {
+        // 2. Resilient fallback: Query via POST { action: 'list' }
+        const postRes = await fetch('/api/private-messages', {
+          method: 'POST',
+          credentials: 'omit',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ action: 'list' })
+        }).catch(() => null);
+        if (postRes && postRes.ok) {
+          data = await postRes.json().catch(() => null);
+        }
+      }
+
+      if (Array.isArray(data) && data.length > 0) {
           const mapped: PrivateMessage[] = data
             .filter((row: any) => !deletedIds.has(String(row.id)))
             .map((row: any) => {
@@ -1249,6 +1275,7 @@ const addDeletedMessageIds = (ids: string[]) => {
     // 4. Sincronizar con el servidor en segundo plano
     void fetch('/api/chat-messages', {
       method: 'POST',
+      credentials: 'omit',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newMsg)
     }).catch(() => null);
@@ -1262,6 +1289,7 @@ const addDeletedMessageIds = (ids: string[]) => {
     });
     void fetch('/api/chat-typing', {
       method: 'POST',
+      credentials: 'omit',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fromUserId: currentUserId, targetUserId, isTyping })
     }).catch(() => null);
@@ -1561,6 +1589,7 @@ const addDeletedMessageIds = (ids: string[]) => {
         const token = session?.data?.session?.access_token;
         await fetch('/api/private-messages', {
           method: 'POST',
+          credentials: 'omit',
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -1593,6 +1622,7 @@ const addDeletedMessageIds = (ids: string[]) => {
           const token = session?.data?.session?.access_token;
           await fetch(`/api/private-messages?id=eq.${encodeURIComponent(messageId)}`, {
             method: 'PATCH',
+            credentials: 'omit',
             headers: {
               'Content-Type': 'application/json',
               ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -1621,6 +1651,7 @@ const addDeletedMessageIds = (ids: string[]) => {
         const token = session?.data?.session?.access_token;
         await fetch(`/api/private-messages?id=eq.${encodeURIComponent(messageId)}`, {
           method: 'DELETE',
+          credentials: 'omit',
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -1661,6 +1692,7 @@ const addDeletedMessageIds = (ids: string[]) => {
         const token = session?.data?.session?.access_token;
         await fetch(`/api/private-messages?thread=${encodeURIComponent(targetUserId)}&currentUserId=${encodeURIComponent(currentUserId)}`, {
           method: 'DELETE',
+          credentials: 'omit',
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -1671,6 +1703,7 @@ const addDeletedMessageIds = (ids: string[]) => {
         for (const msgId of removedIds) {
           await fetch(`/api/private-messages?id=eq.${encodeURIComponent(msgId)}`, {
             method: 'DELETE',
+            credentials: 'omit',
             headers: {
               ...(token ? { Authorization: `Bearer ${token}` } : {})
             }

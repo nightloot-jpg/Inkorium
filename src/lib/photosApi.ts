@@ -37,7 +37,7 @@ async function requestPhotos<T>(body: Record<string, unknown>, requireAuth = fal
   const response = await fetch('/api/photos', {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-    credentials: 'same-origin',
+    credentials: 'omit',
     cache: 'no-store',
     body: JSON.stringify(payload),
   });
