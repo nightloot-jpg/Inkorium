@@ -139,7 +139,13 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [toasts, setToasts] = useState<InkoriumNotification[]>([]);
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>(INITIAL_ACCESS_LOGS);
   const [activities, setActivities] = useState<UserActivity[]>(INITIAL_ACTIVITIES);
-  const [isRealtimeSimulationEnabled, setIsRealtimeSimulationEnabledState] = useState(false);
+  const [isRealtimeSimulationEnabled, setIsRealtimeSimulationEnabledState] = useState<boolean>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:realtime_sim');
+      if (saved !== null) return saved === 'true';
+    }
+    return true;
+  });
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(storedLoggedIn);
   const [activeTab, setActiveTabState] = useState<InkoriumContextType['activeTab']>('inicio');
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -837,7 +843,12 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [currentUserId]);
 
-  const setIsRealtime = useCallback((enabled: boolean) => setIsRealtimeSimulationEnabledState(enabled), []);
+  const setIsRealtime = useCallback((enabled: boolean) => {
+    setIsRealtimeSimulationEnabledState(enabled);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('inkorium:realtime_sim', String(enabled));
+    }
+  }, []);
   
   const pushNotification = useCallback((notif: InkoriumNotification) => {
     setNotifications(prev => [notif, ...prev]);
@@ -1235,7 +1246,13 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       leido: false
     };
 
-    setMessages(prev => [newMsg, ...prev]);
+    setMessages(prev => {
+      const updated = [newMsg, ...prev];
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:messages', JSON.stringify(updated));
+      }
+      return updated;
+    });
 
     // Notificación en tiempo real para el DESTINATARIO
     const notif: InkoriumNotification = {
@@ -1295,7 +1312,13 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           leido: false
         };
 
-        setMessages(prev => [replyMsg, ...prev]);
+        setMessages(prev => {
+          const updated = [replyMsg, ...prev];
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('inkorium:messages', JSON.stringify(updated));
+          }
+          return updated;
+        });
 
         try {
           playMessageSound();
@@ -1345,7 +1368,13 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [currentUserId, currentUser, users, isRealtimeSimulationEnabled, pushNotification]);
 
   const markMessageAsRead = useCallback((messageId: string) => {
-    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, leido: true } : m));
+    setMessages(prev => {
+      const updated = prev.map(m => m.id === messageId ? { ...m, leido: true } : m);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:messages', JSON.stringify(updated));
+      }
+      return updated;
+    });
     void (async () => {
       try {
         if (supabase) {
@@ -1365,7 +1394,13 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const deleteMessage = useCallback((messageId: string) => {
-    setMessages(prev => prev.filter(m => m.id !== messageId));
+    setMessages(prev => {
+      const updated = prev.filter(m => m.id !== messageId);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:messages', JSON.stringify(updated));
+      }
+      return updated;
+    });
     void (async () => {
       try {
         if (supabase) {

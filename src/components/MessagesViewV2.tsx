@@ -6,6 +6,7 @@ import { PrivateMessage } from '../types';
 export const MessagesViewV2: React.FC = () => {
   const {
     currentUser,
+    currentUserId,
     users,
     messages,
     sendPrivateMessage,
@@ -35,9 +36,12 @@ export const MessagesViewV2: React.FC = () => {
     return (
       m.receptorId === currentUser.id ||
       m.receptorId === currentUser.username ||
-      (currentUser.email && m.receptorId === currentUser.email) ||
+      m.receptorId === currentUserId ||
+      (currentUser.email && m.receptorId.toLowerCase() === currentUser.email.toLowerCase()) ||
       (currentUser.id === 'user-nightloot' && m.receptorId === 'nightloot') ||
-      (currentUser.id === 'nightloot' && m.receptorId === 'user-nightloot')
+      (currentUser.id === 'nightloot' && m.receptorId === 'user-nightloot') ||
+      (currentUserId === 'user-nightloot' && m.receptorId === 'nightloot') ||
+      (currentUserId === 'nightloot' && m.receptorId === 'user-nightloot')
     );
   };
 
@@ -45,9 +49,12 @@ export const MessagesViewV2: React.FC = () => {
     return (
       m.emisorId === currentUser.id ||
       m.emisorId === currentUser.username ||
-      (currentUser.email && m.emisorId === currentUser.email) ||
+      m.emisorId === currentUserId ||
+      (currentUser.email && m.emisorId.toLowerCase() === currentUser.email.toLowerCase()) ||
       (currentUser.id === 'user-nightloot' && m.emisorId === 'nightloot') ||
-      (currentUser.id === 'nightloot' && m.emisorId === 'user-nightloot')
+      (currentUser.id === 'nightloot' && m.emisorId === 'user-nightloot') ||
+      (currentUserId === 'user-nightloot' && m.emisorId === 'nightloot') ||
+      (currentUserId === 'nightloot' && m.emisorId === 'user-nightloot')
     );
   };
 
@@ -57,6 +64,7 @@ export const MessagesViewV2: React.FC = () => {
     .filter(u => 
       u.id !== currentUser.id && 
       u.username !== currentUser.username &&
+      u.id !== currentUserId &&
       !(currentUser.id === 'user-nightloot' && u.id === 'nightloot') &&
       !(currentUser.id === 'nightloot' && u.id === 'user-nightloot')
     )

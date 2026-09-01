@@ -64,7 +64,7 @@ export const ChatBar: React.FC = () => {
       {/* Floating active chat conversation windows */}
       <div className="flex items-end gap-2 pointer-events-auto">
         {activeChatWindows.map((win) => {
-          const targetUser = users.find((u) => u.id === win.targetUserId);
+          const targetUser = users.find((u) => u.id === win.targetUserId || u.username === win.targetUserId);
           if (!targetUser) return null;
 
           return (
