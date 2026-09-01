@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Inbox, Mail, Reply, Send, SendHorizontal, Trash2, ChevronDown, CheckSquare, Square, CheckCheck } from 'lucide-react';
+import { ArrowLeft, Inbox, Mail, Reply, Send, SendHorizontal, Trash2, ChevronDown, CheckSquare, Square, CheckCheck, MessagesSquare } from 'lucide-react';
 import { useInkorium } from '../context/InkoriumContext';
 import { PrivateMessage } from '../types';
 import { normalizeUserId } from '../lib/chatHistory';
@@ -13,6 +13,7 @@ export const MessagesViewV2: React.FC = () => {
     sendPrivateMessage,
     markMessageAsRead,
     deleteMessage,
+    deleteConversation,
     viewUserProfile,
     composeRecipientId
   } = useInkorium();
@@ -116,6 +117,21 @@ export const MessagesViewV2: React.FC = () => {
     if (!confirm('¿Deseas eliminar este mensaje privado?')) return;
     deleteMessage(m.id);
     setSelectedIds(prev => prev.filter(id => id !== m.id));
+    if (selectedMessage?.id === m.id) {
+      setSelectedMessage(null);
+    }
+  };
+
+  const handleDeleteThreadDirect = (e: React.MouseEvent, m: PrivateMessage) => {
+    e.stopPropagation();
+    const otherUserId = mode === 'enviados' ? m.receptorId : m.emisorId;
+    const otherName = mode === 'enviados' ? m.receptorNombre : m.emisorNombre;
+    if (!confirm(`¿Deseas eliminar todos los mensajes y el hilo de conversación con ${otherName}?`)) return;
+    deleteConversation(otherUserId);
+    setSelectedIds(prev => prev.filter(id => id !== m.id));
+    if (selectedMessage) {
+      setSelectedMessage(null);
+    }
   };
 
   const handleToggleSelect = (e: React.MouseEvent, msgId: string) => {
@@ -467,17 +483,29 @@ export const MessagesViewV2: React.FC = () => {
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[10px] text-gray-400 whitespace-nowrap">{m.fecha}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline mr-1">{m.fecha}</span>
                               
-                              {/* Direct Delete button on message list item */}
+                              {/* Direct Delete Message Button */}
                               <button
                                 type="button"
                                 onClick={(e) => handleDeleteDirect(e, m)}
-                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition cursor-pointer"
-                                title="Borrar mensaje"
+                                className="px-2 py-1 text-gray-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 rounded text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer"
+                                title="Eliminar este mensaje"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
+                                <span className="hidden md:inline">Borrar</span>
+                              </button>
+
+                              {/* Direct Delete Conversation / Thread Button */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeleteThreadDirect(e, m)}
+                                className="px-2 py-1 text-gray-400 hover:text-amber-700 hover:bg-amber-50 border border-transparent hover:border-amber-200 rounded text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer"
+                                title={`Eliminar todo el hilo de conversación con ${mode === 'enviados' ? m.receptorNombre : m.emisorNombre}`}
+                              >
+                                <MessagesSquare className="w-3.5 h-3.5" />
+                                <span className="hidden lg:inline">Borrar hilo</span>
                               </button>
                             </div>
                           </div>

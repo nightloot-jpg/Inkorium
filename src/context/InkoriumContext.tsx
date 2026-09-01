@@ -45,7 +45,7 @@ interface InkoriumContextType {
   sendFriendRequest: (targetUserId: string) => void; acceptFriendRequest: (requestId: string) => void; ignoreFriendRequest: (requestId: string) => void;
   removeFriendship: (targetUserId: string) => void; cancelFriendRequest: (targetUserId: string) => void;
   isFriend: (userId1: string, userId2: string) => boolean; hasPendingRequest: (fromId: string, toId: string) => boolean; getFriendsOf: (userId: string) => User[];
-  sendPrivateMessage: (receptorId: string, asunto: string, mensaje: string) => void; markMessageAsRead: (messageId: string) => void; deleteMessage: (messageId: string) => void;
+  sendPrivateMessage: (receptorId: string, asunto: string, mensaje: string) => void; markMessageAsRead: (messageId: string) => void; deleteMessage: (messageId: string) => void; deleteConversation: (targetUserId: string) => void;
   openChatWith: (targetUserId: string) => void; closeChat: (targetUserId: string) => void; toggleMinimizeChat: (targetUserId: string) => void;
   sendChatMessage: (targetUserId: string, text: string) => void; 
   sendChatTyping: (targetUserId: string, isTyping: boolean) => void;
@@ -1574,6 +1574,46 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     })();
   }, []);
 
+  const deleteConversation = useCallback((targetUserId: string) => {
+    if (!currentUserId || !targetUserId) return;
+    const normCur = normalizeUserId(currentUserId);
+    const normTarget = normalizeUserId(targetUserId);
+
+    let removedIds: string[] = [];
+    setMessages(prev => {
+      const toRemove = prev.filter(m => {
+        const isFromCurToTarget = (normalizeUserId(m.emisorId) === normCur || normalizeUserId(m.emisorNombre) === normCur) &&
+                                  (normalizeUserId(m.receptorId) === normTarget || normalizeUserId(m.receptorNombre) === normTarget);
+        const isFromTargetToCur = (normalizeUserId(m.receptorId) === normCur || normalizeUserId(m.receptorNombre) === normCur) &&
+                                  (normalizeUserId(m.emisorId) === normTarget || normalizeUserId(m.emisorNombre) === normTarget);
+        return isFromCurToTarget || isFromTargetToCur;
+      });
+      removedIds = toRemove.map(m => m.id);
+      const updated = prev.filter(m => !removedIds.includes(m.id));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:messages', JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    void (async () => {
+      try {
+        if (supabase && removedIds.length > 0) {
+          const session = await supabase.auth.getSession().catch(() => null);
+          const token = session?.data?.session?.access_token;
+          for (const msgId of removedIds) {
+            await fetch(`/api/private-messages?id=eq.${encodeURIComponent(msgId)}`, {
+              method: 'DELETE',
+              headers: {
+                ...(token ? { Authorization: `Bearer ${token}` } : {})
+              }
+            }).catch(() => null);
+          }
+        }
+      } catch {}
+    })();
+  }, [currentUserId]);
+
   // ================= WALL & FEED ACTIONS =================
   const postWallComment = useCallback((propietarioId: string, texto: string) => {
     const cleanText = texto.trim();
@@ -1884,7 +1924,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       uploadPhoto, addPhotoTag, removePhotoTag, addPhotoComment, likePhoto,
       setPhotoAsAvatar, deletePhoto, createAlbum, renameAlbum, deleteAlbum,
       sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, removeFriendship, cancelFriendRequest, isFriend, hasPendingRequest, getFriendsOf,
-      sendPrivateMessage, markMessageAsRead, deleteMessage,
+      sendPrivateMessage, markMessageAsRead, deleteMessage, deleteConversation,
       sendChatMessage, sendChatTyping, openChatWith, closeChat, toggleMinimizeChat, setChatEstado,
       logUserActivity, deleteUserActivity, getUserActivities,
       pushNotification, dismissToast, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification,
