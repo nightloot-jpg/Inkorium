@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Inbox, Mail, Reply, Send, SendHorizontal, Trash2, ChevronDown, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Inbox, Mail, Reply, Send, SendHorizontal, Trash2, ChevronDown, CheckSquare, Square, CheckCheck } from 'lucide-react';
 import { useInkorium } from '../context/InkoriumContext';
 import { PrivateMessage } from '../types';
 import { normalizeUserId } from '../lib/chatHistory';
@@ -24,6 +24,7 @@ export const MessagesViewV2: React.FC = () => {
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [visibleCount, setVisibleCount] = useState(15);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (composeRecipientId) {
@@ -32,6 +33,11 @@ export const MessagesViewV2: React.FC = () => {
       setSelectedMessage(null);
     }
   }, [composeRecipientId]);
+
+  // Reset multi-select when switching folders
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [mode]);
 
   const isCurrentRecipient = (m: PrivateMessage) => {
     const normRec = normalizeUserId(m.receptorId);
@@ -99,13 +105,52 @@ export const MessagesViewV2: React.FC = () => {
   const handleDelete = (m: PrivateMessage) => {
     if (!confirm('¿Deseas eliminar este mensaje?')) return;
     deleteMessage(m.id);
+    setSelectedIds(prev => prev.filter(id => id !== m.id));
     if (selectedMessage?.id === m.id) {
       setSelectedMessage(null);
     }
   };
 
+  const handleDeleteDirect = (e: React.MouseEvent, m: PrivateMessage) => {
+    e.stopPropagation();
+    if (!confirm('¿Deseas eliminar este mensaje privado?')) return;
+    deleteMessage(m.id);
+    setSelectedIds(prev => prev.filter(id => id !== m.id));
+  };
+
+  const handleToggleSelect = (e: React.MouseEvent, msgId: string) => {
+    e.stopPropagation();
+    setSelectedIds(prev => 
+      prev.includes(msgId) ? prev.filter(id => id !== msgId) : [...prev, msgId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    const visibleIds = displayedList.map(m => m.id);
+    const allSelected = visibleIds.every(id => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(visibleIds);
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`¿Eliminar los ${selectedIds.length} mensajes seleccionados?`)) return;
+    selectedIds.forEach(id => deleteMessage(id));
+    setSelectedIds([]);
+  };
+
+  const handleMarkSelectedAsRead = () => {
+    if (selectedIds.length === 0) return;
+    selectedIds.forEach(id => markMessageAsRead(id));
+    setSelectedIds([]);
+  };
+
   const currentList = mode === 'enviados' ? sent : received;
   const displayedList = currentList.slice(0, visibleCount);
+  const isAllSelected = displayedList.length > 0 && displayedList.every(m => selectedIds.includes(m.id));
 
   return (
     <div className="w-full max-w-[1720px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-6 lg:px-8 py-4">
@@ -202,7 +247,7 @@ export const MessagesViewV2: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDelete(selectedMessage)}
-                      className="p-1 text-gray-400 hover:text-red-600 cursor-pointer"
+                      className="p-1 text-gray-400 hover:text-red-600 cursor-pointer rounded hover:bg-red-50"
                       title="Eliminar mensaje"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -320,9 +365,49 @@ export const MessagesViewV2: React.FC = () => {
             ) : (
               /* Message Inbox / Sent list */
               <div className="space-y-3 text-xs">
-                <h2 className="font-bold text-sm text-gray-900 pb-2 border-b border-gray-200">
-                  {mode === 'enviados' ? `Mensajes Enviados (${sent.length})` : `Mensajes Recibidos (${received.length})`}
-                </h2>
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-gray-200">
+                  <h2 className="font-bold text-sm text-gray-900">
+                    {mode === 'enviados' ? `Mensajes Enviados (${sent.length})` : `Mensajes Recibidos (${received.length})`}
+                  </h2>
+
+                  {displayedList.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectAll}
+                        className="text-xs text-gray-600 hover:text-[#3869A0] flex items-center gap-1 font-semibold px-2 py-1 rounded hover:bg-gray-100 cursor-pointer"
+                        title={isAllSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                      >
+                        {isAllSelected ? <CheckSquare className="w-3.5 h-3.5 text-[#3869A0]" /> : <Square className="w-3.5 h-3.5" />}
+                        <span>{isAllSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}</span>
+                      </button>
+
+                      {selectedIds.length > 0 && (
+                        <>
+                          {mode === 'recibidos' && (
+                            <button
+                              type="button"
+                              onClick={handleMarkSelectedAsRead}
+                              className="text-xs bg-gray-100 hover:bg-blue-50 text-[#3869A0] border border-gray-200 hover:border-blue-300 font-bold px-2 py-1 rounded flex items-center gap-1 cursor-pointer transition"
+                            >
+                              <CheckCheck className="w-3.5 h-3.5" />
+                              <span>Marcar leídos ({selectedIds.length})</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleDeleteSelected}
+                            className="text-xs bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold px-2.5 py-1 rounded flex items-center gap-1 cursor-pointer transition shadow-xs"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Borrar ({selectedIds.length})</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {currentList.length === 0 ? (
                   <div className="text-center py-16 text-gray-400 text-xs">
                     {mode === 'enviados' ? 'No has enviado ningún mensaje todavía.' : 'Tu bandeja de entrada está vacía.'}
@@ -330,40 +415,74 @@ export const MessagesViewV2: React.FC = () => {
                 ) : (
                   <div className="space-y-2">
                     <div className="divide-y divide-gray-100">
-                      {displayedList.map(m => (
-                        <div
-                          key={m.id}
-                          onClick={() => open(m)}
-                          className={`py-2.5 px-2 rounded cursor-pointer flex items-center justify-between gap-3 transition ${
-                            !m.leido && mode === 'recibidos' ? 'bg-blue-50/80 font-semibold' : 'hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 overflow-hidden flex-1">
-                            <img
-                              src={mode === 'enviados' ? currentUser.avatar : m.emisorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
-                              alt=""
-                              className="w-8 h-8 rounded object-cover border border-gray-300 shrink-0"
-                            />
-                            <div className="overflow-hidden min-w-0">
-                              {mode === 'recibidos' ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-[#3869A0] text-xs truncate">{m.emisorNombre}</span>
-                                  {!m.leido && (
-                                    <span className="bg-[#3869A0] text-white text-[9px] font-bold px-1.5 rounded-full shrink-0">
-                                      Nuevo
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                <p className="font-bold text-gray-900 text-xs truncate">Para: {m.receptorNombre}</p>
-                              )}
-                              <p className="text-gray-900 text-xs font-medium truncate">{m.asunto}</p>
-                              <p className="text-[11px] text-gray-500 truncate">{m.mensaje}</p>
+                      {displayedList.map(m => {
+                        const isSelected = selectedIds.includes(m.id);
+                        return (
+                          <div
+                            key={m.id}
+                            onClick={() => open(m)}
+                            className={`group py-2 px-2.5 rounded-sm cursor-pointer flex items-center justify-between gap-3 transition ${
+                              isSelected
+                                ? 'bg-blue-50/90 border-l-2 border-[#3869A0]'
+                                : !m.leido && mode === 'recibidos'
+                                ? 'bg-blue-50/50 font-semibold hover:bg-blue-100/60'
+                                : 'hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 overflow-hidden flex-1">
+                              {/* Selection checkbox */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleToggleSelect(e, m.id)}
+                                className="p-1 text-gray-400 hover:text-[#3869A0] shrink-0 cursor-pointer rounded"
+                                title={isSelected ? 'Deseleccionar' : 'Seleccionar'}
+                              >
+                                {isSelected ? (
+                                  <CheckSquare className="w-4 h-4 text-[#3869A0]" />
+                                ) : (
+                                  <Square className="w-4 h-4 text-gray-300 hover:text-gray-500" />
+                                )}
+                              </button>
+
+                              <img
+                                src={mode === 'enviados' ? currentUser.avatar : m.emisorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                                alt=""
+                                className="w-8 h-8 rounded object-cover border border-gray-300 shrink-0"
+                              />
+                              <div className="overflow-hidden min-w-0 flex-1">
+                                {mode === 'recibidos' ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-[#3869A0] text-xs truncate">{m.emisorNombre}</span>
+                                    {!m.leido && (
+                                      <span className="bg-[#3869A0] text-white text-[9px] font-bold px-1.5 rounded-full shrink-0">
+                                        Nuevo
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="font-bold text-gray-900 text-xs truncate">Para: {m.receptorNombre}</p>
+                                )}
+                                <p className="text-gray-900 text-xs font-medium truncate">{m.asunto}</p>
+                                <p className="text-[11px] text-gray-500 truncate">{m.mensaje}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10px] text-gray-400 whitespace-nowrap">{m.fecha}</span>
+                              
+                              {/* Direct Delete button on message list item */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeleteDirect(e, m)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition cursor-pointer"
+                                title="Borrar mensaje"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
-                          <span className="text-[10px] text-gray-400 shrink-0 whitespace-nowrap">{m.fecha}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {currentList.length > displayedList.length && (
