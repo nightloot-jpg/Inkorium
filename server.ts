@@ -168,6 +168,113 @@ const inMemoryMessages: any[] = [];
 const inMemoryChatMessages: any[] = [];
 const inMemoryPhotos: any[] = [];
 
+// ==========================================
+// REAL-TIME SERVER-SENT EVENTS (SSE) ENGINE
+// ==========================================
+const sseClients = new Map<string, Set<express.Response>>();
+
+function registerSseClient(userId: string, res: express.Response) {
+  if (!userId) return;
+  const normId = userId.toLowerCase().trim();
+  if (!sseClients.has(normId)) {
+    sseClients.set(normId, new Set());
+  }
+  sseClients.get(normId)!.add(res);
+}
+
+function removeSseClient(userId: string, res: express.Response) {
+  if (!userId) return;
+  const normId = userId.toLowerCase().trim();
+  const set = sseClients.get(normId);
+  if (set) {
+    set.delete(res);
+    if (set.size === 0) {
+      sseClients.delete(normId);
+    }
+  }
+}
+
+function broadcastRealtimeEvent(targetUserIds: string[], eventName: string, data: any) {
+  const payload = `event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`;
+  const targets = new Set<string>();
+  
+  targetUserIds.forEach(id => {
+    if (id) {
+      const clean = String(id).toLowerCase().trim();
+      targets.add(clean);
+      targets.add(clean.replace(/^user-/, ''));
+    }
+  });
+
+  targets.forEach(userId => {
+    const clients = sseClients.get(userId);
+    if (clients) {
+      clients.forEach(client => {
+        try {
+          client.write(payload);
+        } catch {
+          // Client disconnected
+        }
+      });
+    }
+  });
+}
+
+// SSE Stream Endpoint
+app.get('/api/realtime/stream', (req, res) => {
+  const userId = String(req.query.userId || req.query.id || '').trim();
+  if (!userId) {
+    return res.status(400).json({ error: 'USER_ID_REQUIRED' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  // Send initial handshake confirmation
+  res.write(`: connected\n\n`);
+  res.write(`event: init\ndata: ${JSON.stringify({ status: 'connected', userId, timestamp: Date.now() })}\n\n`);
+
+  registerSseClient(userId, res);
+
+  // Keep-alive heartbeat every 20 seconds
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(`: ping\n\n`);
+    } catch {
+      clearInterval(heartbeat);
+    }
+  }, 20000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    removeSseClient(userId, res);
+  });
+});
+
+// Chat Typing Indicator Endpoint
+app.post('/api/chat-typing', (req, res) => {
+  try {
+    const fromUserId = String(req.body?.fromUserId || '').trim();
+    const targetUserId = String(req.body?.targetUserId || '').trim();
+    const isTyping = Boolean(req.body?.isTyping);
+
+    if (fromUserId && targetUserId) {
+      broadcastRealtimeEvent([targetUserId], 'chat_typing', {
+        fromUserId,
+        targetUserId,
+        isTyping,
+        timestamp: Date.now()
+      });
+    }
+    return res.status(200).json({ success: true });
+  } catch (err: any) {
+    return res.status(200).json({ success: true });
+  }
+});
+
 app.get('/api/private-messages', async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(204).end();
   try {
@@ -326,14 +433,19 @@ app.post('/api/private-messages', async (req, res) => {
         const row = Array.isArray(parsed) ? parsed[0] : parsed;
         if (row) {
           inMemoryMessages.unshift(row);
+          broadcastRealtimeEvent([payloadToInsert.recipient_id, payloadToInsert.sender_id], 'private_message', row);
           return res.status(200).json(row);
         }
       } catch {
         // fallback below
       }
-      return res.status(200).json(createFallbackMessage(payloadToInsert));
+      const fb = createFallbackMessage(payloadToInsert);
+      broadcastRealtimeEvent([payloadToInsert.recipient_id, payloadToInsert.sender_id], 'private_message', fb);
+      return res.status(200).json(fb);
     } catch {
-      return res.status(200).json(createFallbackMessage(payloadToInsert));
+      const fb = createFallbackMessage(payloadToInsert);
+      broadcastRealtimeEvent([payloadToInsert.recipient_id, payloadToInsert.sender_id], 'private_message', fb);
+      return res.status(200).json(fb);
     }
   } catch (err: any) {
     console.warn('Private messages insert proxy fallback:', err?.message);
@@ -348,6 +460,7 @@ app.post('/api/private-messages', async (req, res) => {
       created_at: new Date().toISOString()
     };
     inMemoryMessages.unshift(fallback);
+    broadcastRealtimeEvent([fallback.recipient_id, fallback.sender_id], 'private_message', fallback);
     return res.status(200).json(fallback);
   }
 });
@@ -492,6 +605,8 @@ app.post('/api/chat-messages', async (req, res) => {
     } else {
       inMemoryChatMessages.push(newChatMsg);
     }
+
+    broadcastRealtimeEvent([receptorId, emisorId], 'chat_message', newChatMsg);
 
     return res.status(201).json(newChatMsg);
   } catch (err: any) {

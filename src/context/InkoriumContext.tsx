@@ -47,7 +47,9 @@ interface InkoriumContextType {
   isFriend: (userId1: string, userId2: string) => boolean; hasPendingRequest: (fromId: string, toId: string) => boolean; getFriendsOf: (userId: string) => User[];
   sendPrivateMessage: (receptorId: string, asunto: string, mensaje: string) => void; markMessageAsRead: (messageId: string) => void; deleteMessage: (messageId: string) => void;
   openChatWith: (targetUserId: string) => void; closeChat: (targetUserId: string) => void; toggleMinimizeChat: (targetUserId: string) => void;
-  sendChatMessage: (targetUserId: string, text: string) => void; setChatEstado: (estado: '1' | '0') => void;
+  sendChatMessage: (targetUserId: string, text: string) => void; 
+  sendChatTyping: (targetUserId: string, isTyping: boolean) => void;
+  setChatEstado: (estado: '1' | '0') => void;
   logUserActivity: (activity: Omit<UserActivity, 'id' | 'timestamp'>) => void; deleteUserActivity: (activityId: string) => void; getUserActivities: (userId: string) => UserActivity[];
   pushNotification: (notif: InkoriumNotification) => void; dismissToast: (toastId: string) => void; markNotificationAsRead: (notifId: string) => void;
   markAllNotificationsAsRead: () => void; deleteNotification: (notifId: string) => void; setIsRealtimeSimulationEnabled: (enabled: boolean) => void;
@@ -822,15 +824,171 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => { if (currentUserId) void fetchAndMapPrivateMessages(); }, [currentUserId, fetchAndMapPrivateMessages]);
   useEffect(() => { if (currentUserId) void fetchAndMapChatMessages(); }, [currentUserId, fetchAndMapChatMessages]);
 
-  // Periodic background polling for real-time messages across devices/sessions
+  const pushNotification = useCallback((notif: InkoriumNotification) => {
+    setNotifications(prev => [notif, ...prev]);
+    // Solo mostrar el popup emergente si la notificación va dirigida al usuario actual logueado
+    const isForCurrentUser = 
+      !notif.userId ||
+      notif.userId === currentUserId ||
+      notif.userId === currentUser.id ||
+      (currentUser.username && notif.userId === currentUser.username);
+
+    if (isForCurrentUser) {
+      setToasts(prev => [notif, ...prev.slice(0, 4)]);
+    }
+  }, [currentUserId, currentUser.id, currentUser.username]);
+
+  const dismissToast = useCallback((toastId: string) => {
+    setToasts(prev => prev.filter(t => t.id !== toastId));
+  }, []);
+
+  const markNotificationAsRead = useCallback((notifId: string) => {
+    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: true } : n));
+  }, []);
+
+  const markAllNotificationsAsRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, leido: true })));
+  }, []);
+
+  const deleteNotification = useCallback((notifId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notifId));
+  }, []);
+
+  // Periodic background polling and Server-Sent Events (SSE) for instant real-time messaging
   useEffect(() => {
     if (!currentUserId) return;
     const interval = setInterval(() => {
       void fetchAndMapPrivateMessages();
       void fetchAndMapChatMessages();
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [currentUserId, fetchAndMapPrivateMessages, fetchAndMapChatMessages]);
+    }, 3000);
+
+    // Instant Real-Time Push Stream via Server-Sent Events
+    let eventSource: EventSource | null = null;
+    try {
+      if (typeof window !== 'undefined' && window.EventSource) {
+        eventSource = new EventSource(`/api/realtime/stream?userId=${encodeURIComponent(currentUserId)}`);
+
+        eventSource.addEventListener('chat_message', (e) => {
+          try {
+            const newMsg = JSON.parse(e.data) as ChatMessage;
+            if (!newMsg || !newMsg.id) return;
+            const normCur = normalizeUserId(currentUserId);
+            const normRec = normalizeUserId(newMsg.receptorId);
+            const normEmi = normalizeUserId(newMsg.emisorId);
+
+            if (normRec === normCur || normEmi === normCur) {
+              setChatMessages(prev => {
+                if (prev.some(m => m.id === newMsg.id)) return prev;
+                return [...prev, newMsg];
+              });
+
+              const partnerId = normEmi === normCur ? newMsg.receptorId : newMsg.emisorId;
+              appendMessageToConversation(currentUserId, partnerId, newMsg);
+
+              if (normRec === normCur && normEmi !== normCur) {
+                try {
+                  playMessageSound();
+                } catch {}
+
+                // Open active chat window or show indicator
+                setActiveChatWindows(prev => {
+                  const existing = prev.find(w => normalizeUserId(w.targetUserId) === normEmi);
+                  if (existing) return prev;
+                  return [...prev, { targetUserId: newMsg.emisorId, minimized: false }];
+                });
+
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
+                    detail: { targetUserId: newMsg.emisorId, message: newMsg }
+                  }));
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('SSE chat_message parse error:', err);
+          }
+        });
+
+        eventSource.addEventListener('private_message', (e) => {
+          try {
+            const raw = JSON.parse(e.data);
+            if (!raw || !raw.id) return;
+            const normCur = normalizeUserId(currentUserId);
+            const recId = String(raw.recipient_id || raw.receptorId || '');
+            const emiId = String(raw.sender_id || raw.emisorId || '');
+
+            if (normalizeUserId(recId) === normCur || normalizeUserId(emiId) === normCur) {
+              const sender = users.find(u => u.id === emiId || u.username === emiId);
+              const recipient = users.find(u => u.id === recId || u.username === recId);
+              const mapped: PrivateMessage = {
+                id: String(raw.id),
+                emisorId: emiId,
+                emisorNombre: raw.emisorNombre || (sender ? (sender.full_name || `${sender.nombre} ${sender.apellidos}`.trim() || sender.nombre) : 'Usuario'),
+                emisorAvatar: raw.emisorAvatar || sender?.avatar || '',
+                receptorId: recId,
+                receptorNombre: raw.receptorNombre || (recipient ? (recipient.full_name || `${recipient.nombre} ${recipient.apellidos}`.trim() || recipient.nombre) : 'Usuario'),
+                asunto: String(raw.subject || raw.asunto || 'Sin asunto'),
+                mensaje: String(raw.body || raw.mensaje || ''),
+                fecha: raw.created_at ? new Date(raw.created_at).toLocaleString('es-ES') : (raw.fecha || 'Ahora mismo'),
+                leido: Boolean(raw.is_read || raw.leido)
+              };
+
+              setMessages(prev => {
+                if (prev.some(m => m.id === mapped.id)) return prev;
+                return [mapped, ...prev];
+              });
+
+              if (normalizeUserId(recId) === normCur && normalizeUserId(emiId) !== normCur) {
+                try {
+                  playMessageSound();
+                } catch {}
+                pushNotification({
+                  id: `notif-sse-mp-${Date.now()}`,
+                  tipo: 'mp',
+                  userId: currentUserId,
+                  fromUserId: emiId,
+                  fromUserName: mapped.emisorNombre,
+                  fromUserAvatar: mapped.emisorAvatar,
+                  mensaje: `te ha enviado un mensaje privado: "${mapped.asunto}"`,
+                  enlace: 'mensajes',
+                  targetId: mapped.id,
+                  targetPreview: mapped.mensaje.slice(0, 80),
+                  fecha: 'Ahora mismo',
+                  leido: false
+                });
+              }
+            }
+          } catch (err) {
+            console.warn('SSE private_message parse error:', err);
+          }
+        });
+
+        eventSource.addEventListener('chat_typing', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data && normalizeUserId(data.targetUserId) === normalizeUserId(currentUserId)) {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('inkorium:peer_typing', {
+                  detail: { targetUserId: data.fromUserId, isTyping: Boolean(data.isTyping) }
+                }));
+              }
+            }
+          } catch {}
+        });
+
+        eventSource.onerror = () => {
+          // SSE will reconnect automatically or fallback to interval polling
+        };
+      }
+    } catch {}
+
+    return () => {
+      clearInterval(interval);
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [currentUserId, users, pushNotification, fetchAndMapPrivateMessages, fetchAndMapChatMessages]);
 
   // Cross-tab synchronization listener
   useEffect(() => {
@@ -979,36 +1137,6 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       localStorage.setItem('inkorium:realtime_sim', String(enabled));
     }
   }, []);
-  
-  const pushNotification = useCallback((notif: InkoriumNotification) => {
-    setNotifications(prev => [notif, ...prev]);
-    // Solo mostrar el popup emergente si la notificación va dirigida al usuario actual logueado
-    const isForCurrentUser = 
-      !notif.userId ||
-      notif.userId === currentUserId ||
-      notif.userId === currentUser.id ||
-      (currentUser.username && notif.userId === currentUser.username);
-
-    if (isForCurrentUser) {
-      setToasts(prev => [notif, ...prev.slice(0, 4)]);
-    }
-  }, [currentUserId, currentUser.id, currentUser.username]);
-
-  const dismissToast = useCallback((toastId: string) => {
-    setToasts(prev => prev.filter(t => t.id !== toastId));
-  }, []);
-
-  const markNotificationAsRead = useCallback((notifId: string) => {
-    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, leido: true } : n));
-  }, []);
-
-  const markAllNotificationsAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, leido: true })));
-  }, []);
-
-  const deleteNotification = useCallback((notifId: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== notifId));
-  }, []);
 
   const openChatWith = useCallback((targetUserId: string) => {
     if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
@@ -1069,6 +1197,19 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newMsg)
+    }).catch(() => null);
+  }, [currentUserId]);
+
+  const sendChatTyping = useCallback((targetUserId: string, isTyping: boolean) => {
+    if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
+    broadcastCrossTabEvent({
+      type: 'PEER_TYPING',
+      payload: { targetUserId, isTyping }
+    });
+    void fetch('/api/chat-typing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fromUserId: currentUserId, targetUserId, isTyping })
     }).catch(() => null);
   }, [currentUserId]);
 
@@ -1744,7 +1885,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setPhotoAsAvatar, deletePhoto, createAlbum, renameAlbum, deleteAlbum,
       sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, removeFriendship, cancelFriendRequest, isFriend, hasPendingRequest, getFriendsOf,
       sendPrivateMessage, markMessageAsRead, deleteMessage,
-      sendChatMessage, openChatWith, closeChat, toggleMinimizeChat, setChatEstado,
+      sendChatMessage, sendChatTyping, openChatWith, closeChat, toggleMinimizeChat, setChatEstado,
       logUserActivity, deleteUserActivity, getUserActivities,
       pushNotification, dismissToast, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification,
       setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage, simulateWallComment,

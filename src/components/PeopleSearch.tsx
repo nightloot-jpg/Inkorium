@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
-import { Search, UserPlus, Users, MapPin, Check, Filter } from 'lucide-react';
+import { Search, UserPlus, Users, MapPin, Check, Filter, MessageSquare, Mail } from 'lucide-react';
 import { PROVINCIAS_ESPANA } from '../types';
 
 export const PeopleSearch: React.FC = () => {
@@ -10,7 +10,9 @@ export const PeopleSearch: React.FC = () => {
     viewUserProfile,
     sendFriendRequest,
     isFriend,
-    hasPendingRequest
+    hasPendingRequest,
+    openChatWith,
+    openComposeMessage
   } = useInkorium();
 
   const [generalQuery, setGeneralQuery] = useState('');
@@ -337,12 +339,33 @@ export const PeopleSearch: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Friendship button */}
-                      <div className="mt-3 pt-2 border-t border-gray-100">
+                      {/* Action buttons: Friendship, Private Message, Live Chat */}
+                      <div className="mt-3 pt-2 border-t border-gray-100 space-y-1.5">
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openComposeMessage(user.id)}
+                            className="py-1 px-1.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-[#3869A0] border border-gray-200 hover:border-blue-300 rounded text-[11px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                            title="Enviar mensaje privado"
+                          >
+                            <Mail className="w-3 h-3 text-[#3869A0]" />
+                            <span>Mensaje</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openChatWith(user.id)}
+                            className="py-1 px-1.5 bg-blue-50 hover:bg-blue-100 text-[#3869A0] border border-blue-200 rounded text-[11px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                            title="Abrir chat en vivo"
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                            <span>Chat</span>
+                          </button>
+                        </div>
+
                         {friend ? (
                           <button
                             disabled
-                            className="w-full py-1.5 bg-emerald-50 text-emerald-700 font-bold text-xs rounded border border-emerald-200 flex items-center justify-center gap-1 cursor-default"
+                            className="w-full py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded border border-emerald-200 flex items-center justify-center gap-1 cursor-default"
                           >
                             <Check className="w-3.5 h-3.5" />
                             <span>Amigos</span>
@@ -350,14 +373,15 @@ export const PeopleSearch: React.FC = () => {
                         ) : pending ? (
                           <button
                             disabled
-                            className="w-full py-1.5 bg-gray-100 text-gray-500 font-semibold text-xs rounded border border-gray-200 cursor-default text-center"
+                            className="w-full py-1 bg-gray-100 text-gray-500 font-semibold text-xs rounded border border-gray-200 cursor-default text-center"
                           >
                             Petición enviada
                           </button>
                         ) : (
                           <button
+                            type="button"
                             onClick={() => sendFriendRequest(user.id)}
-                            className="w-full py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold text-xs rounded transition flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+                            className="w-full py-1 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold text-xs rounded transition flex items-center justify-center gap-1 shadow-xs cursor-pointer"
                           >
                             <UserPlus className="w-3.5 h-3.5" />
                             <span>Añadir amigo</span>

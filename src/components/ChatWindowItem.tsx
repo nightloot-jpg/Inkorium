@@ -27,7 +27,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   onOpenProfile,
   getUserPresenceDot,
 }) => {
-  const { sendChatMessage } = useInkorium();
+  const { sendChatMessage, sendChatTyping } = useInkorium();
   const [allMessages, setAllMessages] = useState<ChatMessage[]>(() => {
     return getFullConversation(currentUser.id, targetUser.id, `${targetUser.nombre} ${targetUser.apellidos}`);
   });
@@ -38,6 +38,23 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   const [emoticonOpen, setEmoticonOpen] = useState(false);
   const [inputText, setInputText] = useState('');
   const [isPeerTyping, setIsPeerTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputText(val);
+
+    if (val.trim()) {
+      sendChatTyping(targetUser.id, true);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        sendChatTyping(targetUser.id, false);
+      }, 1500);
+    } else {
+      sendChatTyping(targetUser.id, false);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    }
+  };
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const preScrollRef = useRef<{ height: number; top: number } | null>(null);
@@ -188,6 +205,11 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     const text = inputText.trim();
     if (!text || !currentUser.id || !targetUser.id) return;
     if (targetUser.id === currentUser.id) return;
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    sendChatTyping(targetUser.id, false);
 
     // Send via central context (handles history, synchronization, auto-replies, notifications)
     sendChatMessage(targetUser.id, text);
@@ -434,7 +456,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
               type="text"
               placeholder="Escribe un mensaje..."
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={handleInputChange}
               className="flex-1 text-xs p-1.5 rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] focus:ring-1 focus:ring-[#3869A0]"
             />
 
