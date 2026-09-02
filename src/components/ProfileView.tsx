@@ -6,7 +6,7 @@ import { EditProfileModal } from './EditProfileModal';
 import { 
   UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon, 
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
-  Trash2, Send, Check, Shield, UserCheck, Camera, Upload, ChevronDown,
+  Trash2, Send, Check, Shield, UserCheck, Camera, Upload, ChevronDown, ChevronRight,
   Users, UserMinus, UserX, Clock, Search, X, ShieldAlert, CheckCheck, Globe
 } from 'lucide-react';
 import { UserPresence, User, formatFullLocation } from '../types';
@@ -960,82 +960,9 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
             </div>
           </div>
 
-          {/* ================= CENTER COLUMN: ALBUMS & TABLÓN (WALL) ================= */}
+          {/* ================= CENTER COLUMN: TABLÓN DE FIRMAS (WALL ONLY) ================= */}
           <div className="lg:col-span-6 space-y-4">
-            {/* Albums & Tagged Photos Preview */}
-            <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-3">
-              <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <ImageIcon className="w-3.5 h-3.5 text-[#3869A0]" />
-                  <span>Fotos y Álbumes ({userPhotos.length + taggedPhotos.length} fotos)</span>
-                </span>
-                <button
-                  onClick={() => setProfileSubTab('fotos')}
-                  className="text-[11px] text-[#3869A0] hover:underline font-semibold cursor-pointer"
-                >
-                  Ver galería completa
-                </button>
-              </div>
-
-              {/* Quick mini albums showcase */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {/* Fotos subidas */}
-                <div 
-                  onClick={() => setProfileSubTab('fotos')}
-                  className="border border-gray-200 rounded p-2 hover:bg-blue-50/50 cursor-pointer transition text-center group"
-                >
-                  <div className="h-28 rounded bg-gray-100 overflow-hidden mb-1.5 flex items-center justify-center border">
-                    {userPhotos[0] ? (
-                      <img src={userPhotos[0].archivo} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-gray-300" />
-                    )}
-                  </div>
-                  <p className="font-bold text-[#3869A0] group-hover:underline text-[11px] truncate">Fotos subidas</p>
-                  <span className="text-[10px] text-gray-400">{userPhotos.length} foto(s)</span>
-                </div>
-
-                {/* Fotos etiquetadas */}
-                <div 
-                  onClick={() => setProfileSubTab('fotos')}
-                  className="border border-gray-200 rounded p-2 hover:bg-blue-50/50 cursor-pointer transition text-center group"
-                >
-                  <div className="h-28 rounded bg-gray-100 overflow-hidden mb-1.5 flex items-center justify-center border">
-                    {taggedPhotos[0] ? (
-                      <img src={taggedPhotos[0].archivo} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-gray-300" />
-                    )}
-                  </div>
-                  <p className="font-bold text-[#3869A0] group-hover:underline text-[11px] truncate">Fotos etiquetadas</p>
-                  <span className="text-[10px] text-gray-400">{taggedPhotos.length} foto(s)</span>
-                </div>
-
-                {/* Custom albums */}
-                {userAlbums.slice(0, 2).map(alb => {
-                  const albPhoto = photos.find(p => p.albumId === alb.id);
-                  return (
-                    <div 
-                      key={alb.id}
-                      onClick={() => viewAlbum(alb.id)}
-                      className="border border-gray-200 rounded p-2 hover:bg-blue-50/50 cursor-pointer transition text-center group"
-                    >
-                      <div className="h-28 rounded bg-gray-100 overflow-hidden mb-1.5 flex items-center justify-center border">
-                        {albPhoto ? (
-                          <img src={albPhoto.archivo} alt="" className="w-full h-full object-cover group-hover:scale-105 transition" />
-                        ) : (
-                          <ImageIcon className="w-8 h-8 text-gray-300" />
-                        )}
-                      </div>
-                      <p className="font-bold text-[#3869A0] group-hover:underline text-[11px] truncate">{alb.nombre}</p>
-                      <span className="text-[10px] text-gray-400">Álbum personal</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ================= TABLÓN DE COMENTARIOS (WALL) ================= */}
+            {/* ================= TABLÓN DE COMENTARIOS / FIRMAS ================= */}
             <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-3">
               <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
@@ -1126,8 +1053,96 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
             </div>
           </div>
 
-          {/* ================= RIGHT COLUMN: FRIENDS & ACTIVITY LOG WIDGET ================= */}
+          {/* ================= RIGHT COLUMN: PHOTOS, FRIENDS & ACTIVITY LOG WIDGET ================= */}
           <div className="lg:col-span-3 space-y-4">
+            {/* Fotos y Álbumes Mini Widget (Right sidebar style) */}
+            <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2.5">
+              <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-[#3869A0]" />
+                  <span>Fotos ({userPhotos.length + taggedPhotos.length})</span>
+                </span>
+                <button
+                  onClick={() => setProfileSubTab('fotos')}
+                  className="text-[11px] text-[#3869A0] hover:underline font-semibold cursor-pointer"
+                >
+                  Ver todas
+                </button>
+              </div>
+
+              {userPhotos.length === 0 && taggedPhotos.length === 0 ? (
+                <div className="py-3 text-center text-gray-400 text-xs space-y-1">
+                  <p>Aún no hay fotos subidas.</p>
+                  {isOwnProfile && (
+                    <button
+                      onClick={onOpenUpload}
+                      className="text-[#3869A0] hover:underline text-[11px] font-semibold block mx-auto mt-1 cursor-pointer"
+                    >
+                      + Subir foto
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[...userPhotos, ...taggedPhotos].slice(0, 6).map((photo) => (
+                      <div
+                        key={photo.id}
+                        onClick={() => viewPhoto(photo.id)}
+                        className="aspect-square rounded overflow-hidden border border-gray-200 hover:border-[#3869A0] cursor-pointer group relative bg-gray-100 shadow-2xs"
+                        title={photo.titulo || 'Foto'}
+                      >
+                        <img
+                          src={photo.archivo}
+                          alt={photo.titulo || 'Foto'}
+                          className="w-full h-full object-cover group-hover:scale-105 transition"
+                        />
+                        <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition flex items-end p-1 text-[9px] text-white font-medium">
+                          <span className="truncate drop-shadow-xs">{photo.titulo || 'Foto'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {userAlbums.length > 0 && (
+                    <div className="pt-2 border-t border-gray-100 flex flex-wrap gap-1">
+                      {userAlbums.slice(0, 3).map(alb => (
+                        <button
+                          key={alb.id}
+                          onClick={() => viewAlbum(alb.id)}
+                          className="px-2 py-0.5 bg-gray-100 hover:bg-blue-50 hover:text-[#3869A0] text-gray-600 rounded text-[10px] font-medium transition cursor-pointer truncate max-w-[120px]"
+                        >
+                          📁 {alb.nombre}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px]">
+                    {isOwnProfile ? (
+                      <button
+                        onClick={onOpenUpload}
+                        className="text-[#3869A0] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Upload className="w-3 h-3" />
+                        <span>Subir foto</span>
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-gray-400">
+                        {userAlbums.length} {userAlbums.length === 1 ? 'álbum' : 'álbumes'}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setProfileSubTab('fotos')}
+                      className="text-gray-500 hover:text-gray-800 hover:underline cursor-pointer flex items-center gap-0.5 text-[10px]"
+                    >
+                      <span>Ver galería</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             {/* Friends Quick Widget */}
             <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2.5">
               <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
