@@ -622,6 +622,12 @@ const addDeletedMessageIds = (ids: string[]) => {
     };
   }, []);
 
+  const usersRef = useRef(users);
+  usersRef.current = users;
+
+  const currentUserIdRef = useRef(currentUserId);
+  currentUserIdRef.current = currentUserId;
+
   const profilesTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const fetchProfiles = useCallback(async () => {
     if (!isSupabaseConfigured) return;
@@ -637,16 +643,17 @@ const addDeletedMessageIds = (ids: string[]) => {
         const data = (await response.json()) as any[];
         if (!Array.isArray(data)) return;
         const mapped: User[] = data.map(mapProfileToUser);
+        const curId = currentUserIdRef.current;
         setUsers(prevUsers => {
           const storedPresence = localStorage.getItem('inkorium:presence') as UserPresence | null;
           let combined = mapped.length > 0 ? mapped : INITIAL_USERS;
           
           // Keep current user in list if not in mapped or preserve local custom avatar/edits
-          const existingCurrent = prevUsers.find(u => u.id === currentUserId);
-          if (existingCurrent && !combined.some(u => u.id === currentUserId)) {
+          const existingCurrent = prevUsers.find(u => u.id === curId);
+          if (existingCurrent && !combined.some(u => u.id === curId)) {
             combined = [existingCurrent, ...combined];
           } else if (existingCurrent) {
-            combined = combined.map(u => u.id === currentUserId ? { ...u, avatar: existingCurrent.avatar || u.avatar, nombre: existingCurrent.nombre || u.nombre } : u);
+            combined = combined.map(u => u.id === curId ? { ...u, avatar: existingCurrent.avatar || u.avatar, nombre: existingCurrent.nombre || u.nombre } : u);
           }
 
           for (const initUser of INITIAL_USERS) {
@@ -656,7 +663,7 @@ const addDeletedMessageIds = (ids: string[]) => {
           }
 
           if (storedPresence && ['conectado','ausente','ocupado','invisible'].includes(storedPresence)) {
-            return combined.map((user: User) => user.id === currentUserId ? { ...user, presencia: storedPresence, online: storedPresence !== 'invisible', chatEstado: storedPresence === 'invisible' ? '0' : '1' } : user);
+            return combined.map((user: User) => user.id === curId ? { ...user, presencia: storedPresence, online: storedPresence !== 'invisible', chatEstado: storedPresence === 'invisible' ? '0' : '1' } : user);
           }
           return combined;
         });
@@ -664,10 +671,10 @@ const addDeletedMessageIds = (ids: string[]) => {
         console.error('Profiles load failed:', error);
       }
     }, 100);
-  }, [mapProfileToUser, currentUserId]);
+  }, [mapProfileToUser]);
 
   const mapPhotoToPhoto = useCallback((row: any): Photo => {
-    const uploader = users.find(u => u.id === String(row.user_id));
+    const uploader = usersRef.current.find(u => u.id === String(row.user_id));
     return {
       id: String(row.id),
       uploaderId: String(row.user_id),
@@ -681,7 +688,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       comentarios: [],
       likes: []
     };
-  }, [users]);
+  }, []);
 
   const fetchAndMapPhotos = useCallback(async () => {
     try {
@@ -701,8 +708,9 @@ const addDeletedMessageIds = (ids: string[]) => {
     try {
       const rows = await fetchPosts(100);
       if (rows && rows.length > 0) {
+        const currentUsers = usersRef.current;
         const mapped: FeedItem[] = rows.map(row => {
-          const author = users.find(u => u.id === row.author_id);
+          const author = currentUsers.find(u => u.id === row.author_id);
           let photoUrl = '';
           if (row.media_data && typeof row.media_data === 'object' && 'url' in (row.media_data as any)) photoUrl = String((row.media_data as any).url || '');
           return {
@@ -726,12 +734,13 @@ const addDeletedMessageIds = (ids: string[]) => {
       console.warn('Posts load failed, using local feed:', error);
       setFeed(prev => (prev.length > 0 ? prev : INITIAL_FEED));
     }
-  }, [users]);
+  }, []);
 
   const isFetchingPrivateMsgsRef = useRef(false);
 
   const fetchAndMapPrivateMessages = useCallback(async () => {
-    if (!currentUserId || isFetchingPrivateMsgsRef.current) return;
+    const curId = currentUserIdRef.current;
+    if (!curId || isFetchingPrivateMsgsRef.current) return;
     isFetchingPrivateMsgsRef.current = true;
     const deletedIds = getDeletedMessageIds();
     try {
@@ -768,11 +777,12 @@ const addDeletedMessageIds = (ids: string[]) => {
       }
 
       if (Array.isArray(data) && data.length > 0) {
+          const currentUsers = usersRef.current;
           const mapped: PrivateMessage[] = data
             .filter((row: any) => !deletedIds.has(String(row.id)))
             .map((row: any) => {
-              const sender = users.find(u => u.id === row.sender_id || u.username === row.sender_id);
-              const recipient = users.find(u => u.id === row.recipient_id || u.username === row.recipient_id);
+              const sender = currentUsers.find(u => u.id === row.sender_id || u.username === row.sender_id);
+              const recipient = currentUsers.find(u => u.id === row.recipient_id || u.username === row.recipient_id);
               return {
                 id: String(row.id),
                 emisorId: String(row.sender_id),
@@ -795,19 +805,20 @@ const addDeletedMessageIds = (ids: string[]) => {
             return [...validMapped, ...localNonDb];
           });
         }
-      }
     } catch {
       // Graceful fallback to local cache
     } finally {
       isFetchingPrivateMsgsRef.current = false;
     }
-  }, [currentUserId, users]);
+  }, []);
 
   const fetchAndMapChatMessages = useCallback(async () => {
-    if (!currentUserId) return;
+    const curId = currentUserIdRef.current;
+    if (!curId) return;
     try {
-      const res = await fetch(`/api/chat-messages?userId=${encodeURIComponent(currentUserId)}`, {
-        headers: { Accept: 'application/json' }
+      const res = await fetch(`/api/chat-messages?userId=${encodeURIComponent(curId)}`, {
+        headers: { Accept: 'application/json' },
+        credentials: 'omit'
       });
       if (res.ok) {
         const data = await res.json();
@@ -817,8 +828,8 @@ const addDeletedMessageIds = (ids: string[]) => {
             const newMsgs = data.filter((m: any) => !existingIds.has(m.id));
             if (newMsgs.length === 0) return prev;
             newMsgs.forEach((msg: any) => {
-              const partnerId = normalizeUserId(msg.emisorId) === normalizeUserId(currentUserId) ? msg.receptorId : msg.emisorId;
-              appendMessageToConversation(currentUserId, partnerId, msg);
+              const partnerId = normalizeUserId(msg.emisorId) === normalizeUserId(curId) ? msg.receptorId : msg.emisorId;
+              appendMessageToConversation(curId, partnerId, msg);
             });
             return [...prev, ...newMsgs];
           });
@@ -827,7 +838,7 @@ const addDeletedMessageIds = (ids: string[]) => {
     } catch (e) {
       console.warn('Failed to sync chat messages from server:', e);
     }
-  }, [currentUserId]);
+  }, []);
 
   useEffect(() => {
     if (!supabase || !isSupabaseConfigured) return;
@@ -879,10 +890,17 @@ const addDeletedMessageIds = (ids: string[]) => {
     };
   }, [fetchProfiles, fetchAndMapPhotos, fetchAndMapPrivateMessages]);
 
-  useEffect(() => { if (users.length > 0 || isSupabaseConfigured) void fetchAndMapPosts(); }, [users.length, fetchAndMapPosts]);
-  useEffect(() => { if (currentUserId && isSupabaseConfigured) void fetchAndMapPhotos(); }, [currentUserId, fetchAndMapPhotos]);
-  useEffect(() => { if (currentUserId) void fetchAndMapPrivateMessages(); }, [currentUserId, fetchAndMapPrivateMessages]);
-  useEffect(() => { if (currentUserId) void fetchAndMapChatMessages(); }, [currentUserId, fetchAndMapChatMessages]);
+  useEffect(() => {
+    if (isSupabaseConfigured) void fetchAndMapPosts();
+  }, [fetchAndMapPosts]);
+
+  useEffect(() => {
+    if (currentUserId) {
+      if (isSupabaseConfigured) void fetchAndMapPhotos();
+      void fetchAndMapPrivateMessages();
+      void fetchAndMapChatMessages();
+    }
+  }, [currentUserId, fetchAndMapPhotos, fetchAndMapPrivateMessages, fetchAndMapChatMessages]);
 
   const pushNotification = useCallback((notif: InkoriumNotification) => {
     setNotifications(prev => [notif, ...prev]);
@@ -923,21 +941,14 @@ const addDeletedMessageIds = (ids: string[]) => {
   const pushNotificationRef = useRef(pushNotification);
   pushNotificationRef.current = pushNotification;
 
-  const usersRef = useRef(users);
-  usersRef.current = users;
-
   // Periodic background polling and Server-Sent Events (SSE) for instant real-time messaging
   useEffect(() => {
     if (!currentUserId) return;
-    
-    // Initial fetch on mount / user change
-    void fetchAndMapPrivateMessagesRef.current();
-    void fetchAndMapChatMessagesRef.current();
 
     const interval = setInterval(() => {
       void fetchAndMapPrivateMessagesRef.current();
       void fetchAndMapChatMessagesRef.current();
-    }, 12000);
+    }, 20000);
 
     // Instant Real-Time Push Stream via Server-Sent Events
     let eventSource: EventSource | null = null;

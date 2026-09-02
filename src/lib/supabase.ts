@@ -19,6 +19,8 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
     const parsed = new URL(requestUrl);
     const isProfilesRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/profiles';
     const isPrivateMessagesRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/private_messages';
+    const isPostsRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/posts';
+    const isPhotosRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/photos';
 
     if (isProfilesRequest && typeof window !== 'undefined') {
       if (requestMethod === 'GET') {
@@ -44,6 +46,22 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
             body: JSON.stringify({ presence, access_token: accessToken })
           });
         }
+      }
+    }
+
+    if (isPostsRequest && typeof window !== 'undefined') {
+      if (requestMethod === 'GET') {
+        return fetch(`${window.location.origin}/api/posts${parsed.search}`, {
+          method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit', cache: 'no-store'
+        });
+      }
+    }
+
+    if (isPhotosRequest && typeof window !== 'undefined') {
+      if (requestMethod === 'GET') {
+        return fetch(`${window.location.origin}/api/photos${parsed.search}`, {
+          method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit', cache: 'no-store'
+        });
       }
     }
 
