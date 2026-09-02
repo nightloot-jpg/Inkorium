@@ -204,6 +204,7 @@ export interface InkoriumNotification {
   targetPreview?: string;
   photoThumbnail?: string;
   targetPhotoUrl?: string;
+  fotoId?: string;
   timestamp?: number;
   estadoPeticion?: 'pendiente' | 'aceptada' | 'rechazada' | 'ignorada';
 }

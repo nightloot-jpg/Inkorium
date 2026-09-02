@@ -2043,6 +2043,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       x,
       y
     };
+    
     setPhotos(prev => prev.map(photo => {
       if (photo.id === photoId) {
         const currentTags = Array.isArray(photo.etiquetas) ? photo.etiquetas : [];
@@ -2053,7 +2054,26 @@ const addDeletedMessageIds = (ids: string[]) => {
       }
       return photo;
     }));
-  }, [users]);
+
+    // Generate notification for tagged friend if not tagging self
+    if (targetUserId && targetUserId !== currentUserId) {
+      const myName = `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre;
+      const tagNotif: InkoriumNotification = {
+        id: `notif-tag-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        userId: targetUserId,
+        fromUserId: currentUserId,
+        fromUserName: myName,
+        fromUserAvatar: currentUser.avatar,
+        tipo: 'etiqueta',
+        mensaje: `${myName} te ha etiquetado en una foto.`,
+        enlace: photoId,
+        leido: false,
+        fecha: 'Ahora mismo',
+        fotoId: photoId
+      };
+      setNotifications(prev => [tagNotif, ...prev]);
+    }
+  }, [users, currentUserId, currentUser]);
 
   const removePhotoTag = useCallback((photoId: string, tagId: string) => {
     setPhotos(prev => prev.map(p => {

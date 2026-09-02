@@ -30,7 +30,7 @@ export const PhotosView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUploa
 
   // Photos filters
   const myUploadedPhotos = photos.filter(p => p.uploaderId === currentUser.id);
-  const myTaggedPhotos = photos.filter(p => p.etiquetas.some(t => t.userId === currentUser.id));
+  const myTaggedPhotos = photos.filter(p => Array.isArray(p.etiquetas) && p.etiquetas.some(t => t.userId === currentUser.id || t.usuarioId === currentUser.id));
   const albumPhotos = selectedAlbumId 
     ? photos.filter(p => p.albumId === selectedAlbumId)
     : [];

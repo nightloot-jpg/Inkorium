@@ -99,7 +99,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   // Photos of this user
   const userPhotos = photos.filter(p => p.uploaderId === profileUser.id);
   // Tagged photos
-  const taggedPhotos = photos.filter(p => p.etiquetas.some(t => t.userId === profileUser.id));
+  const taggedPhotos = photos.filter(p => Array.isArray(p.etiquetas) && p.etiquetas.some(t => t.userId === profileUser.id || t.usuarioId === profileUser.id));
   // User's custom albums
   const userAlbums = albums.filter(a => a.userId === profileUser.id);
 

@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { 
   ChevronLeft, ChevronRight, X, Heart, MessageSquare, 
-  Tag, Trash2, User as UserIcon, Send, Download, 
-  Maximize2, Minimize2, Smile, Folder, Calendar, Camera, Check
+  Tag, Trash2, Send, Download, 
+  Maximize2, Minimize2, Smile, Folder, Calendar, Camera, Check, Search, UserPlus
 } from 'lucide-react';
 import { PhotoTag, PhotoComment, Photo } from '../types';
 
@@ -42,6 +42,8 @@ export const PhotoLightbox: React.FC = () => {
   const [taggingMode, setTaggingMode] = useState(false);
   const [tagCoords, setTagCoords] = useState<{ x: number; y: number } | null>(null);
   const [selectedTagUserId, setSelectedTagUserId] = useState<string>('');
+  const [tagSearchQuery, setTagSearchQuery] = useState('');
+  const [hoveredTagId, setHoveredTagId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showEmoticons, setShowEmoticons] = useState(false);
@@ -105,6 +107,7 @@ export const PhotoLightbox: React.FC = () => {
       viewPhoto(listToUse[safeIndex - 1].id);
       setTaggingMode(false);
       setTagCoords(null);
+      setTagSearchQuery('');
     }
   };
 
@@ -113,6 +116,7 @@ export const PhotoLightbox: React.FC = () => {
       viewPhoto(listToUse[safeIndex + 1].id);
       setTaggingMode(false);
       setTagCoords(null);
+      setTagSearchQuery('');
     }
   };
 
@@ -121,7 +125,6 @@ export const PhotoLightbox: React.FC = () => {
     if (!selectedPhotoId) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts if typing inside an input or textarea
       const target = e.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
         if (e.key === 'Escape') {
@@ -131,7 +134,12 @@ export const PhotoLightbox: React.FC = () => {
       }
 
       if (e.key === 'Escape') {
-        viewPhoto(null);
+        if (taggingMode) {
+          setTaggingMode(false);
+          setTagCoords(null);
+        } else {
+          viewPhoto(null);
+        }
       } else if (e.key === 'ArrowLeft') {
         goToPrev();
       } else if (e.key === 'ArrowRight') {
@@ -141,7 +149,7 @@ export const PhotoLightbox: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedPhotoId, safeIndex, listToUse, hasPrev, hasNext]);
+  }, [selectedPhotoId, safeIndex, listToUse, hasPrev, hasNext, taggingMode]);
 
   if (!selectedPhotoId || !photo) return null;
 
@@ -162,20 +170,37 @@ export const PhotoLightbox: React.FC = () => {
   const associatedAlbum = albums.find(a => a.id === photo.albumId);
   const displayAlbumName = photo.albumName || associatedAlbum?.nombre;
 
+  // Tag candidate friends filtering
+  const filteredFriendsToTag = useMemo(() => {
+    const query = tagSearchQuery.toLowerCase().trim();
+    return users.filter(u => {
+      if (!query) return true;
+      const fullName = `${u.nombre} ${u.apellidos}`.toLowerCase();
+      const username = (u.username || '').toLowerCase();
+      return fullName.includes(query) || username.includes(query);
+    });
+  }, [users, tagSearchQuery]);
+
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!taggingMode) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    const x = Math.max(2, Math.min(98, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(2, Math.min(98, ((e.clientY - rect.top) / rect.height) * 100));
     setTagCoords({ x, y });
   };
 
-  const handleConfirmTag = () => {
-    if (!tagCoords || !selectedTagUserId) return;
-    addPhotoTag(photo.id, selectedTagUserId, tagCoords.x, tagCoords.y);
+  const handleConfirmTag = (targetUserId: string) => {
+    if (!tagCoords || !targetUserId) return;
+    addPhotoTag(photo.id, targetUserId, Math.round(tagCoords.x), Math.round(tagCoords.y));
     setTagCoords(null);
     setTaggingMode(false);
     setSelectedTagUserId('');
+    setTagSearchQuery('');
+  };
+
+  const handleSelfTag = () => {
+    if (!currentUser) return;
+    handleConfirmTag(currentUser.id);
   };
 
   const handleAddComment = (e: React.FormEvent) => {
@@ -211,11 +236,11 @@ export const PhotoLightbox: React.FC = () => {
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/92 backdrop-blur-md flex flex-col justify-between select-none animate-fade-in text-white"
+      className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between select-none animate-fade-in text-white"
       id="inkorium-photo-lightbox"
     >
       {/* ================= 1. CLASSIC TUENTI TOP HEADER BAR ================= */}
-      <header className="w-full bg-[#1e232a] border-b border-[#323946] px-3 sm:px-5 py-2.5 flex items-center justify-between z-30 shadow-md text-xs">
+      <header className="w-full bg-[#1b2028] border-b border-[#2d3542] px-3 sm:px-5 py-2.5 flex items-center justify-between z-30 shadow-md text-xs">
         {/* Left: Album Navigation & Context */}
         <div className="flex items-center gap-3 overflow-hidden">
           <button
@@ -246,25 +271,27 @@ export const PhotoLightbox: React.FC = () => {
         <div className="flex items-center gap-2 sm:gap-2.5">
           {/* Tagging Button */}
           <button
+            id="lightbox-btn-tag-friends"
             onClick={() => {
               setTaggingMode(!taggingMode);
               setTagCoords(null);
+              setTagSearchQuery('');
             }}
-            className={`px-2.5 py-1 rounded text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs ${
+            className={`px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs ${
               taggingMode 
                 ? 'bg-amber-400 text-black animate-pulse ring-2 ring-amber-300' 
-                : 'bg-white/10 hover:bg-white/20 text-white'
+                : 'bg-[#3869A0] hover:bg-[#2c537f] text-white border border-[#4a7cb6]'
             }`}
             title="Etiquetar amigos en esta foto"
           >
             <Tag className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{taggingMode ? 'Cancelar etiqueta' : 'Etiquetar amigos'}</span>
+            <span>{taggingMode ? 'Cancelar etiquetado' : 'Etiquetar amigos'}</span>
           </button>
 
           {/* Set as profile picture button */}
           <button
             onClick={handleSetAvatar}
-            className={`px-2.5 py-1 rounded text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
               avatarSuccess 
                 ? 'bg-emerald-600 text-white font-bold' 
                 : 'bg-white/10 hover:bg-white/20 text-gray-200 hover:text-white'
@@ -272,7 +299,7 @@ export const PhotoLightbox: React.FC = () => {
             title="Poner como foto de mi perfil"
           >
             {avatarSuccess ? <Check className="w-3.5 h-3.5" /> : <Camera className="w-3.5 h-3.5" />}
-            <span className="hidden md:inline">{avatarSuccess ? '¡Foto de perfil actualizada!' : 'Poner de perfil'}</span>
+            <span className="hidden md:inline">{avatarSuccess ? '¡Foto actualizada!' : 'Poner de perfil'}</span>
           </button>
 
           {/* Download button */}
@@ -296,7 +323,7 @@ export const PhotoLightbox: React.FC = () => {
           {/* Big Close Button */}
           <button
             onClick={() => viewPhoto(null)}
-            className="p-1.5 bg-red-600/80 hover:bg-red-600 text-white rounded transition ml-1 cursor-pointer font-bold flex items-center gap-1 px-2.5"
+            className="p-1.5 bg-red-600/85 hover:bg-red-600 text-white rounded transition ml-1 cursor-pointer font-bold flex items-center gap-1 px-2.5"
             title="Cerrar visor (Esc)"
           >
             <X className="w-4 h-4" />
@@ -308,12 +335,12 @@ export const PhotoLightbox: React.FC = () => {
       {/* ================= 2. MAIN BODY (STAGE + SIDEBAR) ================= */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         {/* LEFT COLUMN: PHOTO STAGE & CONTROLS */}
-        <div className={`flex-1 flex flex-col justify-between bg-[#0a0d12] relative overflow-hidden ${isFullscreen ? 'lg:w-full' : 'lg:w-8/12 xl:w-3/4'}`}>
+        <div className={`flex-1 flex flex-col justify-between bg-[#0b0e14] relative overflow-hidden ${isFullscreen ? 'lg:w-full' : 'lg:w-8/12 xl:w-3/4'}`}>
           {/* Active Tagging Help Notification */}
           {taggingMode && !tagCoords && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-amber-400 text-black font-bold text-xs px-4 py-1.5 rounded-full shadow-xl animate-bounce flex items-center gap-2">
-              <Tag className="w-3.5 h-3.5" />
-              <span>Haz clic en la cara de un amigo en la foto para colocar la etiqueta</span>
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-amber-400 text-black font-bold text-xs px-4 py-2 rounded-full shadow-2xl animate-bounce flex items-center gap-2 border border-amber-500">
+              <Tag className="w-4 h-4" />
+              <span>Haz clic sobre la persona en la foto para colocar su etiqueta</span>
             </div>
           )}
 
@@ -324,14 +351,13 @@ export const PhotoLightbox: React.FC = () => {
             }`}
             onClick={handleImageClick}
           >
-            {/* The Main Image */}
+            {/* The Main Image Container */}
             <div className="relative max-h-full max-w-full flex items-center justify-center group">
               <img
                 src={photo.archivo}
                 alt={photo.titulo || 'Foto'}
-                className="max-h-[68vh] md:max-h-[76vh] max-w-full object-contain rounded shadow-2xl transition duration-150 select-none"
+                className="max-h-[68vh] md:max-h-[76vh] max-w-full object-contain rounded shadow-2xl transition duration-150 select-none pointer-events-auto"
                 onError={(e) => {
-                  // Fallback if image failed loading
                   (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1200&q=80';
                 }}
               />
@@ -340,33 +366,53 @@ export const PhotoLightbox: React.FC = () => {
               {safeTags.map((tag) => {
                 const tagName = tag.userName || tag.nombre || 'Amigo';
                 const tagUserId = tag.userId || tag.usuarioId || '';
+                const isHovered = hoveredTagId === tag.id;
+                const taggedFriendUser = users.find(u => u.id === tagUserId);
+                const friendAvatar = taggedFriendUser?.avatar;
+
                 return (
                   <div
                     key={tag.id}
                     style={{ left: `${tag.x}%`, top: `${tag.y}%` }}
                     className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto group/tag z-20"
+                    onMouseEnter={() => setHoveredTagId(tag.id)}
+                    onMouseLeave={() => setHoveredTagId(null)}
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Tag Box Marker */}
-                    <div className="w-12 h-12 border-2 border-dashed border-white/90 group-hover/tag:border-amber-400 group-hover/tag:bg-amber-400/15 rounded shadow-lg transition duration-150"></div>
+                    <div className={`w-14 h-14 border-2 rounded shadow-lg transition duration-200 ${
+                      isHovered
+                        ? 'border-amber-400 bg-amber-400/25 scale-110 ring-4 ring-amber-300/40'
+                        : 'border-white/80 border-dashed group-hover/tag:border-amber-400 group-hover/tag:bg-amber-400/15'
+                    }`}></div>
                     
-                    {/* Tag Tooltip with friend name */}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 bg-black/85 text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-xl whitespace-nowrap flex items-center gap-1.5 backdrop-blur-xs border border-white/20">
-                      <span 
+                    {/* Tag Tooltip with friend avatar & name */}
+                    <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-1.5 bg-[#1a1f28]/95 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-md shadow-2xl whitespace-nowrap flex items-center gap-2 backdrop-blur-sm border ${
+                      isHovered ? 'border-amber-400 ring-2 ring-amber-400/30' : 'border-gray-600'
+                    }`}>
+                      {friendAvatar ? (
+                        <img src={friendAvatar} alt="" className="w-4 h-4 rounded-full object-cover" />
+                      ) : (
+                        <span className="text-[10px]">👤</span>
+                      )}
+                      
+                      <button 
                         onClick={() => {
                           if (tagUserId) {
                             viewUserProfile(tagUserId);
                             viewPhoto(null);
                           }
                         }}
-                        className="hover:underline hover:text-blue-300 cursor-pointer"
+                        className="hover:underline hover:text-amber-300 cursor-pointer"
+                        title="Ver perfil"
                       >
                         {tagName}
-                      </span>
+                      </button>
+
                       {(isUploader || tagUserId === currentUser?.id) && (
                         <button
                           onClick={() => removePhotoTag(photo.id, tag.id)}
-                          className="text-red-400 hover:text-red-300 font-bold ml-1 hover:scale-110 transition cursor-pointer"
+                          className="text-red-400 hover:text-red-200 font-bold ml-1 hover:scale-125 transition cursor-pointer p-0.5"
                           title="Eliminar etiqueta"
                         >
                           ✕
@@ -377,35 +423,83 @@ export const PhotoLightbox: React.FC = () => {
                 );
               })}
 
-              {/* Placement Tag Box (Active placement) */}
+              {/* Active Placement Tag Box Popover */}
               {tagCoords && taggingMode && (
                 <div
                   style={{ left: `${tagCoords.x}%`, top: `${tagCoords.y}%` }}
                   className="absolute -translate-x-1/2 -translate-y-1/2 z-40"
                   onClick={e => e.stopPropagation()}
                 >
-                  <div className="w-14 h-14 border-2 border-amber-400 bg-amber-400/25 rounded animate-pulse shadow-2xl"></div>
+                  <div className="w-16 h-16 border-2 border-amber-400 bg-amber-400/30 rounded animate-pulse shadow-2xl"></div>
                   
-                  {/* Friend Selector Popover */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white text-gray-800 p-3 rounded-lg shadow-2xl border border-gray-300 z-50 w-56 text-xs animate-fade-in">
-                    <p className="font-bold text-gray-900 mb-1.5 flex items-center gap-1">
-                      <Tag className="w-3.5 h-3.5 text-[#3869A0]" />
-                      <span>¿A quién deseas etiquetar?</span>
-                    </p>
+                  {/* Friend Search & Tag Selector Card */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white text-gray-800 p-3 rounded-lg shadow-2xl border border-gray-300 z-50 w-64 text-xs animate-fade-in">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-bold text-gray-900 flex items-center gap-1.5 text-xs">
+                        <Tag className="w-3.5 h-3.5 text-[#3869A0]" />
+                        <span>Etiquetar amigo</span>
+                      </p>
+                      <button
+                        onClick={() => {
+                          setTagCoords(null);
+                          setTaggingMode(false);
+                        }}
+                        className="text-gray-400 hover:text-gray-700 font-bold text-xs cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* Quick Self Tag Option */}
+                    {currentUser && (
+                      <button
+                        type="button"
+                        onClick={handleSelfTag}
+                        className="w-full mb-2.5 py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-[#3869A0] rounded font-bold text-[11px] flex items-center justify-center gap-1.5 border border-blue-200 cursor-pointer transition"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        <span>Etiquetarme a mí mismo</span>
+                      </button>
+                    )}
+
+                    {/* Search filter input */}
+                    <div className="relative mb-2">
+                      <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2 top-2" />
+                      <input
+                        type="text"
+                        placeholder="Buscar amigo..."
+                        value={tagSearchQuery}
+                        onChange={e => setTagSearchQuery(e.target.value)}
+                        className="w-full pl-7 pr-2 py-1.5 border border-gray-300 rounded text-xs bg-gray-50 focus:outline-none focus:border-[#3869A0] font-medium"
+                        autoFocus
+                      />
+                    </div>
                     
-                    <select
-                      value={selectedTagUserId}
-                      onChange={e => setSelectedTagUserId(e.target.value)}
-                      className="w-full p-1.5 border border-gray-300 rounded text-xs mb-2.5 bg-gray-50 focus:outline-none focus:border-[#3869A0] font-medium"
-                      autoFocus
-                    >
-                      <option value="">Selecciona un amigo...</option>
-                      {users.map(u => (
-                        <option key={u.id} value={u.id}>
-                          {u.nombre} {u.apellidos}
-                        </option>
-                      ))}
-                    </select>
+                    {/* Friends list scrollable */}
+                    <div className="max-h-36 overflow-y-auto border border-gray-200 rounded divide-y divide-gray-100 mb-2.5 bg-gray-50/50">
+                      {filteredFriendsToTag.length === 0 ? (
+                        <div className="p-3 text-center text-gray-400 text-[11px]">
+                          No se encontraron amigos
+                        </div>
+                      ) : (
+                        filteredFriendsToTag.map(u => (
+                          <button
+                            key={u.id}
+                            type="button"
+                            onClick={() => handleConfirmTag(u.id)}
+                            className="w-full text-left p-1.5 hover:bg-blue-50 transition flex items-center gap-2 cursor-pointer group"
+                          >
+                            <img src={u.avatar} alt="" className="w-6 h-6 rounded-full object-cover border border-gray-300 flex-shrink-0" />
+                            <div className="overflow-hidden flex-1">
+                              <span className="font-semibold text-gray-800 group-hover:text-[#3869A0] block truncate text-[11px]">
+                                {u.nombre} {u.apellidos}
+                              </span>
+                              <span className="text-[9px] text-gray-400 block truncate">@{u.username || u.id}</span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
                     
                     <div className="flex justify-end gap-1.5">
                       <button
@@ -417,14 +511,6 @@ export const PhotoLightbox: React.FC = () => {
                         className="px-2.5 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-[11px] font-semibold rounded cursor-pointer transition"
                       >
                         Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleConfirmTag}
-                        disabled={!selectedTagUserId}
-                        className="px-3 py-1 bg-[#3869A0] hover:bg-[#2c537f] text-white text-[11px] font-bold rounded disabled:opacity-50 cursor-pointer transition shadow-xs"
-                      >
-                        Etiquetar
                       </button>
                     </div>
                   </div>
@@ -456,7 +542,7 @@ export const PhotoLightbox: React.FC = () => {
           </div>
 
           {/* Bottom Toolbar under image */}
-          <div className="bg-[#12161f] border-t border-[#232936] px-4 py-2 flex items-center justify-between text-xs z-20">
+          <div className="bg-[#141822] border-t border-[#232936] px-4 py-2.5 flex items-center justify-between text-xs z-20">
             {/* Left: Likes */}
             <div className="flex items-center gap-3">
               <button
@@ -487,22 +573,38 @@ export const PhotoLightbox: React.FC = () => {
               )}
             </div>
 
-            {/* Right: Delete photo (if uploader) */}
-            {isUploader && (
+            {/* Right: Quick tag shortcut & delete photo */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  if (confirm('¿Estás seguro de eliminar esta foto de tu galería?')) {
-                    deletePhoto(photo.id);
-                    viewPhoto(null);
-                  }
+                  setTaggingMode(!taggingMode);
+                  setTagCoords(null);
+                  setTagSearchQuery('');
                 }}
-                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded flex items-center gap-1 font-semibold transition cursor-pointer"
-                title="Eliminar esta foto permanentemente"
+                className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded transition cursor-pointer font-medium ${
+                  taggingMode ? 'bg-amber-400 text-black font-bold' : 'text-gray-300 hover:text-white bg-white/10 hover:bg-white/20'
+                }`}
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Eliminar foto</span>
+                <Tag className="w-3.5 h-3.5" />
+                <span>{taggingMode ? 'Cancelar' : 'Etiquetar'}</span>
               </button>
-            )}
+
+              {isUploader && (
+                <button
+                  onClick={() => {
+                    if (confirm('¿Estás seguro de eliminar esta foto de tu galería?')) {
+                      deletePhoto(photo.id);
+                      viewPhoto(null);
+                    }
+                  }}
+                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded flex items-center gap-1 font-semibold transition cursor-pointer"
+                  title="Eliminar esta foto permanentemente"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Eliminar foto</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -569,34 +671,77 @@ export const PhotoLightbox: React.FC = () => {
               )}
 
               {/* Tagged Friends List ("En esta foto:") */}
-              {safeTags.length > 0 && (
-                <div className="pt-2 border-t border-gray-100 space-y-1">
-                  <span className="text-[11px] font-bold text-gray-700 block">
-                    En esta foto ({safeTags.length}):
+              <div className="pt-2 border-t border-gray-100 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-gray-700 flex items-center gap-1">
+                    <Tag className="w-3 h-3 text-[#3869A0]" />
+                    <span>En esta foto ({safeTags.length}):</span>
                   </span>
+                  
+                  <button
+                    onClick={() => {
+                      setTaggingMode(true);
+                      setTagCoords(null);
+                      setTagSearchQuery('');
+                    }}
+                    className="text-[10px] text-[#3869A0] hover:underline font-bold cursor-pointer"
+                  >
+                    + Etiquetar
+                  </button>
+                </div>
+
+                {safeTags.length === 0 ? (
+                  <p className="text-[10px] text-gray-400 italic">No hay nadie etiquetado en esta foto.</p>
+                ) : (
                   <div className="flex flex-wrap gap-1">
                     {safeTags.map(t => {
                       const tagId = t.userId || t.usuarioId || '';
                       const tagName = t.userName || t.nombre || 'Amigo';
+                      const isHovered = hoveredTagId === t.id;
+                      const taggedFriend = users.find(u => u.id === tagId);
+
                       return (
-                        <button
+                        <div
                           key={t.id}
-                          onClick={() => {
-                            if (tagId) {
-                              viewUserProfile(tagId);
-                              viewPhoto(null);
-                            }
-                          }}
-                          className="px-2 py-0.5 bg-gray-100 hover:bg-blue-100 text-[#3869A0] font-semibold text-[10px] rounded cursor-pointer transition border border-gray-200 flex items-center gap-1"
+                          onMouseEnter={() => setHoveredTagId(t.id)}
+                          onMouseLeave={() => setHoveredTagId(null)}
+                          className={`px-2 py-0.5 rounded text-[10px] transition border flex items-center gap-1 ${
+                            isHovered
+                              ? 'bg-amber-100 border-amber-300 text-amber-900 font-bold'
+                              : 'bg-gray-100 hover:bg-blue-100 text-[#3869A0] border-gray-200 font-semibold'
+                          }`}
                         >
-                          <span>👤</span>
-                          <span>{tagName}</span>
-                        </button>
+                          {taggedFriend?.avatar ? (
+                            <img src={taggedFriend.avatar} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+                          ) : (
+                            <span>👤</span>
+                          )}
+                          <button
+                            onClick={() => {
+                              if (tagId) {
+                                viewUserProfile(tagId);
+                                viewPhoto(null);
+                              }
+                            }}
+                            className="cursor-pointer hover:underline"
+                          >
+                            {tagName}
+                          </button>
+                          {(isUploader || tagId === currentUser?.id) && (
+                            <button
+                              onClick={() => removePhotoTag(photo.id, t.id)}
+                              className="text-gray-400 hover:text-red-500 font-bold ml-0.5 cursor-pointer"
+                              title="Quitar etiqueta"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Middle: Comments Section (Tablón de la foto) */}
@@ -722,6 +867,7 @@ export const PhotoLightbox: React.FC = () => {
                         viewPhoto(p.id);
                         setTaggingMode(false);
                         setTagCoords(null);
+                        setTagSearchQuery('');
                       }}
                       className={`w-10 h-10 rounded overflow-hidden flex-shrink-0 cursor-pointer border-2 transition ${
                         idx === safeIndex 
