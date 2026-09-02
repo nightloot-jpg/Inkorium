@@ -16,6 +16,7 @@ import { AuthPage } from './components/AuthPage';
 import { ChatBar } from './components/ChatBar';
 import { NotificationToasts } from './components/NotificationToasts';
 import { FloatingMusicPlayer } from './components/FloatingMusicPlayer';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const InkoriumAppContent: React.FC = () => {
   const { activeTab, setActiveTab, isLoggedIn, logout } = useInkorium();
@@ -38,7 +39,7 @@ const InkoriumAppContent: React.FC = () => {
       {/* Main Content Area based on activeTab */}
       <main className="flex-1 pb-16">
         {activeTab === 'inicio' && <HomeFeed onOpenUpload={() => setIsUploadOpen(true)} />}
-        {activeTab === 'perfil' && <ProfileView />}
+        {activeTab === 'perfil' && <ProfileView onOpenUpload={() => setIsUploadOpen(true)} />}
         {activeTab === 'fotos' && <PhotosView onOpenUpload={() => setIsUploadOpen(true)} />}
         {activeTab === 'gente' && <PeopleSearch />}
         {activeTab === 'mensajes' && <MessagesView />}
@@ -84,9 +85,11 @@ const InkoriumAppContent: React.FC = () => {
 
 export function App() {
   return (
-    <InkoriumProvider>
-      <InkoriumAppContent />
-    </InkoriumProvider>
+    <ErrorBoundary>
+      <InkoriumProvider>
+        <InkoriumAppContent />
+      </InkoriumProvider>
+    </ErrorBoundary>
   );
 }
 

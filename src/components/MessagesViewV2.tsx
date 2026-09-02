@@ -7,7 +7,6 @@ import { normalizeUserId } from '../lib/chatHistory';
 export const MessagesViewV2: React.FC = () => {
   const {
     currentUser,
-    currentUserId,
     users,
     messages,
     sendPrivateMessage,
@@ -17,6 +16,8 @@ export const MessagesViewV2: React.FC = () => {
     viewUserProfile,
     composeRecipientId
   } = useInkorium();
+
+  const currentUserId = currentUser?.id || '';
 
   const [mode, setMode] = useState<'recibidos' | 'enviados' | 'enviar'>('recibidos');
   const [selectedMessage, setSelectedMessage] = useState<PrivateMessage | null>(null);

@@ -50,20 +50,26 @@ export interface User {
 
 export interface PhotoTag {
   id: string;
-  photoId: string;
+  photoId?: string;
   userId: string;
   userName: string;
+  usuarioId?: string;
+  nombre?: string;
   x: number; // percentage 0-100
   y: number; // percentage 0-100
 }
 
 export interface PhotoComment {
   id: string;
-  photoId: string;
-  userId: string;
-  nombre: string;
-  avatar: string;
-  comentario: string;
+  photoId?: string;
+  userId?: string;
+  autorId?: string;
+  nombre?: string;
+  autorNombre?: string;
+  avatar?: string;
+  autorAvatar?: string;
+  comentario?: string;
+  texto?: string;
   fecha: string;
 }
 
@@ -187,10 +193,10 @@ export interface InkoriumNotification {
   userId: string; // recipient
   fromUserId: string;
   fromUserName: string;
-  fromUserAvatar: string;
-  tipo: 'peticion' | 'mp' | 'tablon' | 'foto' | 'foto_comentario' | 'etiqueta' | 'like' | 'chat';
+  fromUserAvatar?: string;
+  tipo: 'peticion' | 'mp' | 'tablon' | 'foto' | 'foto_comentario' | 'etiqueta' | 'like' | 'chat' | 'sistema' | 'amistad';
   mensaje: string;
-  enlace: string;
+  enlace?: string;
   leido: boolean;
   fecha: string;
   detalle?: string;

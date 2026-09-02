@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode } from '../types';
+import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
 import { fetchPhotos, insertPhoto } from '../lib/photosApi';
@@ -1957,10 +1957,11 @@ const addDeletedMessageIds = (ids: string[]) => {
     if (!currentUserId) return;
     setPhotos(prev => prev.map(photo => {
       if (photo.id === photoId) {
-        const hasLiked = photo.likes.includes(currentUserId);
+        const photoLikes = Array.isArray(photo.likes) ? photo.likes : [];
+        const hasLiked = photoLikes.includes(currentUserId);
         return {
           ...photo,
-          likes: hasLiked ? photo.likes.filter(id => id !== currentUserId) : [...photo.likes, currentUserId]
+          likes: hasLiked ? photoLikes.filter(id => id !== currentUserId) : [...photoLikes, currentUserId]
         };
       }
       return photo;
@@ -1969,21 +1970,27 @@ const addDeletedMessageIds = (ids: string[]) => {
 
   const addPhotoComment = useCallback((photoId: string, comentario: string) => {
     if (!currentUserId || !comentario.trim()) return;
+    const authorName = `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const authorAvatar = currentUser.avatar || '';
+    const newComment: PhotoComment = {
+      id: `pc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      photoId,
+      userId: currentUserId,
+      autorId: currentUserId,
+      nombre: authorName,
+      autorNombre: authorName,
+      avatar: authorAvatar,
+      autorAvatar: authorAvatar,
+      comentario: comentario.trim(),
+      texto: comentario.trim(),
+      fecha: 'Ahora mismo'
+    };
     setPhotos(prev => prev.map(photo => {
       if (photo.id === photoId) {
+        const currentComments = Array.isArray(photo.comentarios) ? photo.comentarios : [];
         return {
           ...photo,
-          comentarios: [
-            ...photo.comentarios,
-            {
-              id: `pc-${Date.now()}`,
-              autorId: currentUserId,
-              autorNombre: `${currentUser.nombre} ${currentUser.apellidos}`.trim() || 'Usuario',
-              autorAvatar: currentUser.avatar,
-              texto: comentario.trim(),
-              fecha: 'Ahora mismo'
-            }
-          ]
+          comentarios: [...currentComments, newComment]
         };
       }
       return photo;
@@ -2025,20 +2032,23 @@ const addDeletedMessageIds = (ids: string[]) => {
 
   const addPhotoTag = useCallback((photoId: string, targetUserId: string, x: number, y: number) => {
     const target = users.find(u => u.id === targetUserId);
+    const targetName = target ? `${target.nombre} ${target.apellidos}`.trim() : 'Usuario';
+    const newTag: PhotoTag = {
+      id: `tag-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      photoId,
+      userId: targetUserId,
+      usuarioId: targetUserId,
+      userName: targetName,
+      nombre: targetName,
+      x,
+      y
+    };
     setPhotos(prev => prev.map(photo => {
       if (photo.id === photoId) {
+        const currentTags = Array.isArray(photo.etiquetas) ? photo.etiquetas : [];
         return {
           ...photo,
-          etiquetas: [
-            ...photo.etiquetas,
-            {
-              id: `tag-${Date.now()}`,
-              usuarioId: targetUserId,
-              nombre: target ? `${target.nombre} ${target.apellidos}`.trim() : 'Usuario',
-              x,
-              y
-            }
-          ]
+          etiquetas: [...currentTags, newTag]
         };
       }
       return photo;
@@ -2046,7 +2056,13 @@ const addDeletedMessageIds = (ids: string[]) => {
   }, [users]);
 
   const removePhotoTag = useCallback((photoId: string, tagId: string) => {
-    setPhotos(prev => prev.map(p => p.id === photoId ? { ...p, etiquetas: p.etiquetas.filter(t => t.id !== tagId) } : p));
+    setPhotos(prev => prev.map(p => {
+      if (p.id === photoId) {
+        const currentTags = Array.isArray(p.etiquetas) ? p.etiquetas : [];
+        return { ...p, etiquetas: currentTags.filter(t => t.id !== tagId) };
+      }
+      return p;
+    }));
   }, []);
 
   const setChatEstado = useCallback((estado: '1' | '0') => {

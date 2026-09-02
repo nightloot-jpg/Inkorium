@@ -264,7 +264,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
           </div>
           <div className="flex items-center gap-1 text-[9px] text-gray-400 mt-0.5 px-1">
             <span>{msg.fecha}</span>
-            {isMe && <CheckCheck className="w-3 h-3 text-[#3869A0]/80" title="Enviado" />}
+            {isMe && <span title="Enviado"><CheckCheck className="w-3 h-3 text-[#3869A0]/80" /></span>}
           </div>
         </div>
       );
