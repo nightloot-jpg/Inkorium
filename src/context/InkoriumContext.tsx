@@ -656,12 +656,30 @@ const addDeletedMessageIds = (ids: string[]) => {
           const storedPresence = localStorage.getItem('inkorium:presence') as UserPresence | null;
           let combined = mapped.length > 0 ? mapped : INITIAL_USERS;
           
-          // Keep current user in list if not in mapped or preserve local custom avatar/edits
+          // Preserve local custom edits for any user
+          combined = combined.map(u => {
+            const existing = prevUsers.find(p => p.id === u.id);
+            if (!existing) return u;
+            return {
+              ...u,
+              nombre: existing.nombre || u.nombre,
+              apellidos: existing.apellidos || u.apellidos,
+              avatar: existing.avatar || u.avatar,
+              provincia: existing.provincia || u.provincia,
+              ciudad: existing.ciudad || u.ciudad,
+              situacionSentimental: existing.situacionSentimental || u.situacionSentimental,
+              fnac: existing.fnac || u.fnac,
+              ocupacion: existing.ocupacion || u.ocupacion,
+              intereses: existing.intereses || u.intereses,
+              musica: existing.musica || u.musica,
+              estado: existing.estado || u.estado
+            };
+          });
+
+          // Keep current user in list if not in mapped
           const existingCurrent = prevUsers.find(u => u.id === curId);
           if (existingCurrent && !combined.some(u => u.id === curId)) {
             combined = [existingCurrent, ...combined];
-          } else if (existingCurrent) {
-            combined = combined.map(u => u.id === curId ? { ...u, avatar: existingCurrent.avatar || u.avatar, nombre: existingCurrent.nombre || u.nombre } : u);
           }
 
           for (const initUser of INITIAL_USERS) {
@@ -1148,6 +1166,11 @@ const addDeletedMessageIds = (ids: string[]) => {
             playMessageSound();
           } catch {}
         }
+      } else if (event.type === 'PROFILE_UPDATE') {
+        const { userId, data } = event.payload;
+        if (userId && data) {
+          setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...data } : u));
+        }
       }
     });
 
@@ -1225,9 +1248,40 @@ const addDeletedMessageIds = (ids: string[]) => {
       const updated = prev.map(user => user.id === currentUserId ? { ...user, ...data } : user);
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('inkorium:users', JSON.stringify(updated));
+        const currentUpdated = updated.find(u => u.id === currentUserId);
+        if (currentUpdated) {
+          localStorage.setItem(`inkorium:user_profile_${currentUserId}`, JSON.stringify(currentUpdated));
+        }
       }
       return updated;
     });
+
+    broadcastCrossTabEvent({
+      type: 'PROFILE_UPDATE',
+      payload: { userId: currentUserId, data }
+    });
+
+    // Remote sync in background
+    void (async () => {
+      try {
+        let token = '';
+        if (supabase) {
+          const session = await supabase.auth.getSession().catch(() => null);
+          token = session?.data?.session?.access_token || '';
+        }
+        await fetch(`/api/profiles/${encodeURIComponent(currentUserId)}`, {
+          method: 'PATCH',
+          credentials: 'omit',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify(data)
+        }).catch(() => null);
+      } catch (err) {
+        console.warn('Profile remote update warning:', err);
+      }
+    })();
   }, [currentUserId]);
 
   const updateStatusText = useCallback(async (statusText: string) => {

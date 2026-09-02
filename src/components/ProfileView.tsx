@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { ActivityLog } from './ActivityLog';
 import { AvatarModal } from './AvatarModal';
+import { EditProfileModal } from './EditProfileModal';
 import { 
   UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon, 
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
@@ -88,6 +89,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const [newStatusText, setNewStatusText] = useState(profileUser.estado);
   const [showDirectMessageModal, setShowDirectMessageModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showPresenceMenu, setShowPresenceMenu] = useState(false);
   const [mpSubject, setMpSubject] = useState('');
   const [mpBody, setMpBody] = useState('');
@@ -386,10 +388,10 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                   <span>Cambiar avatar</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('ajustes')}
-                  className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                  onClick={() => setShowEditProfileModal(true)}
+                  className="px-3 py-1.5 bg-white hover:bg-gray-50 text-[#3869A0] border border-[#3869A0]/40 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer hover:border-[#3869A0]"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-gray-600" />
+                  <Edit3 className="w-3.5 h-3.5 text-[#3869A0]" />
                   <span>Editar mis datos</span>
                 </button>
                 <button
@@ -815,9 +817,21 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
           <div className="lg:col-span-3 space-y-4">
             {/* Datos Personales Card */}
             <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-3">
-              <div className="font-bold text-gray-800 pb-1.5 border-b border-gray-200 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#3869A0]" />
-                <span>Información personal</span>
+              <div className="font-bold text-gray-800 pb-1.5 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#3869A0]" />
+                  <span>Información personal</span>
+                </div>
+                {isOwnProfile && (
+                  <button
+                    onClick={() => setShowEditProfileModal(true)}
+                    className="text-[#3869A0] hover:text-[#2c537f] hover:underline font-bold text-[11px] flex items-center gap-1 cursor-pointer transition"
+                    title="Editar mis datos personales"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Editar</span>
+                  </button>
+                )}
               </div>
 
               <div className="space-y-2 text-gray-700">
@@ -1248,6 +1262,13 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
       <AvatarModal
         isOpen={showAvatarModal}
         onClose={() => setShowAvatarModal(false)}
+      />
+
+      {/* Personal Info Edit Modal */}
+      <EditProfileModal
+        isOpen={showEditProfileModal}
+        onClose={() => setShowEditProfileModal(false)}
+        onOpenAvatarModal={() => setShowAvatarModal(true)}
       />
     </div>
   );

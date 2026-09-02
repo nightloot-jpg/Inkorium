@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { AvatarModal } from './AvatarModal';
 import { 
@@ -14,6 +14,7 @@ export const SettingsView: React.FC = () => {
     currentUser,
     friendRequests,
     notifications,
+    pushNotification,
     accessLogs,
     isRealtimeSimulationEnabled,
     setIsRealtimeSimulationEnabled,
@@ -44,16 +45,29 @@ export const SettingsView: React.FC = () => {
   const [themeNotification, setThemeNotification] = useState<string | null>(null);
 
   // Form states for personal data
-  const [nombre, setNombre] = useState(currentUser.nombre);
-  const [apellidos, setApellidos] = useState(currentUser.apellidos);
-  const [sexo, setSexo] = useState<Gender>(currentUser.sexo);
-  const [fnac, setFnac] = useState(currentUser.fnac);
-  const [provincia, setProvincia] = useState(currentUser.provincia);
-  const [situacion, setSituacion] = useState<RelationshipStatus>(currentUser.situacionSentimental);
+  const [nombre, setNombre] = useState(currentUser.nombre || '');
+  const [apellidos, setApellidos] = useState(currentUser.apellidos || '');
+  const [sexo, setSexo] = useState<Gender>(currentUser.sexo || 'h');
+  const [fnac, setFnac] = useState(currentUser.fnac || '1992-05-15');
+  const [provincia, setProvincia] = useState(currentUser.provincia || 'Madrid');
+  const [situacion, setSituacion] = useState<RelationshipStatus>(currentUser.situacionSentimental || 'Soltero/a');
   const [ocupacion, setOcupacion] = useState(currentUser.ocupacion || '');
   const [intereses, setIntereses] = useState(currentUser.intereses || '');
   const [musica, setMusica] = useState(currentUser.musica || '');
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Sync state when currentUser updates
+  useEffect(() => {
+    setNombre(currentUser.nombre || '');
+    setApellidos(currentUser.apellidos || '');
+    setSexo(currentUser.sexo || 'h');
+    setFnac(currentUser.fnac || '1992-05-15');
+    setProvincia(currentUser.provincia || 'Madrid');
+    setSituacion(currentUser.situacionSentimental || 'Soltero/a');
+    setOcupacion(currentUser.ocupacion || '');
+    setIntereses(currentUser.intereses || '');
+    setMusica(currentUser.musica || '');
+  }, [currentUser]);
 
   // Security password & email change states
   const [newEmail, setNewEmail] = useState('');
@@ -66,9 +80,12 @@ export const SettingsView: React.FC = () => {
 
   const handleSaveData = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!nombre.trim()) return;
+
     updateUserData({
       nombre: nombre.trim(),
       apellidos: apellidos.trim(),
+      full_name: `${nombre.trim()} ${apellidos.trim()}`.trim(),
       sexo,
       fnac,
       provincia,
@@ -77,7 +94,18 @@ export const SettingsView: React.FC = () => {
       intereses: intereses.trim(),
       musica: musica.trim()
     });
+
     setSavedSuccess(true);
+    pushNotification({
+      id: `notif-settings-save-${Date.now()}`,
+      tipo: 'sistema',
+      userId: currentUser.id,
+      fromUserId: currentUser.id,
+      fromUserName: 'Inkorium Sistema',
+      mensaje: 'Has actualizado los datos de tu cuenta correctamente.',
+      fecha: 'Ahora mismo',
+      leido: true
+    });
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
@@ -201,23 +229,23 @@ export const SettingsView: React.FC = () => {
 
         {/* ================= MAIN SETTINGS SECTION ================= */}
         <div className="md:col-span-8 lg:col-span-9 space-y-4">
-          <div className="bg-white rounded border border-[#ccd5df] p-4 shadow-xs min-h-[400px]">
+          <div className="bg-white dark:bg-[#0e1726] rounded border border-[#ccd5df] dark:border-[#1d2b40] p-4 shadow-xs min-h-[400px]">
             {/* ================= 1. DATOS DE LA CUENTA ================= */}
             {section === 'datos' && (
-              <div className="space-y-4 text-xs">
-                <div className="flex items-center justify-between pb-2 border-b border-gray-200">
-                  <h2 className="font-bold text-sm text-gray-900">Editar datos personales</h2>
+              <div className="space-y-4 text-xs text-gray-800 dark:text-gray-100">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-slate-800">
+                  <h2 className="font-bold text-sm text-gray-900 dark:text-white">Editar datos personales</h2>
                   {savedSuccess && (
-                    <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                    <span className="text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
                       <Check className="w-3.5 h-3.5" /> Guardado correctamente
                     </span>
                   )}
                 </div>
 
                 {/* Avatar / Foto de Perfil Quick Card */}
-                <div className="p-3.5 bg-gradient-to-r from-blue-50/70 to-slate-50 border border-blue-200/80 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="p-3.5 bg-gradient-to-r from-blue-50/70 to-slate-50 dark:from-[#152338]/60 dark:to-[#0f1b2c]/80 border border-blue-200/80 dark:border-[#1d2b40] rounded-lg flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="relative group w-16 h-16 rounded-full overflow-hidden border-2 border-[#3869A0] shadow-xs flex-shrink-0 bg-white">
+                    <div className="relative group w-16 h-16 rounded-full overflow-hidden border-2 border-[#3869A0] shadow-xs flex-shrink-0 bg-white dark:bg-slate-800">
                       <img
                         src={currentUser.avatar}
                         alt={currentUser.nombre}
@@ -232,11 +260,11 @@ export const SettingsView: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <div className="font-bold text-gray-800 text-xs flex items-center gap-1.5">
+                      <div className="font-bold text-gray-800 dark:text-gray-200 text-xs flex items-center gap-1.5">
                         <span>Foto de perfil / Avatar</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-100 text-[#3869A0] font-semibold">Subida activa</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-900/60 text-[#3869A0] dark:text-blue-300 font-semibold">Subida activa</span>
                       </div>
-                      <p className="text-[11px] text-gray-500 mt-0.5">
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                         Esta imagen se mostrará en tu perfil, tus tablones, fotos y comentarios.
                       </p>
                     </div>
@@ -255,23 +283,23 @@ export const SettingsView: React.FC = () => {
                 <form onSubmit={handleSaveData} className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="font-bold text-gray-700 block mb-1">Nombre:</label>
+                      <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Nombre:</label>
                       <input
                         type="text"
                         value={nombre}
                         onChange={e => setNombre(e.target.value)}
-                        className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                        className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="font-bold text-gray-700 block mb-1">Apellidos:</label>
+                      <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Apellidos:</label>
                       <input
                         type="text"
                         value={apellidos}
                         onChange={e => setApellidos(e.target.value)}
-                        className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                        className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
                         required
                       />
                     </div>
@@ -279,24 +307,25 @@ export const SettingsView: React.FC = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="font-bold text-gray-700 block mb-1">Sexo:</label>
+                      <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Sexo:</label>
                       <select
                         value={sexo}
                         onChange={e => setSexo(e.target.value as Gender)}
-                        className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] bg-white"
+                        className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
                       >
                         <option value="h">Hombre (Chico)</option>
                         <option value="m">Mujer (Chica)</option>
+                        <option value="otro">Otro</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="font-bold text-gray-700 block mb-1">Fecha de nacimiento:</label>
+                      <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Fecha de nacimiento:</label>
                       <input
                         type="date"
                         value={fnac}
                         onChange={e => setFnac(e.target.value)}
-                        className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                        className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
                         required
                       />
                     </div>
@@ -304,11 +333,11 @@ export const SettingsView: React.FC = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="font-bold text-gray-700 block mb-1">Provincia:</label>
+                      <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Provincia:</label>
                       <select
                         value={provincia}
                         onChange={e => setProvincia(e.target.value)}
-                        className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] bg-white"
+                        className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
                       >
                         {PROVINCIAS_ESPANA.map(p => (
                           <option key={p} value={p}>{p}</option>
@@ -317,11 +346,11 @@ export const SettingsView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="font-bold text-gray-700 block mb-1">Situación sentimental:</label>
+                      <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Situación sentimental:</label>
                       <select
                         value={situacion}
                         onChange={e => setSituacion(e.target.value as RelationshipStatus)}
-                        className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] bg-white"
+                        className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
                       >
                         <option value="Soltero/a">Soltero/a</option>
                         <option value="Con pareja">Con pareja</option>
@@ -329,44 +358,47 @@ export const SettingsView: React.FC = () => {
                         <option value="Es complicado">Es complicado</option>
                         <option value="De fiesta en fiesta">De fiesta en fiesta</option>
                         <option value="Casado/a">Casado/a</option>
+                        <option value="En una relación abierta">En una relación abierta</option>
+                        <option value="Buscando el amor">Buscando el amor</option>
+                        <option value="Prefiero no decirlo">Prefiero no decirlo</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="font-bold text-gray-700 block mb-1">Ocupación / Qué haces:</label>
+                    <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Ocupación / Qué haces:</label>
                     <input
                       type="text"
                       placeholder="Ej: Estudiante de Ingeniería, Diseño Gráfico..."
                       value={ocupacion}
                       onChange={e => setOcupacion(e.target.value)}
-                      className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                      className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
                     />
                   </div>
 
                   <div>
-                    <label className="font-bold text-gray-700 block mb-1">Intereses y aficiones:</label>
+                    <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Intereses y aficiones:</label>
                     <input
                       type="text"
                       placeholder="Ej: Skate, fotografía analógica, videojuegos, salir..."
                       value={intereses}
                       onChange={e => setIntereses(e.target.value)}
-                      className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                      className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
                     />
                   </div>
 
                   <div>
-                    <label className="font-bold text-gray-700 block mb-1">Música favorita:</label>
+                    <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Música favorita (Canción del perfil):</label>
                     <input
                       type="text"
                       placeholder="Ej: El Canto del Loco, Arctic Monkeys, Vetusta Morla..."
                       value={musica}
                       onChange={e => setMusica(e.target.value)}
-                      className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                      className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
                     />
                   </div>
 
-                  <div className="pt-3 border-t border-gray-200 flex justify-end">
+                  <div className="pt-3 border-t border-gray-200 dark:border-slate-800 flex justify-end">
                     <button
                       type="submit"
                       className="px-5 py-2 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold rounded transition shadow-xs cursor-pointer text-xs"

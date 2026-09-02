@@ -167,6 +167,7 @@ const inMemoryPosts: any[] = [];
 const inMemoryMessages: any[] = [];
 const inMemoryChatMessages: any[] = [];
 const inMemoryPhotos: any[] = [];
+const inMemoryProfiles = new Map<string, any>();
 
 // ==========================================
 // REAL-TIME SERVER-SENT EVENTS (SSE) ENGINE
@@ -658,7 +659,6 @@ app.post('/api/chat-messages', async (req, res) => {
 app.get('/api/profiles', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig(); 
-    if (!supabaseKey) return res.status(200).json([]);
     const query = new URLSearchParams(); 
     for (const [key, value] of Object.entries(req.query)) { 
       if (Array.isArray(value)) value.forEach(item => query.append(key, String(item))); 
@@ -666,22 +666,112 @@ app.get('/api/profiles', async (req, res) => {
     }
     if (!query.has('select')) query.set('select', 'id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at'); 
     if (!query.has('limit')) query.set('limit', '1000');
-    try {
-      const upstream = await fetch(`${supabaseUrl}/rest/v1/profiles?${query.toString()}`, { 
-        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, Accept: 'application/json' } 
-      }); 
-      const body = await upstream.text();
-      if (!upstream.ok || body.trim().startsWith('<')) {
-        return res.status(200).json([]);
+
+    let profilesList: any[] = [];
+    if (supabaseKey) {
+      try {
+        const upstream = await fetch(`${supabaseUrl}/rest/v1/profiles?${query.toString()}`, { 
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, Accept: 'application/json' } 
+        }); 
+        const body = await upstream.text();
+        if (upstream.ok && !body.trim().startsWith('<')) {
+          const data = JSON.parse(body);
+          if (Array.isArray(data)) {
+            profilesList = data;
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase profiles query error:', err);
       }
-      const data = JSON.parse(body);
-      return res.status(200).json(Array.isArray(data) ? data : []);
-    } catch {
-      return res.status(200).json([]);
     }
+
+    // Merge with in-memory edited profiles
+    if (inMemoryProfiles.size > 0) {
+      const mergedMap = new Map<string, any>();
+      for (const p of profilesList) {
+        mergedMap.set(String(p.id), p);
+      }
+      for (const [id, memProf] of inMemoryProfiles.entries()) {
+        const existing = mergedMap.get(id) || {};
+        mergedMap.set(id, { ...existing, ...memProf, id });
+      }
+      profilesList = Array.from(mergedMap.values());
+    }
+
+    return res.status(200).json(profilesList);
   } catch (err: any) { 
-    console.warn('Supabase profiles proxy fallback to empty list:', err?.message); 
-    return res.status(200).json([]); 
+    console.warn('Supabase profiles proxy fallback to inMemory:', err?.message); 
+    return res.status(200).json(Array.from(inMemoryProfiles.values())); 
+  }
+});
+
+app.patch('/api/profiles/:id', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey, serviceRoleKey, jwtSecret } = getSupabaseConfig();
+    const profileId = String(req.params.id || '').trim();
+    if (!profileId) return res.status(400).json({ error: 'INVALID_PROFILE_ID' });
+
+    const payload = req.body || {};
+    const token = extractToken(req);
+
+    // Normalize field updates
+    const updateObj: Record<string, any> = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (payload.full_name !== undefined) updateObj.full_name = String(payload.full_name || '').trim();
+    else if (payload.nombre !== undefined || payload.apellidos !== undefined) {
+      updateObj.full_name = `${payload.nombre || ''} ${payload.apellidos || ''}`.trim();
+    }
+    if (payload.username !== undefined) updateObj.username = String(payload.username || '').trim();
+    if (payload.avatar_url !== undefined) updateObj.avatar_url = String(payload.avatar_url || '').trim();
+    else if (payload.avatar !== undefined) updateObj.avatar_url = String(payload.avatar || '').trim();
+    if (payload.city !== undefined) updateObj.city = String(payload.city || '').trim();
+    else if (payload.provincia !== undefined) updateObj.city = String(payload.provincia || '').trim();
+    else if (payload.ciudad !== undefined) updateObj.city = String(payload.ciudad || '').trim();
+    if (payload.birth_date !== undefined) updateObj.birth_date = String(payload.birth_date || '').trim();
+    else if (payload.fnac !== undefined) updateObj.birth_date = String(payload.fnac || '').trim();
+    if (payload.gender !== undefined) updateObj.gender = String(payload.gender || '').trim();
+    else if (payload.sexo !== undefined) updateObj.gender = String(payload.sexo || '').trim();
+    if (payload.user_status !== undefined) updateObj.user_status = String(payload.user_status || '').trim();
+    else if (payload.estado !== undefined) updateObj.user_status = String(payload.estado || '').trim();
+    if (payload.relationship_status !== undefined) updateObj.relationship_status = String(payload.relationship_status || '').trim();
+    else if (payload.situacionSentimental !== undefined) updateObj.relationship_status = String(payload.situacionSentimental || '').trim();
+    if (payload.occupation !== undefined) updateObj.occupation = String(payload.occupation || '').trim();
+    else if (payload.ocupacion !== undefined) updateObj.occupation = String(payload.ocupacion || '').trim();
+    if (payload.profile_interests !== undefined) updateObj.profile_interests = payload.profile_interests;
+    else if (payload.intereses !== undefined) updateObj.profile_interests = String(payload.intereses || '').trim();
+    if (payload.music !== undefined) updateObj.music = String(payload.music || '').trim();
+    else if (payload.musica !== undefined) updateObj.music = String(payload.musica || '').trim();
+    if (payload.email !== undefined) updateObj.email = String(payload.email || '').trim();
+
+    // Cache in in-memory map
+    const existing = inMemoryProfiles.get(profileId) || {};
+    inMemoryProfiles.set(profileId, { ...existing, ...updateObj, id: profileId });
+
+    if (supabaseKey) {
+      const authorId = token ? await verifySupabaseJwt(token, supabaseUrl, jwtSecret) : profileId;
+      const key = serviceRoleKey || supabaseKey;
+      const authorization = serviceRoleKey ? `Bearer ${serviceRoleKey}` : (token ? `Bearer ${token}` : `Bearer ${supabaseKey}`);
+      try {
+        await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profileId)}`, {
+          method: 'PATCH',
+          headers: {
+            apikey: key,
+            Authorization: authorization,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation'
+          },
+          body: JSON.stringify(updateObj)
+        });
+      } catch (err) {
+        console.warn('Supabase profile direct PATCH warning:', err);
+      }
+    }
+
+    return res.status(200).json({ success: true, profile: { id: profileId, ...updateObj } });
+  } catch (err: any) {
+    return res.status(200).json({ success: true, local: true });
   }
 });
 

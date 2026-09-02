@@ -22,7 +22,8 @@ export type InkoriumCrossTabEvent =
   | { type: 'CHAT_MESSAGE'; payload: { message: ChatMessage; targetUserId: string; senderUserId: string } }
   | { type: 'PEER_TYPING'; payload: { targetUserId: string; isTyping: boolean } }
   | { type: 'PRIVATE_MESSAGE'; payload: { message: any; recipientId: string } }
-  | { type: 'NOTIFICATION'; payload: { notification: any } };
+  | { type: 'NOTIFICATION'; payload: { notification: any } }
+  | { type: 'PROFILE_UPDATE'; payload: { userId: string; data: any } };
 
 export function broadcastCrossTabEvent(event: InkoriumCrossTabEvent): void {
   try {
