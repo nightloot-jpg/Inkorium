@@ -73,6 +73,8 @@ export interface PhotoComment {
   fecha: string;
 }
 
+export type PhotoPrivacy = 'amigos' | 'publica' | 'eleccion';
+
 export interface Photo {
   id: string;
   uploaderId: string;
@@ -85,6 +87,8 @@ export interface Photo {
   etiquetas: PhotoTag[];
   comentarios: PhotoComment[];
   likes: string[]; // userIds
+  privacidad?: PhotoPrivacy; // 'amigos' | 'publica' | 'eleccion'
+  allowedUserIds?: string[]; // IDs de usuarios autorizados cuando privacidad es 'eleccion'
 }
 
 export interface Album {

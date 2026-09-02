@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag } from '../types';
+import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag, PhotoPrivacy } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
 import { fetchPhotos, insertPhoto } from '../lib/photosApi';
@@ -39,7 +39,10 @@ interface InkoriumContextType {
   publishStatus: (statusText: string, attachedPhotoUrl?: string) => void; updateStatusText: (statusText: string) => void;
   updateUserPresence: (presencia: UserPresence) => void; likeFeedItem: (feedId: string) => void; commentFeedItem: (feedId: string, text: string) => void;
   postWallComment: (receptorId: string, text: string) => void; deleteWallComment: (commentId: string) => void;
-  uploadPhoto: (titulo: string, albumId: string | null, archivoUrl: string) => void; addPhotoTag: (photoId: string, targetUserId: string, x: number, y: number) => void;
+  uploadPhoto: (titulo: string, albumId: string | null, archivoUrl: string, privacidad?: PhotoPrivacy, allowedUserIds?: string[]) => void;
+  updatePhotoPrivacy: (photoId: string, privacidad: PhotoPrivacy, allowedUserIds?: string[]) => void;
+  canUserViewPhoto: (photo: Photo, viewerUserId?: string) => boolean;
+  addPhotoTag: (photoId: string, targetUserId: string, x: number, y: number) => void;
   removePhotoTag: (photoId: string, tagId: string) => void; addPhotoComment: (photoId: string, comentario: string) => void; likePhoto: (photoId: string) => void;
   setPhotoAsAvatar: (photoId: string) => void; deletePhoto: (photoId: string) => void; createAlbum: (nombre: string, descripcion?: string) => void;
   renameAlbum: (albumId: string, nuevoNombre: string) => void; deleteAlbum: (albumId: string) => void;
@@ -115,7 +118,25 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (storedUserId && !isMockId(storedUserId)) return storedUserId;
     return '';
   });
-  const [photos, setPhotos] = useState<Photo[]>(INITIAL_PHOTOS);
+  const [photos, setPhotos] = useState<Photo[]>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:photos');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return INITIAL_PHOTOS;
+  });
+
+  // Sync photos to localStorage
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('inkorium:photos', JSON.stringify(photos));
+    }
+  }, [photos]);
   const [albums, setAlbums] = useState<Album[]>(INITIAL_ALBUMS);
   const [feed, setFeed] = useState<FeedItem[]>(INITIAL_FEED);
   const [wallComments, setWallComments] = useState<WallComment[]>(() => {
@@ -1219,7 +1240,13 @@ const addDeletedMessageIds = (ids: string[]) => {
     });
   }, [currentUser, users, currentUserId]);
 
-  const uploadPhoto = useCallback((titulo: string, albumId: string | null, archivoUrl: string) => {
+  const uploadPhoto = useCallback((
+    titulo: string, 
+    albumId: string | null, 
+    archivoUrl: string, 
+    privacidad: PhotoPrivacy = 'amigos', 
+    allowedUserIds: string[] = []
+  ) => {
     if (!currentUserId || !archivoUrl) return;
     const optimisticId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const optimistic: Photo = {
@@ -1232,11 +1259,21 @@ const addDeletedMessageIds = (ids: string[]) => {
       fecha: new Date().toLocaleString('es-ES'),
       etiquetas: [],
       comentarios: [],
-      likes: []
+      likes: [],
+      privacidad,
+      allowedUserIds: privacidad === 'eleccion' ? allowedUserIds : []
     };
     setPhotos(prev => [optimistic, ...prev]);
-    void insertPhoto({ userId: currentUserId, albumId, url: archivoUrl, caption: titulo || 'Sin título' }).then(row => {
-      setPhotos(prev => [mapPhotoToPhoto(row), ...prev.filter(photo => photo.id !== optimisticId)]);
+
+    const apiVisibility = privacidad === 'publica' ? 'public' : privacidad === 'eleccion' ? 'private' : 'friends';
+    void insertPhoto({ 
+      userId: currentUserId, 
+      albumId, 
+      url: archivoUrl, 
+      caption: titulo || 'Sin título',
+      visibility: apiVisibility
+    }).then(row => {
+      setPhotos(prev => [{ ...mapPhotoToPhoto(row), privacidad, allowedUserIds }, ...prev.filter(photo => photo.id !== optimisticId)]);
     }).catch(error => {
       console.warn('Photo persistence local fallback:', error);
     });
@@ -1593,6 +1630,49 @@ const addDeletedMessageIds = (ids: string[]) => {
       .map(f => f.user1 === userId ? f.user2 : f.user1);
     return users.filter(u => friendIds.includes(u.id));
   }, [friendships, users]);
+
+  const canUserViewPhoto = useCallback((photo: Photo, viewerUserId?: string): boolean => {
+    if (!photo) return false;
+    const vId = viewerUserId || currentUserId;
+
+    // El propio autor de la foto siempre tiene permiso de verla
+    if (vId && photo.uploaderId === vId) return true;
+
+    const priv: PhotoPrivacy = photo.privacidad || 'publica';
+    if (priv === 'publica') return true;
+
+    if (!vId) return false; // Usuario no logueado y foto no pública
+
+    if (priv === 'amigos') {
+      return isFriend(photo.uploaderId, vId);
+    }
+
+    if (priv === 'eleccion') {
+      const allowed = Array.isArray(photo.allowedUserIds) ? photo.allowedUserIds : [];
+      return allowed.includes(vId);
+    }
+
+    return true;
+  }, [currentUserId, isFriend]);
+
+  const updatePhotoPrivacy = useCallback((photoId: string, privacidad: PhotoPrivacy, allowedUserIds: string[] = []) => {
+    setPhotos(prev => {
+      const updated = prev.map(p => {
+        if (p.id === photoId) {
+          return {
+            ...p,
+            privacidad,
+            allowedUserIds: privacidad === 'eleccion' ? allowedUserIds : []
+          };
+        }
+        return p;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:photos', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, []);
 
   // ================= PRIVATE MESSAGES =================
   const sendPrivateMessage = useCallback((receptorId: string, asunto: string, mensaje: string) => {
@@ -2156,7 +2236,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       setActiveTab, viewUserProfile, openComposeMessage, viewPhoto, viewAlbum, setCurrentUserById,
       login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence,
       likeFeedItem, commentFeedItem, postWallComment, deleteWallComment,
-      uploadPhoto, addPhotoTag, removePhotoTag, addPhotoComment, likePhoto,
+      uploadPhoto, updatePhotoPrivacy, canUserViewPhoto, addPhotoTag, removePhotoTag, addPhotoComment, likePhoto,
       setPhotoAsAvatar, deletePhoto, createAlbum, renameAlbum, deleteAlbum,
       sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, removeFriendship, cancelFriendRequest, isFriend, hasPendingRequest, getFriendsOf,
       sendPrivateMessage, markMessageAsRead, deleteMessage, deleteConversation,

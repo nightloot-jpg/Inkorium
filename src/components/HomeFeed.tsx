@@ -42,7 +42,8 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
     setChatEstado,
     musicPlaylist,
     currentTrack,
-    isMusicPlaying
+    isMusicPlaying,
+    canUserViewPhoto
   } = useInkorium();
 
   const [statusText, setStatusText] = useState('');
@@ -120,6 +121,13 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
 
   // Filter feed items
   const filteredFeed = feed.filter(item => {
+    // If it is a photo feed item or has an associated photoId, check privacy
+    if (item.fotoId) {
+      const associatedPhoto = photos.find(p => p.id === item.fotoId);
+      if (associatedPhoto && !canUserViewPhoto(associatedPhoto, currentUser.id)) {
+        return false;
+      }
+    }
     if (activeFilter === 'estados') return item.tipo === 'estado';
     if (activeFilter === 'fotos') return item.tipo === 'foto' || item.tipo === 'album';
     if (activeFilter === 'tablon') return item.tipo === 'tablon';

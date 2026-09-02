@@ -52,7 +52,8 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     currentTrack,
     isMusicPlaying,
     togglePlayMusic,
-    openMusicPlayer
+    openMusicPlayer,
+    canUserViewPhoto
   } = useInkorium();
 
   const profileUser = users.find(u => u.id === selectedUserId) || currentUser;
@@ -96,10 +97,14 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
 
   const userPresence: UserPresence = profileUser.presencia || (profileUser.online ? 'conectado' : 'invisible');
 
-  // Photos of this user
-  const userPhotos = photos.filter(p => p.uploaderId === profileUser.id);
-  // Tagged photos
-  const taggedPhotos = photos.filter(p => Array.isArray(p.etiquetas) && p.etiquetas.some(t => t.userId === profileUser.id || t.usuarioId === profileUser.id));
+  // Photos of this user (filtered by privacy permissions)
+  const userPhotos = photos.filter(p => p.uploaderId === profileUser.id && canUserViewPhoto(p, currentUser.id));
+  // Tagged photos (filtered by privacy permissions)
+  const taggedPhotos = photos.filter(p => 
+    Array.isArray(p.etiquetas) && 
+    p.etiquetas.some(t => t.userId === profileUser.id || t.usuarioId === profileUser.id) &&
+    canUserViewPhoto(p, currentUser.id)
+  );
   // User's custom albums
   const userAlbums = albums.filter(a => a.userId === profileUser.id);
 

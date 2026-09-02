@@ -3,9 +3,10 @@ import { useInkorium } from '../context/InkoriumContext';
 import { 
   ChevronLeft, ChevronRight, X, Heart, MessageSquare, 
   Tag, Trash2, Send, Download, 
-  Maximize2, Minimize2, Smile, Folder, Calendar, Camera, Check, Search, UserPlus
+  Maximize2, Minimize2, Smile, Folder, Calendar, Camera, Check, Search, UserPlus,
+  Globe, Users, Lock, UserCheck, ShieldCheck, CheckSquare, Square
 } from 'lucide-react';
-import { PhotoTag, PhotoComment, Photo } from '../types';
+import { PhotoTag, PhotoComment, Photo, PhotoPrivacy } from '../types';
 
 const TUENTI_EMOTICONS = [
   { text: ':) ', label: 'Sonrisa' },
@@ -36,7 +37,10 @@ export const PhotoLightbox: React.FC = () => {
     addPhotoTag,
     removePhotoTag,
     setPhotoAsAvatar,
-    deletePhoto
+    deletePhoto,
+    canUserViewPhoto,
+    updatePhotoPrivacy,
+    getFriendsOf
   } = useInkorium();
 
   const [taggingMode, setTaggingMode] = useState(false);
@@ -48,6 +52,13 @@ export const PhotoLightbox: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showEmoticons, setShowEmoticons] = useState(false);
   const [avatarSuccess, setAvatarSuccess] = useState(false);
+  
+  // Privacy edit modal state
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [editPrivacy, setEditPrivacy] = useState<PhotoPrivacy>('amigos');
+  const [editAllowedUsers, setEditAllowedUsers] = useState<string[]>([]);
+  const [privacySearchQuery, setPrivacySearchQuery] = useState('');
+
   const commentInputRef = useRef<HTMLInputElement>(null);
 
   // Active photo list (scoped to album if an album is selected, otherwise all photos)
@@ -233,6 +244,75 @@ export const PhotoLightbox: React.FC = () => {
     a.click();
     document.body.removeChild(a);
   };
+
+  // Check viewer permission
+  const isAllowedToView = photo ? canUserViewPhoto(photo, currentUser?.id) : true;
+
+  const handleOpenPrivacyModal = () => {
+    if (!photo) return;
+    setEditPrivacy(photo.privacidad || 'amigos');
+    setEditAllowedUsers(photo.allowedUserIds || []);
+    setPrivacySearchQuery('');
+    setShowPrivacyModal(true);
+  };
+
+  const handleSavePrivacy = () => {
+    if (!photo) return;
+    updatePhotoPrivacy(photo.id, editPrivacy, editAllowedUsers);
+    setShowPrivacyModal(false);
+  };
+
+  const myFriends = useMemo(() => {
+    if (!currentUser) return [];
+    const friends = getFriendsOf(currentUser.id);
+    return friends.length > 0 ? friends : users.filter(u => u.id !== currentUser.id);
+  }, [getFriendsOf, currentUser, users]);
+
+  const filteredPrivacyFriends = useMemo(() => {
+    if (!privacySearchQuery.trim()) return myFriends;
+    const q = privacySearchQuery.toLowerCase();
+    return myFriends.filter(f => {
+      const name = `${f.nombre} ${f.apellidos}`.toLowerCase();
+      const username = (f.username || '').toLowerCase();
+      const city = (f.ciudad || f.provincia || '').toLowerCase();
+      return name.includes(q) || username.includes(q) || city.includes(q);
+    });
+  }, [myFriends, privacySearchQuery]);
+
+  const toggleEditAllowedUser = (userId: string) => {
+    setEditAllowedUsers(prev =>
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
+
+  if (!isAllowedToView && !isUploader) {
+    return (
+      <div 
+        className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 text-white animate-fade-in"
+        id="inkorium-photo-lightbox-restricted"
+      >
+        <div className="bg-[#1c222c] border border-gray-700 rounded-lg p-6 max-w-md w-full text-center space-y-4 shadow-2xl">
+          <div className="w-14 h-14 mx-auto rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+            <Lock className="w-7 h-7" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-gray-100">Foto privada o restringida</h2>
+            <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
+              Esta foto tiene una configuración de privacidad personalizada por <strong className="text-white">{uploaderName}</strong> y no está disponible para tu cuenta.
+            </p>
+          </div>
+          <div className="pt-2">
+            <button
+              onClick={() => viewPhoto(null)}
+              className="px-5 py-2 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold text-xs rounded transition cursor-pointer"
+            >
+              Cerrar visor
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -670,6 +750,39 @@ export const PhotoLightbox: React.FC = () => {
                 </div>
               )}
 
+              {/* Privacy Setting Indicator & Quick Edit */}
+              <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px]">
+                  {(!photo.privacidad || photo.privacidad === 'amigos') && (
+                    <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-medium">
+                      <Users className="w-3 h-3" />
+                      <span>Solo amigos</span>
+                    </span>
+                  )}
+                  {photo.privacidad === 'publica' && (
+                    <span className="inline-flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 font-medium">
+                      <Globe className="w-3 h-3" />
+                      <span>Pública</span>
+                    </span>
+                  )}
+                  {photo.privacidad === 'eleccion' && (
+                    <span className="inline-flex items-center gap-1 text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 font-medium">
+                      <UserCheck className="w-3 h-3" />
+                      <span>Elección ({(photo.allowedUserIds || []).length} personas)</span>
+                    </span>
+                  )}
+                </div>
+
+                {isUploader && (
+                  <button
+                    onClick={handleOpenPrivacyModal}
+                    className="text-[10px] text-[#3869A0] hover:underline font-bold cursor-pointer"
+                  >
+                    Cambiar
+                  </button>
+                )}
+              </div>
+
               {/* Tagged Friends List ("En esta foto:") */}
               <div className="pt-2 border-t border-gray-100 space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -885,6 +998,176 @@ export const PhotoLightbox: React.FC = () => {
           </aside>
         )}
       </div>
+
+      {/* ================= PRIVACY EDIT MODAL FOR UPLOADER ================= */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 animate-fade-in text-gray-900">
+          <div className="bg-white rounded-lg border border-gray-300 max-w-lg w-full p-4 sm:p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2.5 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-[#3869A0]" />
+                <h3 className="font-bold text-sm text-gray-900">Editar Privacidad de la Foto</h3>
+              </div>
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="text-gray-400 hover:text-gray-700 text-lg font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <p className="text-gray-600">
+                Selecciona quién puede ver esta foto en tu galería y en el feed de Inkorium:
+              </p>
+
+              {/* 3 Privacy choices */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditPrivacy('amigos')}
+                  className={`p-2.5 rounded-lg border text-left transition cursor-pointer flex flex-col justify-between ${
+                    editPrivacy === 'amigos'
+                      ? 'border-[#3869A0] bg-blue-50/80 ring-1 ring-[#3869A0]'
+                      : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-bold text-gray-900 mb-1">
+                    <Users className="w-3.5 h-3.5 text-[#3869A0]" />
+                    <span>Solo amigos</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500">Tus amigos en Inkorium.</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEditPrivacy('publica')}
+                  className={`p-2.5 rounded-lg border text-left transition cursor-pointer flex flex-col justify-between ${
+                    editPrivacy === 'publica'
+                      ? 'border-[#3869A0] bg-blue-50/80 ring-1 ring-[#3869A0]'
+                      : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-bold text-gray-900 mb-1">
+                    <Globe className="w-3.5 h-3.5 text-[#3869A0]" />
+                    <span>Pública</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500">Cualquiera en la red.</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEditPrivacy('eleccion')}
+                  className={`p-2.5 rounded-lg border text-left transition cursor-pointer flex flex-col justify-between ${
+                    editPrivacy === 'eleccion'
+                      ? 'border-[#3869A0] bg-blue-50/80 ring-1 ring-[#3869A0]'
+                      : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-bold text-gray-900 mb-1">
+                    <UserCheck className="w-3.5 h-3.5 text-[#3869A0]" />
+                    <span>Elección</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500">Personas específicas.</p>
+                </button>
+              </div>
+
+              {/* Friend Picker for Elección */}
+              {editPrivacy === 'eleccion' && (
+                <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-gray-800 text-[11px]">
+                      Personas autorizadas ({editAllowedUsers.length}):
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditAllowedUsers(myFriends.map(f => f.id))}
+                        className="text-[10px] text-[#3869A0] hover:underline font-bold cursor-pointer"
+                      >
+                        Todos
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setEditAllowedUsers([])}
+                        className="text-[10px] text-gray-500 hover:text-gray-800 font-semibold cursor-pointer"
+                      >
+                        Ninguno
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Buscar amigo..."
+                      value={privacySearchQuery}
+                      onChange={e => setPrivacySearchQuery(e.target.value)}
+                      className="w-full pl-7 pr-2 py-1 bg-white border border-gray-300 rounded text-xs focus:outline-none focus:border-[#3869A0]"
+                    />
+                  </div>
+
+                  <div className="max-h-36 overflow-y-auto divide-y divide-gray-100 bg-white rounded border border-gray-200">
+                    {filteredPrivacyFriends.map(friend => {
+                      const isSelected = editAllowedUsers.includes(friend.id);
+                      return (
+                        <div
+                          key={friend.id}
+                          onClick={() => toggleEditAllowedUser(friend.id)}
+                          className={`flex items-center justify-between p-1.5 hover:bg-blue-50/50 cursor-pointer transition ${
+                            isSelected ? 'bg-blue-50 font-semibold' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                              {friend.avatar ? (
+                                <img src={friend.avatar} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-[10px] flex items-center justify-center font-bold">
+                                  {friend.nombre.charAt(0)}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-800 truncate">
+                              {friend.nombre} {friend.apellidos}
+                            </span>
+                          </div>
+                          {isSelected ? (
+                            <CheckSquare className="w-3.5 h-3.5 text-[#3869A0]" />
+                          ) : (
+                            <Square className="w-3.5 h-3.5 text-gray-300" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(false)}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-semibold cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSavePrivacy}
+                disabled={editPrivacy === 'eleccion' && editAllowedUsers.length === 0}
+                className="px-4 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white rounded text-xs font-bold transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Guardar cambios</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

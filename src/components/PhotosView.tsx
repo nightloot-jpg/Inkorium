@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { 
   Image as ImageIcon, Plus, Upload, Trash2, Edit2, 
-  Tag, Folder, Sparkles, Heart, MessageSquare
+  Tag, Folder, Sparkles, Heart, MessageSquare,
+  Globe, Users, Lock, UserCheck
 } from 'lucide-react';
 import { Album, Photo } from '../types';
 
@@ -17,7 +18,8 @@ export const PhotosView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUploa
     createAlbum,
     renameAlbum,
     deleteAlbum,
-    viewUserProfile
+    viewUserProfile,
+    canUserViewPhoto
   } = useInkorium();
 
   const [activeTab, setActiveTab] = useState<'albumes' | 'subidas' | 'etiquetadas'>('albumes');
@@ -30,9 +32,13 @@ export const PhotosView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUploa
 
   // Photos filters
   const myUploadedPhotos = photos.filter(p => p.uploaderId === currentUser.id);
-  const myTaggedPhotos = photos.filter(p => Array.isArray(p.etiquetas) && p.etiquetas.some(t => t.userId === currentUser.id || t.usuarioId === currentUser.id));
+  const myTaggedPhotos = photos.filter(p => 
+    Array.isArray(p.etiquetas) && 
+    p.etiquetas.some(t => t.userId === currentUser.id || t.usuarioId === currentUser.id) &&
+    canUserViewPhoto(p, currentUser.id)
+  );
   const albumPhotos = selectedAlbumId 
-    ? photos.filter(p => p.albumId === selectedAlbumId)
+    ? photos.filter(p => p.albumId === selectedAlbumId && canUserViewPhoto(p, currentUser.id))
     : [];
 
   const handleCreateAlbumSubmit = (e: React.FormEvent) => {
@@ -205,6 +211,29 @@ export const PhotosView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUploa
                   className="group relative rounded overflow-hidden border border-gray-200 bg-gray-100 aspect-square cursor-pointer shadow-xs hover:shadow-md transition"
                 >
                   <img src={p.archivo} alt={p.titulo} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+                  
+                  {/* Top-left Privacy badge */}
+                  <div className="absolute top-1.5 left-1.5 z-10">
+                    {p.privacidad === 'publica' && (
+                      <span className="bg-black/60 backdrop-blur-xs text-blue-300 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-xs" title="Foto pública">
+                        <Globe className="w-2.5 h-2.5" />
+                        <span className="hidden sm:inline">Pública</span>
+                      </span>
+                    )}
+                    {(!p.privacidad || p.privacidad === 'amigos') && (
+                      <span className="bg-black/60 backdrop-blur-xs text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-xs" title="Solo amigos">
+                        <Users className="w-2.5 h-2.5" />
+                        <span className="hidden sm:inline">Amigos</span>
+                      </span>
+                    )}
+                    {p.privacidad === 'eleccion' && (
+                      <span className="bg-black/60 backdrop-blur-xs text-purple-300 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-xs" title="Elección personalizada">
+                        <UserCheck className="w-2.5 h-2.5" />
+                        <span className="hidden sm:inline">Elección ({(p.allowedUserIds || []).length})</span>
+                      </span>
+                    )}
+                  </div>
+
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition p-2 flex flex-col justify-end text-white text-xs">
                     <p className="font-bold truncate text-[11px]">{p.titulo}</p>
                     <div className="flex items-center justify-between text-[10px] text-white/80 mt-1">
