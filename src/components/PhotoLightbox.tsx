@@ -95,6 +95,17 @@ export const PhotoLightbox: React.FC = () => {
     return { currentPhotoIndex: idx, photo: resolvedPhoto };
   }, [selectedPhotoId, activePhotosList, photos, currentUser]);
 
+  // Tag candidate friends filtering
+  const filteredFriendsToTag = useMemo(() => {
+    const query = tagSearchQuery.toLowerCase().trim();
+    return users.filter(u => {
+      if (!query) return true;
+      const fullName = `${u.nombre} ${u.apellidos}`.toLowerCase();
+      const username = (u.username || '').toLowerCase();
+      return fullName.includes(query) || username.includes(query);
+    });
+  }, [users, tagSearchQuery]);
+
   const listToUse = activePhotosList.length > 0 ? activePhotosList : photos;
   const currentTotal = listToUse.length > 0 ? listToUse.length : 1;
   const safeIndex = currentPhotoIndex >= 0 ? currentPhotoIndex : 0;
@@ -169,17 +180,6 @@ export const PhotoLightbox: React.FC = () => {
   // Album name if associated
   const associatedAlbum = albums.find(a => a.id === photo.albumId);
   const displayAlbumName = photo.albumName || associatedAlbum?.nombre;
-
-  // Tag candidate friends filtering
-  const filteredFriendsToTag = useMemo(() => {
-    const query = tagSearchQuery.toLowerCase().trim();
-    return users.filter(u => {
-      if (!query) return true;
-      const fullName = `${u.nombre} ${u.apellidos}`.toLowerCase();
-      const username = (u.username || '').toLowerCase();
-      return fullName.includes(query) || username.includes(query);
-    });
-  }, [users, tagSearchQuery]);
 
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!taggingMode) return;
