@@ -142,6 +142,24 @@ export const PhotoLightbox: React.FC = () => {
     }
   };
 
+  // Defensive check for current user's friend list & privacy list (Must be declared before any conditional returns)
+  const myFriends = useMemo(() => {
+    if (!currentUser) return [];
+    const friends = getFriendsOf(currentUser.id);
+    return friends.length > 0 ? friends : users.filter(u => u.id !== currentUser.id);
+  }, [getFriendsOf, currentUser, users]);
+
+  const filteredPrivacyFriends = useMemo(() => {
+    if (!privacySearchQuery.trim()) return myFriends;
+    const q = privacySearchQuery.toLowerCase();
+    return myFriends.filter(f => {
+      const name = `${f.nombre} ${f.apellidos}`.toLowerCase();
+      const username = (f.username || '').toLowerCase();
+      const city = (f.ciudad || f.provincia || '').toLowerCase();
+      return name.includes(q) || username.includes(q) || city.includes(q);
+    });
+  }, [myFriends, privacySearchQuery]);
+
   // Keyboard navigation & Esc to close
   useEffect(() => {
     if (!selectedPhotoId) return;
@@ -261,23 +279,6 @@ export const PhotoLightbox: React.FC = () => {
     updatePhotoPrivacy(photo.id, editPrivacy, editAllowedUsers);
     setShowPrivacyModal(false);
   };
-
-  const myFriends = useMemo(() => {
-    if (!currentUser) return [];
-    const friends = getFriendsOf(currentUser.id);
-    return friends.length > 0 ? friends : users.filter(u => u.id !== currentUser.id);
-  }, [getFriendsOf, currentUser, users]);
-
-  const filteredPrivacyFriends = useMemo(() => {
-    if (!privacySearchQuery.trim()) return myFriends;
-    const q = privacySearchQuery.toLowerCase();
-    return myFriends.filter(f => {
-      const name = `${f.nombre} ${f.apellidos}`.toLowerCase();
-      const username = (f.username || '').toLowerCase();
-      const city = (f.ciudad || f.provincia || '').toLowerCase();
-      return name.includes(q) || username.includes(q) || city.includes(q);
-    });
-  }, [myFriends, privacySearchQuery]);
 
   const toggleEditAllowedUser = (userId: string) => {
     setEditAllowedUsers(prev =>
