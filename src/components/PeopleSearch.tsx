@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
-import { Search, UserPlus, Users, MapPin, Check, Filter, MessageSquare, Mail } from 'lucide-react';
-import { PROVINCIAS_ESPANA } from '../types';
+import { Search, UserPlus, Users, MapPin, Check, Filter, MessageSquare, Mail, Globe } from 'lucide-react';
+import { COUNTRIES_LIST, getZonesForCountry, formatFullLocation } from '../types';
 
 export const PeopleSearch: React.FC = () => {
   const {
@@ -21,10 +21,20 @@ export const PeopleSearch: React.FC = () => {
   const [sexo, setSexo] = useState<string>('');
   const [edadMenor, setEdadMenor] = useState<string>('');
   const [edadMayor, setEdadMayor] = useState<string>('');
+  const [pais, setPais] = useState<string>('all');
   const [provincia, setProvincia] = useState<string>('all');
   const [page, setPage] = useState<number>(1);
 
   const ITEMS_PER_PAGE = 15;
+
+  // Available zones for selected country or all
+  const availableZones = useMemo(() => {
+    if (pais === 'all') {
+      // Flatten all zones
+      return COUNTRIES_LIST.flatMap(c => c.zones);
+    }
+    return getZonesForCountry(pais);
+  }, [pais]);
 
   // Other users in database (excluding current user)
   const otherUsersInDb = useMemo(() => {
@@ -34,7 +44,7 @@ export const PeopleSearch: React.FC = () => {
   // Filtered list
   const filteredUsers = useMemo(() => {
     return otherUsersInDb.filter(user => {
-      // 1. General search box (matches name, username, city, province)
+      // 1. General search box (matches name, username, city, province, country)
       if (generalQuery.trim()) {
         const q = generalQuery.trim().toLowerCase();
         const matchesGeneral = 
@@ -42,6 +52,7 @@ export const PeopleSearch: React.FC = () => {
           (user.apellidos && user.apellidos.toLowerCase().includes(q)) ||
           (user.username && user.username.toLowerCase().includes(q)) ||
           (user.full_name && user.full_name.toLowerCase().includes(q)) ||
+          (user.pais && user.pais.toLowerCase().includes(q)) ||
           (user.ciudad && user.ciudad.toLowerCase().includes(q)) ||
           (user.provincia && user.provincia.toLowerCase().includes(q)) ||
           (user.email && user.email.toLowerCase().includes(q));
@@ -73,16 +84,34 @@ export const PeopleSearch: React.FC = () => {
         return false;
       }
 
-      // 5. Filter by Province / City
+      // 5. Filter by Country
+      if (pais !== 'all') {
+        const countryObj = COUNTRIES_LIST.find(c => c.name.toLowerCase() === pais.toLowerCase() || c.id === pais);
+        const targetCountryName = countryObj ? countryObj.name.toLowerCase() : pais.toLowerCase();
+        const userCountry = (user.pais || '').toLowerCase();
+        const userProv = (user.provincia || '').toLowerCase();
+
+        const matchesCountry = userCountry.includes(targetCountryName) || 
+          (countryObj && countryObj.zones.some(z => userProv.includes(z.toLowerCase()) || z.toLowerCase().includes(userProv)));
+        
+        // If user country is not explicitly specified, assume Spain if province matches Spain
+        if (!matchesCountry && targetCountryName === 'españa' && !user.pais) {
+          // match Spain default
+        } else if (!matchesCountry) {
+          return false;
+        }
+      }
+
+      // 6. Filter by Province / Zone / City
       if (provincia !== 'all') {
         const pq = provincia.toLowerCase();
         const matchesLocation = 
-          (user.provincia && user.provincia.toLowerCase().includes(pq)) ||
+          (user.provincia && (user.provincia.toLowerCase().includes(pq) || pq.includes(user.provincia.toLowerCase()))) ||
           (user.ciudad && user.ciudad.toLowerCase().includes(pq));
         if (!matchesLocation) return false;
       }
 
-      // 6. Filter by Age (only if user explicitly specified min or max)
+      // 7. Filter by Age (only if user explicitly specified min or max)
       const minAge = parseInt(edadMenor, 10);
       const maxAge = parseInt(edadMayor, 10);
       
@@ -97,7 +126,7 @@ export const PeopleSearch: React.FC = () => {
 
       return true;
     });
-  }, [otherUsersInDb, generalQuery, nombre, apellidos, sexo, provincia, edadMenor, edadMayor]);
+  }, [otherUsersInDb, generalQuery, nombre, apellidos, sexo, pais, provincia, edadMenor, edadMayor]);
 
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE) || 1;
   const paginatedUsers = filteredUsers.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -109,6 +138,7 @@ export const PeopleSearch: React.FC = () => {
     setSexo('');
     setEdadMenor('');
     setEdadMayor('');
+    setPais('all');
     setProvincia('all');
     setPage(1);
   };
@@ -214,24 +244,50 @@ export const PeopleSearch: React.FC = () => {
               </div>
             </div>
 
-            {/* Provincia */}
+            {/* País */}
             <div>
-              <label className="font-bold text-gray-700 block mb-1">Por provincia o ciudad</label>
+              <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1 flex items-center gap-1">
+                <Globe className="w-3.5 h-3.5 text-[#3869A0]" />
+                <span>País</span>
+              </label>
+              <select
+                value={pais}
+                onChange={e => { 
+                  setPais(e.target.value); 
+                  setProvincia('all');
+                  setPage(1); 
+                }}
+                className="w-full p-2 rounded border border-gray-300 dark:border-slate-700 text-xs focus:outline-none focus:border-[#3869A0] bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 cursor-pointer"
+              >
+                <option value="all">🌍 Todos los países</option>
+                {COUNTRIES_LIST.map(c => (
+                  <option key={c.id} value={c.name}>
+                    {c.flag} {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Provincia / Zona / Región */}
+            <div>
+              <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                {pais === 'all' ? 'Provincia / Zona / Estado' : `Zonas de ${pais}`}
+              </label>
               <select
                 value={provincia}
                 onChange={e => { setProvincia(e.target.value); setPage(1); }}
-                className="w-full p-2 rounded border border-gray-300 text-xs focus:outline-none focus:border-[#3869A0] bg-white"
+                className="w-full p-2 rounded border border-gray-300 dark:border-slate-700 text-xs focus:outline-none focus:border-[#3869A0] bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 cursor-pointer"
               >
-                <option value="all">Todas las provincias</option>
-                {PROVINCIAS_ESPANA.map(prov => (
-                  <option key={prov} value={prov}>{prov}</option>
+                <option value="all">Todas las zonas / provincias</option>
+                {availableZones.map(zone => (
+                  <option key={zone} value={zone}>{zone}</option>
                 ))}
               </select>
             </div>
 
             <div className="pt-2">
-              <div className="p-2.5 bg-blue-50/70 border border-blue-200 rounded text-gray-600 text-[11px] leading-relaxed">
-                💡 <b>Inkorium:</b> Conecta con personas reales en la comunidad, visualiza sus fotos y participa en sus tablones.
+              <div className="p-2.5 bg-blue-50/70 dark:bg-[#152338]/60 border border-blue-200 dark:border-[#1d2b40] rounded text-gray-600 dark:text-gray-300 text-[11px] leading-relaxed">
+                💡 <b>Inkorium Internacional:</b> Explora usuarios de España, México, Argentina, Colombia, Chile, Perú y más de 30 países con sus regiones.
               </div>
             </div>
           </div>
@@ -287,7 +343,7 @@ export const PeopleSearch: React.FC = () => {
 
                   const displayName = user.full_name || 
                     (user.nombre && user.apellidos ? `${user.nombre} ${user.apellidos}` : (user.nombre || user.username || `Usuario ${user.id.substring(0, 5)}`));
-                  const displayLocation = user.ciudad || user.provincia || 'España';
+                  const displayLocation = formatFullLocation(user.pais, user.provincia, user.ciudad);
 
                   return (
                     <div

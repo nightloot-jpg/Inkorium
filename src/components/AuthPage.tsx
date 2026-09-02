@@ -3,9 +3,9 @@ import { useInkorium } from '../context/InkoriumContext';
 import { 
   LogIn, UserPlus, Sparkles, MessageSquare, 
   Users, ShieldCheck, AlertCircle, CheckCircle2,
-  Camera, Lock, Mail, Check, X, ShieldAlert, KeyRound
+  Camera, Lock, Mail, Check, X, ShieldAlert, KeyRound, Globe, MapPin
 } from 'lucide-react';
-import { PROVINCIAS_ESPANA } from '../types';
+import { COUNTRIES_LIST, getZonesForCountry } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import {
   validateName,
@@ -36,11 +36,25 @@ export const AuthPage: React.FC = () => {
   const [regPassword, setRegPassword] = useState('');
   const [regPasswordConfirm, setRegPasswordConfirm] = useState('');
   const [regFnac, setRegFnac] = useState('2001-06-15');
+  const [regPais, setRegPais] = useState('España');
   const [regProvincia, setRegProvincia] = useState('Madrid');
+  const [regCiudad, setRegCiudad] = useState('');
   const [regSexo, setRegSexo] = useState<'h' | 'm'>('h');
   const [regTos, setRegTos] = useState(true);
   const [regError, setRegError] = useState('');
   const [regTouched, setRegTouched] = useState<Record<string, boolean>>({});
+
+  const availableRegZones = useMemo(() => {
+    return getZonesForCountry(regPais);
+  }, [regPais]);
+
+  const handleCountryChange = (newCountry: string) => {
+    setRegPais(newCountry);
+    const zones = getZonesForCountry(newCountry);
+    if (zones.length > 0) {
+      setRegProvincia(zones[0]);
+    }
+  };
 
   // Real-time validations
   const nameValidation = useMemo(() => validateName(regNombre), [regNombre]);
@@ -172,8 +186,11 @@ export const AuthPage: React.FC = () => {
               data: {
                 nombre: regNombre.trim(),
                 apellidos: regApellidos.trim(),
+                full_name: `${regNombre.trim()} ${regApellidos.trim()}`.trim(),
                 sexo: regSexo,
+                pais: regPais,
                 provincia: regProvincia,
+                ciudad: regCiudad.trim() || undefined,
                 fnac: regFnac,
               }
             }
@@ -184,9 +201,9 @@ export const AuthPage: React.FC = () => {
       }
 
       // Always ensure user is created in context and logged in
-      registerNewUser(regNombre, regApellidos, regEmail, regSexo, regProvincia, regFnac);
+      registerNewUser(regNombre, regApellidos, regEmail, regSexo, regProvincia, regFnac, regPais, regCiudad);
     } catch (err: any) {
-      registerNewUser(regNombre, regApellidos, regEmail, regSexo, regProvincia, regFnac);
+      registerNewUser(regNombre, regApellidos, regEmail, regSexo, regProvincia, regFnac, regPais, regCiudad);
     } finally {
       setLoading(false);
     }
@@ -666,46 +683,73 @@ export const AuthPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Fecha de Nacimiento y Provincia */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="font-bold text-gray-700">Fecha de nacimiento:</label>
-                            {birthDateValidation.isValid && birthDateValidation.age !== undefined && (
-                              <span className="text-[10px] text-emerald-600 font-medium">
-                                ({birthDateValidation.age} años)
-                              </span>
-                            )}
-                          </div>
-                          <input
-                            type="date"
-                            value={regFnac}
-                            onChange={e => { setRegFnac(e.target.value); markTouched('fnac'); }}
-                            onBlur={() => markTouched('fnac')}
-                            max={new Date().toISOString().split('T')[0]}
-                            className={`w-full p-2 text-xs rounded border transition bg-white focus:outline-none ${
-                              regTouched.fnac && !birthDateValidation.isValid
-                                ? 'border-red-400 bg-red-50/30 focus:border-red-500'
-                                : 'border-gray-300 focus:border-[#3869A0]'
-                            }`}
-                            required
-                          />
-                          {regTouched.fnac && !birthDateValidation.isValid && (
-                            <p className="text-[10px] text-red-600 mt-1">{birthDateValidation.message}</p>
+                      {/* Fecha de Nacimiento */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-bold text-gray-700">Fecha de nacimiento:</label>
+                          {birthDateValidation.isValid && birthDateValidation.age !== undefined && (
+                            <span className="text-[10px] text-emerald-600 font-medium">
+                              ({birthDateValidation.age} años)
+                            </span>
                           )}
+                        </div>
+                        <input
+                          type="date"
+                          value={regFnac}
+                          onChange={e => { setRegFnac(e.target.value); markTouched('fnac'); }}
+                          onBlur={() => markTouched('fnac')}
+                          max={new Date().toISOString().split('T')[0]}
+                          className={`w-full p-2 text-xs rounded border transition bg-white focus:outline-none ${
+                            regTouched.fnac && !birthDateValidation.isValid
+                              ? 'border-red-400 bg-red-50/30 focus:border-red-500'
+                              : 'border-gray-300 focus:border-[#3869A0]'
+                          }`}
+                          required
+                        />
+                        {regTouched.fnac && !birthDateValidation.isValid && (
+                          <p className="text-[10px] text-red-600 mt-1">{birthDateValidation.message}</p>
+                        )}
+                      </div>
+
+                      {/* Ubicación: País, Provincia/Zona y Ciudad */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="font-bold text-gray-700 block mb-1">País:</label>
+                          <select
+                            value={regPais}
+                            onChange={e => handleCountryChange(e.target.value)}
+                            className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] bg-white cursor-pointer"
+                          >
+                            {COUNTRIES_LIST.map(c => (
+                              <option key={c.id} value={c.name}>
+                                {c.flag} {c.name}
+                              </option>
+                            ))}
+                          </select>
                         </div>
 
                         <div>
-                          <label className="font-bold text-gray-700 block mb-1">Provincia:</label>
+                          <label className="font-bold text-gray-700 block mb-1">Provincia / Zona:</label>
                           <select
                             value={regProvincia}
                             onChange={e => setRegProvincia(e.target.value)}
                             className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] bg-white cursor-pointer"
                           >
-                            {PROVINCIAS_ESPANA.map(p => (
+                            {availableRegZones.map(p => (
                               <option key={p} value={p}>{p}</option>
                             ))}
                           </select>
+                        </div>
+
+                        <div>
+                          <label className="font-bold text-gray-700 block mb-1">Ciudad (opcional):</label>
+                          <input
+                            type="text"
+                            value={regCiudad}
+                            onChange={e => setRegCiudad(e.target.value)}
+                            placeholder="Ej: Barcelona, Coyoacán..."
+                            className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] bg-white"
+                          />
                         </div>
                       </div>
 

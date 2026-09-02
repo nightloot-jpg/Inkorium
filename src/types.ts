@@ -31,6 +31,7 @@ export interface User {
   password?: string;
   sexo: Gender;
   fnac: string; // YYYY-MM-DD
+  pais?: string;
   provincia: string;
   ciudad?: string;
   estado: string; // Status message ("¿Qué estás haciendo?")
@@ -238,12 +239,13 @@ export interface UserActivity {
   timestamp: number;
 }
 
-export const PROVINCIAS_ESPANA = [
-  'Álava', 'Albacete', 'Alicante', 'Almería', 'Asturias', 'Ávila', 'Badajoz', 'Barcelona', 
-  'Burgos', 'Cáceres', 'Cádiz', 'Cantabria', 'Castellón', 'Ciudad Real', 'Córdoba', 'Cuenca', 
-  'Girona', 'Granada', 'Guadalajara', 'Guipúzcoa', 'Huelva', 'Huesca', 'Islas Baleares', 
-  'Jaén', 'La Coruña', 'La Rioja', 'Las Palmas', 'León', 'Lleida', 'Lugo', 'Madrid', 
-  'Málaga', 'Murcia', 'Navarra', 'Ourense', 'Palencia', 'Pontevedra', 'Salamanca', 
-  'Santa Cruz de Tenerife', 'Segovia', 'Sevilla', 'Soria', 'Tarragona', 'Teruel', 
-  'Toledo', 'Valencia', 'Valladolid', 'Vizcaya', 'Zamora', 'Zaragoza', 'Ceuta', 'Melilla'
-];
+export type { CountryLocation } from './data/locations';
+export { 
+  COUNTRIES_LIST, 
+  PROVINCIAS_ESPANA, 
+  ALL_COUNTRIES, 
+  getZonesForCountry, 
+  getCountryByZone, 
+  formatFullLocation 
+} from './data/locations';
+

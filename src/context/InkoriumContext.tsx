@@ -55,7 +55,7 @@ interface InkoriumContextType {
   pushNotification: (notif: InkoriumNotification) => void; dismissToast: (toastId: string) => void; markNotificationAsRead: (notifId: string) => void;
   markAllNotificationsAsRead: () => void; deleteNotification: (notifId: string) => void; setIsRealtimeSimulationEnabled: (enabled: boolean) => void;
   simulateIncomingMessage: () => void; simulateWallComment: () => void; simulateFriendRequest: () => void; simulatePhotoInteraction: () => void;
-  updateUserData: (data: Partial<User>) => void; resetToDefaultData: () => void; registerNewUser: (nombre: string, apellidos: string, email: string, sexo: 'h' | 'm', provincia: string, fnac: string) => void;
+  updateUserData: (data: Partial<User>) => void; resetToDefaultData: () => void; registerNewUser: (nombre: string, apellidos: string, email: string, sexo: 'h' | 'm', provincia: string, fnac: string, pais?: string, ciudad?: string) => void;
 }
 
 const InkoriumContext = createContext<InkoriumContextType | undefined>(undefined);
@@ -1457,15 +1457,20 @@ const addDeletedMessageIds = (ids: string[]) => {
     }
   }, [users]);
 
-  const registerNewUser = useCallback((nombre: string, apellidos: string, email: string, sexo: 'h' | 'm', provincia: string, fnac: string) => {
+  const registerNewUser = useCallback((nombre: string, apellidos: string, email: string, sexo: 'h' | 'm', provincia: string, fnac: string, pais?: string, ciudad?: string) => {
     const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `user-${Date.now()}`;
+    const cleanNombre = nombre.trim();
+    const cleanApellidos = apellidos.trim();
     const newUser: User = {
       id: newId,
-      nombre: nombre.trim(),
-      apellidos: apellidos.trim(),
+      nombre: cleanNombre,
+      apellidos: cleanApellidos,
+      full_name: `${cleanNombre} ${cleanApellidos}`.trim(),
       email: email.trim().toLowerCase(),
       sexo,
+      pais: pais || 'España',
       provincia,
+      ciudad: ciudad?.trim() || undefined,
       fnac,
       estado: '¡Hola! Me acabo de unir a Inkorium :)',
       estadoFecha: 'Reciente',

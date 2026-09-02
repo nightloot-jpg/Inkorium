@@ -4,9 +4,9 @@ import { useInkorium } from '../context/InkoriumContext';
 import { 
   Send, Image as ImageIcon, Smile, MessageCircle, Heart, 
   UserPlus, Sparkles, Clock, CheckCircle2, ChevronRight,
-  Upload, Camera, Loader2, X, Edit2, Check, ChevronDown, Music, Disc
+  Upload, Camera, Loader2, X, Edit2, Check, ChevronDown, Music, Disc, Globe, MapPin
 } from 'lucide-react';
-import { FeedItem, UserPresence } from '../types';
+import { FeedItem, UserPresence, formatFullLocation } from '../types';
 import { uploadMediaFile } from '../lib/storage';
 import { validateImageFile, formatFileSize, FileValidationResult } from '../utils/validation';
 
@@ -899,7 +899,10 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                     >
                       {user.nombre} {user.apellidos}
                     </h4>
-                    <p className="text-[10px] text-gray-500 truncate">{user.provincia}</p>
+                    <p className="text-[10px] text-gray-500 truncate flex items-center gap-0.5">
+                      <MapPin className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
+                      <span>{formatFullLocation(user)}</span>
+                    </p>
                     
                     {pending ? (
                       <span className="inline-block mt-1 text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded font-medium">
@@ -936,19 +939,28 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
           </div>
         </div>
 
-        {/* Spanish Provinces quick search */}
-        <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs">
-          <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 mb-2">
-            Explora por provincia
+        {/* Explorar por país o zona */}
+        <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2">
+          <div className="font-bold text-gray-800 pb-1.5 border-b border-gray-200 flex items-center justify-between">
+            <span className="flex items-center gap-1">
+              <Globe className="w-3.5 h-3.5 text-[#3869A0]" />
+              <span>Explora por ubicación</span>
+            </span>
+            <button 
+              onClick={() => setActiveTab('gente')}
+              className="text-[10px] text-[#3869A0] hover:underline font-normal cursor-pointer"
+            >
+              Ver mapa
+            </button>
           </div>
           <div className="flex flex-wrap gap-1">
-            {['Madrid', 'Barcelona', 'Valencia', 'Sevilla', 'Málaga', 'Vizcaya', 'Zaragoza', 'Salamanca'].map(prov => (
+            {['🇪🇸 España', '🇲🇽 México', '🇦🇷 Argentina', '🇨🇴 Colombia', '🇨🇱 Chile', 'Madrid', 'Barcelona', 'Buenos Aires', 'CDMX', 'Valencia'].map(loc => (
               <button
-                key={prov}
+                key={loc}
                 onClick={() => setActiveTab('gente')}
-                className="px-2 py-1 bg-gray-100 hover:bg-blue-50 hover:text-[#3869A0] text-gray-700 rounded text-[10px] font-medium transition cursor-pointer"
+                className="px-2 py-0.5 bg-gray-100 hover:bg-blue-50 hover:text-[#3869A0] text-gray-700 rounded text-[10px] font-medium transition cursor-pointer"
               >
-                {prov}
+                {loc}
               </button>
             ))}
           </div>

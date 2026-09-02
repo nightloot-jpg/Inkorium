@@ -6,7 +6,14 @@ import {
   Check, X, RefreshCw, Smartphone, Globe, Sparkles, Bell, Volume2, MessageSquare, Image as ImageIcon,
   Camera, Upload, Moon, Sun, Monitor, Palette
 } from 'lucide-react';
-import { PROVINCIAS_ESPANA, RelationshipStatus, Gender, ThemeMode } from '../types';
+import { 
+  COUNTRIES_LIST, 
+  getZonesForCountry, 
+  getCountryByZone, 
+  RelationshipStatus, 
+  Gender, 
+  ThemeMode 
+} from '../types';
 import { isSoundEnabled, toggleSound, playNotificationChime } from '../utils/sound';
 
 export const SettingsView: React.FC = () => {
@@ -49,25 +56,43 @@ export const SettingsView: React.FC = () => {
   const [apellidos, setApellidos] = useState(currentUser.apellidos || '');
   const [sexo, setSexo] = useState<Gender>(currentUser.sexo || 'h');
   const [fnac, setFnac] = useState(currentUser.fnac || '1992-05-15');
+  const initialCountry = currentUser.pais || getCountryByZone(currentUser.provincia)?.name || 'España';
+  const [pais, setPais] = useState<string>(initialCountry);
   const [provincia, setProvincia] = useState(currentUser.provincia || 'Madrid');
+  const [ciudad, setCiudad] = useState(currentUser.ciudad || '');
   const [situacion, setSituacion] = useState<RelationshipStatus>(currentUser.situacionSentimental || 'Soltero/a');
   const [ocupacion, setOcupacion] = useState(currentUser.ocupacion || '');
   const [intereses, setIntereses] = useState(currentUser.intereses || '');
   const [musica, setMusica] = useState(currentUser.musica || '');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  // Available zones for selected country in settings
+  const currentCountryObj = COUNTRIES_LIST.find(c => c.name.toLowerCase() === pais.toLowerCase()) || COUNTRIES_LIST[0];
+  const availableZones = currentCountryObj?.zones || [];
+
   // Sync state when currentUser updates
   useEffect(() => {
+    const userCountry = currentUser.pais || getCountryByZone(currentUser.provincia)?.name || 'España';
     setNombre(currentUser.nombre || '');
     setApellidos(currentUser.apellidos || '');
     setSexo(currentUser.sexo || 'h');
     setFnac(currentUser.fnac || '1992-05-15');
-    setProvincia(currentUser.provincia || 'Madrid');
+    setPais(userCountry);
+    setProvincia(currentUser.provincia || (userCountry === 'España' ? 'Madrid' : getZonesForCountry(userCountry)[0] || ''));
+    setCiudad(currentUser.ciudad || '');
     setSituacion(currentUser.situacionSentimental || 'Soltero/a');
     setOcupacion(currentUser.ocupacion || '');
     setIntereses(currentUser.intereses || '');
     setMusica(currentUser.musica || '');
   }, [currentUser]);
+
+  const handleCountryChange = (newCountryName: string) => {
+    setPais(newCountryName);
+    const zones = getZonesForCountry(newCountryName);
+    if (zones.length > 0) {
+      setProvincia(zones[0]);
+    }
+  };
 
   // Security password & email change states
   const [newEmail, setNewEmail] = useState('');
@@ -88,7 +113,9 @@ export const SettingsView: React.FC = () => {
       full_name: `${nombre.trim()} ${apellidos.trim()}`.trim(),
       sexo,
       fnac,
+      pais,
       provincia,
+      ciudad: ciudad.trim() || undefined,
       situacionSentimental: situacion,
       ocupacion: ocupacion.trim(),
       intereses: intereses.trim(),
@@ -331,38 +358,67 @@ export const SettingsView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Provincia:</label>
+                      <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">País:</label>
                       <select
-                        value={provincia}
-                        onChange={e => setProvincia(e.target.value)}
-                        className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
+                        value={pais}
+                        onChange={e => handleCountryChange(e.target.value)}
+                        className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0] cursor-pointer"
                       >
-                        {PROVINCIAS_ESPANA.map(p => (
-                          <option key={p} value={p}>{p}</option>
+                        {COUNTRIES_LIST.map(c => (
+                          <option key={c.id} value={c.name}>
+                            {c.flag} {c.name}
+                          </option>
                         ))}
                       </select>
                     </div>
 
                     <div>
-                      <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Situación sentimental:</label>
+                      <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Provincia / Zona / Estado:</label>
                       <select
-                        value={situacion}
-                        onChange={e => setSituacion(e.target.value as RelationshipStatus)}
-                        className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
+                        value={provincia}
+                        onChange={e => setProvincia(e.target.value)}
+                        className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0] cursor-pointer"
                       >
-                        <option value="Soltero/a">Soltero/a</option>
-                        <option value="Con pareja">Con pareja</option>
-                        <option value="En una relación">En una relación</option>
-                        <option value="Es complicado">Es complicado</option>
-                        <option value="De fiesta en fiesta">De fiesta en fiesta</option>
-                        <option value="Casado/a">Casado/a</option>
-                        <option value="En una relación abierta">En una relación abierta</option>
-                        <option value="Buscando el amor">Buscando el amor</option>
-                        <option value="Prefiero no decirlo">Prefiero no decirlo</option>
+                        {availableZones.map(z => (
+                          <option key={z} value={z}>{z}</option>
+                        ))}
+                        {provincia && !availableZones.includes(provincia) && (
+                          <option value={provincia}>{provincia}</option>
+                        )}
                       </select>
                     </div>
+
+                    <div>
+                      <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Ciudad / Municipio:</label>
+                      <input
+                        type="text"
+                        value={ciudad}
+                        onChange={e => setCiudad(e.target.value)}
+                        placeholder="Ej: Madrid centro, Malasaña..."
+                        className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">Situación sentimental:</label>
+                    <select
+                      value={situacion}
+                      onChange={e => setSituacion(e.target.value as RelationshipStatus)}
+                      className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
+                    >
+                      <option value="Soltero/a">Soltero/a</option>
+                      <option value="Con pareja">Con pareja</option>
+                      <option value="En una relación">En una relación</option>
+                      <option value="Es complicado">Es complicado</option>
+                      <option value="De fiesta en fiesta">De fiesta en fiesta</option>
+                      <option value="Casado/a">Casado/a</option>
+                      <option value="En una relación abierta">En una relación abierta</option>
+                      <option value="Buscando el amor">Buscando el amor</option>
+                      <option value="Prefiero no decirlo">Prefiero no decirlo</option>
+                    </select>
                   </div>
 
                   <div>

@@ -7,9 +7,9 @@ import {
   UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon, 
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
   Trash2, Send, Check, Shield, UserCheck, Camera, Upload, ChevronDown,
-  Users, UserMinus, UserX, Clock, Search, X, ShieldAlert, CheckCheck
+  Users, UserMinus, UserX, Clock, Search, X, ShieldAlert, CheckCheck, Globe
 } from 'lucide-react';
-import { UserPresence, User } from '../types';
+import { UserPresence, User, formatFullLocation } from '../types';
 
 const PRESENCE_CONFIG: Record<UserPresence, { label: string; dot: string; text: string; bg: string }> = {
   conectado: { label: 'Conectado', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' },
@@ -245,7 +245,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
               <p className="text-xs text-gray-600 font-medium flex items-center gap-2">
                 <span>{userAge} años</span>
                 <span>•</span>
-                <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3 text-gray-400" /> {profileUser.ciudad || profileUser.provincia}</span>
+                <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3 text-gray-400" /> {formatFullLocation(profileUser)}</span>
                 <span>•</span>
                 <span className="text-[#3869A0] font-semibold">{profileUser.situacionSentimental}</span>
               </p>
@@ -847,9 +847,15 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                   <span className="text-gray-400 font-medium">Sexo:</span>
                   <span className="font-semibold text-right">{profileUser.sexo === 'h' ? 'Chico (Hombre)' : 'Chica (Mujer)'}</span>
                 </div>
+                {profileUser.pais && (
+                  <div className="flex items-start justify-between">
+                    <span className="text-gray-400 font-medium">País:</span>
+                    <span className="font-semibold text-right">{profileUser.pais}</span>
+                  </div>
+                )}
                 <div className="flex items-start justify-between">
-                  <span className="text-gray-400 font-medium">Provincia:</span>
-                  <span className="font-semibold text-right">{profileUser.provincia}</span>
+                  <span className="text-gray-400 font-medium">Ubicación:</span>
+                  <span className="font-semibold text-right">{formatFullLocation(profileUser)}</span>
                 </div>
                 <div className="flex items-start justify-between">
                   <span className="text-gray-400 font-medium">Situación:</span>

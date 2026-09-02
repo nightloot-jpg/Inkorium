@@ -4,7 +4,13 @@ import {
   X, Check, Sparkles, MapPin, Heart, Briefcase, 
   Music, User as UserIcon, Calendar, Camera, Info, Save
 } from 'lucide-react';
-import { PROVINCIAS_ESPANA, RelationshipStatus, Gender } from '../types';
+import { 
+  COUNTRIES_LIST, 
+  getZonesForCountry, 
+  getCountryByZone, 
+  RelationshipStatus, 
+  Gender 
+} from '../types';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -23,6 +29,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [apellidos, setApellidos] = useState(currentUser.apellidos || '');
   const [sexo, setSexo] = useState<Gender>(currentUser.sexo || 'h');
   const [fnac, setFnac] = useState(currentUser.fnac || '1992-05-15');
+  
+  // Country & Province/Zone states
+  const initialCountry = currentUser.pais || getCountryByZone(currentUser.provincia)?.name || 'España';
+  const [pais, setPais] = useState<string>(initialCountry);
   const [provincia, setProvincia] = useState(currentUser.provincia || 'Madrid');
   const [ciudad, setCiudad] = useState(currentUser.ciudad || '');
   const [situacion, setSituacion] = useState<RelationshipStatus>(currentUser.situacionSentimental || 'Soltero/a');
@@ -34,14 +44,20 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessBadge, setShowSuccessBadge] = useState(false);
 
+  // Available zones for current selected country
+  const currentCountryObj = COUNTRIES_LIST.find(c => c.name.toLowerCase() === pais.toLowerCase()) || COUNTRIES_LIST[0];
+  const availableZones = currentCountryObj?.zones || [];
+
   // Sync state when modal opens or currentUser updates
   useEffect(() => {
     if (isOpen) {
+      const userCountry = currentUser.pais || getCountryByZone(currentUser.provincia)?.name || 'España';
       setNombre(currentUser.nombre || '');
       setApellidos(currentUser.apellidos || '');
       setSexo(currentUser.sexo || 'h');
       setFnac(currentUser.fnac || '1992-05-15');
-      setProvincia(currentUser.provincia || 'Madrid');
+      setPais(userCountry);
+      setProvincia(currentUser.provincia || (userCountry === 'España' ? 'Madrid' : getZonesForCountry(userCountry)[0] || ''));
       setCiudad(currentUser.ciudad || '');
       setSituacion(currentUser.situacionSentimental || 'Soltero/a');
       setOcupacion(currentUser.ocupacion || '');
@@ -51,6 +67,14 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setShowSuccessBadge(false);
     }
   }, [isOpen, currentUser]);
+
+  const handleCountryChange = (newCountryName: string) => {
+    setPais(newCountryName);
+    const zones = getZonesForCountry(newCountryName);
+    if (zones.length > 0) {
+      setProvincia(zones[0]);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -66,6 +90,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       full_name: `${nombre.trim()} ${apellidos.trim()}`.trim(),
       sexo,
       fnac,
+      pais,
       provincia,
       ciudad: ciudad.trim() || undefined,
       situacionSentimental: situacion,
@@ -237,19 +262,39 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               <span>Ubicación y Situación personal</span>
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="font-semibold block mb-1 text-gray-700 dark:text-gray-300">
-                  Provincia:
+                  País:
+                </label>
+                <select
+                  value={pais}
+                  onChange={e => handleCountryChange(e.target.value)}
+                  className="w-full p-2 rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0] cursor-pointer"
+                >
+                  {COUNTRIES_LIST.map(c => (
+                    <option key={c.id} value={c.name}>
+                      {c.flag} {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1 text-gray-700 dark:text-gray-300">
+                  Provincia / Zona / Estado:
                 </label>
                 <select
                   value={provincia}
                   onChange={e => setProvincia(e.target.value)}
-                  className="w-full p-2 rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
+                  className="w-full p-2 rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0] cursor-pointer"
                 >
-                  {PROVINCIAS_ESPANA.map(p => (
-                    <option key={p} value={p}>{p}</option>
+                  {availableZones.map(z => (
+                    <option key={z} value={z}>{z}</option>
                   ))}
+                  {provincia && !availableZones.includes(provincia) && (
+                    <option value={provincia}>{provincia}</option>
+                  )}
                 </select>
               </div>
 
@@ -261,7 +306,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   type="text"
                   value={ciudad}
                   onChange={e => setCiudad(e.target.value)}
-                  placeholder="Ej: Madrid centro, Alcobendas..."
+                  placeholder="Ej: Madrid centro, Malasaña..."
                   className="w-full p-2 rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0]"
                 />
               </div>
