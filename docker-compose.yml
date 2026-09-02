@@ -1,0 +1,18 @@
+services:
+  inkorium:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inkorium-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # Variables opcionales para Supabase o claves personalizadas:
+      # - VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+      # - VITE_SUPABASE_ANON_KEY=tu-anon-key
+      # - SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key
+    env_file:
+      - .env
