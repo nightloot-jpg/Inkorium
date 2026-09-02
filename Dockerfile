@@ -3,11 +3,19 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Accept build arguments for Vite (client-side variables)
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_PUBLISHABLE_KEY
+ARG VITE_SUPABASE_ANON_KEY
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
 # Copy dependency manifests
 COPY package*.json ./
 
-# Install all dependencies (including devDependencies for Vite/esbuild/TypeScript)
-RUN npm ci
+# Install dependencies
+RUN npm install --no-audit --no-fund
 
 # Copy source code
 COPY . .
@@ -27,7 +35,7 @@ ENV PORT=3000
 
 # Install production dependencies only
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
 
 # Copy compiled build artifacts and public assets
 COPY --from=builder /app/dist ./dist
