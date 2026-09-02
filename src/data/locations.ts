@@ -377,18 +377,19 @@ export const ALL_COUNTRIES: string[] = COUNTRIES_LIST.map(c => c.name);
 
 // Helper: Get zones for a given country name or ID
 export function getZonesForCountry(countryNameOrId?: string): string[] {
-  if (!countryNameOrId) return PROVINCIAS_ESPANA;
+  if (!countryNameOrId || typeof countryNameOrId !== 'string') return PROVINCIAS_ESPANA;
+  const target = countryNameOrId.trim().toLowerCase();
   const match = COUNTRIES_LIST.find(
-    c => c.name.toLowerCase() === countryNameOrId.toLowerCase() || 
-         c.id.toLowerCase() === countryNameOrId.toLowerCase() ||
-         c.code.toLowerCase() === countryNameOrId.toLowerCase()
+    c => c.name.toLowerCase() === target || 
+         c.id.toLowerCase() === target ||
+         c.code.toLowerCase() === target
   );
   return match ? match.zones : [];
 }
 
 // Helper: Find country by zone name
 export function getCountryByZone(zoneName?: string): CountryLocation | undefined {
-  if (!zoneName) return undefined;
+  if (!zoneName || typeof zoneName !== 'string') return undefined;
   const lower = zoneName.toLowerCase().trim();
   for (const country of COUNTRIES_LIST) {
     if (country.zones.some(z => z.toLowerCase().includes(lower) || lower.includes(z.toLowerCase()))) {
@@ -399,16 +400,34 @@ export function getCountryByZone(zoneName?: string): CountryLocation | undefined
 }
 
 // Helper: Format location with country and flag
-export function formatFullLocation(pais?: string, provincia?: string, ciudad?: string): string {
+export function formatFullLocation(
+  paisOrUser?: string | { pais?: string; provincia?: string; ciudad?: string } | null,
+  provinciaArg?: string,
+  ciudadArg?: string
+): string {
+  let pais = '';
+  let provincia = '';
+  let ciudad = '';
+
+  if (paisOrUser && typeof paisOrUser === 'object') {
+    pais = typeof paisOrUser.pais === 'string' ? paisOrUser.pais : '';
+    provincia = typeof paisOrUser.provincia === 'string' ? paisOrUser.provincia : '';
+    ciudad = typeof paisOrUser.ciudad === 'string' ? paisOrUser.ciudad : '';
+  } else {
+    pais = typeof paisOrUser === 'string' ? paisOrUser : '';
+    provincia = typeof provinciaArg === 'string' ? provinciaArg : '';
+    ciudad = typeof ciudadArg === 'string' ? ciudadArg : '';
+  }
+
   const parts: string[] = [];
-  if (ciudad?.trim()) parts.push(ciudad.trim());
-  if (provincia?.trim()) parts.push(provincia.trim());
+  if (ciudad.trim()) parts.push(ciudad.trim());
+  if (provincia.trim()) parts.push(provincia.trim());
   
   let countryObj: CountryLocation | undefined;
-  if (pais?.trim()) {
+  if (pais.trim()) {
     countryObj = COUNTRIES_LIST.find(c => c.name.toLowerCase() === pais.toLowerCase() || c.id === pais.toLowerCase());
   }
-  if (!countryObj && provincia) {
+  if (!countryObj && provincia.trim()) {
     countryObj = getCountryByZone(provincia);
   }
 
@@ -417,11 +436,13 @@ export function formatFullLocation(pais?: string, provincia?: string, ciudad?: s
     if (!parts.some(p => p.toLowerCase() === countryObj?.name.toLowerCase())) {
       parts.push(`${countryObj.name} ${countryObj.flag}`);
     }
-  } else if (pais?.trim()) {
+  } else if (pais.trim()) {
     parts.push(pais.trim());
   } else {
-    // Default fallback to España
-    parts.push('España 🇪🇸');
+    // Default fallback to España if no other location info provided
+    if (parts.length === 0) {
+      parts.push('España 🇪🇸');
+    }
   }
 
   return parts.filter(Boolean).join(', ') || 'España 🇪🇸';
