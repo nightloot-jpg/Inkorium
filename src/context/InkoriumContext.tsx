@@ -9,6 +9,7 @@ import { musicAudioEngine } from '../utils/audioEngine';
 import { appendMessageToConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents } from '../lib/chatHistory';
 import { generateRetroChatReply, generateRetroPrivateMessageReply } from '../lib/retroChatReplies';
 import { playMessageSound } from '../utils/sound';
+import { RealtimeManager } from '../lib/realtimeManager';
 
 interface InkoriumContextType {
   currentUser: User; users: User[]; photos: Photo[]; albums: Album[]; feed: FeedItem[]; wallComments: WallComment[];
@@ -886,17 +887,53 @@ const addDeletedMessageIds = (ids: string[]) => {
       }
     });
 
-    const profilesChannel = supabase.channel('profiles-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void fetchProfiles()).subscribe();
-    const photosChannel = supabase.channel('photos-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, () => void fetchAndMapPhotos()).subscribe();
-    const messagesChannel = supabase.channel('messages-sync').on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages' }, () => void fetchAndMapPrivateMessages()).subscribe();
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let retryAttempt = 0;
+
+    const setupChannels = () => {
+      const handleChannelStatus = (channelName: string) => (status: string) => {
+        if (status === 'SUBSCRIBED') {
+          retryAttempt = 0;
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (!mounted) return;
+          retryAttempt++;
+          const delay = Math.min(30000, 1000 * Math.pow(2, Math.min(retryAttempt, 5))) + Math.random() * 1000;
+          if (reconnectTimer) clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(() => {
+            if (mounted && supabase) {
+              void fetchProfiles();
+              void fetchAndMapPhotos();
+              void fetchAndMapPrivateMessages();
+            }
+          }, delay);
+        }
+      };
+
+      const profilesChannel = supabase.channel('profiles-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void fetchProfiles())
+        .subscribe(handleChannelStatus('profiles'));
+
+      const photosChannel = supabase.channel('photos-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, () => void fetchAndMapPhotos())
+        .subscribe(handleChannelStatus('photos'));
+
+      const messagesChannel = supabase.channel('messages-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'private_messages' }, () => void fetchAndMapPrivateMessages())
+        .subscribe(handleChannelStatus('messages'));
+
+      return { profilesChannel, photosChannel, messagesChannel };
+    };
+
+    const channels = setupChannels();
 
     return () => {
       mounted = false;
       if (profilesTimer.current) clearTimeout(profilesTimer.current);
+      if (reconnectTimer) clearTimeout(reconnectTimer);
       auth.subscription.unsubscribe();
-      void supabase.removeChannel(profilesChannel);
-      void supabase.removeChannel(photosChannel);
-      void supabase.removeChannel(messagesChannel);
+      void supabase.removeChannel(channels.profilesChannel);
+      void supabase.removeChannel(channels.photosChannel);
+      void supabase.removeChannel(channels.messagesChannel);
     };
   }, [fetchProfiles, fetchAndMapPhotos, fetchAndMapPrivateMessages]);
 
@@ -960,134 +997,116 @@ const addDeletedMessageIds = (ids: string[]) => {
       void fetchAndMapChatMessagesRef.current();
     }, 20000);
 
-    // Instant Real-Time Push Stream via Server-Sent Events
-    let eventSource: EventSource | null = null;
-    try {
-      if (typeof window !== 'undefined' && window.EventSource) {
-        eventSource = new EventSource(`/api/realtime/stream?userId=${encodeURIComponent(currentUserId)}`);
+    // Instant Real-Time Push Stream via RealtimeManager with Exponential Backoff retry strategy
+    const realtimeManager = new RealtimeManager({
+      userId: currentUserId,
+      initialDelayMs: 1000,
+      maxDelayMs: 30000,
+      factor: 2,
+      jitterMs: 1000,
+      maxRetries: 25,
+      onChatMessage: (newMsg: ChatMessage) => {
+        if (!newMsg || !newMsg.id) return;
+        const normCur = normalizeUserId(currentUserId);
+        const normRec = normalizeUserId(newMsg.receptorId);
+        const normEmi = normalizeUserId(newMsg.emisorId);
 
-        eventSource.addEventListener('chat_message', (e) => {
-          try {
-            const newMsg = JSON.parse(e.data) as ChatMessage;
-            if (!newMsg || !newMsg.id) return;
-            const normCur = normalizeUserId(currentUserId);
-            const normRec = normalizeUserId(newMsg.receptorId);
-            const normEmi = normalizeUserId(newMsg.emisorId);
+        if (normRec === normCur || normEmi === normCur) {
+          setChatMessages(prev => {
+            if (prev.some(m => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
 
-            if (normRec === normCur || normEmi === normCur) {
-              setChatMessages(prev => {
-                if (prev.some(m => m.id === newMsg.id)) return prev;
-                return [...prev, newMsg];
-              });
+          const partnerId = normEmi === normCur ? newMsg.receptorId : newMsg.emisorId;
+          appendMessageToConversation(currentUserId, partnerId, newMsg);
 
-              const partnerId = normEmi === normCur ? newMsg.receptorId : newMsg.emisorId;
-              appendMessageToConversation(currentUserId, partnerId, newMsg);
+          if (normRec === normCur && normEmi !== normCur) {
+            try {
+              playMessageSound();
+            } catch {}
 
-              if (normRec === normCur && normEmi !== normCur) {
-                try {
-                  playMessageSound();
-                } catch {}
+            // Open active chat window or show indicator
+            setActiveChatWindows(prev => {
+              const existing = prev.find(w => normalizeUserId(w.targetUserId) === normEmi);
+              if (existing) return prev;
+              return [...prev, { targetUserId: newMsg.emisorId, minimized: false }];
+            });
 
-                // Open active chat window or show indicator
-                setActiveChatWindows(prev => {
-                  const existing = prev.find(w => normalizeUserId(w.targetUserId) === normEmi);
-                  if (existing) return prev;
-                  return [...prev, { targetUserId: newMsg.emisorId, minimized: false }];
-                });
-
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
-                    detail: { targetUserId: newMsg.emisorId, message: newMsg }
-                  }));
-                }
-              }
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
+                detail: { targetUserId: newMsg.emisorId, message: newMsg }
+              }));
             }
-          } catch (err) {
-            console.warn('SSE chat_message parse error:', err);
           }
-        });
+        }
+      },
+      onPrivateMessage: (raw: any) => {
+        if (!raw || !raw.id) return;
+        const deletedIds = getDeletedMessageIds();
+        if (deletedIds.has(String(raw.id))) return;
+        const normCur = normalizeUserId(currentUserId);
+        const recId = String(raw.recipient_id || raw.receptorId || '');
+        const emiId = String(raw.sender_id || raw.emisorId || '');
 
-        eventSource.addEventListener('private_message', (e) => {
-          try {
-            const raw = JSON.parse(e.data);
-            if (!raw || !raw.id) return;
-            const deletedIds = getDeletedMessageIds();
-            if (deletedIds.has(String(raw.id))) return;
-            const normCur = normalizeUserId(currentUserId);
-            const recId = String(raw.recipient_id || raw.receptorId || '');
-            const emiId = String(raw.sender_id || raw.emisorId || '');
+        if (normalizeUserId(recId) === normCur || normalizeUserId(emiId) === normCur) {
+          const currentUsersList = usersRef.current;
+          const sender = currentUsersList.find(u => u.id === emiId || u.username === emiId);
+          const recipient = currentUsersList.find(u => u.id === recId || u.username === recId);
+          const mapped: PrivateMessage = {
+            id: String(raw.id),
+            emisorId: emiId,
+            emisorNombre: raw.emisorNombre || (sender ? (sender.full_name || `${sender.nombre} ${sender.apellidos}`.trim() || sender.nombre) : 'Usuario'),
+            emisorAvatar: raw.emisorAvatar || sender?.avatar || '',
+            receptorId: recId,
+            receptorNombre: raw.receptorNombre || (recipient ? (recipient.full_name || `${recipient.nombre} ${recipient.apellidos}`.trim() || recipient.nombre) : 'Usuario'),
+            asunto: String(raw.subject || raw.asunto || 'Sin asunto'),
+            mensaje: String(raw.body || raw.mensaje || ''),
+            fecha: raw.created_at ? new Date(raw.created_at).toLocaleString('es-ES') : (raw.fecha || 'Ahora mismo'),
+            leido: Boolean(raw.is_read || raw.leido)
+          };
 
-            if (normalizeUserId(recId) === normCur || normalizeUserId(emiId) === normCur) {
-              const currentUsersList = usersRef.current;
-              const sender = currentUsersList.find(u => u.id === emiId || u.username === emiId);
-              const recipient = currentUsersList.find(u => u.id === recId || u.username === recId);
-              const mapped: PrivateMessage = {
-                id: String(raw.id),
-                emisorId: emiId,
-                emisorNombre: raw.emisorNombre || (sender ? (sender.full_name || `${sender.nombre} ${sender.apellidos}`.trim() || sender.nombre) : 'Usuario'),
-                emisorAvatar: raw.emisorAvatar || sender?.avatar || '',
-                receptorId: recId,
-                receptorNombre: raw.receptorNombre || (recipient ? (recipient.full_name || `${recipient.nombre} ${recipient.apellidos}`.trim() || recipient.nombre) : 'Usuario'),
-                asunto: String(raw.subject || raw.asunto || 'Sin asunto'),
-                mensaje: String(raw.body || raw.mensaje || ''),
-                fecha: raw.created_at ? new Date(raw.created_at).toLocaleString('es-ES') : (raw.fecha || 'Ahora mismo'),
-                leido: Boolean(raw.is_read || raw.leido)
-              };
+          setMessages(prev => {
+            if (prev.some(m => m.id === mapped.id)) return prev;
+            return [mapped, ...prev];
+          });
 
-              setMessages(prev => {
-                if (prev.some(m => m.id === mapped.id)) return prev;
-                return [mapped, ...prev];
-              });
-
-              if (normalizeUserId(recId) === normCur && normalizeUserId(emiId) !== normCur) {
-                try {
-                  playMessageSound();
-                } catch {}
-                pushNotificationRef.current({
-                  id: `notif-sse-mp-${Date.now()}`,
-                  tipo: 'mp',
-                  userId: currentUserId,
-                  fromUserId: emiId,
-                  fromUserName: mapped.emisorNombre,
-                  fromUserAvatar: mapped.emisorAvatar,
-                  mensaje: `te ha enviado un mensaje privado: "${mapped.asunto}"`,
-                  enlace: 'mensajes',
-                  targetId: mapped.id,
-                  targetPreview: mapped.mensaje.slice(0, 80),
-                  fecha: 'Ahora mismo',
-                  leido: false
-                });
-              }
-            }
-          } catch (err) {
-            console.warn('SSE private_message parse error:', err);
+          if (normalizeUserId(recId) === normCur && normalizeUserId(emiId) !== normCur) {
+            try {
+              playMessageSound();
+            } catch {}
+            pushNotificationRef.current({
+              id: `notif-sse-mp-${Date.now()}`,
+              tipo: 'mp',
+              userId: currentUserId,
+              fromUserId: emiId,
+              fromUserName: mapped.emisorNombre,
+              fromUserAvatar: mapped.emisorAvatar,
+              mensaje: `te ha enviado un mensaje privado: "${mapped.asunto}"`,
+              enlace: 'mensajes',
+              targetId: mapped.id,
+              targetPreview: mapped.mensaje.slice(0, 80),
+              fecha: 'Ahora mismo',
+              leido: false
+            });
           }
-        });
-
-        eventSource.addEventListener('chat_typing', (e) => {
-          try {
-            const data = JSON.parse(e.data);
-            if (data && normalizeUserId(data.targetUserId) === normalizeUserId(currentUserId)) {
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('inkorium:peer_typing', {
-                  detail: { targetUserId: data.fromUserId, isTyping: Boolean(data.isTyping) }
-                }));
-              }
-            }
-          } catch {}
-        });
-
-        eventSource.onerror = () => {
-          // SSE will reconnect automatically or fallback to interval polling
-        };
+        }
+      },
+      onChatTyping: (data: any) => {
+        if (data && normalizeUserId(data.targetUserId) === normalizeUserId(currentUserId)) {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('inkorium:peer_typing', {
+              detail: { targetUserId: data.fromUserId, isTyping: Boolean(data.isTyping) }
+            }));
+          }
+        }
       }
-    } catch {}
+    });
+
+    realtimeManager.connect();
 
     return () => {
       clearInterval(interval);
-      if (eventSource) {
-        eventSource.close();
-      }
+      realtimeManager.disconnect();
     };
   }, [currentUserId]);
 
