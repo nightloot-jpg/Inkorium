@@ -640,7 +640,14 @@ const addDeletedMessageIds = (ids: string[]) => {
           headers: { Accept: 'application/json' }
         });
         if (!response.ok) return;
-        const data = (await response.json()) as any[];
+        const text = await response.text().catch(() => '');
+        if (!text || text.trim().startsWith('<')) return;
+        let data: any[] = [];
+        try {
+          data = JSON.parse(text);
+        } catch {
+          return;
+        }
         if (!Array.isArray(data)) return;
         const mapped: User[] = data.map(mapProfileToUser);
         const curId = currentUserIdRef.current;
@@ -821,7 +828,10 @@ const addDeletedMessageIds = (ids: string[]) => {
         credentials: 'omit'
       });
       if (res.ok) {
-        const data = await res.json();
+        const text = await res.text().catch(() => '');
+        if (!text || text.trim().startsWith('<')) return;
+        let data: any = null;
+        try { data = JSON.parse(text); } catch { return; }
         if (Array.isArray(data) && data.length > 0) {
           setChatMessages(prev => {
             const existingIds = new Set(prev.map(m => m.id));
