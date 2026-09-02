@@ -60,6 +60,8 @@ export const PhotoLightbox: React.FC = () => {
   const [privacySearchQuery, setPrivacySearchQuery] = useState('');
 
   const commentInputRef = useRef<HTMLInputElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
 
   // Active photo list (scoped to album if an album is selected, otherwise all photos)
   const activePhotosList = useMemo(() => {
@@ -212,7 +214,9 @@ export const PhotoLightbox: React.FC = () => {
 
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!taggingMode) return;
-    const rect = e.currentTarget.getBoundingClientRect();
+    const target = imageRef.current || imageContainerRef.current || e.currentTarget;
+    const rect = target.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
     const x = Math.max(2, Math.min(98, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(2, Math.min(98, ((e.clientY - rect.top) / rect.height) * 100));
     setTagCoords({ x, y });
@@ -427,14 +431,18 @@ export const PhotoLightbox: React.FC = () => {
 
           {/* Centered Photo Canvas Container */}
           <div 
-            className={`flex-1 flex items-center justify-center relative p-3 sm:p-6 w-full h-full overflow-hidden ${
-              taggingMode ? 'cursor-crosshair' : 'cursor-default'
-            }`}
-            onClick={handleImageClick}
+            className="flex-1 flex items-center justify-center relative p-3 sm:p-6 w-full h-full overflow-hidden"
           >
             {/* The Main Image Container */}
-            <div className="relative max-h-full max-w-full flex items-center justify-center group">
+            <div 
+              ref={imageContainerRef}
+              className={`relative max-h-full max-w-full flex items-center justify-center group ${
+                taggingMode ? 'cursor-crosshair' : 'cursor-default'
+              }`}
+              onClick={handleImageClick}
+            >
               <img
+                ref={imageRef}
                 src={photo.archivo}
                 alt={photo.titulo || 'Foto'}
                 className="max-h-[68vh] md:max-h-[76vh] max-w-full object-contain rounded shadow-2xl transition duration-150 select-none pointer-events-auto"

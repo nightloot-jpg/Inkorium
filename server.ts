@@ -5,6 +5,7 @@ import multer from 'multer';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { createServer as createViteServer } from 'vite';
 import { createHmac, createPublicKey, createVerify, timingSafeEqual } from 'node:crypto';
+import fs from 'node:fs';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -173,6 +174,69 @@ const inMemoryMessages: any[] = [];
 const inMemoryChatMessages: any[] = [];
 const inMemoryPhotos: any[] = [];
 const inMemoryProfiles = new Map<string, any>();
+
+// Persistent photo metadata store (tags, comments, likes, custom privacy)
+const PHOTO_METADATA_FILE = path.join(process.cwd(), 'photo_metadata.json');
+interface PhotoMetadataStoreItem {
+  etiquetas?: any[];
+  comentarios?: any[];
+  likes?: string[];
+  privacidad?: string;
+  allowedUserIds?: string[];
+}
+const inMemoryPhotoMetadata = new Map<string, PhotoMetadataStoreItem>();
+
+function loadPhotoMetadata() {
+  try {
+    if (fs.existsSync(PHOTO_METADATA_FILE)) {
+      const raw = fs.readFileSync(PHOTO_METADATA_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        for (const [k, v] of Object.entries(parsed)) {
+          if (v && typeof v === 'object') {
+            inMemoryPhotoMetadata.set(String(k), v as PhotoMetadataStoreItem);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read photo_metadata.json:', err);
+  }
+}
+
+function persistPhotoMetadata() {
+  try {
+    const obj: Record<string, PhotoMetadataStoreItem> = {};
+    for (const [k, v] of inMemoryPhotoMetadata.entries()) {
+      obj[k] = v;
+    }
+    fs.writeFileSync(PHOTO_METADATA_FILE, JSON.stringify(obj, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Could not persist photo_metadata.json:', err);
+  }
+}
+
+loadPhotoMetadata();
+
+function enrichPhotoWithMetadata(photo: any) {
+  if (!photo || typeof photo !== 'object') return photo;
+  const photoId = String(photo.id);
+  const meta = inMemoryPhotoMetadata.get(photoId) || {};
+  return {
+    ...photo,
+    etiquetas: Array.isArray(meta.etiquetas) && meta.etiquetas.length > 0
+      ? meta.etiquetas
+      : (Array.isArray(photo.etiquetas) ? photo.etiquetas : []),
+    comentarios: Array.isArray(meta.comentarios) && meta.comentarios.length > 0
+      ? meta.comentarios
+      : (Array.isArray(photo.comentarios) ? photo.comentarios : []),
+    likes: Array.isArray(meta.likes) && meta.likes.length > 0
+      ? meta.likes
+      : (Array.isArray(photo.likes) ? photo.likes : []),
+    privacidad: meta.privacidad || photo.visibility || photo.privacidad || 'amigos',
+    allowedUserIds: Array.isArray(meta.allowedUserIds) ? meta.allowedUserIds : (Array.isArray(photo.allowedUserIds) ? photo.allowedUserIds : [])
+  };
+}
 
 // ==========================================
 // REAL-TIME SERVER-SENT EVENTS (SSE) ENGINE
@@ -866,7 +930,7 @@ app.post('/api/photos', async (req, res) => {
     const action = String(req.body?.action || 'list').trim().toLowerCase();
 
     if (action === 'list') {
-      if (!supabaseKey) return res.status(200).json(inMemoryPhotos);
+      if (!supabaseKey) return res.status(200).json(inMemoryPhotos.map(enrichPhotoWithMetadata));
       const apiKey = serviceRoleKey || supabaseKey;
       const authHeader = serviceRoleKey ? `Bearer ${serviceRoleKey}` : (token ? `Bearer ${token}` : `Bearer ${supabaseKey}`);
       const dbHeaders = { apikey: apiKey, Authorization: authHeader, Accept: 'application/json' };
@@ -874,13 +938,102 @@ app.post('/api/photos', async (req, res) => {
         const upstream = await fetch(`${supabaseUrl}/rest/v1/photos?select=id,user_id,album_id,storage_path,url,caption,visibility,created_at,updated_at&order=created_at.desc`, { headers: dbHeaders });
         const body = await upstream.text();
         if (!upstream.ok || body.trim().startsWith('<')) {
-          return res.status(200).json(inMemoryPhotos);
+          return res.status(200).json(inMemoryPhotos.map(enrichPhotoWithMetadata));
         }
         const data = JSON.parse(body);
-        return res.status(200).json(Array.isArray(data) ? [...inMemoryPhotos, ...data] : inMemoryPhotos);
+        const combined = Array.isArray(data) ? [...inMemoryPhotos, ...data] : inMemoryPhotos;
+        return res.status(200).json(combined.map(enrichPhotoWithMetadata));
       } catch {
-        return res.status(200).json(inMemoryPhotos);
+        return res.status(200).json(inMemoryPhotos.map(enrichPhotoWithMetadata));
       }
+    }
+
+    if (action === 'add_tag') {
+      const photoId = String(req.body?.photoId || '').trim();
+      const tag = req.body?.tag;
+      if (!photoId || !tag || typeof tag !== 'object') {
+        return res.status(400).json({ error: 'INVALID_TAG_PARAMS' });
+      }
+      const currentMeta = inMemoryPhotoMetadata.get(photoId) || {};
+      const currentTags = Array.isArray(currentMeta.etiquetas) ? [...currentMeta.etiquetas] : [];
+      const tagIndex = currentTags.findIndex(t => t && t.id === tag.id);
+      if (tagIndex !== -1) {
+        currentTags[tagIndex] = tag;
+      } else {
+        currentTags.push(tag);
+      }
+      currentMeta.etiquetas = currentTags;
+      inMemoryPhotoMetadata.set(photoId, currentMeta);
+      persistPhotoMetadata();
+      return res.status(200).json({ success: true, photoId, etiquetas: currentTags });
+    }
+
+    if (action === 'remove_tag') {
+      const photoId = String(req.body?.photoId || '').trim();
+      const tagId = String(req.body?.tagId || '').trim();
+      if (!photoId || !tagId) {
+        return res.status(400).json({ error: 'INVALID_TAG_PARAMS' });
+      }
+      const currentMeta = inMemoryPhotoMetadata.get(photoId) || {};
+      const currentTags = Array.isArray(currentMeta.etiquetas) ? currentMeta.etiquetas : [];
+      const updatedTags = currentTags.filter(t => t && t.id !== tagId);
+      currentMeta.etiquetas = updatedTags;
+      inMemoryPhotoMetadata.set(photoId, currentMeta);
+      persistPhotoMetadata();
+      return res.status(200).json({ success: true, photoId, etiquetas: updatedTags });
+    }
+
+    if (action === 'update_tags') {
+      const photoId = String(req.body?.photoId || '').trim();
+      const tags = Array.isArray(req.body?.tags) ? req.body.tags : [];
+      if (!photoId) {
+        return res.status(400).json({ error: 'INVALID_TAG_PARAMS' });
+      }
+      const currentMeta = inMemoryPhotoMetadata.get(photoId) || {};
+      currentMeta.etiquetas = tags;
+      inMemoryPhotoMetadata.set(photoId, currentMeta);
+      persistPhotoMetadata();
+      return res.status(200).json({ success: true, photoId, etiquetas: tags });
+    }
+
+    if (action === 'update_privacy') {
+      const photoId = String(req.body?.photoId || '').trim();
+      const privacidad = String(req.body?.privacidad || 'amigos');
+      const allowedUserIds = Array.isArray(req.body?.allowedUserIds) ? req.body.allowedUserIds : [];
+      if (!photoId) return res.status(400).json({ error: 'INVALID_PARAMS' });
+      const currentMeta = inMemoryPhotoMetadata.get(photoId) || {};
+      currentMeta.privacidad = privacidad;
+      currentMeta.allowedUserIds = allowedUserIds;
+      inMemoryPhotoMetadata.set(photoId, currentMeta);
+      persistPhotoMetadata();
+      return res.status(200).json({ success: true, photoId, privacidad, allowedUserIds });
+    }
+
+    if (action === 'add_comment') {
+      const photoId = String(req.body?.photoId || '').trim();
+      const comment = req.body?.comment;
+      if (!photoId || !comment) return res.status(400).json({ error: 'INVALID_PARAMS' });
+      const currentMeta = inMemoryPhotoMetadata.get(photoId) || {};
+      const currentComments = Array.isArray(currentMeta.comentarios) ? [...currentMeta.comentarios] : [];
+      currentComments.push(comment);
+      currentMeta.comentarios = currentComments;
+      inMemoryPhotoMetadata.set(photoId, currentMeta);
+      persistPhotoMetadata();
+      return res.status(200).json({ success: true, photoId, comentarios: currentComments });
+    }
+
+    if (action === 'like') {
+      const photoId = String(req.body?.photoId || '').trim();
+      const targetUserId = String(req.body?.userId || '').trim();
+      if (!photoId || !targetUserId) return res.status(400).json({ error: 'INVALID_PARAMS' });
+      const currentMeta = inMemoryPhotoMetadata.get(photoId) || {};
+      const currentLikes = Array.isArray(currentMeta.likes) ? [...currentMeta.likes] : [];
+      const hasLiked = currentLikes.includes(targetUserId);
+      const updatedLikes = hasLiked ? currentLikes.filter(id => id !== targetUserId) : [...currentLikes, targetUserId];
+      currentMeta.likes = updatedLikes;
+      inMemoryPhotoMetadata.set(photoId, currentMeta);
+      persistPhotoMetadata();
+      return res.status(200).json({ success: true, photoId, likes: updatedLikes });
     }
 
     const url = String(req.body?.url || '').trim(); 

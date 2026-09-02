@@ -10,6 +10,11 @@ export interface PhotoRow {
   visibility: string;
   created_at: string;
   updated_at: string;
+  etiquetas?: any[];
+  comentarios?: any[];
+  likes?: string[];
+  privacidad?: string;
+  allowedUserIds?: string[];
 }
 
 async function getAccessToken(required = false): Promise<string | null> {
@@ -92,4 +97,58 @@ export async function insertPhoto(input: {
     caption: input.caption ?? null,
     visibility: input.visibility ?? 'public',
   }, true);
+}
+
+export async function addPhotoTagApi(photoId: string, tag: any): Promise<any> {
+  try {
+    return await requestPhotos({ action: 'add_tag', photoId, tag }, false);
+  } catch (err) {
+    console.warn('addPhotoTagApi failed:', err);
+    return null;
+  }
+}
+
+export async function removePhotoTagApi(photoId: string, tagId: string): Promise<any> {
+  try {
+    return await requestPhotos({ action: 'remove_tag', photoId, tagId }, false);
+  } catch (err) {
+    console.warn('removePhotoTagApi failed:', err);
+    return null;
+  }
+}
+
+export async function updatePhotoTagsApi(photoId: string, tags: any[]): Promise<any> {
+  try {
+    return await requestPhotos({ action: 'update_tags', photoId, tags }, false);
+  } catch (err) {
+    console.warn('updatePhotoTagsApi failed:', err);
+    return null;
+  }
+}
+
+export async function updatePhotoPrivacyApi(photoId: string, privacidad: string, allowedUserIds: string[]): Promise<any> {
+  try {
+    return await requestPhotos({ action: 'update_privacy', photoId, privacidad, allowedUserIds }, false);
+  } catch (err) {
+    console.warn('updatePhotoPrivacyApi failed:', err);
+    return null;
+  }
+}
+
+export async function addPhotoCommentApi(photoId: string, comment: any): Promise<any> {
+  try {
+    return await requestPhotos({ action: 'add_comment', photoId, comment }, false);
+  } catch (err) {
+    console.warn('addPhotoCommentApi failed:', err);
+    return null;
+  }
+}
+
+export async function likePhotoApi(photoId: string, userId: string): Promise<any> {
+  try {
+    return await requestPhotos({ action: 'like', photoId, userId }, false);
+  } catch (err) {
+    console.warn('likePhotoApi failed:', err);
+    return null;
+  }
 }

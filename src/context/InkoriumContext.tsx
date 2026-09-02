@@ -2,8 +2,38 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag, PhotoPrivacy } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
-import { fetchPhotos, insertPhoto } from '../lib/photosApi';
+import { fetchPhotos, insertPhoto, addPhotoTagApi, removePhotoTagApi, updatePhotoPrivacyApi, addPhotoCommentApi, likePhotoApi } from '../lib/photosApi';
 import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WALL_COMMENTS, INITIAL_FRIENDSHIPS, INITIAL_FRIEND_REQUESTS, INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_ACCESS_LOGS, INITIAL_ACTIVITIES } from '../data/mockData';
+
+const PHOTO_TAGS_STORAGE_KEY = 'inkorium:photo_tags';
+
+function getStoredTagsMap(): Record<string, PhotoTag[]> {
+  if (typeof localStorage === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(PHOTO_TAGS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function getStoredTagsForPhoto(photoId: string): PhotoTag[] {
+  if (!photoId) return [];
+  const map = getStoredTagsMap();
+  const tags = map[photoId];
+  return Array.isArray(tags) ? tags : [];
+}
+
+function saveStoredTagsForPhoto(photoId: string, tags: PhotoTag[]) {
+  if (typeof localStorage === 'undefined' || !photoId) return;
+  try {
+    const map = getStoredTagsMap();
+    map[photoId] = tags;
+    localStorage.setItem(PHOTO_TAGS_STORAGE_KEY, JSON.stringify(map));
+  } catch {}
+}
 import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
 import { musicAudioEngine } from '../utils/audioEngine';
 import { appendMessageToConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents } from '../lib/chatHistory';
@@ -120,13 +150,28 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
   const [photos, setPhotos] = useState<Photo[]>(() => {
     if (typeof localStorage !== 'undefined') {
+      const storedTagsMap = getStoredTagsMap();
       const saved = localStorage.getItem('inkorium:photos');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed.map((p: Photo) => {
+              const tags = storedTagsMap[p.id];
+              return {
+                ...p,
+                etiquetas: (Array.isArray(p.etiquetas) && p.etiquetas.length > 0)
+                  ? p.etiquetas
+                  : (Array.isArray(tags) && tags.length > 0 ? tags : [])
+              };
+            });
+          }
         } catch {}
       }
+      return INITIAL_PHOTOS.map(p => {
+        const tags = storedTagsMap[p.id];
+        return (Array.isArray(tags) && tags.length > 0) ? { ...p, etiquetas: tags } : p;
+      });
     }
     return INITIAL_PHOTOS;
   });
@@ -647,6 +692,9 @@ const addDeletedMessageIds = (ids: string[]) => {
   const usersRef = useRef(users);
   usersRef.current = users;
 
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
+
   const currentUserIdRef = useRef(currentUserId);
   currentUserIdRef.current = currentUserId;
 
@@ -720,20 +768,45 @@ const addDeletedMessageIds = (ids: string[]) => {
     }, 100);
   }, [mapProfileToUser]);
 
-  const mapPhotoToPhoto = useCallback((row: any): Photo => {
+  const mapPhotoToPhoto = useCallback((row: any, prevPhotos: Photo[] = []): Photo => {
+    const photoId = String(row.id);
     const uploader = usersRef.current.find(u => u.id === String(row.user_id));
+    const existingPhoto = prevPhotos.find(p => p.id === photoId) || photosRef.current.find(p => p.id === photoId);
+    const storedTags = getStoredTagsForPhoto(photoId);
+
+    const rowTags = Array.isArray(row.etiquetas) ? row.etiquetas : [];
+    const existingTags = Array.isArray(existingPhoto?.etiquetas) ? existingPhoto.etiquetas : [];
+    const mergedTags = rowTags.length > 0 ? rowTags : (existingTags.length > 0 ? existingTags : storedTags);
+
+    if (mergedTags.length > 0) {
+      saveStoredTagsForPhoto(photoId, mergedTags);
+    }
+
+    const rowComments = Array.isArray(row.comentarios) ? row.comentarios : [];
+    const existingComments = Array.isArray(existingPhoto?.comentarios) ? existingPhoto.comentarios : [];
+    const mergedComments = rowComments.length > 0 ? rowComments : existingComments;
+
+    const rowLikes = Array.isArray(row.likes) ? row.likes : [];
+    const existingLikes = Array.isArray(existingPhoto?.likes) ? existingPhoto.likes : [];
+    const mergedLikes = rowLikes.length > 0 ? rowLikes : existingLikes;
+
+    const priv = row.privacidad || (row.visibility === 'public' ? 'publica' : row.visibility === 'private' ? 'eleccion' : 'amigos') || existingPhoto?.privacidad || 'amigos';
+    const allowed = Array.isArray(row.allowedUserIds) ? row.allowedUserIds : (existingPhoto?.allowedUserIds || []);
+
     return {
-      id: String(row.id),
+      id: photoId,
       uploaderId: String(row.user_id),
       uploaderName: uploader ? `${uploader.nombre} ${uploader.apellidos}`.trim() : 'Usuario',
       albumId: row.album_id ?? null,
-      albumName: undefined,
+      albumName: existingPhoto?.albumName,
       archivo: String(row.url || ''),
       titulo: String(row.caption || 'Sin título'),
-      fecha: row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : 'Recientemente',
-      etiquetas: [],
-      comentarios: [],
-      likes: []
+      fecha: row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : (existingPhoto?.fecha || 'Recientemente'),
+      etiquetas: mergedTags,
+      comentarios: mergedComments,
+      likes: mergedLikes,
+      privacidad: priv,
+      allowedUserIds: allowed
     };
   }, []);
 
@@ -741,7 +814,9 @@ const addDeletedMessageIds = (ids: string[]) => {
     try {
       const rows = await fetchPhotos();
       if (rows && rows.length > 0) {
-        setPhotos(rows.map(mapPhotoToPhoto));
+        setPhotos(prev => {
+          return rows.map(r => mapPhotoToPhoto(r, prev));
+        });
       } else {
         setPhotos(prev => (prev.length > 0 ? prev : INITIAL_PHOTOS));
       }
@@ -1672,6 +1747,10 @@ const addDeletedMessageIds = (ids: string[]) => {
       }
       return updated;
     });
+
+    void updatePhotoPrivacyApi(photoId, privacidad, allowedUserIds).catch(err => {
+      console.warn('updatePhotoPrivacyApi error:', err);
+    });
   }, []);
 
   // ================= PRIVATE MESSAGES =================
@@ -2035,17 +2114,27 @@ const addDeletedMessageIds = (ids: string[]) => {
 
   const likePhoto = useCallback((photoId: string) => {
     if (!currentUserId) return;
-    setPhotos(prev => prev.map(photo => {
-      if (photo.id === photoId) {
-        const photoLikes = Array.isArray(photo.likes) ? photo.likes : [];
-        const hasLiked = photoLikes.includes(currentUserId);
-        return {
-          ...photo,
-          likes: hasLiked ? photoLikes.filter(id => id !== currentUserId) : [...photoLikes, currentUserId]
-        };
+    setPhotos(prev => {
+      const updated = prev.map(photo => {
+        if (photo.id === photoId) {
+          const photoLikes = Array.isArray(photo.likes) ? photo.likes : [];
+          const hasLiked = photoLikes.includes(currentUserId);
+          return {
+            ...photo,
+            likes: hasLiked ? photoLikes.filter(id => id !== currentUserId) : [...photoLikes, currentUserId]
+          };
+        }
+        return photo;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:photos', JSON.stringify(updated));
       }
-      return photo;
-    }));
+      return updated;
+    });
+
+    void likePhotoApi(photoId, currentUserId).catch(err => {
+      console.warn('likePhotoApi error:', err);
+    });
   }, [currentUserId]);
 
   const addPhotoComment = useCallback((photoId: string, comentario: string) => {
@@ -2065,16 +2154,26 @@ const addDeletedMessageIds = (ids: string[]) => {
       texto: comentario.trim(),
       fecha: 'Ahora mismo'
     };
-    setPhotos(prev => prev.map(photo => {
-      if (photo.id === photoId) {
-        const currentComments = Array.isArray(photo.comentarios) ? photo.comentarios : [];
-        return {
-          ...photo,
-          comentarios: [...currentComments, newComment]
-        };
+    setPhotos(prev => {
+      const updated = prev.map(photo => {
+        if (photo.id === photoId) {
+          const currentComments = Array.isArray(photo.comentarios) ? photo.comentarios : [];
+          return {
+            ...photo,
+            comentarios: [...currentComments, newComment]
+          };
+        }
+        return photo;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:photos', JSON.stringify(updated));
       }
-      return photo;
-    }));
+      return updated;
+    });
+
+    void addPhotoCommentApi(photoId, newComment).catch(err => {
+      console.warn('addPhotoCommentApi error:', err);
+    });
   }, [currentUserId, currentUser]);
 
   const setPhotoAsAvatar = useCallback((photoId: string) => {
@@ -2124,16 +2223,29 @@ const addDeletedMessageIds = (ids: string[]) => {
       y
     };
     
-    setPhotos(prev => prev.map(photo => {
-      if (photo.id === photoId) {
-        const currentTags = Array.isArray(photo.etiquetas) ? photo.etiquetas : [];
-        return {
-          ...photo,
-          etiquetas: [...currentTags, newTag]
-        };
+    setPhotos(prev => {
+      const updated = prev.map(photo => {
+        if (photo.id === photoId) {
+          const currentTags = Array.isArray(photo.etiquetas) ? photo.etiquetas : [];
+          const exists = currentTags.some(t => t.id === newTag.id);
+          const nextTags = exists ? currentTags : [...currentTags, newTag];
+          saveStoredTagsForPhoto(photoId, nextTags);
+          return {
+            ...photo,
+            etiquetas: nextTags
+          };
+        }
+        return photo;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:photos', JSON.stringify(updated));
       }
-      return photo;
-    }));
+      return updated;
+    });
+
+    void addPhotoTagApi(photoId, newTag).catch(err => {
+      console.warn('Failed to sync photo tag to server:', err);
+    });
 
     // Generate notification for tagged friend if not tagging self
     if (targetUserId && targetUserId !== currentUserId) {
@@ -2156,13 +2268,25 @@ const addDeletedMessageIds = (ids: string[]) => {
   }, [users, currentUserId, currentUser]);
 
   const removePhotoTag = useCallback((photoId: string, tagId: string) => {
-    setPhotos(prev => prev.map(p => {
-      if (p.id === photoId) {
-        const currentTags = Array.isArray(p.etiquetas) ? p.etiquetas : [];
-        return { ...p, etiquetas: currentTags.filter(t => t.id !== tagId) };
+    setPhotos(prev => {
+      const updated = prev.map(p => {
+        if (p.id === photoId) {
+          const currentTags = Array.isArray(p.etiquetas) ? p.etiquetas : [];
+          const nextTags = currentTags.filter(t => t.id !== tagId);
+          saveStoredTagsForPhoto(photoId, nextTags);
+          return { ...p, etiquetas: nextTags };
+        }
+        return p;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:photos', JSON.stringify(updated));
       }
-      return p;
-    }));
+      return updated;
+    });
+
+    void removePhotoTagApi(photoId, tagId).catch(err => {
+      console.warn('Failed to sync remove tag to server:', err);
+    });
   }, []);
 
   const setChatEstado = useCallback((estado: '1' | '0') => {
