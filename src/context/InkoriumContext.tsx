@@ -1222,6 +1222,7 @@ const addDeletedMessageIds = (ids: string[]) => {
         if (accessToken) {
           await fetch(`/api/profiles/${encodeURIComponent(currentUserId)}/status`, {
             method: 'PATCH',
+            credentials: 'omit',
             headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
             body: JSON.stringify({ status: nextStatus })
           }).catch(() => null);

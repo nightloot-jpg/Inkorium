@@ -156,6 +156,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({ isOpen, onClose }) => 
           const token = sessionResult?.data?.session?.access_token;
           await fetch(`/api/profiles/${encodeURIComponent(currentUser.id)}/avatar`, {
             method: 'PATCH',
+            credentials: 'omit',
             headers: {
               Accept: 'application/json',
               'Content-Type': 'application/json',
