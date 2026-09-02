@@ -193,9 +193,9 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#e8eef4] flex flex-col justify-between selection:bg-[#3869A0] selection:text-white">
+    <div className="min-h-screen bg-[#e8eef4] dark:bg-[#0b111e] text-[#1c1e21] dark:text-[#f1f5f9] flex flex-col justify-between selection:bg-[#3869A0] selection:text-white transition-colors">
       {/* Top Retro Header Bar */}
-      <header className="bg-[#3869A0] text-white border-b border-[#2b5380] shadow-sm">
+      <header className="bg-[#3869A0] dark:bg-[#0e1726] text-white border-b border-[#2b5380] dark:border-[#1d2b40] shadow-sm">
         <div className="w-full max-w-[1720px] 2xl:max-w-[1850px] mx-auto px-4 sm:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-inner">
@@ -776,21 +776,21 @@ export const AuthPage: React.FC = () => {
       </main>
 
       {/* Retro Classic Footer */}
-      <footer className="bg-white border-t border-[#ccd5df] py-4 text-center text-xs text-gray-500">
+      <footer className="bg-white dark:bg-[#0e1726] border-t border-[#ccd5df] dark:border-[#1d2b40] py-4 text-center text-xs text-gray-500 dark:text-gray-400 transition-colors">
         <div className="w-full max-w-[1720px] 2xl:max-w-[1850px] mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 font-bold text-[#3869A0]">
+          <div className="flex items-center gap-1.5 font-bold text-[#3869A0] dark:text-blue-400">
             <span>Inkorium</span>
-            <span className="text-gray-400 font-normal">© 2006–{new Date().getFullYear()}</span>
-            <span className="text-gray-300">|</span>
-            <span className="text-gray-500 font-normal">La red social retro de España</span>
+            <span className="text-gray-400 dark:text-gray-500 font-normal">© 2006–{new Date().getFullYear()}</span>
+            <span className="text-gray-300 dark:text-gray-600">|</span>
+            <span className="text-gray-500 dark:text-gray-400 font-normal">La red social retro de España</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-[11px]">
-            <span className="text-gray-600 hover:underline cursor-pointer">Condiciones de servicio</span>
-            <span className="text-gray-600 hover:underline cursor-pointer">Privacidad</span>
-            <span className="text-gray-600 hover:underline cursor-pointer">Ayuda</span>
-            <span className="text-gray-600 hover:underline cursor-pointer">Contacto</span>
-            <span className="text-gray-600 hover:underline cursor-pointer">Blog de Inkorium</span>
+            <span className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer">Condiciones de servicio</span>
+            <span className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer">Privacidad</span>
+            <span className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer">Ayuda</span>
+            <span className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer">Contacto</span>
+            <span className="text-gray-600 dark:text-gray-400 hover:underline cursor-pointer">Blog de Inkorium</span>
           </div>
         </div>
       </footer>

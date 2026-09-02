@@ -595,13 +595,13 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
         </div>
 
         {/* Novedades Filter Tabs */}
-        <div className="flex items-center justify-between border-b border-[#ccd5df] pb-1 px-1 text-xs">
+        <div className="flex items-center justify-between border-b border-[#ccd5df] dark:border-[#1d2b40] pb-1 px-1 text-xs">
           <div className="flex items-center gap-1 sm:gap-2 font-semibold">
-            <span className="font-bold text-gray-800 mr-1 text-sm">Novedades</span>
+            <span className="font-bold text-gray-800 dark:text-gray-100 mr-1 text-sm">Novedades</span>
             <button
               onClick={() => setActiveFilter('todos')}
               className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                activeFilter === 'todos' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-200'
+                activeFilter === 'todos' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
               }`}
             >
               Todas
@@ -609,7 +609,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
             <button
               onClick={() => setActiveFilter('estados')}
               className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                activeFilter === 'estados' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-200'
+                activeFilter === 'estados' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
               }`}
             >
               Estados
@@ -617,7 +617,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
             <button
               onClick={() => setActiveFilter('fotos')}
               className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                activeFilter === 'fotos' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-200'
+                activeFilter === 'fotos' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
               }`}
             >
               Fotos
@@ -625,7 +625,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
             <button
               onClick={() => setActiveFilter('tablon')}
               className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                activeFilter === 'tablon' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-200'
+                activeFilter === 'tablon' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
               }`}
             >
               Tablón
