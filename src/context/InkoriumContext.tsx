@@ -7,7 +7,6 @@ import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WA
 import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
 import { musicAudioEngine } from '../utils/audioEngine';
 import { appendMessageToConversation, updateMessageInConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents } from '../lib/chatHistory';
-import { generateRetroChatReply, generateRetroPrivateMessageReply } from '../lib/retroChatReplies';
 import { playMessageSound, playNotificationChime, playNudgeSound } from '../utils/sound';
 import { RealtimeManager } from '../lib/realtimeManager';
 
@@ -313,7 +312,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       const saved = localStorage.getItem('inkorium:realtime_sim');
       if (saved !== null) return saved === 'true';
     }
-    return true;
+    return false;
   });
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(storedLoggedIn);
   const [activeTab, setActiveTabState] = useState<InkoriumContextType['activeTab']>('inicio');
@@ -1623,80 +1622,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newMsg)
     }).catch(() => null);
-
-    // 5. Retro Auto-replies if enabled and talking to mock contacts
-    if (isRealtimeSimulationEnabled) {
-      const targetUser = usersRef.current.find(u => normalizeUserId(u.id) === normalizeUserId(targetUserId));
-      if (targetUser && normalizeUserId(targetUser.id) !== normalizeUserId(currentUserId)) {
-        const replyDelay = 1800 + Math.random() * 1500;
-        setTimeout(() => {
-          // Send typing start
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('inkorium:peer_typing', {
-              detail: { targetUserId, isTyping: true }
-            }));
-          }
-          broadcastCrossTabEvent({
-            type: 'PEER_TYPING',
-            payload: { targetUserId: currentUserId, isTyping: true }
-          });
-
-          setTimeout(() => {
-            // Stop typing and send reply
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('inkorium:peer_typing', {
-                detail: { targetUserId, isTyping: false }
-              }));
-            }
-            broadcastCrossTabEvent({
-              type: 'PEER_TYPING',
-              payload: { targetUserId: currentUserId, isTyping: false }
-            });
-
-            let replyText = '';
-            if (imageUrl) {
-              const photoReplies = [
-                '¡Vaya fotón! Jajaja XD',
-                '¡Qué chula la foto! ^^ Luego me paso por tu álbum a firmar',
-                '¡Guapísima la foto! :D ¿De cuándo es?',
-                '¡Qué recuerdos! Súbela a tu perfil que está genial :P'
-              ];
-              replyText = photoReplies[Math.floor(Math.random() * photoReplies.length)];
-            } else {
-              replyText = generateRetroChatReply(targetUser.nombre, message);
-            }
-
-            const replyMsgId = `chat-reply-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-            const replyMsg: ChatMessage = {
-              id: replyMsgId,
-              emisorId: targetUserId,
-              receptorId: currentUserId,
-              mensaje: replyText,
-              fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-              timestamp: Date.now(),
-              leido: false
-            };
-
-            appendMessageToConversation(currentUserId, targetUserId, replyMsg);
-            setChatMessages(prev => [...prev, replyMsg]);
-            try {
-              playMessageSound();
-            } catch {}
-
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
-                detail: { targetUserId, message: replyMsg }
-              }));
-            }
-            broadcastCrossTabEvent({
-              type: 'CHAT_MESSAGE',
-              payload: { message: replyMsg, targetUserId: currentUserId, senderUserId: targetUserId }
-            });
-          }, 1400);
-        }, replyDelay);
-      }
-    }
-  }, [currentUserId, isRealtimeSimulationEnabled]);
+  }, [currentUserId]);
 
   const sendChatNudge = useCallback((targetUserId: string) => {
     if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
@@ -1741,43 +1667,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fromUserId: currentUserId, targetUserId })
     }).catch(() => null);
-
-    // Retro auto-reply if simulation enabled
-    if (isRealtimeSimulationEnabled) {
-      const targetUser = usersRef.current.find(u => normalizeUserId(u.id) === normalizeUserId(targetUserId));
-      if (targetUser && normalizeUserId(targetUser.id) !== normalizeUserId(currentUserId)) {
-        setTimeout(() => {
-          const nudgeReplies = [
-            '¡Ayy qué susto el zumbido jajaja! ¿Qué pasa? :D',
-            '¡No me des zumbidos que me vibra toda la pantalla! xD',
-            '¡Jajaja qué mítico el zumbido de Tuenti! ^^ ¿Qué te cuentas?',
-            '¡Zas! Casi se me cae el café con el zumbido jaja :P'
-          ];
-          const replyText = nudgeReplies[Math.floor(Math.random() * nudgeReplies.length)];
-          const replyMsgId = `chat-reply-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-          const replyMsg: ChatMessage = {
-            id: replyMsgId,
-            emisorId: targetUserId,
-            receptorId: currentUserId,
-            mensaje: replyText,
-            fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-            timestamp: Date.now(),
-            leido: false
-          };
-          appendMessageToConversation(currentUserId, targetUserId, replyMsg);
-          setChatMessages(prev => [...prev, replyMsg]);
-          try {
-            playMessageSound();
-          } catch {}
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
-              detail: { targetUserId, message: replyMsg }
-            }));
-          }
-        }, 2200);
-      }
-    }
-  }, [currentUserId, isRealtimeSimulationEnabled]);
+  }, [currentUserId]);
 
   const reactToChatMessage = useCallback((targetUserId: string, messageId: string, emoji: string) => {
     if (!currentUserId || !targetUserId || !messageId || !emoji) return;

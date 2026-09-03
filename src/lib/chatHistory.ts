@@ -57,60 +57,14 @@ function getStorageConversationKey(userA: string, userB: string): string {
   return `${CHAT_STORAGE_KEY}:${first}:${second}`;
 }
 
-export function generateInitialHistoryForPair(currentUserId: string, targetUserId: string, targetUserName = ''): ChatMessage[] {
-  if (!currentUserId || !targetUserId || currentUserId === targetUserId) return [];
-
-  const now = Date.now();
-  const firstName = (targetUserName || 'amigo').split(' ')[0];
-
-  return [
-    {
-      id: `init-${targetUserId}-1`,
-      emisorId: targetUserId,
-      receptorId: currentUserId,
-      mensaje: `¡Ey! ¿Qué tal todo? ^^ Mira esta foto que encontré del finde pasado`,
-      fecha: 'Ayer, 18:32',
-      timestamp: now - 86400000 + 3600000,
-      leido: true,
-      imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80'
-    },
-    {
-      id: `init-${targetUserId}-2`,
-      emisorId: currentUserId,
-      receptorId: targetUserId,
-      mensaje: `¡Qué buena! XD Salimos genial ahí (L)`,
-      fecha: 'Ayer, 18:35',
-      timestamp: now - 86400000 + 4000000,
-      leido: true,
-      reactions: { '❤️': [targetUserId] }
-    },
-    {
-      id: `init-${targetUserId}-3`,
-      emisorId: targetUserId,
-      receptorId: currentUserId,
-      mensaje: `Te paso también los horarios por si los necesitas 📎`,
-      fecha: 'Ayer, 18:40',
-      timestamp: now - 86400000 + 4500000,
-      leido: true,
-      fileUrl: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600&auto=format&fit=crop&q=80',
-      fileName: 'horarios-quedada.pdf',
-      fileSize: 245000,
-      fileType: 'application/pdf'
-    },
-    {
-      id: `init-${targetUserId}-4`,
-      emisorId: currentUserId,
-      receptorId: targetUserId,
-      mensaje: `¡Perfecto! Nos vemos luego entonces ;)`,
-      fecha: 'Hoy, 12:15',
-      timestamp: now - 3600000,
-      leido: true
-    }
-  ];
+export function generateInitialHistoryForPair(_currentUserId: string, _targetUserId: string, _targetUserName = ''): ChatMessage[] {
+  // Real chats between real people start clean without simulated bot messages
+  return [];
 }
 
 /**
  * Loads all conversation messages for a pair from localStorage.
+ * Only authentic messages sent between real users are returned.
  */
 export function getFullConversation(currentUserId: string, targetUserId: string, _targetUserName = ''): ChatMessage[] {
   if (typeof window === 'undefined') return [];
@@ -120,18 +74,25 @@ export function getFullConversation(currentUserId: string, targetUserId: string,
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.sort((a: ChatMessage, b: ChatMessage) => (a.timestamp || 0) - (b.timestamp || 0));
+        // Filter out any synthetic/bot replies or initial fake messages so only real human messages exist
+        const realOnly = parsed.filter((m: ChatMessage) => {
+          if (!m || !m.id) return false;
+          if (m.id.startsWith('chat-reply-') || m.id.startsWith('init-')) {
+            return false;
+          }
+          return true;
+        });
+
+        // If some bot messages were filtered out, clean the persisted storage
+        if (realOnly.length !== parsed.length) {
+          saveFullConversation(currentUserId, targetUserId, realOnly);
+        }
+
+        return realOnly.sort((a: ChatMessage, b: ChatMessage) => (a.timestamp || 0) - (b.timestamp || 0));
       }
     }
   } catch (e) {
     console.warn('Error reading chat history from storage:', e);
-  }
-
-  // If no history exists yet, generate initial conversation with shared media
-  const initial = generateInitialHistoryForPair(currentUserId, targetUserId, _targetUserName);
-  if (initial.length > 0) {
-    saveFullConversation(currentUserId, targetUserId, initial);
-    return initial;
   }
 
   return [];
