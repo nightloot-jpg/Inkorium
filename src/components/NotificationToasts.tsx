@@ -35,9 +35,31 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss, onAction }) => 
     return () => clearInterval(timer);
   }, [toast.id, onDismiss]);
 
+  const isTagSentConfirmation = toast.id.startsWith('toast-tag-sent-');
+  const isTagSelf = toast.id.startsWith('notif-tag-self-') || toast.id.startsWith('toast-tag-self-');
   const isSentConfirmation = toast.id.startsWith('toast-sent-');
 
   const getTheme = () => {
+    if (isTagSentConfirmation) {
+      return {
+        icon: <Tag className="w-3.5 h-3.5 text-sky-600" />,
+        badgeBg: 'bg-sky-100 border-sky-300 text-sky-800',
+        title: 'Etiqueta Registrada',
+        actionText: 'Ver foto',
+        barColor: 'bg-sky-600',
+        borderAccent: 'border-l-sky-500'
+      };
+    }
+    if (isTagSelf) {
+      return {
+        icon: <Tag className="w-3.5 h-3.5 text-sky-600" />,
+        badgeBg: 'bg-sky-100 border-sky-300 text-sky-800',
+        title: 'Te has etiquetado',
+        actionText: 'Ver foto',
+        barColor: 'bg-sky-600',
+        borderAccent: 'border-l-sky-500'
+      };
+    }
     if (isSentConfirmation) {
       return {
         icon: <Check className="w-3.5 h-3.5 text-emerald-600" />,
@@ -188,6 +210,17 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss, onAction }) => 
               </div>
             )}
           </div>
+
+          {/* Optional Photo Thumbnail preview */}
+          {(toast.photoThumbnail || toast.targetPhotoUrl) && (
+            <div className="flex-shrink-0 w-11 h-11 rounded border border-gray-300 overflow-hidden bg-gray-100 shadow-2xs mt-0.5">
+              <img 
+                src={toast.photoThumbnail || toast.targetPhotoUrl} 
+                alt="Foto" 
+                className="w-full h-full object-cover" 
+              />
+            </div>
+          )}
         </div>
 
         {/* Action Row */}
@@ -225,7 +258,7 @@ export const NotificationToasts: React.FC = () => {
     dismissToast, 
     markNotificationAsRead, 
     setActiveTab, 
-    viewUserProfile,
+    viewUserProfile, 
     currentUser,
     viewPhoto,
     openChatWith
@@ -246,8 +279,9 @@ export const NotificationToasts: React.FC = () => {
     } else if (toast.enlace === 'ajustes' || toast.tipo === 'peticion') {
       setActiveTab('ajustes');
     } else if (toast.enlace === 'fotos' || toast.tipo === 'foto' || toast.tipo === 'etiqueta') {
-      if (toast.targetId) {
-        viewPhoto(toast.targetId);
+      const targetPhotoId = toast.targetId || toast.fotoId;
+      if (targetPhotoId) {
+        viewPhoto(targetPhotoId);
       } else {
         setActiveTab('fotos');
       }

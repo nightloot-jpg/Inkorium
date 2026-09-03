@@ -385,7 +385,7 @@ export const SettingsView: React.FC = () => {
                           <option key={z} value={z}>{z}</option>
                         ))}
                         {provincia && !availableZones.includes(provincia) && (
-                          <option value={provincia}>{provincia}</option>
+                          <option key="custom-provincia" value={provincia}>{provincia}</option>
                         )}
                       </select>
                     </div>

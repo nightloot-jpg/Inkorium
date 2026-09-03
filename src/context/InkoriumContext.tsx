@@ -38,7 +38,7 @@ import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
 import { musicAudioEngine } from '../utils/audioEngine';
 import { appendMessageToConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents } from '../lib/chatHistory';
 import { generateRetroChatReply, generateRetroPrivateMessageReply } from '../lib/retroChatReplies';
-import { playMessageSound } from '../utils/sound';
+import { playMessageSound, playNotificationChime } from '../utils/sound';
 import { RealtimeManager } from '../lib/realtimeManager';
 
 interface InkoriumContextType {
@@ -1074,6 +1074,7 @@ const addDeletedMessageIds = (ids: string[]) => {
 
     if (isForCurrentUser) {
       setToasts(prev => [notif, ...prev.slice(0, 4)]);
+      playNotificationChime();
     }
   }, [currentUserId, currentUser.id, currentUser.username]);
 
@@ -1567,6 +1568,15 @@ const addDeletedMessageIds = (ids: string[]) => {
       localStorage.setItem('inkorium:user_id', targetId);
       localStorage.setItem('inkorium:is_logged_in', 'true');
     }
+    setNotifications(currentNotifs => {
+      const unreadForUser = currentNotifs.filter(n => (n.userId === targetId || n.userId === id) && !n.leido);
+      if (unreadForUser.length > 0) {
+        const latest = unreadForUser.slice(0, 2);
+        setToasts(prev => [...latest, ...prev.slice(0, 3)]);
+        playNotificationChime();
+      }
+      return currentNotifs;
+    });
   }, [users]);
 
   const registerNewUser = useCallback((nombre: string, apellidos: string, email: string, sexo: 'h' | 'm', provincia: string, fnac: string, pais?: string, ciudad?: string) => {
@@ -2247,9 +2257,12 @@ const addDeletedMessageIds = (ids: string[]) => {
       console.warn('Failed to sync photo tag to server:', err);
     });
 
+    const targetPhoto = photosRef.current.find(p => p.id === photoId) || INITIAL_PHOTOS.find(p => p.id === photoId);
+    const photoUrl = targetPhoto?.archivo || '';
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+
     // Generate notification for tagged friend if not tagging self
     if (targetUserId && targetUserId !== currentUserId) {
-      const myName = `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre;
       const tagNotif: InkoriumNotification = {
         id: `notif-tag-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         userId: targetUserId,
@@ -2258,14 +2271,62 @@ const addDeletedMessageIds = (ids: string[]) => {
         fromUserAvatar: currentUser.avatar,
         tipo: 'etiqueta',
         mensaje: `${myName} te ha etiquetado en una foto.`,
-        enlace: photoId,
+        detalle: targetPhoto?.titulo ? `Foto: "${targetPhoto.titulo}"` : undefined,
+        enlace: 'fotos',
+        targetId: photoId,
+        fotoId: photoId,
+        photoThumbnail: photoUrl,
+        targetPhotoUrl: photoUrl,
         leido: false,
-        fecha: 'Ahora mismo',
-        fotoId: photoId
+        fecha: 'Ahora mismo'
       };
-      setNotifications(prev => [tagNotif, ...prev]);
+      pushNotification(tagNotif);
+
+      // Toast confirmation for the user who added the tag
+      setToasts(prev => [
+        {
+          id: `toast-tag-sent-${Date.now()}`,
+          userId: currentUserId,
+          fromUserId: targetUserId,
+          fromUserName: targetName,
+          fromUserAvatar: target?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+          tipo: 'etiqueta',
+          mensaje: `Has etiquetado a ${targetName} en esta foto.`,
+          detalle: targetPhoto?.titulo ? `Foto: "${targetPhoto.titulo}"` : undefined,
+          enlace: 'fotos',
+          targetId: photoId,
+          fotoId: photoId,
+          photoThumbnail: photoUrl,
+          targetPhotoUrl: photoUrl,
+          leido: true,
+          fecha: 'Ahora mismo'
+        },
+        ...prev.slice(0, 4)
+      ]);
+      playNotificationChime();
+    } else if (targetUserId && targetUserId === currentUserId) {
+      // Self-tagging
+      const selfNotif: InkoriumNotification = {
+        id: `notif-tag-self-${Date.now()}`,
+        userId: currentUserId,
+        fromUserId: currentUserId,
+        fromUserName: myName,
+        fromUserAvatar: currentUser.avatar,
+        tipo: 'etiqueta',
+        mensaje: 'Te has etiquetado en esta foto.',
+        detalle: targetPhoto?.titulo ? `Foto: "${targetPhoto.titulo}"` : undefined,
+        enlace: 'fotos',
+        targetId: photoId,
+        fotoId: photoId,
+        photoThumbnail: photoUrl,
+        targetPhotoUrl: photoUrl,
+        leido: false,
+        fecha: 'Ahora mismo'
+      };
+      pushNotification(selfNotif);
+      playNotificationChime();
     }
-  }, [users, currentUserId, currentUser]);
+  }, [users, currentUserId, currentUser, pushNotification]);
 
   const removePhotoTag = useCallback((photoId: string, tagId: string) => {
     setPhotos(prev => {

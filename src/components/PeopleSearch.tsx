@@ -30,8 +30,8 @@ export const PeopleSearch: React.FC = () => {
   // Available zones for selected country or all
   const availableZones = useMemo(() => {
     if (pais === 'all') {
-      // Flatten all zones
-      return COUNTRIES_LIST.flatMap(c => c.zones);
+      // Deduplicate zone names across countries for a flat unique list
+      return Array.from(new Set(COUNTRIES_LIST.flatMap(c => c.zones))).sort((a, b) => a.localeCompare('es'));
     }
     return getZonesForCountry(pais);
   }, [pais]);
@@ -279,9 +279,23 @@ export const PeopleSearch: React.FC = () => {
                 className="w-full p-2 rounded border border-gray-300 dark:border-slate-700 text-xs focus:outline-none focus:border-[#3869A0] bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 cursor-pointer"
               >
                 <option value="all">Todas las zonas / provincias</option>
-                {availableZones.map(zone => (
-                  <option key={zone} value={zone}>{zone}</option>
-                ))}
+                {pais === 'all' ? (
+                  COUNTRIES_LIST.map(country => (
+                    <optgroup key={country.id} label={`${country.flag} ${country.name}`}>
+                      {country.zones.map((zone, idx) => (
+                        <option key={`${country.id}-${zone}-${idx}`} value={zone}>
+                          {zone}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))
+                ) : (
+                  availableZones.map((zone, idx) => (
+                    <option key={`${pais}-${zone}-${idx}`} value={zone}>
+                      {zone}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
