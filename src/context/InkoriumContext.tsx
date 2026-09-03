@@ -90,7 +90,7 @@ interface InkoriumContextType {
   isFriend: (userId1: string, userId2: string) => boolean; hasPendingRequest: (fromId: string, toId: string) => boolean; getFriendsOf: (userId: string) => User[];
   sendPrivateMessage: (receptorId: string, asunto: string, mensaje: string) => void; markMessageAsRead: (messageId: string) => void; deleteMessage: (messageId: string) => void; deleteConversation: (targetUserId: string) => void;
   openChatWith: (targetUserId: string) => void; closeChat: (targetUserId: string) => void; toggleMinimizeChat: (targetUserId: string) => void;
-  sendChatMessage: (targetUserId: string, text: string, imageUrl?: string) => void; 
+  sendChatMessage: (targetUserId: string, text: string, imageUrl?: string, fileData?: { url: string; name: string; size?: number; type?: string }) => void; 
   sendChatNudge: (targetUserId: string) => void;
   reactToChatMessage: (targetUserId: string, messageId: string, emoji: string) => void;
   sendChatTyping: (targetUserId: string, isTyping: boolean) => void;
@@ -1574,20 +1574,24 @@ const addDeletedMessageIds = (ids: string[]) => {
     setActiveChatWindows(prev => prev.map(win => win.targetUserId === targetUserId ? { ...win, minimized: !win.minimized } : win));
   }, []);
 
-  const sendChatMessage = useCallback((targetUserId: string, text: string, imageUrl?: string) => {
+  const sendChatMessage = useCallback((targetUserId: string, text: string, imageUrl?: string, fileData?: { url: string; name: string; size?: number; type?: string }) => {
     const message = text.trim();
-    if (!currentUserId || !targetUserId || targetUserId === currentUserId || (!message && !imageUrl)) return;
+    if (!currentUserId || !targetUserId || targetUserId === currentUserId || (!message && !imageUrl && !fileData)) return;
 
     const msgId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newMsg: ChatMessage = {
       id: msgId,
       emisorId: currentUserId,
       receptorId: targetUserId,
-      mensaje: message || (imageUrl ? '📷 Foto' : ''),
+      mensaje: message || (imageUrl ? '📷 Foto' : (fileData ? `📎 ${fileData.name}` : '')),
       fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       timestamp: Date.now(),
       leido: true,
-      imageUrl: imageUrl || undefined
+      imageUrl: imageUrl || undefined,
+      fileUrl: fileData?.url || undefined,
+      fileName: fileData?.name || undefined,
+      fileSize: fileData?.size || undefined,
+      fileType: fileData?.type || undefined
     };
 
     // 1. Guardar mensaje en historial local

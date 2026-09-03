@@ -193,6 +193,10 @@ export interface ChatMessage {
   imageUrl?: string;
   isNudge?: boolean;
   reactions?: Record<string, string[]>;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  fileType?: string;
 }
 
 export interface InkoriumNotification {

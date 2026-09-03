@@ -26,8 +26,13 @@ app.get('/api/health', (_req, res) => {
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-const ALLOWED_UPLOAD_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'];
+const ALLOWED_UPLOAD_MIME_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif',
+  'application/pdf', 'text/plain', 'application/zip', 'application/x-zip-compressed',
+  'audio/mpeg', 'audio/mp3', 'audio/wav', 'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+];
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'pdf', 'txt', 'zip', 'mp3', 'wav', 'doc', 'docx'];
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1256,7 +1261,7 @@ app.post('/api/upload', (req: express.Request, res: express.Response) => {
       const file = req.file;
       const folder = String(req.body.folder || 'photos').trim().toLowerCase();
       if (!file) return res.status(400).json({ error: 'NO_FILE', message: 'No se ha adjuntado ningún archivo.' });
-      if (!['avatars', 'photos', 'wall'].includes(folder)) return res.status(400).json({ error: 'INVALID_FOLDER' });
+      if (!['avatars', 'photos', 'wall', 'chat', 'files'].includes(folder)) return res.status(400).json({ error: 'INVALID_FOLDER' });
       
       const rawExt = (file.originalname.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
       const fileExt = ALLOWED_EXTENSIONS.includes(rawExt) ? rawExt : 'jpg';

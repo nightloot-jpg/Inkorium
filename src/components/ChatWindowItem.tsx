@@ -1,8 +1,13 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { Minus, X, Send, Smile, ArrowDown, Loader2, CheckCheck, Clock, UserCheck, Image as ImageIcon, Zap, Heart, Maximize2 } from 'lucide-react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
+import { 
+  Minus, X, Send, Smile, ArrowDown, Loader2, CheckCheck, Clock, 
+  UserCheck, Image as ImageIcon, Zap, Heart, Maximize2, Images, 
+  MessageSquare, ChevronLeft, ChevronRight, Download, FileText, Paperclip, File, Archive, Music 
+} from 'lucide-react';
 import { User, ChatWindow, ChatMessage, UserPresence } from '../types';
 import { getFullConversation, formatChatDateDivider, normalizeUserId, subscribeCrossTabEvents } from '../lib/chatHistory';
 import EmoticonPicker from './EmoticonPicker';
+import { SharedMediaView } from './SharedMediaView';
 import { useInkorium } from '../context/InkoriumContext';
 import { playMessageSound, playNudgeSound } from '../utils/sound';
 import { uploadMediaFile } from '../lib/storage';
@@ -46,6 +51,21 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [activeReactionPickerMsgId, setActiveReactionPickerMsgId] = useState<string | null>(null);
   const [lightboxImageUrl, setLightboxImageUrl] = useState<string | null>(null);
+  const [lightboxActiveIndex, setLightboxActiveIndex] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<'chat' | 'media'>('chat');
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [attachedFile, setAttachedFile] = useState<{ url: string; name: string; size?: number; type?: string } | null>(null);
+
+  // Derived media lists
+  const mediaMessages = useMemo(() => {
+    return allMessages.filter(m => Boolean(m.imageUrl || m.fileUrl));
+  }, [allMessages]);
+
+  const sharedPhotos = useMemo(() => {
+    return allMessages.filter(m => Boolean(m.imageUrl));
+  }, [allMessages]);
+
+  const mediaCount = mediaMessages.length;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -272,34 +292,137 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     }
   };
 
-  // Image Upload handler
-  const processImageFile = async (file: File) => {
-    if (!file || !file.type.startsWith('image/')) return;
+  // Image & File Upload handler
+  const processAnyFile = async (file: File) => {
+    if (!file) return;
     try {
       setIsUploadingImage(true);
-      // Generate local preview immediately
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          setImagePreview(String(e.target.result));
-        }
-      };
-      reader.readAsDataURL(file);
+      const isImage = file.type.startsWith('image/');
+      if (isImage) {
+        // Generate local preview immediately
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            setImagePreview(String(e.target.result));
+          }
+        };
+        reader.readAsDataURL(file);
 
-      // Upload to server storage
-      const uploadedUrl = await uploadMediaFile(file, 'photos');
-      setImagePreview(uploadedUrl);
+        // Upload to server storage
+        const uploadedUrl = await uploadMediaFile(file, 'photos');
+        setImagePreview(uploadedUrl);
+      } else {
+        const uploadedUrl = await uploadMediaFile(file, 'photos');
+        setAttachedFile({
+          url: uploadedUrl,
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
+      }
     } catch (err: any) {
-      console.warn('Chat image upload error:', err);
+      console.warn('Chat file upload error:', err);
     } finally {
       setIsUploadingImage(false);
     }
   };
 
+  const handleUploadSharedFile = async (file: File) => {
+    try {
+      setIsUploadingImage(true);
+      const uploadedUrl = await uploadMediaFile(file, 'photos');
+      const isImage = file.type.startsWith('image/');
+      if (isImage) {
+        sendChatMessage(targetUser.id, '', uploadedUrl);
+      } else {
+        sendChatMessage(targetUser.id, '', undefined, {
+          url: uploadedUrl,
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
+      }
+    } catch (err: any) {
+      console.warn('Shared media upload error:', err);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleJumpToMessage = useCallback((messageId: string) => {
+    setActiveTab('chat');
+    setLightboxImageUrl(null);
+
+    // Make sure the message is in visible messages
+    const revIndex = allMessages.slice().reverse().findIndex(m => m.id === messageId);
+    if (revIndex >= visibleCount) {
+      setVisibleCount(Math.min(allMessages.length, revIndex + 12));
+    }
+
+    setHighlightedMessageId(messageId);
+
+    setTimeout(() => {
+      const el = document.getElementById(`chat-msg-${messageId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 150);
+
+    setTimeout(() => {
+      setHighlightedMessageId(prev => prev === messageId ? null : prev);
+    }, 3500);
+  }, [allMessages, visibleCount]);
+
+  const openPhotoLightbox = useCallback((photoUrl: string, msgId?: string) => {
+    setLightboxImageUrl(photoUrl);
+    if (msgId) {
+      const idx = sharedPhotos.findIndex(m => m.id === msgId);
+      if (idx !== -1) setLightboxActiveIndex(idx);
+    } else {
+      const idx = sharedPhotos.findIndex(m => m.imageUrl === photoUrl);
+      if (idx !== -1) setLightboxActiveIndex(idx);
+    }
+  }, [sharedPhotos]);
+
+  const handlePrevPhoto = useCallback(() => {
+    if (sharedPhotos.length <= 1) return;
+    const newIndex = (lightboxActiveIndex - 1 + sharedPhotos.length) % sharedPhotos.length;
+    setLightboxActiveIndex(newIndex);
+    setLightboxImageUrl(sharedPhotos[newIndex].imageUrl || null);
+  }, [lightboxActiveIndex, sharedPhotos]);
+
+  const handleNextPhoto = useCallback(() => {
+    if (sharedPhotos.length <= 1) return;
+    const newIndex = (lightboxActiveIndex + 1) % sharedPhotos.length;
+    setLightboxActiveIndex(newIndex);
+    setLightboxImageUrl(sharedPhotos[newIndex].imageUrl || null);
+  }, [lightboxActiveIndex, sharedPhotos]);
+
+  const currentLightboxMessage = useMemo(() => {
+    if (!lightboxImageUrl) return null;
+    return sharedPhotos[lightboxActiveIndex] || sharedPhotos.find(m => m.imageUrl === lightboxImageUrl) || null;
+  }, [lightboxImageUrl, lightboxActiveIndex, sharedPhotos]);
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (!lightboxImageUrl) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxImageUrl(null);
+      } else if (e.key === 'ArrowLeft') {
+        handlePrevPhoto();
+      } else if (e.key === 'ArrowRight') {
+        handleNextPhoto();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxImageUrl, handlePrevPhoto, handleNextPhoto]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files[0]) {
-      void processImageFile(files[0]);
+      void processAnyFile(files[0]);
     }
     // Reset file input value so the same file can be selected again if needed
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -323,7 +446,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     e.stopPropagation();
     setIsDraggingOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      void processImageFile(e.dataTransfer.files[0]);
+      void processAnyFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -336,7 +459,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
         const file = items[i].getAsFile();
         if (file) {
           e.preventDefault();
-          void processImageFile(file);
+          void processAnyFile(file);
           break;
         }
       }
@@ -347,8 +470,9 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     if (e) e.preventDefault();
     const text = inputText.trim();
     const hasImage = Boolean(imagePreview);
+    const hasFile = Boolean(attachedFile);
 
-    if ((!text && !hasImage) || !currentUser.id || !targetUser.id) return;
+    if ((!text && !hasImage && !hasFile) || !currentUser.id || !targetUser.id) return;
     if (targetUser.id === currentUser.id) return;
 
     if (typingTimeoutRef.current) {
@@ -356,9 +480,10 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     }
     sendChatTyping(targetUser.id, false);
 
-    sendChatMessage(targetUser.id, text, imagePreview || undefined);
+    sendChatMessage(targetUser.id, text, imagePreview || undefined, attachedFile || undefined);
     setInputText('');
     setImagePreview(null);
+    setAttachedFile(null);
     setEmoticonOpen(false);
 
     try {
@@ -422,11 +547,15 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
 
       const reactions = msg.reactions || {};
       const reactionEntries = Object.entries(reactions).filter(([_, userIds]) => userIds && userIds.length > 0);
+      const isHighlighted = highlightedMessageId === msg.id;
 
       elements.push(
         <div
+          id={`chat-msg-${msg.id}`}
           key={msg.id || `msg-${idx}`}
-          className={`group/msg relative flex flex-col max-w-[85%] ${isMe ? 'self-end items-end' : 'self-start items-start'}`}
+          className={`group/msg relative flex flex-col max-w-[85%] transition-all duration-300 rounded-lg p-0.5 ${
+            isMe ? 'self-end items-end' : 'self-start items-start'
+          } ${isHighlighted ? 'bg-amber-100 dark:bg-amber-950/60 ring-2 ring-amber-400 p-1.5 animate-pulse' : ''}`}
         >
           {/* Reaction trigger icon on hover */}
           <div
@@ -479,15 +608,46 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
                   src={msg.imageUrl}
                   alt="Foto enviada en el chat"
                   className="w-full max-h-48 object-cover rounded hover:opacity-95 transition"
-                  onClick={() => setLightboxImageUrl(msg.imageUrl || null)}
+                  onClick={() => openPhotoLightbox(msg.imageUrl!, msg.id)}
                   loading="lazy"
                 />
                 <div
-                  onClick={() => setLightboxImageUrl(msg.imageUrl || null)}
+                  onClick={() => openPhotoLightbox(msg.imageUrl!, msg.id)}
                   className="absolute inset-0 bg-black/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white"
                 >
                   <Maximize2 className="w-4 h-4 drop-shadow" />
                 </div>
+              </div>
+            )}
+
+            {/* Attached Document/File */}
+            {msg.fileUrl && !msg.imageUrl && (
+              <div className="flex items-center gap-2 p-1.5 rounded bg-black/10 dark:bg-white/10 border border-black/10 dark:border-white/10 max-w-[220px]">
+                <div className="p-1 rounded bg-white/30 dark:bg-black/30 flex-shrink-0">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1 text-[10px]">
+                  <p className="font-semibold truncate" title={msg.fileName || 'Archivo'}>
+                    {msg.fileName || 'Archivo adjunto'}
+                  </p>
+                  {msg.fileSize && (
+                    <p className="text-[9px] opacity-75">
+                      {msg.fileSize < 1024 * 1024
+                        ? `${(msg.fileSize / 1024).toFixed(0)} KB`
+                        : `${(msg.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                    </p>
+                  )}
+                </div>
+                <a
+                  href={msg.fileUrl}
+                  download={msg.fileName || 'archivo'}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-1 rounded hover:bg-black/15 dark:hover:bg-white/15 transition text-inherit flex-shrink-0"
+                  title="Descargar archivo"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                </a>
               </div>
             )}
 
@@ -586,6 +746,27 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
         </div>
 
         <div className="flex items-center gap-1 text-white/80">
+          {/* Shared Media toggle button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveTab(prev => (prev === 'media' ? 'chat' : 'media'));
+            }}
+            className={`p-1 rounded cursor-pointer transition flex items-center gap-0.5 ${
+              activeTab === 'media'
+                ? 'bg-white text-[#3869A0] font-bold shadow-xs'
+                : 'text-white/80 hover:text-white hover:bg-black/20'
+            }`}
+            title={activeTab === 'media' ? 'Volver a los mensajes' : `Archivos compartidos (${mediaCount})`}
+          >
+            <Images className="w-3.5 h-3.5" />
+            {mediaCount > 0 && (
+              <span className="text-[9px] bg-amber-400 text-gray-950 font-bold px-1 rounded-full leading-tight">
+                {mediaCount}
+              </span>
+            )}
+          </button>
           {/* Quick Nudge button in header */}
           <button
             type="button"
@@ -623,212 +804,300 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
         </div>
       </div>
 
+      {/* Subheader Navigation Tabs */}
+      {!win.minimized && (
+        <div className="bg-[#2a517c] dark:bg-[#132035] text-white/90 px-2 py-1 flex items-center justify-between border-b border-[#214368] dark:border-slate-800 text-[11px]">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('chat')}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded transition cursor-pointer font-medium ${
+                activeTab === 'chat'
+                  ? 'bg-white/20 text-white font-bold'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <MessageSquare className="w-3 h-3" />
+              <span>Mensajes</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('media')}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded transition cursor-pointer font-medium ${
+                activeTab === 'media'
+                  ? 'bg-white/20 text-white font-bold'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Images className="w-3 h-3" />
+              <span>Multimedia</span>
+              {mediaCount > 0 && (
+                <span className="text-[9px] bg-amber-400 text-gray-950 font-bold px-1 rounded-full leading-tight">
+                  {mediaCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {activeTab === 'chat' && mediaCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('media')}
+              className="text-[10px] text-blue-200 hover:text-white underline cursor-pointer truncate max-w-[120px]"
+              title="Ver fotos y archivos compartidos"
+            >
+              {mediaCount} {mediaCount === 1 ? 'archivo' : 'archivos'}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Chat Window Body */}
       {!win.minimized && (
         <>
-          <div
-            ref={scrollContainerRef}
-            onScroll={handleScroll}
-            className="h-72 p-2.5 overflow-y-auto bg-[#f8fafc] dark:bg-[#090d16] space-y-1.5 flex flex-col relative"
-          >
-            {/* Drag and drop overlay */}
-            {isDraggingOver && (
-              <div className="absolute inset-0 bg-[#3869A0]/80 z-30 flex flex-col items-center justify-center text-white border-2 border-dashed border-white m-1 rounded-lg backdrop-blur-xs">
-                <ImageIcon className="w-8 h-8 animate-bounce mb-1" />
-                <span className="font-bold text-xs">Suelta la foto para enviarla al chat</span>
-              </div>
-            )}
+          {activeTab === 'media' ? (
+            <SharedMediaView
+              targetUser={targetUser}
+              currentUser={currentUser}
+              allMessages={allMessages}
+              onBackToChat={() => setActiveTab('chat')}
+              onJumpToMessage={handleJumpToMessage}
+              onSelectPhotoLightbox={(url, msg) => openPhotoLightbox(url, msg?.id)}
+              onUploadFile={handleUploadSharedFile}
+              isUploading={isUploadingImage}
+            />
+          ) : (
+            <>
+              <div
+                ref={scrollContainerRef}
+                onScroll={handleScroll}
+                className="h-72 p-2.5 overflow-y-auto bg-[#f8fafc] dark:bg-[#090d16] space-y-1.5 flex flex-col relative"
+              >
+                {/* Drag and drop overlay */}
+                {isDraggingOver && (
+                  <div className="absolute inset-0 bg-[#3869A0]/80 z-30 flex flex-col items-center justify-center text-white border-2 border-dashed border-white m-1 rounded-lg backdrop-blur-xs">
+                    <ImageIcon className="w-8 h-8 animate-bounce mb-1" />
+                    <span className="font-bold text-xs">Suelta la foto o archivo para enviarlo</span>
+                  </div>
+                )}
 
-            {/* Top Loading Indicator & Infinite Scroll Button */}
-            {hasMore ? (
-              <div className="flex flex-col items-center justify-center py-1.5 border-b border-gray-200/80 dark:border-slate-800 mb-2">
-                {isLoadingOlder ? (
-                  <div className="flex items-center gap-1.5 text-xs text-[#3869A0] dark:text-blue-400 font-medium py-1">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Cargando historial anterior...</span>
+                {/* Top Loading Indicator & Infinite Scroll Button */}
+                {hasMore ? (
+                  <div className="flex flex-col items-center justify-center py-1.5 border-b border-gray-200/80 dark:border-slate-800 mb-2">
+                    {isLoadingOlder ? (
+                      <div className="flex items-center gap-1.5 text-xs text-[#3869A0] dark:text-blue-400 font-medium py-1">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Cargando historial anterior...</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={loadOlderMessages}
+                        className="flex items-center gap-1 text-[11px] text-[#3869A0] dark:text-blue-400 font-semibold hover:underline bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 hover:border-[#3869A0] px-2.5 py-1 rounded-full shadow-2xs cursor-pointer transition"
+                      >
+                        <Clock className="w-3 h-3" />
+                        <span>Ver mensajes anteriores ({remainingCount} más)</span>
+                      </button>
+                    )}
+                    <span className="text-[9px] text-gray-400 dark:text-gray-500 mt-1">
+                      Desliza hacia arriba para cargar automáticamente
+                    </span>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={loadOlderMessages}
-                    className="flex items-center gap-1 text-[11px] text-[#3869A0] dark:text-blue-400 font-semibold hover:underline bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 hover:border-[#3869A0] px-2.5 py-1 rounded-full shadow-2xs cursor-pointer transition"
-                  >
-                    <Clock className="w-3 h-3" />
-                    <span>Ver mensajes anteriores ({remainingCount} más)</span>
-                  </button>
-                )}
-                <span className="text-[9px] text-gray-400 dark:text-gray-500 mt-1">
-                  Desliza hacia arriba para cargar automáticamente
-                </span>
-              </div>
-            ) : (
-              /* Milestone: Beginning of Conversation History */
-              <div className="text-center py-3 border-b border-gray-200 dark:border-slate-800 mb-2 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-2">
-                <img
-                  src={targetUser.avatar}
-                  alt=""
-                  className="w-10 h-10 rounded-full mx-auto object-cover border border-gray-300 dark:border-slate-700 shadow-2xs"
-                />
-                <p className="font-bold text-gray-800 dark:text-gray-200 text-[11px] mt-1">
-                  {targetUser.nombre} {targetUser.apellidos}
-                </p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                  {targetUser.provincia} • {targetUser.online ? '🟢 Conectado' : 'Desconectado'}
-                </p>
-                <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-slate-800 py-0.5 px-2 rounded-full border border-blue-200 dark:border-blue-900/40 inline-flex mx-auto">
-                  <UserCheck className="w-3 h-3 text-[#3869A0] dark:text-blue-400" />
-                  <span>Inicio del historial de chat</span>
-                </div>
-              </div>
-            )}
-
-            {/* Messages Stream with Date Separators */}
-            {renderMessagesWithDividers()}
-
-            {/* Contact Typing Indicator */}
-            {isPeerTyping && (
-              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 bg-white/90 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 py-1 px-2.5 rounded-full w-fit text-[11px] shadow-2xs animate-pulse my-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#3869A0] dark:bg-blue-400 animate-ping" />
-                <span className="text-[10px] text-gray-600 dark:text-gray-300 font-medium">
-                  {targetUser.nombre} está escribiendo...
-                </span>
-              </div>
-            )}
-
-            {/* Floating "Scroll to Recent Messages" button */}
-            {showScrollBottom && (
-              <button
-                type="button"
-                onClick={scrollToBottom}
-                className="sticky bottom-2 self-center z-10 flex items-center gap-1 bg-[#3869A0] hover:bg-[#2c537f] text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md cursor-pointer transition animate-bounce"
-              >
-                <ArrowDown className="w-3 h-3" />
-                <span>Mensajes recientes</span>
-              </button>
-            )}
-          </div>
-
-          {/* Image preview before sending */}
-          {imagePreview && (
-            <div className="p-2 bg-blue-50/70 dark:bg-blue-950/40 border-t border-blue-200 dark:border-blue-900/50 flex items-center gap-2">
-              <div className="relative w-12 h-12 rounded border border-blue-300 dark:border-blue-800 overflow-hidden flex-shrink-0 bg-white dark:bg-slate-800">
-                <img src={imagePreview} alt="Vista previa" className="w-full h-full object-cover" />
-                {isUploadingImage && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  /* Milestone: Beginning of Conversation History */
+                  <div className="text-center py-3 border-b border-gray-200 dark:border-slate-800 mb-2 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-2">
+                    <img
+                      src={targetUser.avatar}
+                      alt=""
+                      className="w-10 h-10 rounded-full mx-auto object-cover border border-gray-300 dark:border-slate-700 shadow-2xs"
+                    />
+                    <p className="font-bold text-gray-800 dark:text-gray-200 text-[11px] mt-1">
+                      {targetUser.nombre} {targetUser.apellidos}
+                    </p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                      {targetUser.provincia} • {targetUser.online ? '🟢 Conectado' : 'Desconectado'}
+                    </p>
+                    <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-slate-800 py-0.5 px-2 rounded-full border border-blue-200 dark:border-blue-900/40 inline-flex mx-auto">
+                      <UserCheck className="w-3 h-3 text-[#3869A0] dark:text-blue-400" />
+                      <span>Inicio del historial de chat</span>
+                    </div>
                   </div>
                 )}
+
+                {/* Messages Stream with Date Separators */}
+                {renderMessagesWithDividers()}
+
+                {/* Contact Typing Indicator */}
+                {isPeerTyping && (
+                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 bg-white/90 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 py-1 px-2.5 rounded-full w-fit text-[11px] shadow-2xs animate-pulse my-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#3869A0] dark:bg-blue-400 animate-ping" />
+                    <span className="text-[10px] text-gray-600 dark:text-gray-300 font-medium">
+                      {targetUser.nombre} está escribiendo...
+                    </span>
+                  </div>
+                )}
+
+                {/* Floating "Scroll to Recent Messages" button */}
+                {showScrollBottom && (
+                  <button
+                    type="button"
+                    onClick={scrollToBottom}
+                    className="sticky bottom-2 self-center z-10 flex items-center gap-1 bg-[#3869A0] hover:bg-[#2c537f] text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md cursor-pointer transition animate-bounce"
+                  >
+                    <ArrowDown className="w-3 h-3" />
+                    <span>Mensajes recientes</span>
+                  </button>
+                )}
               </div>
-              <div className="flex-1 truncate">
-                <p className="text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate">
-                  {isUploadingImage ? 'Subiendo foto...' : 'Foto lista para enviar'}
-                </p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                  Pulsa Enviar para adjuntarla
-                </p>
+
+              {/* Attached File preview before sending */}
+              {attachedFile && (
+                <div className="p-2 bg-blue-50/70 dark:bg-blue-950/40 border-t border-blue-200 dark:border-blue-900/50 flex items-center gap-2">
+                  <div className="p-2 rounded bg-blue-100 dark:bg-blue-900 text-[#3869A0] dark:text-blue-300 flex-shrink-0">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 truncate">
+                    <p className="text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate">
+                      {attachedFile.name}
+                    </p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                      {attachedFile.size ? `${(attachedFile.size / 1024).toFixed(0)} KB • ` : ''}Listo para enviar
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAttachedFile(null)}
+                    className="text-gray-400 hover:text-red-500 p-1 cursor-pointer"
+                    title="Quitar archivo"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Image preview before sending */}
+              {imagePreview && (
+                <div className="p-2 bg-blue-50/70 dark:bg-blue-950/40 border-t border-blue-200 dark:border-blue-900/50 flex items-center gap-2">
+                  <div className="relative w-12 h-12 rounded border border-blue-300 dark:border-blue-800 overflow-hidden flex-shrink-0 bg-white dark:bg-slate-800">
+                    <img src={imagePreview} alt="Vista previa" className="w-full h-full object-cover" />
+                    {isUploadingImage && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 truncate">
+                    <p className="text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate">
+                      {isUploadingImage ? 'Subiendo foto...' : 'Foto lista para enviar'}
+                    </p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                      Pulsa Enviar para adjuntarla
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setImagePreview(null)}
+                    className="text-gray-400 hover:text-red-500 p-1 cursor-pointer"
+                    title="Quitar foto"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Quick Retro Replies Chips */}
+              <div className="px-2 py-1 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 flex items-center gap-1 overflow-x-auto no-scrollbar">
+                {['¡Hola! ^^', '¿Qué tal?', 'Jajaja XD', 'Hablamos luego!'].map((quick) => (
+                  <button
+                    key={quick}
+                    type="button"
+                    onClick={() => {
+                      setInputText(quick);
+                    }}
+                    className="whitespace-nowrap bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 hover:border-blue-300 text-gray-600 dark:text-gray-300 hover:text-[#3869A0] text-[10px] px-1.5 py-0.5 rounded cursor-pointer transition"
+                  >
+                    {quick}
+                  </button>
+                ))}
               </div>
-              <button
-                type="button"
-                onClick={() => setImagePreview(null)}
-                className="text-gray-400 hover:text-red-500 p-1 cursor-pointer"
-                title="Quitar foto"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
 
-          {/* Quick Retro Replies Chips */}
-          <div className="px-2 py-1 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {['¡Hola! ^^', '¿Qué tal?', 'Jajaja XD', 'Hablamos luego!'].map((quick) => (
-              <button
-                key={quick}
-                type="button"
-                onClick={() => {
-                  setInputText(quick);
-                }}
-                className="whitespace-nowrap bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 hover:border-blue-300 text-gray-600 dark:text-gray-300 hover:text-[#3869A0] text-[10px] px-1.5 py-0.5 rounded cursor-pointer transition"
+              {/* Chat Input Bar */}
+              <form
+                onSubmit={handleSend}
+                onPaste={handlePaste}
+                className="p-1.5 bg-white dark:bg-[#0e1726] border-t border-gray-200 dark:border-slate-800 flex items-center gap-1.5 relative"
               >
-                {quick}
-              </button>
-            ))}
-          </div>
+                {/* Emoticon Picker Toggle */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setEmoticonOpen(!emoticonOpen)}
+                    className={`p-1 rounded text-gray-500 dark:text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition ${
+                      emoticonOpen ? 'text-[#3869A0] bg-blue-50 dark:bg-blue-950/40' : ''
+                    }`}
+                    title="Insertar emoticonos retro y emojis"
+                  >
+                    <Smile className="w-4 h-4" />
+                  </button>
 
-          {/* Chat Input Bar */}
-          <form
-            onSubmit={handleSend}
-            onPaste={handlePaste}
-            className="p-1.5 bg-white dark:bg-[#0e1726] border-t border-gray-200 dark:border-slate-800 flex items-center gap-1.5 relative"
-          >
-            {/* Emoticon Picker Toggle */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setEmoticonOpen(!emoticonOpen)}
-                className={`p-1 rounded text-gray-500 dark:text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition ${
-                  emoticonOpen ? 'text-[#3869A0] bg-blue-50 dark:bg-blue-950/40' : ''
-                }`}
-                title="Insertar emoticonos retro y emojis"
-              >
-                <Smile className="w-4 h-4" />
-              </button>
+                  {emoticonOpen && (
+                    <EmoticonPicker
+                      onSelect={handleInsertEmoticon}
+                      onClose={() => setEmoticonOpen(false)}
+                    />
+                  )}
+                </div>
 
-              {emoticonOpen && (
-                <EmoticonPicker
-                  onSelect={handleInsertEmoticon}
-                  onClose={() => setEmoticonOpen(false)}
+                {/* Photo / File Attachment Button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingImage}
+                  className="p-1 rounded text-gray-500 dark:text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition disabled:opacity-50"
+                  title="Enviar foto o archivo"
+                >
+                  {isUploadingImage ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#3869A0]" />
+                  ) : (
+                    <ImageIcon className="w-4 h-4" />
+                  )}
+                </button>
+
+                {/* Zumbido (Nudge) Button */}
+                <button
+                  type="button"
+                  onClick={handleSendNudge}
+                  className="p-1 rounded text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 cursor-pointer transition"
+                  title="¡Enviar zumbido! (hace vibrar la pantalla con sonido)"
+                >
+                  <Zap className="w-4 h-4 fill-amber-500" />
+                </button>
+
+                {/* Text input */}
+                <input
+                  type="text"
+                  placeholder="Escribe un mensaje o pega una foto..."
+                  value={inputText}
+                  onChange={handleInputChange}
+                  className="flex-1 text-xs p-1.5 rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-[#3869A0] focus:ring-1 focus:ring-[#3869A0]"
                 />
-              )}
-            </div>
 
-            {/* Photo Attachment Button */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingImage}
-              className="p-1 rounded text-gray-500 dark:text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition disabled:opacity-50"
-              title="Enviar imagen o foto"
-            >
-              {isUploadingImage ? (
-                <Loader2 className="w-4 h-4 animate-spin text-[#3869A0]" />
-              ) : (
-                <ImageIcon className="w-4 h-4" />
-              )}
-            </button>
-
-            {/* Zumbido (Nudge) Button */}
-            <button
-              type="button"
-              onClick={handleSendNudge}
-              className="p-1 rounded text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 cursor-pointer transition"
-              title="¡Enviar zumbido! (hace vibrar la pantalla con sonido)"
-            >
-              <Zap className="w-4 h-4 fill-amber-500" />
-            </button>
-
-            {/* Text input */}
-            <input
-              type="text"
-              placeholder="Escribe un mensaje o pega una foto..."
-              value={inputText}
-              onChange={handleInputChange}
-              className="flex-1 text-xs p-1.5 rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-[#3869A0] focus:ring-1 focus:ring-[#3869A0]"
-            />
-
-            {/* Send button */}
-            <button
-              type="submit"
-              disabled={!inputText.trim() && !imagePreview}
-              className="p-1.5 bg-[#3869A0] text-white rounded hover:bg-[#2c537f] disabled:bg-gray-300 dark:disabled:bg-slate-700 transition cursor-pointer disabled:cursor-not-allowed shadow-2xs"
-              title="Enviar mensaje"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
-          </form>
+                {/* Send button */}
+                <button
+                  type="submit"
+                  disabled={!inputText.trim() && !imagePreview && !attachedFile}
+                  className="p-1.5 bg-[#3869A0] text-white rounded hover:bg-[#2c537f] disabled:bg-gray-300 dark:disabled:bg-slate-700 transition cursor-pointer disabled:cursor-not-allowed shadow-2xs"
+                  title="Enviar mensaje"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </form>
+            </>
+          )}
         </>
       )}
 
-      {/* Lightbox / Modal for full-size photo viewing */}
+      {/* Lightbox / Modal for full-size photo viewing with Carousel & Jump to Message */}
       {lightboxImageUrl && (
         <div
           role="dialog"
@@ -840,27 +1109,88 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
             className="relative max-w-2xl max-h-[85vh] bg-[#0e1726] border border-slate-700 rounded-lg overflow-hidden shadow-2xl flex flex-col"
             onClick={e => e.stopPropagation()}
           >
+            {/* Lightbox Header */}
             <div className="bg-[#18253a] px-3 py-2 flex items-center justify-between text-white border-b border-slate-700">
               <span className="font-bold text-xs flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5 text-blue-400" />
                 <span>Foto de Inkorium Chat</span>
+                {sharedPhotos.length > 1 && (
+                  <span className="text-[10px] text-gray-400 ml-1">
+                    ({lightboxActiveIndex + 1} de {sharedPhotos.length})
+                  </span>
+                )}
               </span>
-              <button
-                type="button"
-                onClick={() => setLightboxImageUrl(null)}
-                className="p-1 text-gray-300 hover:text-white rounded hover:bg-white/10 transition cursor-pointer"
-                title="Cerrar"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                {currentLightboxMessage && (
+                  <button
+                    type="button"
+                    onClick={() => handleJumpToMessage(currentLightboxMessage.id)}
+                    className="text-[10px] bg-blue-600/60 hover:bg-blue-600 text-white px-2 py-0.5 rounded cursor-pointer transition flex items-center gap-1"
+                    title="Ver en el chat"
+                  >
+                    <MessageSquare className="w-3 h-3" />
+                    <span>Ver en el chat</span>
+                  </button>
+                )}
+                <a
+                  href={lightboxImageUrl}
+                  download="foto-inkorium.jpg"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-1 text-gray-300 hover:text-white rounded hover:bg-white/10 transition cursor-pointer"
+                  title="Descargar foto"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setLightboxImageUrl(null)}
+                  className="p-1 text-gray-300 hover:text-white rounded hover:bg-white/10 transition cursor-pointer"
+                  title="Cerrar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-            <div className="p-2 flex items-center justify-center bg-black/40 overflow-auto max-h-[75vh]">
+
+            {/* Lightbox Image Stage with Next/Prev navigation */}
+            <div className="relative p-2 flex items-center justify-center bg-black/40 overflow-auto max-h-[75vh]">
+              {sharedPhotos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrevPhoto}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white transition z-10 cursor-pointer shadow-lg"
+                    title="Foto anterior (Flecha izquierda)"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextPhoto}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white transition z-10 cursor-pointer shadow-lg"
+                    title="Siguiente foto (Flecha derecha)"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
               <img
                 src={lightboxImageUrl}
                 alt="Foto ampliada"
-                className="max-h-[70vh] w-auto object-contain rounded"
+                className="max-h-[70vh] w-auto object-contain rounded select-none"
               />
             </div>
+
+            {/* Lightbox Footer metadata */}
+            {currentLightboxMessage && (
+              <div className="bg-[#121c2c] px-3 py-1.5 flex items-center justify-between text-[11px] text-gray-400 border-t border-slate-800">
+                <span>
+                  Enviada por {currentLightboxMessage.emisorId === currentUser.id ? 'ti' : targetUser.nombre}
+                </span>
+                <span>{currentLightboxMessage.fecha}</span>
+              </div>
+            )}
           </div>
         </div>
       )}
