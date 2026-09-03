@@ -34,10 +34,21 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   onOpenProfile,
   getUserPresenceDot,
 }) => {
-  const { sendChatMessage, sendChatNudge, reactToChatMessage, sendChatTyping } = useInkorium();
+  const { sendChatMessage, sendChatNudge, reactToChatMessage, sendChatTyping, sendChatReadReceipt } = useInkorium();
   const [allMessages, setAllMessages] = useState<ChatMessage[]>(() => {
     return getFullConversation(currentUser.id, targetUser.id, `${targetUser.nombre} ${targetUser.apellidos}`);
   });
+
+  // Latest message sent by the current user to display read receipt status
+  const lastSentByMeMessage = useMemo(() => {
+    const normCur = normalizeUserId(currentUser.id);
+    for (let i = allMessages.length - 1; i >= 0; i--) {
+      if (normalizeUserId(allMessages[i].emisorId) === normCur) {
+        return allMessages[i];
+      }
+    }
+    return null;
+  }, [allMessages, currentUser.id]);
 
   const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
@@ -122,6 +133,36 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
           return [...prev, msg];
         });
         setVisibleCount(prev => prev + 1);
+
+        // If the window is actively open and the message is from targetUser, acknowledge as read immediately
+        const normSender = normalizeUserId(msg.emisorId);
+        const normTarget = normalizeUserId(targetUser.id);
+        if (!win.minimized && normSender === normTarget) {
+          sendChatReadReceipt(targetUser.id, [msg.id]);
+        }
+      }
+    };
+
+    const handleChatRead = (e: Event) => {
+      const customEvent = e as CustomEvent<{ readerId: string; senderId: string; messageIds?: string[]; readAt: number; readDate: string }>;
+      const { readerId, senderId, messageIds, readAt, readDate } = customEvent.detail || {};
+      const normCur = normalizeUserId(currentUser.id);
+      const normTarget = normalizeUserId(targetUser.id);
+
+      // When the target user reads messages sent by the current user
+      if (normalizeUserId(readerId) === normTarget && normalizeUserId(senderId) === normCur) {
+        setAllMessages(prev => prev.map(m => {
+          const isTarget = !messageIds || messageIds.length === 0 || messageIds.includes(m.id);
+          if (isTarget && normalizeUserId(m.emisorId) === normCur) {
+            return {
+              ...m,
+              leido: true,
+              readAt: readAt || Date.now(),
+              readDate: readDate || m.readDate || 'Ahora'
+            };
+          }
+          return m;
+        }));
       }
     };
 
@@ -184,6 +225,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     window.addEventListener('inkorium:peer_typing', handleTyping);
     window.addEventListener('inkorium:chat_nudge', handleNudgeEvent);
     window.addEventListener('inkorium:chat_reaction', handleReactionEvent);
+    window.addEventListener('inkorium:chat_read', handleChatRead);
 
     // Cross-tab broadcast listener
     const unsubscribeCrossTab = subscribeCrossTabEvents((event) => {
@@ -200,6 +242,25 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
           (normalizeUserId(nSender) === normalizeUserId(currentUser.id) && normalizeUserId(nTarget) === normalizeUserId(targetUser.id))
         ) {
           triggerNudgeShake();
+        }
+      } else if (event.type === 'CHAT_READ') {
+        const { readerId, senderId, messageIds, readAt, readDate } = event.payload;
+        const normCur = normalizeUserId(currentUser.id);
+        const normTarget = normalizeUserId(targetUser.id);
+
+        if (normalizeUserId(readerId) === normTarget && normalizeUserId(senderId) === normCur) {
+          setAllMessages(prev => prev.map(m => {
+            const isTarget = !messageIds || messageIds.length === 0 || messageIds.includes(m.id);
+            if (isTarget && normalizeUserId(m.emisorId) === normCur) {
+              return {
+                ...m,
+                leido: true,
+                readAt: readAt || Date.now(),
+                readDate: readDate || m.readDate || 'Ahora'
+              };
+            }
+            return m;
+          }));
         }
       } else if (event.type === 'CHAT_REACTION') {
         const { messageId, emoji, userId } = event.payload;
@@ -225,9 +286,47 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
       window.removeEventListener('inkorium:peer_typing', handleTyping);
       window.removeEventListener('inkorium:chat_nudge', handleNudgeEvent);
       window.removeEventListener('inkorium:chat_reaction', handleReactionEvent);
+      window.removeEventListener('inkorium:chat_read', handleChatRead);
       unsubscribeCrossTab();
     };
-  }, [currentUser.id, targetUser.id]);
+  }, [currentUser.id, targetUser.id, win.minimized, sendChatReadReceipt]);
+
+  // Mark pending unread messages as read whenever window is open and unminimized
+  useEffect(() => {
+    if (win.minimized) return;
+    const hasUnread = allMessages.some(
+      m => normalizeUserId(m.emisorId) === normalizeUserId(targetUser.id) && !m.leido
+    );
+    if (hasUnread) {
+      sendChatReadReceipt(targetUser.id);
+    }
+  }, [win.minimized, allMessages, targetUser.id, sendChatReadReceipt]);
+
+  // Mark as read when browser window regains focus
+  useEffect(() => {
+    const handleWindowFocus = () => {
+      if (!win.minimized) {
+        const hasUnread = allMessages.some(
+          m => normalizeUserId(m.emisorId) === normalizeUserId(targetUser.id) && !m.leido
+        );
+        if (hasUnread) {
+          sendChatReadReceipt(targetUser.id);
+        }
+      }
+    };
+    window.addEventListener('focus', handleWindowFocus);
+    return () => window.removeEventListener('focus', handleWindowFocus);
+  }, [win.minimized, allMessages, targetUser.id, sendChatReadReceipt]);
+
+  const handleUserInteraction = () => {
+    if (win.minimized) return;
+    const hasUnread = allMessages.some(
+      m => normalizeUserId(m.emisorId) === normalizeUserId(targetUser.id) && !m.leido
+    );
+    if (hasUnread) {
+      sendChatReadReceipt(targetUser.id);
+    }
+  };
 
   // Sliced visible messages
   const visibleMessages = allMessages.slice(-visibleCount);
@@ -684,7 +783,25 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
           {/* Time & status */}
           <div className="flex items-center gap-1 text-[9px] text-gray-400 dark:text-gray-500 mt-0.5 px-1">
             <span>{msg.fecha}</span>
-            {isMe && <span title="Enviado"><CheckCheck className="w-3 h-3 text-[#3869A0]/80 dark:text-blue-300" /></span>}
+            {isMe && (
+              <span
+                className="inline-flex items-center gap-0.5"
+                title={
+                  msg.leido
+                    ? `Visto por ${targetUser.nombre}${msg.readDate ? ` a las ${msg.readDate}` : ''}`
+                    : 'Entregado'
+                }
+              >
+                {msg.leido ? (
+                  <>
+                    <CheckCheck className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+                    <span className="text-[9px] text-blue-600 dark:text-blue-400 font-semibold">Visto</span>
+                  </>
+                ) : (
+                  <CheckCheck className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                )}
+              </span>
+            )}
           </div>
         </div>
       );
@@ -696,6 +813,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   return (
     <div
       ref={windowRef}
+      onClick={handleUserInteraction}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -839,16 +957,30 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
             </button>
           </div>
 
-          {activeTab === 'chat' && mediaCount > 0 && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('media')}
-              className="text-[10px] text-blue-200 hover:text-white underline cursor-pointer truncate max-w-[120px]"
-              title="Ver fotos y archivos compartidos"
-            >
-              {mediaCount} {mediaCount === 1 ? 'archivo' : 'archivos'}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {isPeerTyping ? (
+              <span className="text-[10px] text-amber-300 font-medium flex items-center gap-1 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                escribiendo...
+              </span>
+            ) : targetUser.online ? (
+              <span className="text-[10px] text-emerald-300 flex items-center gap-1 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                En línea
+              </span>
+            ) : null}
+
+            {activeTab === 'chat' && mediaCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('media')}
+                className="text-[10px] text-blue-200 hover:text-white underline cursor-pointer truncate max-w-[120px]"
+                title="Ver fotos y archivos compartidos"
+              >
+                {mediaCount} {mediaCount === 1 ? 'archivo' : 'archivos'}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -926,6 +1058,36 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
 
                 {/* Messages Stream with Date Separators */}
                 {renderMessagesWithDividers()}
+
+                {/* Real-time seen status indicator for the latest sent message */}
+                {lastSentByMeMessage && (
+                  <div className="flex items-center justify-end pr-2 py-0.5 my-1">
+                    {lastSentByMeMessage.leido ? (
+                      <div
+                        className="inline-flex items-center gap-1.5 text-[10px] text-blue-600 dark:text-blue-400 font-medium bg-blue-50/90 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200/60 dark:border-blue-800/60 shadow-2xs"
+                        title={`Visto por ${targetUser.nombre}${lastSentByMeMessage.readDate ? ` a las ${lastSentByMeMessage.readDate}` : ''}`}
+                      >
+                        <CheckCheck className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+                        <span>Visto {lastSentByMeMessage.readDate ? `a las ${lastSentByMeMessage.readDate}` : ''}</span>
+                        {targetUser.avatar ? (
+                          <img
+                            src={targetUser.avatar}
+                            alt=""
+                            className="w-3.5 h-3.5 rounded-full object-cover border border-blue-400"
+                          />
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div
+                        className="inline-flex items-center gap-1 text-[9px] text-gray-400 dark:text-gray-500 px-1 py-0.5"
+                        title="Mensaje entregado pero aún no visto"
+                      >
+                        <CheckCheck className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                        <span>Entregado</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Contact Typing Indicator */}
                 {isPeerTyping && (
@@ -1079,6 +1241,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
                   placeholder="Escribe un mensaje o pega una foto..."
                   value={inputText}
                   onChange={handleInputChange}
+                  onFocus={handleUserInteraction}
                   className="flex-1 text-xs p-1.5 rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-[#3869A0] focus:ring-1 focus:ring-[#3869A0]"
                 />
 

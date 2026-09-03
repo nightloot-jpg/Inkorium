@@ -6,7 +6,7 @@ import { fetchPhotos, insertPhoto, addPhotoTagApi, removePhotoTagApi, updatePhot
 import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WALL_COMMENTS, INITIAL_FRIENDSHIPS, INITIAL_FRIEND_REQUESTS, INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_ACCESS_LOGS, INITIAL_ACTIVITIES } from '../data/mockData';
 import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
 import { musicAudioEngine } from '../utils/audioEngine';
-import { appendMessageToConversation, updateMessageInConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents } from '../lib/chatHistory';
+import { appendMessageToConversation, updateMessageInConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents, markConversationAsRead, applyReadReceiptsToConversation } from '../lib/chatHistory';
 import { playMessageSound, playNotificationChime, playNudgeSound } from '../utils/sound';
 import { RealtimeManager } from '../lib/realtimeManager';
 
@@ -93,6 +93,7 @@ interface InkoriumContextType {
   sendChatNudge: (targetUserId: string) => void;
   reactToChatMessage: (targetUserId: string, messageId: string, emoji: string) => void;
   sendChatTyping: (targetUserId: string, isTyping: boolean) => void;
+  sendChatReadReceipt: (targetUserId: string, messageIds?: string[]) => void;
   setChatEstado: (estado: '1' | '0') => void;
   logUserActivity: (activity: Omit<UserActivity, 'id' | 'timestamp'>) => void; deleteUserActivity: (activityId: string) => void; getUserActivities: (userId: string) => UserActivity[];
   pushNotification: (notif: InkoriumNotification) => void; dismissToast: (toastId: string) => void; markNotificationAsRead: (notifId: string) => void;
@@ -1224,6 +1225,38 @@ const addDeletedMessageIds = (ids: string[]) => {
           }
         }
       },
+      onChatRead: (data: { readerId: string; senderId: string; messageIds: string[]; readAt: number; readDate: string }) => {
+        if (!data || !data.readerId || !data.senderId) return;
+        const normCur = normalizeUserId(currentUserId);
+        const normReader = normalizeUserId(data.readerId);
+        const normSender = normalizeUserId(data.senderId);
+
+        if (normCur === normSender || normCur === normReader) {
+          const partnerId = normCur === normSender ? data.readerId : data.senderId;
+          applyReadReceiptsToConversation(currentUserId, partnerId, data.messageIds || [], data.readAt, data.readDate);
+
+          setChatMessages(prev => prev.map(m => {
+            const isMatch = (!data.messageIds || data.messageIds.length === 0 || data.messageIds.includes(m.id)) &&
+              ((normalizeUserId(m.emisorId) === normSender && normalizeUserId(m.receptorId) === normReader) ||
+               (normalizeUserId(m.emisorId) === normReader && normalizeUserId(m.receptorId) === normSender));
+            if (isMatch) {
+              return {
+                ...m,
+                leido: true,
+                readAt: data.readAt,
+                readDate: data.readDate
+              };
+            }
+            return m;
+          }));
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('inkorium:chat_read', {
+              detail: data
+            }));
+          }
+        }
+      },
       onPrivateMessage: (raw: any) => {
         if (!raw || !raw.id) return;
         const deletedIds = getDeletedMessageIds();
@@ -1359,6 +1392,37 @@ const addDeletedMessageIds = (ids: string[]) => {
           window.dispatchEvent(new CustomEvent('inkorium:chat_reaction', {
             detail: { messageId, emoji, userId, targetUserId }
           }));
+        }
+      } else if (event.type === 'CHAT_READ') {
+        const { readerId, senderId, messageIds, readAt, readDate } = event.payload;
+        const normCurrentUser = normalizeUserId(currentUserId);
+        const normReader = normalizeUserId(readerId);
+        const normSender = normalizeUserId(senderId);
+
+        if (normCurrentUser === normSender || normCurrentUser === normReader) {
+          const partnerId = normCurrentUser === normSender ? readerId : senderId;
+          applyReadReceiptsToConversation(currentUserId, partnerId, messageIds || [], readAt, readDate);
+
+          setChatMessages(prev => prev.map(m => {
+            const isMatch = (!messageIds || messageIds.length === 0 || messageIds.includes(m.id)) &&
+              ((normalizeUserId(m.emisorId) === normSender && normalizeUserId(m.receptorId) === normReader) ||
+               (normalizeUserId(m.emisorId) === normReader && normalizeUserId(m.receptorId) === normSender));
+            if (isMatch) {
+              return {
+                ...m,
+                leido: true,
+                readAt,
+                readDate
+              };
+            }
+            return m;
+          }));
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('inkorium:chat_read', {
+              detail: event.payload
+            }));
+          }
         }
       } else if (event.type === 'PRIVATE_MESSAGE') {
         const { message } = event.payload;
@@ -1556,22 +1620,91 @@ const addDeletedMessageIds = (ids: string[]) => {
     }
   }, []);
 
+  const sendChatReadReceipt = useCallback((targetUserId: string, messageIds?: string[]) => {
+    if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
+    const now = Date.now();
+    const readDate = new Date(now).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+    // Mark locally in persistent conversation
+    const result = markConversationAsRead(currentUserId, targetUserId, now, readDate);
+    const idsToMark = messageIds && messageIds.length > 0 ? messageIds : result.messageIds;
+
+    if (idsToMark.length === 0 && (!messageIds || messageIds.length === 0)) {
+      return;
+    }
+
+    // Update in-memory chat messages state
+    setChatMessages(prev => prev.map(m => {
+      const normTarget = normalizeUserId(targetUserId);
+      const normCur = normalizeUserId(currentUserId);
+      if (normalizeUserId(m.emisorId) === normTarget && normalizeUserId(m.receptorId) === normCur && (!idsToMark.length || idsToMark.includes(m.id))) {
+        return {
+          ...m,
+          leido: true,
+          readAt: now,
+          readDate
+        };
+      }
+      return m;
+    }));
+
+    const readPayload = {
+      readerId: currentUserId,
+      senderId: targetUserId,
+      messageIds: idsToMark,
+      readAt: now,
+      readDate
+    };
+
+    // Broadcast cross-tab
+    broadcastCrossTabEvent({
+      type: 'CHAT_READ',
+      payload: readPayload
+    });
+
+    // Dispatch custom window event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('inkorium:chat_read', {
+        detail: readPayload
+      }));
+    }
+
+    // Send to server
+    void fetch('/api/chat-read', {
+      method: 'POST',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(readPayload)
+    }).catch(() => null);
+  }, [currentUserId]);
+
   const openChatWith = useCallback((targetUserId: string) => {
     if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
     setActiveChatWindows(prev => {
-      const existing = prev.find(win => win.targetUserId === targetUserId);
-      if (existing) return prev.map(win => win.targetUserId === targetUserId ? { ...win, minimized: false } : win);
+      const existing = prev.find(win => normalizeUserId(win.targetUserId) === normalizeUserId(targetUserId));
+      if (existing) return prev.map(win => normalizeUserId(win.targetUserId) === normalizeUserId(targetUserId) ? { ...win, minimized: false } : win);
       return [...prev, { targetUserId, minimized: false }];
     });
-  }, [currentUserId]);
+    // Send read receipt immediately upon opening chat
+    sendChatReadReceipt(targetUserId);
+  }, [currentUserId, sendChatReadReceipt]);
 
   const closeChat = useCallback((targetUserId: string) => {
-    setActiveChatWindows(prev => prev.filter(win => win.targetUserId !== targetUserId));
+    setActiveChatWindows(prev => prev.filter(win => normalizeUserId(win.targetUserId) !== normalizeUserId(targetUserId)));
   }, []);
 
   const toggleMinimizeChat = useCallback((targetUserId: string) => {
-    setActiveChatWindows(prev => prev.map(win => win.targetUserId === targetUserId ? { ...win, minimized: !win.minimized } : win));
-  }, []);
+    setActiveChatWindows(prev => prev.map(win => {
+      if (normalizeUserId(win.targetUserId) === normalizeUserId(targetUserId)) {
+        const nextMinimized = !win.minimized;
+        if (!nextMinimized) {
+          sendChatReadReceipt(targetUserId);
+        }
+        return { ...win, minimized: nextMinimized };
+      }
+      return win;
+    }));
+  }, [sendChatReadReceipt]);
 
   const sendChatMessage = useCallback((targetUserId: string, text: string, imageUrl?: string, fileData?: { url: string; name: string; size?: number; type?: string }) => {
     const message = text.trim();
@@ -1585,7 +1718,9 @@ const addDeletedMessageIds = (ids: string[]) => {
       mensaje: message || (imageUrl ? '📷 Foto' : (fileData ? `📎 ${fileData.name}` : '')),
       fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       timestamp: Date.now(),
-      leido: true,
+      leido: false,
+      delivered: true,
+      deliveredAt: Date.now(),
       imageUrl: imageUrl || undefined,
       fileUrl: fileData?.url || undefined,
       fileName: fileData?.name || undefined,
@@ -1639,7 +1774,9 @@ const addDeletedMessageIds = (ids: string[]) => {
       mensaje: '💥 ¡Has enviado un zumbido!',
       fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       timestamp: Date.now(),
-      leido: true,
+      leido: false,
+      delivered: true,
+      deliveredAt: Date.now(),
       isNudge: true
     };
 
@@ -2678,7 +2815,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       setPhotoAsAvatar, deletePhoto, createAlbum, renameAlbum, deleteAlbum,
       sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, removeFriendship, cancelFriendRequest, isFriend, hasPendingRequest, getFriendsOf,
       sendPrivateMessage, markMessageAsRead, deleteMessage, deleteConversation,
-      sendChatMessage, sendChatNudge, reactToChatMessage, sendChatTyping, openChatWith, closeChat, toggleMinimizeChat, setChatEstado,
+      sendChatMessage, sendChatNudge, reactToChatMessage, sendChatTyping, sendChatReadReceipt, openChatWith, closeChat, toggleMinimizeChat, setChatEstado,
       logUserActivity, deleteUserActivity, getUserActivities,
       pushNotification, dismissToast, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification,
       setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage, simulateWallComment,

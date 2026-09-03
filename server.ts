@@ -771,6 +771,54 @@ app.post('/api/chat-messages', async (req, res) => {
   }
 });
 
+// Real-Time Read Receipts endpoint
+app.post('/api/chat-read', (req, res) => {
+  try {
+    const readerId = String(req.body?.readerId || req.body?.userId || '').trim();
+    const senderId = String(req.body?.senderId || req.body?.targetUserId || '').trim();
+    const messageIds = Array.isArray(req.body?.messageIds) ? req.body.messageIds : [];
+    const readAt = Number(req.body?.readAt) || Date.now();
+    const readDate = String(req.body?.readDate || new Date(readAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })).trim();
+
+    if (!readerId || !senderId) {
+      return res.status(400).json({ error: 'MISSING_READER_OR_SENDER' });
+    }
+
+    let updatedCount = 0;
+    // Mark corresponding messages in memory as read
+    inMemoryChatMessages.forEach((msg) => {
+      const isTarget = messageIds.length === 0 || messageIds.includes(msg.id);
+      const isPeerMatch =
+        (msg.emisorId === senderId && msg.receptorId === readerId) ||
+        (msg.emisorId === readerId && msg.receptorId === senderId);
+
+      if (isTarget && isPeerMatch && !msg.leido) {
+        msg.leido = true;
+        msg.readAt = readAt;
+        msg.readDate = readDate;
+        updatedCount++;
+      }
+    });
+
+    const readPayload = {
+      readerId,
+      senderId,
+      messageIds,
+      readAt,
+      readDate,
+      updatedCount
+    };
+
+    // Broadcast instant read receipt to sender and reader clients
+    broadcastRealtimeEvent([senderId, readerId], 'chat_read', readPayload);
+
+    return res.status(200).json({ success: true, ...readPayload });
+  } catch (err: any) {
+    console.warn('Chat read receipts endpoint error:', err?.message);
+    return res.status(200).json({ success: true });
+  }
+});
+
 app.get('/api/profiles', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey } = getSupabaseConfig(); 

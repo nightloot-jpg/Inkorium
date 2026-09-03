@@ -21,6 +21,7 @@ try {
 export type InkoriumCrossTabEvent = 
   | { type: 'CHAT_MESSAGE'; payload: { message: ChatMessage; targetUserId: string; senderUserId: string } }
   | { type: 'CHAT_NUDGE'; payload: { targetUserId: string; senderUserId: string } }
+  | { type: 'CHAT_READ'; payload: { readerId: string; senderId: string; messageIds: string[]; readAt: number; readDate: string } }
   | { type: 'CHAT_REACTION'; payload: { messageId: string; emoji: string; userId: string; targetUserId: string } }
   | { type: 'PEER_TYPING'; payload: { targetUserId: string; isTyping: boolean } }
   | { type: 'PRIVATE_MESSAGE'; payload: { message: any; recipientId: string } }
@@ -132,6 +133,76 @@ export function updateMessageInConversation(currentUserId: string, targetUserId:
     saveFullConversation(currentUserId, targetUserId, updated);
   }
   return updated;
+}
+
+/**
+ * Marks unread messages sent by targetUserId to currentUserId as read locally
+ * and returns the list of message IDs that were marked as read.
+ */
+export function markConversationAsRead(
+  currentUserId: string,
+  targetUserId: string,
+  readAt = Date.now(),
+  readDate = new Date(readAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+): { updatedCount: number; messageIds: string[]; updatedMessages: ChatMessage[] } {
+  if (typeof window === 'undefined') return { updatedCount: 0, messageIds: [], updatedMessages: [] };
+  const normTarget = normalizeUserId(targetUserId);
+  const current = getFullConversation(currentUserId, targetUserId);
+  const messageIds: string[] = [];
+
+  const updatedMessages = current.map((m) => {
+    if (normalizeUserId(m.emisorId) === normTarget && !m.leido) {
+      messageIds.push(m.id);
+      return {
+        ...m,
+        leido: true,
+        readAt,
+        readDate
+      };
+    }
+    return m;
+  });
+
+  if (messageIds.length > 0) {
+    saveFullConversation(currentUserId, targetUserId, updatedMessages);
+  }
+
+  return { updatedCount: messageIds.length, messageIds, updatedMessages };
+}
+
+/**
+ * Updates messages in conversation when a read receipt is received from the peer.
+ */
+export function applyReadReceiptsToConversation(
+  currentUserId: string,
+  targetUserId: string,
+  messageIds: string[],
+  readAt: number,
+  readDate: string
+): ChatMessage[] {
+  if (typeof window === 'undefined') return [];
+  const current = getFullConversation(currentUserId, targetUserId);
+  let changed = false;
+
+  const updatedMessages = current.map((m) => {
+    const isTarget = messageIds.length === 0 || messageIds.includes(m.id);
+    if (isTarget && !m.leido) {
+      changed = true;
+      return {
+        ...m,
+        leido: true,
+        readAt,
+        readDate
+      };
+    }
+    return m;
+  });
+
+  if (changed) {
+    saveFullConversation(currentUserId, targetUserId, updatedMessages);
+  }
+
+  return updatedMessages;
 }
 
 /**

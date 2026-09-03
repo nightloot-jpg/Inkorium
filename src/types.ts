@@ -190,6 +190,10 @@ export interface ChatMessage {
   fecha: string;
   leido: boolean;
   timestamp?: number;
+  readAt?: number;
+  readDate?: string;
+  delivered?: boolean;
+  deliveredAt?: number;
   imageUrl?: string;
   isNudge?: boolean;
   reactions?: Record<string, string[]>;

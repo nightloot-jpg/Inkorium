@@ -11,6 +11,7 @@ export interface RealtimeManagerOptions {
   onPrivateMessage?: (msg: any) => void;
   onChatTyping?: (data: any) => void;
   onChatNudge?: (data: any) => void;
+  onChatRead?: (data: { readerId: string; senderId: string; messageIds: string[]; readAt: number; readDate: string }) => void;
   onNotification?: (notif: any) => void;
   onStatusChange?: (status: RealtimeStatus, details?: { attempt: number; nextRetryMs?: number }) => void;
 }
@@ -27,6 +28,7 @@ export class RealtimeManager {
   private onPrivateMessage?: (msg: any) => void;
   private onChatTyping?: (data: any) => void;
   private onChatNudge?: (data: any) => void;
+  private onChatRead?: (data: { readerId: string; senderId: string; messageIds: string[]; readAt: number; readDate: string }) => void;
   private onNotification?: (notif: any) => void;
   private onStatusChange?: (status: RealtimeStatus, details?: { attempt: number; nextRetryMs?: number }) => void;
 
@@ -48,6 +50,7 @@ export class RealtimeManager {
     this.onPrivateMessage = options.onPrivateMessage;
     this.onChatTyping = options.onChatTyping;
     this.onChatNudge = options.onChatNudge;
+    this.onChatRead = options.onChatRead;
     this.onNotification = options.onNotification;
     this.onStatusChange = options.onStatusChange;
   }
@@ -116,6 +119,15 @@ export class RealtimeManager {
           this.onChatNudge?.(data);
         } catch (err) {
           console.warn('Realtime chat_nudge parse error:', err);
+        }
+      });
+
+      es.addEventListener('chat_read', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          this.onChatRead?.(data);
+        } catch (err) {
+          console.warn('Realtime chat_read parse error:', err);
         }
       });
 
