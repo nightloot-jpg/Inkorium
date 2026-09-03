@@ -8,7 +8,17 @@ import { createHmac, createPublicKey, createVerify, timingSafeEqual } from 'node
 import fs from 'node:fs';
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = 3000;
+
+app.disable('x-powered-by');
+
+// Core security headers
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 app.get('/api/health', (_req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -212,7 +222,9 @@ function persistPhotoMetadata() {
     for (const [k, v] of inMemoryPhotoMetadata.entries()) {
       obj[k] = v;
     }
-    fs.writeFileSync(PHOTO_METADATA_FILE, JSON.stringify(obj, null, 2), 'utf-8');
+    const tempPath = `${PHOTO_METADATA_FILE}.tmp`;
+    fs.writeFileSync(tempPath, JSON.stringify(obj, null, 2), 'utf-8');
+    fs.renameSync(tempPath, PHOTO_METADATA_FILE);
   } catch (err) {
     console.warn('Could not persist photo_metadata.json:', err);
   }
@@ -505,6 +517,7 @@ app.post('/api/private-messages', async (req, res) => {
         const row = Array.isArray(parsed) ? parsed[0] : parsed;
         if (row) {
           inMemoryMessages.unshift(row);
+          if (inMemoryMessages.length > 500) inMemoryMessages.length = 500;
           broadcastRealtimeEvent([payloadToInsert.recipient_id, payloadToInsert.sender_id], 'private_message', row);
           return res.status(200).json(row);
         }
@@ -532,6 +545,7 @@ app.post('/api/private-messages', async (req, res) => {
       created_at: new Date().toISOString()
     };
     inMemoryMessages.unshift(fallback);
+    if (inMemoryMessages.length > 500) inMemoryMessages.length = 500;
     broadcastRealtimeEvent([fallback.recipient_id, fallback.sender_id], 'private_message', fallback);
     return res.status(200).json(fallback);
   }
@@ -716,6 +730,9 @@ app.post('/api/chat-messages', async (req, res) => {
       inMemoryChatMessages[existingIdx] = newChatMsg;
     } else {
       inMemoryChatMessages.push(newChatMsg);
+      if (inMemoryChatMessages.length > 2000) {
+        inMemoryChatMessages.splice(0, inMemoryChatMessages.length - 2000);
+      }
     }
 
     broadcastRealtimeEvent([receptorId, emisorId], 'chat_message', newChatMsg);
@@ -1168,6 +1185,8 @@ app.post('/api/posts', async (req, res) => {
       updated_at: new Date().toISOString()
     };
     inMemoryPosts.unshift(newPost);
+    if (inMemoryPosts.length > 500) inMemoryPosts.length = 500;
+    broadcastRealtimeEvent(['*'], 'post_created', newPost);
 
     if (serviceRoleKey && supabaseKey) {
       try {
@@ -1194,6 +1213,7 @@ app.post('/api/posts', async (req, res) => {
       created_at: 'Ahora mismo'
     };
     inMemoryPosts.unshift(fallbackPost);
+    if (inMemoryPosts.length > 500) inMemoryPosts.length = 500;
     return res.status(201).json(fallbackPost);
   }
 });

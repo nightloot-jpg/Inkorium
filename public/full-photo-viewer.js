@@ -26,6 +26,7 @@
 
   const openViewer = (source, alt = 'Foto completa') => {
     closeViewer();
+    if (typeof source !== 'string' || !/^(https?:\/\/|data:image\/|\/)/i.test(source.trim())) return;
 
     const overlay = document.createElement('div');
     overlay.id = 'inkorium-full-photo-viewer';

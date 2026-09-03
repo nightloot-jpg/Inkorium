@@ -259,8 +259,10 @@ export const PhotoLightbox: React.FC = () => {
 
   const handleDownload = () => {
     if (!photo.archivo) return;
+    const url = photo.archivo.trim();
+    if (!/^(https?:\/\/|data:image\/|\/)/i.test(url)) return;
     const a = document.createElement('a');
-    a.href = photo.archivo;
+    a.href = url;
     a.download = `${photo.titulo || 'inkorium-foto'}.jpg`;
     document.body.appendChild(a);
     a.click();

@@ -4,8 +4,23 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
 import { fetchPhotos, insertPhoto, addPhotoTagApi, removePhotoTagApi, updatePhotoPrivacyApi, addPhotoCommentApi, likePhotoApi } from '../lib/photosApi';
 import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WALL_COMMENTS, INITIAL_FRIENDSHIPS, INITIAL_FRIEND_REQUESTS, INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_ACCESS_LOGS, INITIAL_ACTIVITIES } from '../data/mockData';
+import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
+import { musicAudioEngine } from '../utils/audioEngine';
+import { appendMessageToConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents } from '../lib/chatHistory';
+import { generateRetroChatReply, generateRetroPrivateMessageReply } from '../lib/retroChatReplies';
+import { playMessageSound, playNotificationChime } from '../utils/sound';
+import { RealtimeManager } from '../lib/realtimeManager';
 
 const PHOTO_TAGS_STORAGE_KEY = 'inkorium:photo_tags';
+
+export function safeSetLocalStorage(key: string, value: string): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(key, value);
+  } catch (err) {
+    console.warn(`[Inkorium] localStorage write failed for key "${key}":`, err);
+  }
+}
 
 function getStoredTagsMap(): Record<string, PhotoTag[]> {
   if (typeof localStorage === 'undefined') return {};
@@ -31,15 +46,9 @@ function saveStoredTagsForPhoto(photoId: string, tags: PhotoTag[]) {
   try {
     const map = getStoredTagsMap();
     map[photoId] = tags;
-    localStorage.setItem(PHOTO_TAGS_STORAGE_KEY, JSON.stringify(map));
+    safeSetLocalStorage(PHOTO_TAGS_STORAGE_KEY, JSON.stringify(map));
   } catch {}
 }
-import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
-import { musicAudioEngine } from '../utils/audioEngine';
-import { appendMessageToConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents } from '../lib/chatHistory';
-import { generateRetroChatReply, generateRetroPrivateMessageReply } from '../lib/retroChatReplies';
-import { playMessageSound, playNotificationChime } from '../utils/sound';
-import { RealtimeManager } from '../lib/realtimeManager';
 
 interface InkoriumContextType {
   currentUser: User; users: User[]; photos: Photo[]; albums: Album[]; feed: FeedItem[]; wallComments: WallComment[];
@@ -178,9 +187,7 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Sync photos to localStorage
   useEffect(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('inkorium:photos', JSON.stringify(photos));
-    }
+    safeSetLocalStorage('inkorium:photos', JSON.stringify(photos));
   }, [photos]);
   const [albums, setAlbums] = useState<Album[]>(INITIAL_ALBUMS);
   const [feed, setFeed] = useState<FeedItem[]>(INITIAL_FEED);
@@ -606,45 +613,35 @@ const addDeletedMessageIds = (ids: string[]) => {
 
   // Sync users to localStorage
   useEffect(() => {
-    if (typeof localStorage !== 'undefined' && users.length > 0) {
-      localStorage.setItem('inkorium:users', JSON.stringify(users));
+    if (users.length > 0) {
+      safeSetLocalStorage('inkorium:users', JSON.stringify(users));
     }
   }, [users]);
 
   // Sync notifications to localStorage
   useEffect(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('inkorium:notifications', JSON.stringify(notifications));
-    }
+    safeSetLocalStorage('inkorium:notifications', JSON.stringify(notifications));
   }, [notifications]);
 
   // Sync friend requests to localStorage
   useEffect(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('inkorium:friend_requests', JSON.stringify(friendRequests));
-    }
+    safeSetLocalStorage('inkorium:friend_requests', JSON.stringify(friendRequests));
   }, [friendRequests]);
 
   // Sync friendships to localStorage
   useEffect(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('inkorium:friendships', JSON.stringify(friendships));
-    }
+    safeSetLocalStorage('inkorium:friendships', JSON.stringify(friendships));
   }, [friendships]);
 
   // Sync messages to localStorage
   useEffect(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('inkorium:messages', JSON.stringify(messages));
-      localStorage.setItem('inkorium:private_messages', JSON.stringify(messages));
-    }
+    safeSetLocalStorage('inkorium:messages', JSON.stringify(messages));
+    safeSetLocalStorage('inkorium:private_messages', JSON.stringify(messages));
   }, [messages]);
 
   // Sync wall comments to localStorage
   useEffect(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('inkorium:wall_comments', JSON.stringify(wallComments));
-    }
+    safeSetLocalStorage('inkorium:wall_comments', JSON.stringify(wallComments));
   }, [wallComments]);
 
   // Keep currentUser initialized before callbacks/effects that depend on it.
@@ -2226,16 +2223,40 @@ const addDeletedMessageIds = (ids: string[]) => {
         }
         return photo;
       });
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('inkorium:photos', JSON.stringify(updated));
-      }
+      safeSetLocalStorage('inkorium:photos', JSON.stringify(updated));
       return updated;
     });
+
+    const targetPhoto = photos.find(p => p.id === photoId);
+    if (targetPhoto && targetPhoto.uploaderId && targetPhoto.uploaderId !== currentUserId) {
+      const ownerId = targetPhoto.uploaderId;
+      const notifData: InkoriumNotification = {
+        id: `notif-comment-${Date.now()}`,
+        userId: ownerId,
+        fromUserId: currentUserId,
+        fromUserName: authorName,
+        fromUserAvatar: authorAvatar,
+        tipo: 'foto_comentario',
+        mensaje: `${authorName} ha comentado en tu foto.`,
+        detalle: targetPhoto.titulo ? `Foto: "${targetPhoto.titulo}"` : undefined,
+        enlace: 'fotos',
+        targetId: photoId,
+        fotoId: photoId,
+        photoThumbnail: targetPhoto.archivo,
+        targetPhotoUrl: targetPhoto.archivo,
+        leido: false,
+        fecha: 'Ahora mismo'
+      };
+      broadcastCrossTabEvent({
+        type: 'NOTIFICATION',
+        payload: { notification: notifData }
+      });
+    }
 
     void addPhotoCommentApi(photoId, newComment).catch(err => {
       console.warn('addPhotoCommentApi error:', err);
     });
-  }, [currentUserId, currentUser]);
+  }, [currentUserId, currentUser, photos]);
 
   const setPhotoAsAvatar = useCallback((photoId: string) => {
     const photo = photos.find(p => p.id === photoId);
@@ -2421,7 +2442,15 @@ const addDeletedMessageIds = (ids: string[]) => {
 
   const resetToDefaultData = useCallback(() => {
     if (typeof localStorage !== 'undefined') {
-      localStorage.clear();
+      try {
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('inkorium')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (err) {
+        console.warn('Error resetting inkorium localStorage keys:', err);
+      }
     }
     setUsers(INITIAL_USERS);
     setMessages(INITIAL_MESSAGES);
