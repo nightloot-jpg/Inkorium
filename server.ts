@@ -699,14 +699,33 @@ app.get('/api/chat-messages', async (req, res) => {
   }
 });
 
+app.post('/api/chat-nudge', (req, res) => {
+  try {
+    const fromUserId = String(req.body?.fromUserId || '').trim();
+    const targetUserId = String(req.body?.targetUserId || '').trim();
+    if (fromUserId && targetUserId) {
+      broadcastRealtimeEvent([targetUserId], 'chat_nudge', {
+        fromUserId,
+        targetUserId,
+        timestamp: Date.now()
+      });
+    }
+    return res.status(200).json({ success: true });
+  } catch {
+    return res.status(200).json({ success: true });
+  }
+});
+
 app.post('/api/chat-messages', async (req, res) => {
   try {
     const payload = req.body || {};
     const emisorId = String(payload.emisorId || payload.sender_id || payload.from || '').trim();
     const receptorId = String(payload.receptorId || payload.recipient_id || payload.to || '').trim();
     const mensaje = String(payload.mensaje || payload.message || payload.text || payload.body || '').trim();
+    const imageUrl = payload.imageUrl ? String(payload.imageUrl).trim() : undefined;
+    const isNudge = Boolean(payload.isNudge);
 
-    if (!emisorId || !receptorId || !mensaje) {
+    if (!emisorId || !receptorId || (!mensaje && !imageUrl && !isNudge)) {
       return res.status(400).json({ error: 'INVALID_CHAT_PAYLOAD' });
     }
 
@@ -718,10 +737,13 @@ app.post('/api/chat-messages', async (req, res) => {
       id: msgId,
       emisorId,
       receptorId,
-      mensaje,
+      mensaje: mensaje || (imageUrl ? '📷 Foto' : isNudge ? '💥 ¡Zumbido!' : ''),
       fecha,
       timestamp,
-      leido: Boolean(payload.leido)
+      leido: Boolean(payload.leido),
+      imageUrl: imageUrl || undefined,
+      isNudge: isNudge || undefined,
+      reactions: payload.reactions || undefined
     };
 
     // Avoid duplicate message IDs in server memory

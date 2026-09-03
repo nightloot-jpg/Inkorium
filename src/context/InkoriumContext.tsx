@@ -6,9 +6,9 @@ import { fetchPhotos, insertPhoto, addPhotoTagApi, removePhotoTagApi, updatePhot
 import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WALL_COMMENTS, INITIAL_FRIENDSHIPS, INITIAL_FRIEND_REQUESTS, INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_ACCESS_LOGS, INITIAL_ACTIVITIES } from '../data/mockData';
 import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
 import { musicAudioEngine } from '../utils/audioEngine';
-import { appendMessageToConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents } from '../lib/chatHistory';
+import { appendMessageToConversation, updateMessageInConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents } from '../lib/chatHistory';
 import { generateRetroChatReply, generateRetroPrivateMessageReply } from '../lib/retroChatReplies';
-import { playMessageSound, playNotificationChime } from '../utils/sound';
+import { playMessageSound, playNotificationChime, playNudgeSound } from '../utils/sound';
 import { RealtimeManager } from '../lib/realtimeManager';
 
 const PHOTO_TAGS_STORAGE_KEY = 'inkorium:photo_tags';
@@ -90,7 +90,9 @@ interface InkoriumContextType {
   isFriend: (userId1: string, userId2: string) => boolean; hasPendingRequest: (fromId: string, toId: string) => boolean; getFriendsOf: (userId: string) => User[];
   sendPrivateMessage: (receptorId: string, asunto: string, mensaje: string) => void; markMessageAsRead: (messageId: string) => void; deleteMessage: (messageId: string) => void; deleteConversation: (targetUserId: string) => void;
   openChatWith: (targetUserId: string) => void; closeChat: (targetUserId: string) => void; toggleMinimizeChat: (targetUserId: string) => void;
-  sendChatMessage: (targetUserId: string, text: string) => void; 
+  sendChatMessage: (targetUserId: string, text: string, imageUrl?: string) => void; 
+  sendChatNudge: (targetUserId: string) => void;
+  reactToChatMessage: (targetUserId: string, messageId: string, emoji: string) => void;
   sendChatTyping: (targetUserId: string, isTyping: boolean) => void;
   setChatEstado: (estado: '1' | '0') => void;
   logUserActivity: (activity: Omit<UserActivity, 'id' | 'timestamp'>) => void; deleteUserActivity: (activityId: string) => void; getUserActivities: (userId: string) => UserActivity[];
@@ -189,7 +191,25 @@ export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     safeSetLocalStorage('inkorium:photos', JSON.stringify(photos));
   }, [photos]);
-  const [albums, setAlbums] = useState<Album[]>(INITIAL_ALBUMS);
+  const [albums, setAlbums] = useState<Album[]>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:albums');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        } catch {}
+      }
+    }
+    return INITIAL_ALBUMS;
+  });
+
+  // Sync albums to localStorage
+  useEffect(() => {
+    safeSetLocalStorage('inkorium:albums', JSON.stringify(albums));
+  }, [albums]);
   const [feed, setFeed] = useState<FeedItem[]>(INITIAL_FEED);
   const [wallComments, setWallComments] = useState<WallComment[]>(() => {
     if (typeof localStorage !== 'undefined') {
@@ -1158,13 +1178,17 @@ const addDeletedMessageIds = (ids: string[]) => {
 
           if (normRec === normCur && normEmi !== normCur) {
             try {
-              playMessageSound();
+              if (newMsg.isNudge) {
+                playNudgeSound();
+              } else {
+                playMessageSound();
+              }
             } catch {}
 
             // Open active chat window or show indicator
             setActiveChatWindows(prev => {
               const existing = prev.find(w => normalizeUserId(w.targetUserId) === normEmi);
-              if (existing) return prev;
+              if (existing) return prev.map(w => normalizeUserId(w.targetUserId) === normEmi ? { ...w, minimized: false } : w);
               return [...prev, { targetUserId: newMsg.emisorId, minimized: false }];
             });
 
@@ -1172,7 +1196,32 @@ const addDeletedMessageIds = (ids: string[]) => {
               window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
                 detail: { targetUserId: newMsg.emisorId, message: newMsg }
               }));
+              if (newMsg.isNudge) {
+                window.dispatchEvent(new CustomEvent('inkorium:chat_nudge', {
+                  detail: { targetUserId: currentUserId, senderUserId: newMsg.emisorId }
+                }));
+              }
             }
+          }
+        }
+      },
+      onChatNudge: (data: any) => {
+        if (!data || !data.fromUserId) return;
+        const normCur = normalizeUserId(currentUserId);
+        const normTarget = normalizeUserId(data.targetUserId);
+        if (normTarget === normCur) {
+          try {
+            playNudgeSound();
+          } catch {}
+          setActiveChatWindows(prev => {
+            const existing = prev.find(w => normalizeUserId(w.targetUserId) === normalizeUserId(data.fromUserId));
+            if (existing) return prev.map(w => normalizeUserId(w.targetUserId) === normalizeUserId(data.fromUserId) ? { ...w, minimized: false } : w);
+            return [...prev, { targetUserId: data.fromUserId, minimized: false }];
+          });
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('inkorium:chat_nudge', {
+              detail: { targetUserId: currentUserId, senderUserId: data.fromUserId }
+            }));
           }
         }
       },
@@ -1270,13 +1319,47 @@ const addDeletedMessageIds = (ids: string[]) => {
             return [...prev, { targetUserId: message.emisorId, minimized: false }];
           });
           try {
-            playMessageSound();
+            if (message.isNudge) {
+              playNudgeSound();
+            } else {
+              playMessageSound();
+            }
           } catch {}
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
               detail: { targetUserId: message.emisorId, message }
             }));
+            if (message.isNudge) {
+              window.dispatchEvent(new CustomEvent('inkorium:chat_nudge', {
+                detail: { targetUserId: currentUserId, senderUserId: message.emisorId }
+              }));
+            }
           }
+        }
+      } else if (event.type === 'CHAT_NUDGE') {
+        const { targetUserId, senderUserId } = event.payload;
+        const normCurrentUser = normalizeUserId(currentUserId);
+        if (normalizeUserId(targetUserId) === normCurrentUser) {
+          try {
+            playNudgeSound();
+          } catch {}
+          setActiveChatWindows(prev => {
+            const existing = prev.find(w => normalizeUserId(w.targetUserId) === normalizeUserId(senderUserId));
+            if (existing) return prev.map(w => normalizeUserId(w.targetUserId) === normalizeUserId(senderUserId) ? { ...w, minimized: false } : w);
+            return [...prev, { targetUserId: senderUserId, minimized: false }];
+          });
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('inkorium:chat_nudge', {
+              detail: { targetUserId: currentUserId, senderUserId }
+            }));
+          }
+        }
+      } else if (event.type === 'CHAT_REACTION') {
+        const { messageId, emoji, userId, targetUserId } = event.payload;
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('inkorium:chat_reaction', {
+            detail: { messageId, emoji, userId, targetUserId }
+          }));
         }
       } else if (event.type === 'PRIVATE_MESSAGE') {
         const { message } = event.payload;
@@ -1491,19 +1574,20 @@ const addDeletedMessageIds = (ids: string[]) => {
     setActiveChatWindows(prev => prev.map(win => win.targetUserId === targetUserId ? { ...win, minimized: !win.minimized } : win));
   }, []);
 
-  const sendChatMessage = useCallback((targetUserId: string, text: string) => {
+  const sendChatMessage = useCallback((targetUserId: string, text: string, imageUrl?: string) => {
     const message = text.trim();
-    if (!currentUserId || !targetUserId || targetUserId === currentUserId || !message) return;
+    if (!currentUserId || !targetUserId || targetUserId === currentUserId || (!message && !imageUrl)) return;
 
     const msgId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newMsg: ChatMessage = {
       id: msgId,
       emisorId: currentUserId,
       receptorId: targetUserId,
-      mensaje: message,
+      mensaje: message || (imageUrl ? '📷 Foto' : ''),
       fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       timestamp: Date.now(),
-      leido: true
+      leido: true,
+      imageUrl: imageUrl || undefined
     };
 
     // 1. Guardar mensaje en historial local
@@ -1535,6 +1619,191 @@ const addDeletedMessageIds = (ids: string[]) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newMsg)
     }).catch(() => null);
+
+    // 5. Retro Auto-replies if enabled and talking to mock contacts
+    if (isRealtimeSimulationEnabled) {
+      const targetUser = usersRef.current.find(u => normalizeUserId(u.id) === normalizeUserId(targetUserId));
+      if (targetUser && normalizeUserId(targetUser.id) !== normalizeUserId(currentUserId)) {
+        const replyDelay = 1800 + Math.random() * 1500;
+        setTimeout(() => {
+          // Send typing start
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('inkorium:peer_typing', {
+              detail: { targetUserId, isTyping: true }
+            }));
+          }
+          broadcastCrossTabEvent({
+            type: 'PEER_TYPING',
+            payload: { targetUserId: currentUserId, isTyping: true }
+          });
+
+          setTimeout(() => {
+            // Stop typing and send reply
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('inkorium:peer_typing', {
+                detail: { targetUserId, isTyping: false }
+              }));
+            }
+            broadcastCrossTabEvent({
+              type: 'PEER_TYPING',
+              payload: { targetUserId: currentUserId, isTyping: false }
+            });
+
+            let replyText = '';
+            if (imageUrl) {
+              const photoReplies = [
+                '¡Vaya fotón! Jajaja XD',
+                '¡Qué chula la foto! ^^ Luego me paso por tu álbum a firmar',
+                '¡Guapísima la foto! :D ¿De cuándo es?',
+                '¡Qué recuerdos! Súbela a tu perfil que está genial :P'
+              ];
+              replyText = photoReplies[Math.floor(Math.random() * photoReplies.length)];
+            } else {
+              replyText = generateRetroChatReply(targetUser.nombre, message);
+            }
+
+            const replyMsgId = `chat-reply-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+            const replyMsg: ChatMessage = {
+              id: replyMsgId,
+              emisorId: targetUserId,
+              receptorId: currentUserId,
+              mensaje: replyText,
+              fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+              timestamp: Date.now(),
+              leido: false
+            };
+
+            appendMessageToConversation(currentUserId, targetUserId, replyMsg);
+            setChatMessages(prev => [...prev, replyMsg]);
+            try {
+              playMessageSound();
+            } catch {}
+
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
+                detail: { targetUserId, message: replyMsg }
+              }));
+            }
+            broadcastCrossTabEvent({
+              type: 'CHAT_MESSAGE',
+              payload: { message: replyMsg, targetUserId: currentUserId, senderUserId: targetUserId }
+            });
+          }, 1400);
+        }, replyDelay);
+      }
+    }
+  }, [currentUserId, isRealtimeSimulationEnabled]);
+
+  const sendChatNudge = useCallback((targetUserId: string) => {
+    if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
+
+    try {
+      playNudgeSound();
+    } catch {}
+
+    const msgId = `nudge-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const nudgeMsg: ChatMessage = {
+      id: msgId,
+      emisorId: currentUserId,
+      receptorId: targetUserId,
+      mensaje: '💥 ¡Has enviado un zumbido!',
+      fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      leido: true,
+      isNudge: true
+    };
+
+    appendMessageToConversation(currentUserId, targetUserId, nudgeMsg);
+    setChatMessages(prev => [...prev, nudgeMsg]);
+
+    // Shake chat window
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('inkorium:chat_nudge', {
+        detail: { targetUserId, senderUserId: currentUserId }
+      }));
+      window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
+        detail: { targetUserId, message: nudgeMsg }
+      }));
+    }
+
+    broadcastCrossTabEvent({
+      type: 'CHAT_NUDGE',
+      payload: { targetUserId, senderUserId: currentUserId }
+    });
+
+    void fetch('/api/chat-nudge', {
+      method: 'POST',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fromUserId: currentUserId, targetUserId })
+    }).catch(() => null);
+
+    // Retro auto-reply if simulation enabled
+    if (isRealtimeSimulationEnabled) {
+      const targetUser = usersRef.current.find(u => normalizeUserId(u.id) === normalizeUserId(targetUserId));
+      if (targetUser && normalizeUserId(targetUser.id) !== normalizeUserId(currentUserId)) {
+        setTimeout(() => {
+          const nudgeReplies = [
+            '¡Ayy qué susto el zumbido jajaja! ¿Qué pasa? :D',
+            '¡No me des zumbidos que me vibra toda la pantalla! xD',
+            '¡Jajaja qué mítico el zumbido de Tuenti! ^^ ¿Qué te cuentas?',
+            '¡Zas! Casi se me cae el café con el zumbido jaja :P'
+          ];
+          const replyText = nudgeReplies[Math.floor(Math.random() * nudgeReplies.length)];
+          const replyMsgId = `chat-reply-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+          const replyMsg: ChatMessage = {
+            id: replyMsgId,
+            emisorId: targetUserId,
+            receptorId: currentUserId,
+            mensaje: replyText,
+            fecha: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+            timestamp: Date.now(),
+            leido: false
+          };
+          appendMessageToConversation(currentUserId, targetUserId, replyMsg);
+          setChatMessages(prev => [...prev, replyMsg]);
+          try {
+            playMessageSound();
+          } catch {}
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('inkorium:chat_message_sync', {
+              detail: { targetUserId, message: replyMsg }
+            }));
+          }
+        }, 2200);
+      }
+    }
+  }, [currentUserId, isRealtimeSimulationEnabled]);
+
+  const reactToChatMessage = useCallback((targetUserId: string, messageId: string, emoji: string) => {
+    if (!currentUserId || !targetUserId || !messageId || !emoji) return;
+
+    const updater = (msg: ChatMessage): ChatMessage => {
+      const reactions = { ...(msg.reactions || {}) };
+      const currentList = Array.isArray(reactions[emoji]) ? [...reactions[emoji]] : [];
+      const hasUser = currentList.includes(currentUserId);
+      if (hasUser) {
+        reactions[emoji] = currentList.filter(id => id !== currentUserId);
+        if (reactions[emoji].length === 0) delete reactions[emoji];
+      } else {
+        reactions[emoji] = [...currentList, currentUserId];
+      }
+      return { ...msg, reactions };
+    };
+
+    updateMessageInConversation(currentUserId, targetUserId, messageId, updater);
+    setChatMessages(prev => prev.map(m => m.id === messageId ? updater(m) : m));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('inkorium:chat_reaction', {
+        detail: { messageId, emoji, userId: currentUserId, targetUserId }
+      }));
+    }
+
+    broadcastCrossTabEvent({
+      type: 'CHAT_REACTION',
+      payload: { messageId, emoji, userId: currentUserId, targetUserId }
+    });
   }, [currentUserId]);
 
   const sendChatTyping = useCallback((targetUserId: string, isTyping: boolean) => {
@@ -2515,7 +2784,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       setPhotoAsAvatar, deletePhoto, createAlbum, renameAlbum, deleteAlbum,
       sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, removeFriendship, cancelFriendRequest, isFriend, hasPendingRequest, getFriendsOf,
       sendPrivateMessage, markMessageAsRead, deleteMessage, deleteConversation,
-      sendChatMessage, sendChatTyping, openChatWith, closeChat, toggleMinimizeChat, setChatEstado,
+      sendChatMessage, sendChatNudge, reactToChatMessage, sendChatTyping, openChatWith, closeChat, toggleMinimizeChat, setChatEstado,
       logUserActivity, deleteUserActivity, getUserActivities,
       pushNotification, dismissToast, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification,
       setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage, simulateWallComment,

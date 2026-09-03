@@ -20,6 +20,8 @@ try {
 
 export type InkoriumCrossTabEvent = 
   | { type: 'CHAT_MESSAGE'; payload: { message: ChatMessage; targetUserId: string; senderUserId: string } }
+  | { type: 'CHAT_NUDGE'; payload: { targetUserId: string; senderUserId: string } }
+  | { type: 'CHAT_REACTION'; payload: { messageId: string; emoji: string; userId: string; targetUserId: string } }
   | { type: 'PEER_TYPING'; payload: { targetUserId: string; isTyping: boolean } }
   | { type: 'PRIVATE_MESSAGE'; payload: { message: any; recipientId: string } }
   | { type: 'NOTIFICATION'; payload: { notification: any } }
@@ -98,6 +100,22 @@ export function appendMessageToConversation(currentUserId: string, targetUserId:
   }
   const updated = [...current, newMsg];
   saveFullConversation(currentUserId, targetUserId, updated);
+  return updated;
+}
+
+export function updateMessageInConversation(currentUserId: string, targetUserId: string, messageId: string, updater: (msg: ChatMessage) => ChatMessage): ChatMessage[] {
+  const current = getFullConversation(currentUserId, targetUserId);
+  let changed = false;
+  const updated = current.map(m => {
+    if (m.id === messageId) {
+      changed = true;
+      return updater(m);
+    }
+    return m;
+  });
+  if (changed) {
+    saveFullConversation(currentUserId, targetUserId, updated);
+  }
   return updated;
 }
 

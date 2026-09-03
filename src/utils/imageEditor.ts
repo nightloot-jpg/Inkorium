@@ -7,10 +7,12 @@ export interface PhotoEditState {
   contrast: number; // 50 to 160, default 100
   saturation: number; // 0 to 200, default 100
   sepia: number; // 0 to 100, default 0
+  grayscale?: number; // 0 to 100, default 0
   hueRotate: number; // -180 to 180, default 0
   addDateStamp: boolean;
   dateStampText?: string;
   vignette: boolean;
+  overlayStyle?: 'none' | 'sepia' | 'grayscale' | 'vintage' | 'warm' | 'cool';
 }
 
 export interface RetroFilterPreset {
@@ -22,8 +24,10 @@ export interface RetroFilterPreset {
   contrast: number;
   saturation: number;
   sepia: number;
+  grayscale?: number;
   hueRotate: number;
   vignette: boolean;
+  overlayStyle?: 'none' | 'sepia' | 'grayscale' | 'vintage' | 'warm' | 'cool';
   cssFilter: string;
 }
 
@@ -32,14 +36,61 @@ export const RETRO_FILTER_PRESETS: RetroFilterPreset[] = [
     id: 'none',
     name: 'Original',
     description: 'Sin modificaciones de color ni filtros',
-    eraBadge: 'Natural',
+    eraBadge: 'Original',
     brightness: 100,
     contrast: 100,
     saturation: 100,
     sepia: 0,
+    grayscale: 0,
     hueRotate: 0,
     vignette: false,
+    overlayStyle: 'none',
     cssFilter: 'none'
+  },
+  {
+    id: 'sepia',
+    name: 'Sepia',
+    description: 'Tono marrón cálido y nostálgico vintage de los 2000s',
+    eraBadge: 'Sepia',
+    brightness: 98,
+    contrast: 105,
+    saturation: 85,
+    sepia: 85,
+    grayscale: 0,
+    hueRotate: 0,
+    vignette: false,
+    overlayStyle: 'sepia',
+    cssFilter: 'brightness(0.98) contrast(1.05) saturate(0.85) sepia(0.85)'
+  },
+  {
+    id: 'grayscale',
+    name: 'Grayscale',
+    description: 'Escala de grises pura con contraste fotográfico B&N clásico',
+    eraBadge: 'B&N',
+    brightness: 102,
+    contrast: 125,
+    saturation: 0,
+    sepia: 0,
+    grayscale: 100,
+    hueRotate: 0,
+    vignette: false,
+    overlayStyle: 'grayscale',
+    cssFilter: 'brightness(1.02) contrast(1.25) grayscale(1)'
+  },
+  {
+    id: 'vintage',
+    name: 'Vintage',
+    description: 'Estilo analógico retro con calidez, saturación y viñeteado',
+    eraBadge: 'Vintage',
+    brightness: 106,
+    contrast: 115,
+    saturation: 118,
+    sepia: 36,
+    grayscale: 0,
+    hueRotate: -6,
+    vignette: true,
+    overlayStyle: 'vintage',
+    cssFilter: 'brightness(1.06) contrast(1.15) saturate(1.18) sepia(0.36) hue-rotate(-6deg)'
   },
   {
     id: 'tuenti_2008',
@@ -50,8 +101,10 @@ export const RETRO_FILTER_PRESETS: RetroFilterPreset[] = [
     contrast: 112,
     saturation: 120,
     sepia: 18,
+    grayscale: 0,
     hueRotate: -8,
     vignette: false,
+    overlayStyle: 'none',
     cssFilter: 'brightness(1.06) contrast(1.12) saturate(1.2) sepia(0.18) hue-rotate(-8deg)'
   },
   {
@@ -63,60 +116,25 @@ export const RETRO_FILTER_PRESETS: RetroFilterPreset[] = [
     contrast: 124,
     saturation: 132,
     sepia: 4,
+    grayscale: 0,
     hueRotate: 0,
     vignette: true,
+    overlayStyle: 'none',
     cssFilter: 'brightness(1.16) contrast(1.24) saturate(1.32) sepia(0.04)'
   },
   {
-    id: 'vintage_sepia',
-    name: 'Sepia Fotolog',
-    description: 'Tono marrón nostálgico vintage de los 2000s',
-    eraBadge: 'Vintage',
-    brightness: 98,
-    contrast: 95,
-    saturation: 85,
-    sepia: 82,
-    hueRotate: 0,
-    vignette: true,
-    cssFilter: 'brightness(0.98) contrast(0.95) saturate(0.85) sepia(0.82)'
-  },
-  {
-    id: 'bw_contrast',
-    name: 'B&N Dramático',
-    description: 'Blanco y negro con sombras profundas y contraste',
-    eraBadge: 'B&N',
-    brightness: 102,
-    contrast: 135,
-    saturation: 0,
-    sepia: 0,
-    hueRotate: 0,
-    vignette: true,
-    cssFilter: 'brightness(1.02) contrast(1.35) grayscale(1)'
-  },
-  {
-    id: 'emo_scene',
-    name: 'Emo / Scene',
-    description: 'Tonos fríos azulados, sombras marcadas y toque oscuro',
-    eraBadge: '2009 Scene',
-    brightness: 94,
-    contrast: 128,
-    saturation: 75,
-    sepia: 12,
-    hueRotate: 160,
-    vignette: true,
-    cssFilter: 'brightness(0.94) contrast(1.28) saturate(0.75) sepia(0.12) hue-rotate(160deg)'
-  },
-  {
     id: 'golden_hour',
-    name: 'Golden Beach',
+    name: 'Golden Hour',
     description: 'Colores dorados veraniegos de vacaciones en la costa',
     eraBadge: 'Verano',
     brightness: 108,
     contrast: 108,
     saturation: 135,
     sepia: 32,
+    grayscale: 0,
     hueRotate: -14,
     vignette: false,
+    overlayStyle: 'warm',
     cssFilter: 'brightness(1.08) contrast(1.08) saturate(1.35) sepia(0.32) hue-rotate(-14deg)'
   },
   {
@@ -128,9 +146,57 @@ export const RETRO_FILTER_PRESETS: RetroFilterPreset[] = [
     contrast: 138,
     saturation: 145,
     sepia: 12,
+    grayscale: 0,
     hueRotate: 5,
     vignette: true,
+    overlayStyle: 'none',
     cssFilter: 'brightness(1.0) contrast(1.38) saturate(1.45) sepia(0.12) hue-rotate(5deg)'
+  },
+  {
+    id: 'emo_scene',
+    name: 'Emo / Scene',
+    description: 'Tonos fríos azulados, sombras marcadas y toque oscuro',
+    eraBadge: '2009 Scene',
+    brightness: 94,
+    contrast: 128,
+    saturation: 75,
+    sepia: 12,
+    grayscale: 0,
+    hueRotate: 160,
+    vignette: true,
+    overlayStyle: 'cool',
+    cssFilter: 'brightness(0.94) contrast(1.28) saturate(0.75) sepia(0.12) hue-rotate(160deg)'
+  },
+  // Aliases for backwards compatibility with any persisted photos
+  {
+    id: 'vintage_sepia',
+    name: 'Sepia Fotolog',
+    description: 'Tono marrón nostálgico vintage de los 2000s',
+    eraBadge: 'Sepia',
+    brightness: 98,
+    contrast: 105,
+    saturation: 85,
+    sepia: 85,
+    grayscale: 0,
+    hueRotate: 0,
+    vignette: false,
+    overlayStyle: 'sepia',
+    cssFilter: 'brightness(0.98) contrast(1.05) saturate(0.85) sepia(0.85)'
+  },
+  {
+    id: 'bw_contrast',
+    name: 'B&N Dramático',
+    description: 'Blanco y negro con sombras profundas y contraste',
+    eraBadge: 'B&N',
+    brightness: 102,
+    contrast: 125,
+    saturation: 0,
+    sepia: 0,
+    grayscale: 100,
+    hueRotate: 0,
+    vignette: true,
+    overlayStyle: 'grayscale',
+    cssFilter: 'brightness(1.02) contrast(1.25) grayscale(1)'
   }
 ];
 
@@ -143,10 +209,12 @@ export const DEFAULT_EDIT_STATE: PhotoEditState = {
   contrast: 100,
   saturation: 100,
   sepia: 0,
+  grayscale: 0,
   hueRotate: 0,
   addDateStamp: false,
   dateStampText: "'08 09 14",
-  vignette: false
+  vignette: false,
+  overlayStyle: 'none'
 };
 
 /**
@@ -157,6 +225,7 @@ export function getCssFilterString(state: PhotoEditState): string {
   if (state.brightness !== 100) parts.push(`brightness(${state.brightness / 100})`);
   if (state.contrast !== 100) parts.push(`contrast(${state.contrast / 100})`);
   if (state.saturation !== 100) parts.push(`saturate(${state.saturation / 100})`);
+  if (state.grayscale && state.grayscale > 0) parts.push(`grayscale(${state.grayscale / 100})`);
   if (state.sepia > 0) parts.push(`sepia(${state.sepia / 100})`);
   if (state.hueRotate !== 0) parts.push(`hue-rotate(${state.hueRotate}deg)`);
   return parts.length > 0 ? parts.join(' ') : 'none';
@@ -227,6 +296,37 @@ export async function bakeEditedImage(imageUrl: string, state: PhotoEditState): 
 
         // Turn off filter for overlays
         ctx.filter = 'none';
+
+        // Draw CSS-based filter overlay blends if active
+        if (state.overlayStyle === 'sepia') {
+          ctx.save();
+          ctx.globalCompositeOperation = 'color';
+          ctx.fillStyle = 'rgba(112, 66, 20, 0.16)';
+          ctx.fillRect(0, 0, width, height);
+          ctx.restore();
+        } else if (state.overlayStyle === 'vintage') {
+          ctx.save();
+          ctx.globalCompositeOperation = 'soft-light';
+          const grad = ctx.createLinearGradient(0, 0, width, height);
+          grad.addColorStop(0, 'rgba(245, 180, 100, 0.22)');
+          grad.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+          grad.addColorStop(1, 'rgba(120, 60, 20, 0.26)');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, width, height);
+          ctx.restore();
+        } else if (state.overlayStyle === 'warm') {
+          ctx.save();
+          ctx.globalCompositeOperation = 'soft-light';
+          ctx.fillStyle = 'rgba(255, 160, 40, 0.15)';
+          ctx.fillRect(0, 0, width, height);
+          ctx.restore();
+        } else if (state.overlayStyle === 'cool') {
+          ctx.save();
+          ctx.globalCompositeOperation = 'soft-light';
+          ctx.fillStyle = 'rgba(0, 150, 220, 0.15)';
+          ctx.fillRect(0, 0, width, height);
+          ctx.restore();
+        }
 
         // Draw Vignette if active
         if (state.vignette) {

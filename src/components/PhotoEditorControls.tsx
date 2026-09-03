@@ -12,7 +12,8 @@ import {
   Contrast as ContrastIcon, 
   Palette, 
   Check, 
-  Eye
+  Eye,
+  Layers
 } from 'lucide-react';
 import { 
   PhotoEditState, 
@@ -35,6 +36,11 @@ export const PhotoEditorControls: React.FC<PhotoEditorControlsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'filtros' | 'ajustes' | 'orientacion'>('filtros');
   const [showOriginal, setShowOriginal] = useState(false);
+
+  // Filter out backwards-compatibility aliases from the primary list
+  const primaryPresets = RETRO_FILTER_PRESETS.filter(
+    p => !['vintage_sepia', 'bw_contrast'].includes(p.id)
+  );
 
   // Rotate 90 deg clockwise
   const handleRotateRight = () => {
@@ -80,8 +86,10 @@ export const PhotoEditorControls: React.FC<PhotoEditorControlsProps> = ({
       contrast: preset.contrast,
       saturation: preset.saturation,
       sepia: preset.sepia,
+      grayscale: preset.grayscale ?? 0,
       hueRotate: preset.hueRotate,
-      vignette: preset.vignette
+      vignette: preset.vignette,
+      overlayStyle: preset.overlayStyle ?? 'none'
     });
   };
 
@@ -99,11 +107,14 @@ export const PhotoEditorControls: React.FC<PhotoEditorControlsProps> = ({
     editState.contrast !== 100 ||
     editState.saturation !== 100 ||
     editState.sepia !== 0 ||
+    (editState.grayscale !== undefined && editState.grayscale > 0) ||
     editState.addDateStamp ||
-    editState.vignette;
+    editState.vignette ||
+    (editState.overlayStyle && editState.overlayStyle !== 'none');
 
   const currentCssFilter = showOriginal ? 'none' : getCssFilterString(editState);
   const currentCssTransform = showOriginal ? 'none' : getCssTransformString(editState);
+  const activePreset = RETRO_FILTER_PRESETS.find(p => p.id === editState.filterId);
 
   return (
     <div className="space-y-3 bg-[#f7f9fa] border border-[#ccd5df] rounded-lg p-3">
@@ -111,10 +122,10 @@ export const PhotoEditorControls: React.FC<PhotoEditorControlsProps> = ({
       <div className="flex items-center justify-between border-b border-gray-200 pb-2">
         <div className="flex items-center gap-1.5 font-bold text-xs text-gray-800">
           <Sparkles className="w-3.5 h-3.5 text-[#3869A0]" />
-          <span>Editor de Foto & Filtros Retro</span>
+          <span>Filtros CSS & Estilos Retro</span>
           {isModified && (
-            <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded font-semibold border border-amber-300">
-              Editada
+            <span className="bg-blue-100 text-[#3869A0] text-[10px] px-1.5 py-0.2 rounded font-semibold border border-blue-200">
+              {activePreset?.name || 'Personalizado'}
             </span>
           )}
         </div>
@@ -162,6 +173,47 @@ export const PhotoEditorControls: React.FC<PhotoEditorControlsProps> = ({
             }}
             className="max-h-52 sm:max-h-60 max-w-full object-contain rounded shadow-lg"
           />
+
+          {/* CSS-based Filter Overlay Layers directly applied over the photo */}
+          {!showOriginal && editState.overlayStyle === 'sepia' && (
+            <div 
+              className="absolute inset-0 pointer-events-none rounded transition-all duration-200"
+              style={{
+                backgroundColor: 'rgba(112, 66, 20, 0.14)',
+                mixBlendMode: 'color'
+              }}
+            />
+          )}
+
+          {!showOriginal && editState.overlayStyle === 'vintage' && (
+            <div 
+              className="absolute inset-0 pointer-events-none rounded transition-all duration-200"
+              style={{
+                background: 'linear-gradient(135deg, rgba(245, 180, 100, 0.22) 0%, rgba(0, 0, 0, 0) 50%, rgba(120, 60, 20, 0.25) 100%)',
+                mixBlendMode: 'soft-light'
+              }}
+            />
+          )}
+
+          {!showOriginal && editState.overlayStyle === 'warm' && (
+            <div 
+              className="absolute inset-0 pointer-events-none rounded transition-all duration-200"
+              style={{
+                backgroundColor: 'rgba(255, 160, 40, 0.14)',
+                mixBlendMode: 'soft-light'
+              }}
+            />
+          )}
+
+          {!showOriginal && editState.overlayStyle === 'cool' && (
+            <div 
+              className="absolute inset-0 pointer-events-none rounded transition-all duration-200"
+              style={{
+                backgroundColor: 'rgba(0, 150, 220, 0.14)',
+                mixBlendMode: 'soft-light'
+              }}
+            />
+          )}
 
           {/* Realtime Vignette Overlay */}
           {!showOriginal && editState.vignette && (
@@ -226,9 +278,112 @@ export const PhotoEditorControls: React.FC<PhotoEditorControlsProps> = ({
         </div>
 
         {/* Badge in preview */}
-        <div className="absolute bottom-2 left-2 text-[10px] bg-black/60 backdrop-blur-xs text-gray-200 px-2 py-0.5 rounded border border-white/10">
-          {RETRO_FILTER_PRESETS.find(p => p.id === editState.filterId)?.name || 'Personalizado'}
-          {editState.rotation !== 0 && ` • ${editState.rotation}°`}
+        <div className="absolute bottom-2 left-2 text-[10px] bg-black/60 backdrop-blur-xs text-gray-200 px-2 py-0.5 rounded border border-white/10 flex items-center gap-1.5">
+          <span>Filtro CSS: <strong>{activePreset?.name || 'Personalizado'}</strong></span>
+          {editState.overlayStyle && editState.overlayStyle !== 'none' && (
+            <span className="text-amber-300">• Overlay {editState.overlayStyle}</span>
+          )}
+          {editState.rotation !== 0 && <span>• {editState.rotation}°</span>}
+        </div>
+      </div>
+
+      {/* QUICK CSS FILTER STRIP WITH LIVE THUMBNAILS */}
+      <div className="space-y-1.5 bg-white p-2.5 rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-bold text-gray-700 flex items-center gap-1">
+            <Layers className="w-3.5 h-3.5 text-[#3869A0]" />
+            <span>Seleccionar estilo de filtro CSS:</span>
+          </span>
+          <span className="text-[11px] text-gray-500">
+            Filtro actual: <strong className="text-[#3869A0]">{activePreset?.name || 'Personalizado'}</strong>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 scrollbar-thin">
+          {primaryPresets.map((preset) => {
+            const isSelected = editState.filterId === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => handleApplyPreset(preset.id)}
+                className={`group flex-shrink-0 flex flex-col items-center gap-1 p-1 rounded-lg border transition-all cursor-pointer select-none ${
+                  isSelected
+                    ? 'border-[#3869A0] bg-blue-50 ring-2 ring-[#3869A0]/30 shadow-xs'
+                    : 'border-gray-200 bg-gray-50/50 hover:border-gray-300 hover:bg-gray-100'
+                }`}
+                title={`${preset.name}: ${preset.description}`}
+              >
+                {/* Miniature Preview with live CSS filter */}
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded overflow-hidden bg-black flex items-center justify-center border border-gray-300">
+                  <img
+                    src={photoUrl}
+                    alt={preset.name}
+                    style={{
+                      filter: preset.cssFilter
+                    }}
+                    className="w-full h-full object-cover"
+                  />
+
+                  {/* Thumbnail Overlay Layer */}
+                  {preset.overlayStyle === 'sepia' && (
+                    <div 
+                      className="absolute inset-0 pointer-events-none"
+                      style={{ backgroundColor: 'rgba(112, 66, 20, 0.16)', mixBlendMode: 'color' }}
+                    />
+                  )}
+                  {preset.overlayStyle === 'vintage' && (
+                    <div 
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(245, 180, 100, 0.22) 0%, rgba(0, 0, 0, 0) 50%, rgba(120, 60, 20, 0.26) 100%)',
+                        mixBlendMode: 'soft-light'
+                      }}
+                    />
+                  )}
+                  {preset.overlayStyle === 'warm' && (
+                    <div 
+                      className="absolute inset-0 pointer-events-none"
+                      style={{ backgroundColor: 'rgba(255, 160, 40, 0.15)', mixBlendMode: 'soft-light' }}
+                    />
+                  )}
+                  {preset.overlayStyle === 'cool' && (
+                    <div 
+                      className="absolute inset-0 pointer-events-none"
+                      style={{ backgroundColor: 'rgba(0, 150, 220, 0.15)', mixBlendMode: 'soft-light' }}
+                    />
+                  )}
+                  {preset.vignette && (
+                    <div 
+                      className="absolute inset-0 pointer-events-none"
+                      style={{ boxShadow: 'inset 0 0 14px rgba(0, 0, 0, 0.7)' }}
+                    />
+                  )}
+
+                  {/* Active checkmark */}
+                  {isSelected && (
+                    <div className="absolute inset-0 bg-[#3869A0]/35 flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full bg-[#3869A0] text-white flex items-center justify-center shadow-xs">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Preset Name */}
+                <span className={`text-[11px] font-bold tracking-tight text-center leading-tight truncate max-w-[64px] ${
+                  isSelected ? 'text-[#3869A0]' : 'text-gray-700'
+                }`}>
+                  {preset.name}
+                </span>
+                <span className={`text-[9px] px-1 rounded ${
+                  isSelected ? 'bg-[#3869A0] text-white font-bold' : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {preset.eraBadge}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -244,7 +399,7 @@ export const PhotoEditorControls: React.FC<PhotoEditorControlsProps> = ({
           }`}
         >
           <Sparkles className="w-3 h-3" />
-          <span>Filtros Vintage ({RETRO_FILTER_PRESETS.length})</span>
+          <span>Detalles de filtros ({primaryPresets.length})</span>
         </button>
 
         <button
@@ -274,41 +429,54 @@ export const PhotoEditorControls: React.FC<PhotoEditorControlsProps> = ({
         </button>
       </div>
 
-      {/* TAB 1: FILTROS VINTAGE */}
+      {/* TAB 1: FILTROS DETALLADOS */}
       {activeTab === 'filtros' && (
         <div className="space-y-2.5">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {RETRO_FILTER_PRESETS.map((preset) => {
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {primaryPresets.map((preset) => {
               const isSelected = editState.filterId === preset.id;
               return (
                 <button
                   type="button"
                   key={preset.id}
                   onClick={() => handleApplyPreset(preset.id)}
-                  className={`p-2 rounded border text-left transition relative cursor-pointer group ${
+                  className={`p-2 rounded-lg border text-left transition relative cursor-pointer group flex items-start gap-2 ${
                     isSelected
-                      ? 'bg-blue-50/80 border-[#3869A0] ring-1 ring-[#3869A0]'
+                      ? 'bg-blue-50/90 border-[#3869A0] ring-1 ring-[#3869A0]'
                       : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-gray-800 truncate">
-                      {preset.name}
-                    </span>
-                    <span className={`text-[9px] px-1 py-0.2 rounded font-semibold ${
-                      isSelected ? 'bg-[#3869A0] text-white' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {preset.eraBadge}
-                    </span>
+                  {/* Small mini-thumb */}
+                  <div className="w-10 h-10 rounded overflow-hidden bg-black flex-shrink-0 border border-gray-300 relative">
+                    <img 
+                      src={photoUrl} 
+                      alt="" 
+                      style={{ filter: preset.cssFilter }} 
+                      className="w-full h-full object-cover" 
+                    />
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-[#3869A0]/40 flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white stroke-[3]" />
+                      </div>
+                    )}
                   </div>
 
-                  <p className="text-[10px] text-gray-500 line-clamp-2 leading-tight">
-                    {preset.description}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-bold text-xs text-gray-800 truncate">
+                        {preset.name}
+                      </span>
+                      <span className={`text-[9px] px-1 py-0.2 rounded font-semibold ${
+                        isSelected ? 'bg-[#3869A0] text-white' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {preset.eraBadge}
+                      </span>
+                    </div>
 
-                  {isSelected && (
-                    <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#3869A0] rounded-full" />
-                  )}
+                    <p className="text-[10px] text-gray-500 line-clamp-2 leading-tight">
+                      {preset.description}
+                    </p>
+                  </div>
                 </button>
               );
             })}
@@ -337,7 +505,7 @@ export const PhotoEditorControls: React.FC<PhotoEditorControlsProps> = ({
               />
               <span className="font-medium text-gray-700 flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-amber-600" />
-                <span>Estampar fecha de cámara digital</span>
+                <span>Estampar fecha de cámara digital retro</span>
               </span>
             </label>
           </div>
@@ -405,12 +573,31 @@ export const PhotoEditorControls: React.FC<PhotoEditorControlsProps> = ({
               />
             </div>
 
+            {/* Grayscale / Escala de grises */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-semibold text-gray-700 flex items-center gap-1">
+                  <span className="w-3 h-3 rounded-full bg-gradient-to-r from-gray-500 to-black inline-block" />
+                  <span>Escala de Grises (Grayscale)</span>
+                </span>
+                <span className="text-gray-500 font-mono text-[11px]">{editState.grayscale ?? 0}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={editState.grayscale ?? 0}
+                onChange={e => onChange({ ...editState, grayscale: Number(e.target.value), filterId: 'custom' })}
+                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#3869A0]"
+              />
+            </div>
+
             {/* Tinte Sepia */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="font-semibold text-gray-700 flex items-center gap-1">
                   <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Tinte Sepia retro</span>
+                  <span>Tinte Sepia vintage</span>
                 </span>
                 <span className="text-gray-500 font-mono text-[11px]">{editState.sepia}%</span>
               </div>
@@ -422,6 +609,28 @@ export const PhotoEditorControls: React.FC<PhotoEditorControlsProps> = ({
                 onChange={e => onChange({ ...editState, sepia: Number(e.target.value), filterId: 'custom' })}
                 className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#3869A0]"
               />
+            </div>
+
+            {/* Capa de Superposición CSS (Overlay) */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-semibold text-gray-700 flex items-center gap-1">
+                  <Layers className="w-3.5 h-3.5 text-[#3869A0]" />
+                  <span>Capa Overlay CSS</span>
+                </span>
+                <span className="text-gray-500 font-mono text-[11px] capitalize">{editState.overlayStyle || 'none'}</span>
+              </div>
+              <select
+                value={editState.overlayStyle || 'none'}
+                onChange={e => onChange({ ...editState, overlayStyle: e.target.value as any, filterId: 'custom' })}
+                className="w-full p-1.5 text-xs bg-gray-50 border border-gray-300 rounded focus:outline-none focus:border-[#3869A0]"
+              >
+                <option value="none">Sin capa overlay</option>
+                <option value="sepia">Tono Sepia (Mezcla color cálido)</option>
+                <option value="vintage">Vintage Retro (Gradiente analógico)</option>
+                <option value="warm">Cálida Dorada (Veraniega)</option>
+                <option value="cool">Fría / Azulada (Scene 2009)</option>
+              </select>
             </div>
           </div>
 

@@ -10,6 +10,7 @@ export interface RealtimeManagerOptions {
   onChatMessage?: (msg: any) => void;
   onPrivateMessage?: (msg: any) => void;
   onChatTyping?: (data: any) => void;
+  onChatNudge?: (data: any) => void;
   onNotification?: (notif: any) => void;
   onStatusChange?: (status: RealtimeStatus, details?: { attempt: number; nextRetryMs?: number }) => void;
 }
@@ -25,6 +26,7 @@ export class RealtimeManager {
   private onChatMessage?: (msg: any) => void;
   private onPrivateMessage?: (msg: any) => void;
   private onChatTyping?: (data: any) => void;
+  private onChatNudge?: (data: any) => void;
   private onNotification?: (notif: any) => void;
   private onStatusChange?: (status: RealtimeStatus, details?: { attempt: number; nextRetryMs?: number }) => void;
 
@@ -45,6 +47,7 @@ export class RealtimeManager {
     this.onChatMessage = options.onChatMessage;
     this.onPrivateMessage = options.onPrivateMessage;
     this.onChatTyping = options.onChatTyping;
+    this.onChatNudge = options.onChatNudge;
     this.onNotification = options.onNotification;
     this.onStatusChange = options.onStatusChange;
   }
@@ -104,6 +107,15 @@ export class RealtimeManager {
           this.onChatTyping?.(data);
         } catch (err) {
           console.warn('Realtime chat_typing parse error:', err);
+        }
+      });
+
+      es.addEventListener('chat_nudge', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          this.onChatNudge?.(data);
+        } catch (err) {
+          console.warn('Realtime chat_nudge parse error:', err);
         }
       });
 

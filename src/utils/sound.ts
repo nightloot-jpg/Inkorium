@@ -168,3 +168,54 @@ export function playSuccessSound() {
     // ignore
   }
 }
+
+/**
+ * Iconic retro MSN / Tuenti Chat Nudge ("¡Zumbido!") sound effect.
+ * Dual-burst rapid mechanical rattle sound.
+ */
+export function playNudgeSound() {
+  if (!isSoundEnabled()) return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    
+    // First burst: low-pitched buzz & vibration
+    const bursts = [0, 0.12];
+    bursts.forEach((offset) => {
+      const t = now + offset;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, t);
+      osc.frequency.exponentialRampToValueAtTime(320, t + 0.08);
+
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(t);
+      osc.stop(t + 0.11);
+    });
+
+    // High warning ping on impact
+    const ping = ctx.createOscillator();
+    const pingGain = ctx.createGain();
+    ping.type = 'sine';
+    ping.frequency.setValueAtTime(880, now + 0.05);
+    ping.frequency.exponentialRampToValueAtTime(440, now + 0.28);
+    pingGain.gain.setValueAtTime(0.18, now + 0.05);
+    pingGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    ping.connect(pingGain);
+    pingGain.connect(ctx.destination);
+    ping.start(now + 0.05);
+    ping.stop(now + 0.32);
+  } catch {
+    // ignore audio errors
+  }
+}
+

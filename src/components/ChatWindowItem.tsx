@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { Minus, X, Send, Smile, ArrowDown, Loader2, CheckCheck, Clock, UserCheck } from 'lucide-react';
+import { Minus, X, Send, Smile, ArrowDown, Loader2, CheckCheck, Clock, UserCheck, Image as ImageIcon, Zap, Heart, Maximize2 } from 'lucide-react';
 import { User, ChatWindow, ChatMessage, UserPresence } from '../types';
 import { getFullConversation, formatChatDateDivider, normalizeUserId, subscribeCrossTabEvents } from '../lib/chatHistory';
 import EmoticonPicker from './EmoticonPicker';
 import { useInkorium } from '../context/InkoriumContext';
-import { playMessageSound } from '../utils/sound';
+import { playMessageSound, playNudgeSound } from '../utils/sound';
+import { uploadMediaFile } from '../lib/storage';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
+const QUICK_REACTIONS = ['❤️', '😂', '👍', '🔥', '😮', '😢'];
 
 interface ChatWindowItemProps {
   win: ChatWindow;
@@ -27,7 +29,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   onOpenProfile,
   getUserPresenceDot,
 }) => {
-  const { sendChatMessage, sendChatTyping } = useInkorium();
+  const { sendChatMessage, sendChatNudge, reactToChatMessage, sendChatTyping } = useInkorium();
   const [allMessages, setAllMessages] = useState<ChatMessage[]>(() => {
     return getFullConversation(currentUser.id, targetUser.id, `${targetUser.nombre} ${targetUser.apellidos}`);
   });
@@ -38,7 +40,20 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   const [emoticonOpen, setEmoticonOpen] = useState(false);
   const [inputText, setInputText] = useState('');
   const [isPeerTyping, setIsPeerTyping] = useState(false);
+  const [isNudging, setIsNudging] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [activeReactionPickerMsgId, setActiveReactionPickerMsgId] = useState<string | null>(null);
+  const [lightboxImageUrl, setLightboxImageUrl] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const preScrollRef = useRef<{ height: number; top: number } | null>(null);
+  const isInitialScrollDoneRef = useRef(false);
+  const prevMessagesLengthRef = useRef(0);
+  const windowRef = useRef<HTMLDivElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -56,21 +71,15 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     }
   };
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const preScrollRef = useRef<{ height: number; top: number } | null>(null);
-  const isInitialScrollDoneRef = useRef(false);
-  const prevMessagesLengthRef = useRef(0);
-
   // Sync conversation history when window or active users change
   useEffect(() => {
     const msgs = getFullConversation(currentUser.id, targetUser.id, `${targetUser.nombre} ${targetUser.apellidos}`);
     setAllMessages(msgs);
-    // Start with last PAGE_SIZE messages
     setVisibleCount(Math.min(PAGE_SIZE, msgs.length));
     isInitialScrollDoneRef.current = false;
   }, [currentUser.id, targetUser.id, targetUser.nombre, targetUser.apellidos]);
 
-  // Listen to synchronized messages and typing events
+  // Listen to synchronized messages, typing events, nudges and reactions
   useEffect(() => {
     const isMessageForThisChat = (m: ChatMessage) => {
       const normSender = normalizeUserId(m.emisorId);
@@ -87,7 +96,9 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     const handleIncomingMessage = (msg: ChatMessage) => {
       if (isMessageForThisChat(msg)) {
         setAllMessages(prev => {
-          if (prev.some(m => m.id === msg.id)) return prev;
+          if (prev.some(m => m.id === msg.id)) {
+            return prev.map(m => m.id === msg.id ? { ...m, ...msg } : m);
+          }
           return [...prev, msg];
         });
         setVisibleCount(prev => prev + 1);
@@ -108,8 +119,51 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
       }
     };
 
+    const triggerNudgeShake = () => {
+      setIsNudging(true);
+      setTimeout(() => {
+        setIsNudging(false);
+      }, 700);
+    };
+
+    const handleNudgeEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ targetUserId: string; senderUserId: string }>;
+      const { targetUserId, senderUserId } = customEvent.detail || {};
+      const normCur = normalizeUserId(currentUser.id);
+      const normTarget = normalizeUserId(targetUser.id);
+      if (
+        (normalizeUserId(senderUserId) === normTarget && normalizeUserId(targetUserId) === normCur) ||
+        (normalizeUserId(senderUserId) === normCur && normalizeUserId(targetUserId) === normTarget)
+      ) {
+        triggerNudgeShake();
+      }
+    };
+
+    const handleReactionEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ messageId: string; emoji: string; userId: string; targetUserId: string }>;
+      const { messageId, emoji, userId } = customEvent.detail || {};
+      if (messageId && emoji && userId) {
+        setAllMessages(prev => prev.map(m => {
+          if (m.id === messageId) {
+            const reactions = { ...(m.reactions || {}) };
+            const currentList = Array.isArray(reactions[emoji]) ? [...reactions[emoji]] : [];
+            if (currentList.includes(userId)) {
+              reactions[emoji] = currentList.filter(id => id !== userId);
+              if (reactions[emoji].length === 0) delete reactions[emoji];
+            } else {
+              reactions[emoji] = [...currentList, userId];
+            }
+            return { ...m, reactions };
+          }
+          return m;
+        }));
+      }
+    };
+
     window.addEventListener('inkorium:chat_message_sync', handleSync);
     window.addEventListener('inkorium:peer_typing', handleTyping);
+    window.addEventListener('inkorium:chat_nudge', handleNudgeEvent);
+    window.addEventListener('inkorium:chat_reaction', handleReactionEvent);
 
     // Cross-tab broadcast listener
     const unsubscribeCrossTab = subscribeCrossTabEvents((event) => {
@@ -119,17 +173,43 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
         if (normalizeUserId(event.payload.targetUserId) === normalizeUserId(targetUser.id)) {
           setIsPeerTyping(event.payload.isTyping);
         }
+      } else if (event.type === 'CHAT_NUDGE') {
+        const { targetUserId: nTarget, senderUserId: nSender } = event.payload;
+        if (
+          (normalizeUserId(nSender) === normalizeUserId(targetUser.id) && normalizeUserId(nTarget) === normalizeUserId(currentUser.id)) ||
+          (normalizeUserId(nSender) === normalizeUserId(currentUser.id) && normalizeUserId(nTarget) === normalizeUserId(targetUser.id))
+        ) {
+          triggerNudgeShake();
+        }
+      } else if (event.type === 'CHAT_REACTION') {
+        const { messageId, emoji, userId } = event.payload;
+        setAllMessages(prev => prev.map(m => {
+          if (m.id === messageId) {
+            const reactions = { ...(m.reactions || {}) };
+            const currentList = Array.isArray(reactions[emoji]) ? [...reactions[emoji]] : [];
+            if (currentList.includes(userId)) {
+              reactions[emoji] = currentList.filter(id => id !== userId);
+              if (reactions[emoji].length === 0) delete reactions[emoji];
+            } else {
+              reactions[emoji] = [...currentList, userId];
+            }
+            return { ...m, reactions };
+          }
+          return m;
+        }));
       }
     });
 
     return () => {
       window.removeEventListener('inkorium:chat_message_sync', handleSync);
       window.removeEventListener('inkorium:peer_typing', handleTyping);
+      window.removeEventListener('inkorium:chat_nudge', handleNudgeEvent);
+      window.removeEventListener('inkorium:chat_reaction', handleReactionEvent);
       unsubscribeCrossTab();
     };
   }, [currentUser.id, targetUser.id]);
 
-  // Compute sliced visible messages
+  // Sliced visible messages
   const visibleMessages = allMessages.slice(-visibleCount);
   const hasMore = allMessages.length > visibleCount;
   const remainingCount = Math.max(0, allMessages.length - visibleCount);
@@ -147,8 +227,6 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     }
 
     setIsLoadingOlder(true);
-
-    // Simulate natural fetch latency for historical pagination
     setTimeout(() => {
       setVisibleCount(prev => Math.min(allMessages.length, prev + PAGE_SIZE));
       setIsLoadingOlder(false);
@@ -161,34 +239,28 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     if (!container) return;
 
     if (preScrollRef.current) {
-      // User just loaded older messages: restore scroll offset relative to new height
       const newHeight = container.scrollHeight;
       const heightDiff = newHeight - preScrollRef.current.height;
       container.scrollTop = preScrollRef.current.top + heightDiff;
       preScrollRef.current = null;
     } else if (!isInitialScrollDoneRef.current && visibleMessages.length > 0) {
-      // First mount: jump smoothly to bottom
       container.scrollTop = container.scrollHeight;
       isInitialScrollDoneRef.current = true;
     } else if (allMessages.length > prevMessagesLengthRef.current) {
-      // New outgoing/incoming message appended to bottom: scroll to bottom
       container.scrollTop = container.scrollHeight;
     }
 
     prevMessagesLengthRef.current = allMessages.length;
   }, [visibleMessages.length, allMessages.length]);
 
-  // Handle scroll events: Detect top scroll (infinite scroll) and bottom visibility
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const { scrollTop, scrollHeight, clientHeight } = target;
 
-    // Detect near top for upward infinite scroll
     if (scrollTop <= 30 && hasMore && !isLoadingOlder) {
       loadOlderMessages();
     }
 
-    // Detect if user has scrolled away from bottom
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
     setShowScrollBottom(distanceFromBottom > 90);
   };
@@ -200,10 +272,83 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     }
   };
 
+  // Image Upload handler
+  const processImageFile = async (file: File) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    try {
+      setIsUploadingImage(true);
+      // Generate local preview immediately
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setImagePreview(String(e.target.result));
+        }
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to server storage
+      const uploadedUrl = await uploadMediaFile(file, 'photos');
+      setImagePreview(uploadedUrl);
+    } catch (err: any) {
+      console.warn('Chat image upload error:', err);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files[0]) {
+      void processImageFile(files[0]);
+    }
+    // Reset file input value so the same file can be selected again if needed
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Drag & drop support
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      void processImageFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  // Paste image support (Ctrl+V)
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          void processImageFile(file);
+          break;
+        }
+      }
+    }
+  };
+
   const handleSend = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const text = inputText.trim();
-    if (!text || !currentUser.id || !targetUser.id) return;
+    const hasImage = Boolean(imagePreview);
+
+    if ((!text && !hasImage) || !currentUser.id || !targetUser.id) return;
     if (targetUser.id === currentUser.id) return;
 
     if (typingTimeoutRef.current) {
@@ -211,20 +356,30 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
     }
     sendChatTyping(targetUser.id, false);
 
-    // Send via central context (handles history, synchronization, auto-replies, notifications)
-    sendChatMessage(targetUser.id, text);
+    sendChatMessage(targetUser.id, text, imagePreview || undefined);
     setInputText('');
+    setImagePreview(null);
     setEmoticonOpen(false);
 
     try {
       playMessageSound();
     } catch {
-      // audio error safely ignored
+      // ignore
     }
+  };
+
+  const handleSendNudge = () => {
+    if (!currentUser.id || !targetUser.id) return;
+    sendChatNudge(targetUser.id);
   };
 
   const handleInsertEmoticon = (val: string) => {
     setInputText(prev => `${prev} ${val} `);
+  };
+
+  const handleReactionClick = (msgId: string, emoji: string) => {
+    reactToChatMessage(targetUser.id, msgId, emoji);
+    setActiveReactionPickerMsgId(null);
   };
 
   // Group visible messages by date
@@ -239,7 +394,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
         lastDateStr = dateDivider;
         elements.push(
           <div key={`date-divider-${idx}-${dateDivider}`} className="flex items-center justify-center my-2">
-            <span className="bg-gray-200/90 text-gray-600 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border border-gray-300 shadow-2xs">
+            <span className="bg-gray-200/90 dark:bg-slate-800 text-gray-600 dark:text-gray-300 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border border-gray-300 dark:border-slate-700 shadow-2xs">
               {dateDivider}
             </span>
           </div>
@@ -247,21 +402,126 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
       }
 
       const isMe = msg.emisorId === currentUser.id;
+      const isNudge = Boolean(msg.isNudge);
+      const isReactionPickerOpen = activeReactionPickerMsgId === msg.id;
+
+      if (isNudge) {
+        elements.push(
+          <div key={msg.id || `nudge-${idx}`} className="flex justify-center my-2 w-full">
+            <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-200 text-xs px-3 py-1.5 rounded-full shadow-xs animate-bounce font-medium">
+              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 animate-pulse" />
+              <span>
+                {isMe ? '¡Has enviado un zumbido!' : `¡${targetUser.nombre} te ha enviado un zumbido!`}
+              </span>
+              <span className="text-[9px] opacity-70 ml-1">{msg.fecha}</span>
+            </div>
+          </div>
+        );
+        return;
+      }
+
+      const reactions = msg.reactions || {};
+      const reactionEntries = Object.entries(reactions).filter(([_, userIds]) => userIds && userIds.length > 0);
 
       elements.push(
         <div
           key={msg.id || `msg-${idx}`}
-          className={`flex flex-col max-w-[85%] ${isMe ? 'self-end items-end' : 'self-start items-start'}`}
+          className={`group/msg relative flex flex-col max-w-[85%] ${isMe ? 'self-end items-end' : 'self-start items-start'}`}
         >
+          {/* Reaction trigger icon on hover */}
           <div
-            className={`p-2 rounded-lg text-xs leading-snug shadow-xs select-text ${
+            className={`absolute top-0 -translate-y-1/2 opacity-0 group-hover/msg:opacity-100 transition-opacity z-10 ${
+              isMe ? 'left-0 -translate-x-full pr-1.5' : 'right-0 translate-x-full pl-1.5'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveReactionPickerMsgId(isReactionPickerOpen ? null : msg.id)}
+              className="p-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full text-gray-500 hover:text-amber-500 shadow-sm cursor-pointer transition hover:scale-110"
+              title="Reaccionar con un emoji"
+            >
+              <Smile className="w-3 h-3" />
+            </button>
+          </div>
+
+          {/* Quick Reaction Popup */}
+          {isReactionPickerOpen && (
+            <div
+              className={`absolute bottom-full mb-1 z-20 flex items-center gap-0.5 bg-white dark:bg-[#0e1726] border border-gray-300 dark:border-slate-700 p-1 rounded-full shadow-xl animate-fade-in ${
+                isMe ? 'right-0' : 'left-0'
+              }`}
+            >
+              {QUICK_REACTIONS.map(emoji => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => handleReactionClick(msg.id, emoji)}
+                  className="w-6 h-6 flex items-center justify-center text-sm hover:scale-125 transition-transform cursor-pointer rounded-full hover:bg-blue-50 dark:hover:bg-slate-800"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Message bubble */}
+          <div
+            className={`p-2 rounded-lg text-xs leading-snug shadow-xs select-text flex flex-col gap-1.5 ${
               isMe
                 ? 'bg-[#3869A0] text-white rounded-br-none'
                 : 'bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-slate-700 rounded-bl-none'
             }`}
           >
-            {msg.mensaje}
+            {/* Attached Photo */}
+            {msg.imageUrl && (
+              <div className="relative group/img rounded overflow-hidden cursor-pointer max-w-[200px] border border-black/10 dark:border-white/10">
+                <img
+                  src={msg.imageUrl}
+                  alt="Foto enviada en el chat"
+                  className="w-full max-h-48 object-cover rounded hover:opacity-95 transition"
+                  onClick={() => setLightboxImageUrl(msg.imageUrl || null)}
+                  loading="lazy"
+                />
+                <div
+                  onClick={() => setLightboxImageUrl(msg.imageUrl || null)}
+                  className="absolute inset-0 bg-black/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white"
+                >
+                  <Maximize2 className="w-4 h-4 drop-shadow" />
+                </div>
+              </div>
+            )}
+
+            {/* Text message */}
+            {msg.mensaje && msg.mensaje !== '📷 Foto' && (
+              <div className="break-words whitespace-pre-wrap">{msg.mensaje}</div>
+            )}
           </div>
+
+          {/* Reactions bar below bubble */}
+          {reactionEntries.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-0.5 px-0.5">
+              {reactionEntries.map(([emoji, userIds]) => {
+                const isReactedByMe = userIds.includes(currentUser.id);
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => handleReactionClick(msg.id, emoji)}
+                    className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full border transition cursor-pointer ${
+                      isReactedByMe
+                        ? 'bg-blue-100 dark:bg-blue-900/50 border-blue-300 dark:border-blue-700 text-[#3869A0] dark:text-blue-300 font-bold'
+                        : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span>{emoji}</span>
+                    <span>{userIds.length}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Time & status */}
           <div className="flex items-center gap-1 text-[9px] text-gray-400 dark:text-gray-500 mt-0.5 px-1">
             <span>{msg.fecha}</span>
             {isMe && <span title="Enviado"><CheckCheck className="w-3 h-3 text-[#3869A0]/80 dark:text-blue-300" /></span>}
@@ -274,7 +534,24 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   };
 
   return (
-    <div className="w-64 sm:w-76 bg-white dark:bg-[#0e1726] rounded-t-lg shadow-2xl border border-gray-300 dark:border-slate-700 flex flex-col overflow-hidden text-xs select-none">
+    <div
+      ref={windowRef}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`w-68 sm:w-80 bg-white dark:bg-[#0e1726] rounded-t-lg shadow-2xl border border-gray-300 dark:border-slate-700 flex flex-col overflow-hidden text-xs select-none transition-transform ${
+        isNudging ? 'animate-chat-shake' : ''
+      }`}
+    >
+      {/* Hidden file input for photos */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        className="hidden"
+      />
+
       {/* Chat Window Header */}
       <div
         onClick={() => onToggleMinimize(win.targetUserId)}
@@ -309,6 +586,18 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
         </div>
 
         <div className="flex items-center gap-1 text-white/80">
+          {/* Quick Nudge button in header */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSendNudge();
+            }}
+            className="p-1 text-amber-300 hover:text-white rounded hover:bg-black/20 cursor-pointer transition"
+            title="¡Enviar zumbido!"
+          >
+            <Zap className="w-3.5 h-3.5 fill-amber-300" />
+          </button>
           <button
             type="button"
             onClick={(e) => {
@@ -340,8 +629,16 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
           <div
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="h-68 p-2.5 overflow-y-auto bg-[#f8fafc] dark:bg-[#090d16] space-y-1.5 flex flex-col relative"
+            className="h-72 p-2.5 overflow-y-auto bg-[#f8fafc] dark:bg-[#090d16] space-y-1.5 flex flex-col relative"
           >
+            {/* Drag and drop overlay */}
+            {isDraggingOver && (
+              <div className="absolute inset-0 bg-[#3869A0]/80 z-30 flex flex-col items-center justify-center text-white border-2 border-dashed border-white m-1 rounded-lg backdrop-blur-xs">
+                <ImageIcon className="w-8 h-8 animate-bounce mb-1" />
+                <span className="font-bold text-xs">Suelta la foto para enviarla al chat</span>
+              </div>
+            )}
+
             {/* Top Loading Indicator & Infinite Scroll Button */}
             {hasMore ? (
               <div className="flex flex-col items-center justify-center py-1.5 border-b border-gray-200/80 dark:border-slate-800 mb-2">
@@ -411,6 +708,36 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
             )}
           </div>
 
+          {/* Image preview before sending */}
+          {imagePreview && (
+            <div className="p-2 bg-blue-50/70 dark:bg-blue-950/40 border-t border-blue-200 dark:border-blue-900/50 flex items-center gap-2">
+              <div className="relative w-12 h-12 rounded border border-blue-300 dark:border-blue-800 overflow-hidden flex-shrink-0 bg-white dark:bg-slate-800">
+                <img src={imagePreview} alt="Vista previa" className="w-full h-full object-cover" />
+                {isUploadingImage && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 truncate">
+                <p className="text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate">
+                  {isUploadingImage ? 'Subiendo foto...' : 'Foto lista para enviar'}
+                </p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                  Pulsa Enviar para adjuntarla
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setImagePreview(null)}
+                className="text-gray-400 hover:text-red-500 p-1 cursor-pointer"
+                title="Quitar foto"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* Quick Retro Replies Chips */}
           <div className="px-2 py-1 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 flex items-center gap-1 overflow-x-auto no-scrollbar">
             {['¡Hola! ^^', '¿Qué tal?', 'Jajaja XD', 'Hablamos luego!'].map((quick) => (
@@ -430,8 +757,10 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
           {/* Chat Input Bar */}
           <form
             onSubmit={handleSend}
+            onPaste={handlePaste}
             className="p-1.5 bg-white dark:bg-[#0e1726] border-t border-gray-200 dark:border-slate-800 flex items-center gap-1.5 relative"
           >
+            {/* Emoticon Picker Toggle */}
             <div className="relative">
               <button
                 type="button"
@@ -439,7 +768,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
                 className={`p-1 rounded text-gray-500 dark:text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition ${
                   emoticonOpen ? 'text-[#3869A0] bg-blue-50 dark:bg-blue-950/40' : ''
                 }`}
-                title="Insertar emoticonos"
+                title="Insertar emoticonos retro y emojis"
               >
                 <Smile className="w-4 h-4" />
               </button>
@@ -452,17 +781,44 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
               )}
             </div>
 
+            {/* Photo Attachment Button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingImage}
+              className="p-1 rounded text-gray-500 dark:text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition disabled:opacity-50"
+              title="Enviar imagen o foto"
+            >
+              {isUploadingImage ? (
+                <Loader2 className="w-4 h-4 animate-spin text-[#3869A0]" />
+              ) : (
+                <ImageIcon className="w-4 h-4" />
+              )}
+            </button>
+
+            {/* Zumbido (Nudge) Button */}
+            <button
+              type="button"
+              onClick={handleSendNudge}
+              className="p-1 rounded text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 cursor-pointer transition"
+              title="¡Enviar zumbido! (hace vibrar la pantalla con sonido)"
+            >
+              <Zap className="w-4 h-4 fill-amber-500" />
+            </button>
+
+            {/* Text input */}
             <input
               type="text"
-              placeholder="Escribe un mensaje..."
+              placeholder="Escribe un mensaje o pega una foto..."
               value={inputText}
               onChange={handleInputChange}
               className="flex-1 text-xs p-1.5 rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-[#3869A0] focus:ring-1 focus:ring-[#3869A0]"
             />
 
+            {/* Send button */}
             <button
               type="submit"
-              disabled={!inputText.trim()}
+              disabled={!inputText.trim() && !imagePreview}
               className="p-1.5 bg-[#3869A0] text-white rounded hover:bg-[#2c537f] disabled:bg-gray-300 dark:disabled:bg-slate-700 transition cursor-pointer disabled:cursor-not-allowed shadow-2xs"
               title="Enviar mensaje"
             >
@@ -470,6 +826,43 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
             </button>
           </form>
         </>
+      )}
+
+      {/* Lightbox / Modal for full-size photo viewing */}
+      {lightboxImageUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[999] bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setLightboxImageUrl(null)}
+        >
+          <div
+            className="relative max-w-2xl max-h-[85vh] bg-[#0e1726] border border-slate-700 rounded-lg overflow-hidden shadow-2xl flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-[#18253a] px-3 py-2 flex items-center justify-between text-white border-b border-slate-700">
+              <span className="font-bold text-xs flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-blue-400" />
+                <span>Foto de Inkorium Chat</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setLightboxImageUrl(null)}
+                className="p-1 text-gray-300 hover:text-white rounded hover:bg-white/10 transition cursor-pointer"
+                title="Cerrar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-2 flex items-center justify-center bg-black/40 overflow-auto max-h-[75vh]">
+              <img
+                src={lightboxImageUrl}
+                alt="Foto ampliada"
+                className="max-h-[70vh] w-auto object-contain rounded"
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

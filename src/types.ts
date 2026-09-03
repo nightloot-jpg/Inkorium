@@ -190,6 +190,9 @@ export interface ChatMessage {
   fecha: string;
   leido: boolean;
   timestamp?: number;
+  imageUrl?: string;
+  isNudge?: boolean;
+  reactions?: Record<string, string[]>;
 }
 
 export interface InkoriumNotification {
