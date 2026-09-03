@@ -74,7 +74,7 @@ interface InkoriumContextType {
   canUserViewPhoto: (photo: Photo, viewerUserId?: string) => boolean;
   addPhotoTag: (photoId: string, targetUserId: string, x: number, y: number) => void;
   removePhotoTag: (photoId: string, tagId: string) => void; addPhotoComment: (photoId: string, comentario: string) => void; likePhoto: (photoId: string) => void;
-  setPhotoAsAvatar: (photoId: string) => void; deletePhoto: (photoId: string) => void; createAlbum: (nombre: string, descripcion?: string) => void;
+  setPhotoAsAvatar: (photoId: string) => void; deletePhoto: (photoId: string) => void; createAlbum: (nombre: string, descripcion?: string) => string | undefined;
   renameAlbum: (albumId: string, nuevoNombre: string) => void; deleteAlbum: (albumId: string) => void;
   sendFriendRequest: (targetUserId: string) => void; acceptFriendRequest: (requestId: string) => void; ignoreFriendRequest: (requestId: string) => void;
   removeFriendship: (targetUserId: string) => void; cancelFriendRequest: (targetUserId: string) => void;
@@ -1064,17 +1064,41 @@ const addDeletedMessageIds = (ids: string[]) => {
   }, [currentUserId, fetchAndMapPhotos, fetchAndMapPrivateMessages, fetchAndMapChatMessages]);
 
   const pushNotification = useCallback((notif: InkoriumNotification) => {
-    setNotifications(prev => [notif, ...prev]);
+    setNotifications(prev => {
+      if (prev.some(n => n.id === notif.id)) return prev;
+      const next = [notif, ...prev];
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem('inkorium:notifications', JSON.stringify(next.slice(0, 80)));
+        } catch {}
+      }
+      return next;
+    });
+
+    broadcastCrossTabEvent({
+      type: 'NOTIFICATION',
+      payload: { notification: notif }
+    });
+
     // Solo mostrar el popup emergente si la notificación va dirigida al usuario actual logueado
+    const normCur = normalizeUserId(currentUserId);
+    const normUser = normalizeUserId(currentUser.id);
+    const normTarget = normalizeUserId(notif.userId);
+
     const isForCurrentUser = 
       !notif.userId ||
-      notif.userId === currentUserId ||
-      notif.userId === currentUser.id ||
-      (currentUser.username && notif.userId === currentUser.username);
+      normTarget === normCur ||
+      normTarget === normUser ||
+      (currentUser.username && normTarget === normalizeUserId(currentUser.username));
 
     if (isForCurrentUser) {
-      setToasts(prev => [notif, ...prev.slice(0, 4)]);
-      playNotificationChime();
+      setToasts(prev => {
+        if (prev.some(t => t.id === notif.id)) return prev;
+        return [notif, ...prev.slice(0, 4)];
+      });
+      try {
+        playNotificationChime();
+      } catch {}
     }
   }, [currentUserId, currentUser.id, currentUser.username]);
 
@@ -1214,6 +1238,11 @@ const addDeletedMessageIds = (ids: string[]) => {
             }));
           }
         }
+      },
+      onNotification: (notifData: any) => {
+        if (notifData) {
+          pushNotificationRef.current(notifData);
+        }
       }
     });
 
@@ -1261,6 +1290,28 @@ const addDeletedMessageIds = (ids: string[]) => {
           });
           try {
             playMessageSound();
+          } catch {}
+        }
+      } else if (event.type === 'NOTIFICATION') {
+        const { notification } = event.payload;
+        if (!notification) return;
+        setNotifications(prev => {
+          if (prev.some(n => n.id === notification.id)) return prev;
+          return [notification, ...prev];
+        });
+        const normCurrentUser = normalizeUserId(currentUserId);
+        const normTarget = normalizeUserId(notification.userId);
+        if (
+          !notification.userId || 
+          normTarget === normCurrentUser || 
+          (currentUser.username && normTarget === normalizeUserId(currentUser.username))
+        ) {
+          setToasts(prev => {
+            if (prev.some(t => t.id === notification.id)) return prev;
+            return [notification, ...prev.slice(0, 4)];
+          });
+          try {
+            playNotificationChime();
           } catch {}
         }
       } else if (event.type === 'PROFILE_UPDATE') {
@@ -2197,10 +2248,12 @@ const addDeletedMessageIds = (ids: string[]) => {
     setPhotos(prev => prev.filter(p => p.id !== photoId));
   }, []);
 
-  const createAlbum = useCallback((nombre: string, descripcion?: string) => {
-    if (!currentUserId || !nombre.trim()) return;
+  const createAlbum = useCallback((nombre: string, descripcion?: string): string | undefined => {
+    if (!currentUserId || !nombre.trim()) return undefined;
+    const albumId = `alb-${Date.now()}`;
     const newAlbum: Album = {
-      id: `alb-${Date.now()}`,
+      id: albumId,
+      userId: currentUserId,
       propietarioId: currentUserId,
       nombre: nombre.trim(),
       descripcion: descripcion?.trim() || '',
@@ -2209,6 +2262,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       fecha: new Date().toLocaleDateString('es-ES')
     };
     setAlbums(prev => [...prev, newAlbum]);
+    return albumId;
   }, [currentUserId]);
 
   const renameAlbum = useCallback((albumId: string, nuevoNombre: string) => {
@@ -2253,13 +2307,20 @@ const addDeletedMessageIds = (ids: string[]) => {
       return updated;
     });
 
-    void addPhotoTagApi(photoId, newTag).catch(err => {
-      console.warn('Failed to sync photo tag to server:', err);
-    });
-
     const targetPhoto = photosRef.current.find(p => p.id === photoId) || INITIAL_PHOTOS.find(p => p.id === photoId);
     const photoUrl = targetPhoto?.archivo || '';
     const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+
+    void addPhotoTagApi(photoId, {
+      ...newTag,
+      creatorId: currentUserId,
+      creatorName: myName,
+      creatorAvatar: currentUser.avatar || '',
+      photoUrl,
+      photoTitle: targetPhoto?.titulo || ''
+    }).catch(err => {
+      console.warn('Failed to sync photo tag to server:', err);
+    });
 
     // Generate notification for tagged friend if not tagging self
     if (targetUserId && targetUserId !== currentUserId) {
@@ -2291,7 +2352,7 @@ const addDeletedMessageIds = (ids: string[]) => {
           fromUserName: targetName,
           fromUserAvatar: target?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
           tipo: 'etiqueta',
-          mensaje: `Has etiquetado a ${targetName} en esta foto.`,
+          mensaje: `Has etiquetado a ${targetName} en esta foto. Se le ha enviado una notificación.`,
           detalle: targetPhoto?.titulo ? `Foto: "${targetPhoto.titulo}"` : undefined,
           enlace: 'fotos',
           targetId: photoId,

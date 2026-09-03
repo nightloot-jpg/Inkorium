@@ -10,6 +10,7 @@ export interface RealtimeManagerOptions {
   onChatMessage?: (msg: any) => void;
   onPrivateMessage?: (msg: any) => void;
   onChatTyping?: (data: any) => void;
+  onNotification?: (notif: any) => void;
   onStatusChange?: (status: RealtimeStatus, details?: { attempt: number; nextRetryMs?: number }) => void;
 }
 
@@ -24,6 +25,7 @@ export class RealtimeManager {
   private onChatMessage?: (msg: any) => void;
   private onPrivateMessage?: (msg: any) => void;
   private onChatTyping?: (data: any) => void;
+  private onNotification?: (notif: any) => void;
   private onStatusChange?: (status: RealtimeStatus, details?: { attempt: number; nextRetryMs?: number }) => void;
 
   private eventSource: EventSource | null = null;
@@ -43,6 +45,7 @@ export class RealtimeManager {
     this.onChatMessage = options.onChatMessage;
     this.onPrivateMessage = options.onPrivateMessage;
     this.onChatTyping = options.onChatTyping;
+    this.onNotification = options.onNotification;
     this.onStatusChange = options.onStatusChange;
   }
 
@@ -101,6 +104,17 @@ export class RealtimeManager {
           this.onChatTyping?.(data);
         } catch (err) {
           console.warn('Realtime chat_typing parse error:', err);
+        }
+      });
+
+      es.addEventListener('notification', (e) => {
+        this.retryCount = 0;
+        if (this.status !== 'connected') this.updateStatus('connected');
+        try {
+          const data = JSON.parse(e.data);
+          this.onNotification?.(data);
+        } catch (err) {
+          console.warn('Realtime notification parse error:', err);
         }
       });
 

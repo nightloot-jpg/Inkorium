@@ -178,6 +178,8 @@ const inMemoryProfiles = new Map<string, any>();
 // Persistent photo metadata store (tags, comments, likes, custom privacy)
 const PHOTO_METADATA_FILE = path.join(process.cwd(), 'photo_metadata.json');
 interface PhotoMetadataStoreItem {
+  titulo?: string;
+  archivo?: string;
   etiquetas?: any[];
   comentarios?: any[];
   likes?: string[];
@@ -965,6 +967,35 @@ app.post('/api/photos', async (req, res) => {
       currentMeta.etiquetas = currentTags;
       inMemoryPhotoMetadata.set(photoId, currentMeta);
       persistPhotoMetadata();
+
+      // Broadcast real-time notification to the tagged friend
+      const targetUserId = String(tag.userId || tag.usuarioId || '').trim();
+      const creatorId = String(tag.creatorId || req.body?.senderId || '').trim();
+      if (targetUserId && targetUserId !== creatorId) {
+        const creatorName = String(tag.creatorName || req.body?.senderName || 'Un amigo').trim();
+        const creatorAvatar = String(tag.creatorAvatar || req.body?.senderAvatar || '').trim();
+        const photoTitle = String(tag.photoTitle || currentMeta.titulo || '').trim();
+        const photoUrl = String(tag.photoUrl || currentMeta.archivo || '').trim();
+
+        broadcastRealtimeEvent([targetUserId], 'notification', {
+          id: `notif-tag-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          userId: targetUserId,
+          fromUserId: creatorId,
+          fromUserName: creatorName,
+          fromUserAvatar: creatorAvatar,
+          tipo: 'etiqueta',
+          mensaje: `${creatorName} te ha etiquetado en una foto.`,
+          detalle: photoTitle ? `Foto: "${photoTitle}"` : undefined,
+          enlace: 'fotos',
+          targetId: photoId,
+          fotoId: photoId,
+          photoThumbnail: photoUrl,
+          targetPhotoUrl: photoUrl,
+          leido: false,
+          fecha: 'Ahora mismo'
+        });
+      }
+
       return res.status(200).json({ success: true, photoId, etiquetas: currentTags });
     }
 

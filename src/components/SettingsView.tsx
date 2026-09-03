@@ -23,12 +23,6 @@ export const SettingsView: React.FC = () => {
     notifications,
     pushNotification,
     accessLogs,
-    isRealtimeSimulationEnabled,
-    setIsRealtimeSimulationEnabled,
-    simulateIncomingMessage,
-    simulateWallComment,
-    simulateFriendRequest,
-    simulatePhotoInteraction,
     markNotificationAsRead,
     markAllNotificationsAsRead,
     deleteNotification,
@@ -381,8 +375,8 @@ export const SettingsView: React.FC = () => {
                         onChange={e => setProvincia(e.target.value)}
                         className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0] cursor-pointer"
                       >
-                        {availableZones.map(z => (
-                          <option key={z} value={z}>{z}</option>
+                        {availableZones.map((z, idx) => (
+                          <option key={`${z}-${idx}`} value={z}>{z}</option>
                         ))}
                         {provincia && !availableZones.includes(provincia) && (
                           <option key="custom-provincia" value={provincia}>{provincia}</option>

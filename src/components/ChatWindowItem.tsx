@@ -257,14 +257,14 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
             className={`p-2 rounded-lg text-xs leading-snug shadow-xs select-text ${
               isMe
                 ? 'bg-[#3869A0] text-white rounded-br-none'
-                : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
+                : 'bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-slate-700 rounded-bl-none'
             }`}
           >
             {msg.mensaje}
           </div>
-          <div className="flex items-center gap-1 text-[9px] text-gray-400 mt-0.5 px-1">
+          <div className="flex items-center gap-1 text-[9px] text-gray-400 dark:text-gray-500 mt-0.5 px-1">
             <span>{msg.fecha}</span>
-            {isMe && <span title="Enviado"><CheckCheck className="w-3 h-3 text-[#3869A0]/80" /></span>}
+            {isMe && <span title="Enviado"><CheckCheck className="w-3 h-3 text-[#3869A0]/80 dark:text-blue-300" /></span>}
           </div>
         </div>
       );
@@ -274,7 +274,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   };
 
   return (
-    <div className="w-64 sm:w-76 bg-white rounded-t-lg shadow-2xl border border-gray-300 flex flex-col overflow-hidden text-xs select-none">
+    <div className="w-64 sm:w-76 bg-white dark:bg-[#0e1726] rounded-t-lg shadow-2xl border border-gray-300 dark:border-slate-700 flex flex-col overflow-hidden text-xs select-none">
       {/* Chat Window Header */}
       <div
         onClick={() => onToggleMinimize(win.targetUserId)}
@@ -340,13 +340,13 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
           <div
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="h-68 p-2.5 overflow-y-auto bg-[#f8fafc] space-y-1.5 flex flex-col relative"
+            className="h-68 p-2.5 overflow-y-auto bg-[#f8fafc] dark:bg-[#090d16] space-y-1.5 flex flex-col relative"
           >
             {/* Top Loading Indicator & Infinite Scroll Button */}
             {hasMore ? (
-              <div className="flex flex-col items-center justify-center py-1.5 border-b border-gray-200/80 mb-2">
+              <div className="flex flex-col items-center justify-center py-1.5 border-b border-gray-200/80 dark:border-slate-800 mb-2">
                 {isLoadingOlder ? (
-                  <div className="flex items-center gap-1.5 text-xs text-[#3869A0] font-medium py-1">
+                  <div className="flex items-center gap-1.5 text-xs text-[#3869A0] dark:text-blue-400 font-medium py-1">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     <span>Cargando historial anterior...</span>
                   </div>
@@ -354,32 +354,32 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
                   <button
                     type="button"
                     onClick={loadOlderMessages}
-                    className="flex items-center gap-1 text-[11px] text-[#3869A0] font-semibold hover:underline bg-white border border-gray-300 hover:border-[#3869A0] px-2.5 py-1 rounded-full shadow-2xs cursor-pointer transition"
+                    className="flex items-center gap-1 text-[11px] text-[#3869A0] dark:text-blue-400 font-semibold hover:underline bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 hover:border-[#3869A0] px-2.5 py-1 rounded-full shadow-2xs cursor-pointer transition"
                   >
                     <Clock className="w-3 h-3" />
                     <span>Ver mensajes anteriores ({remainingCount} más)</span>
                   </button>
                 )}
-                <span className="text-[9px] text-gray-400 mt-1">
+                <span className="text-[9px] text-gray-400 dark:text-gray-500 mt-1">
                   Desliza hacia arriba para cargar automáticamente
                 </span>
               </div>
             ) : (
               /* Milestone: Beginning of Conversation History */
-              <div className="text-center py-3 border-b border-gray-200 mb-2 bg-blue-50/50 rounded-lg p-2">
+              <div className="text-center py-3 border-b border-gray-200 dark:border-slate-800 mb-2 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-2">
                 <img
                   src={targetUser.avatar}
                   alt=""
-                  className="w-10 h-10 rounded-full mx-auto object-cover border border-gray-300 shadow-2xs"
+                  className="w-10 h-10 rounded-full mx-auto object-cover border border-gray-300 dark:border-slate-700 shadow-2xs"
                 />
-                <p className="font-bold text-gray-800 text-[11px] mt-1">
+                <p className="font-bold text-gray-800 dark:text-gray-200 text-[11px] mt-1">
                   {targetUser.nombre} {targetUser.apellidos}
                 </p>
-                <p className="text-[10px] text-gray-500">
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">
                   {targetUser.provincia} • {targetUser.online ? '🟢 Conectado' : 'Desconectado'}
                 </p>
-                <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] text-gray-600 bg-white/80 py-0.5 px-2 rounded-full border border-blue-200 inline-flex mx-auto">
-                  <UserCheck className="w-3 h-3 text-[#3869A0]" />
+                <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-slate-800 py-0.5 px-2 rounded-full border border-blue-200 dark:border-blue-900/40 inline-flex mx-auto">
+                  <UserCheck className="w-3 h-3 text-[#3869A0] dark:text-blue-400" />
                   <span>Inicio del historial de chat</span>
                 </div>
               </div>
@@ -390,9 +390,9 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
 
             {/* Contact Typing Indicator */}
             {isPeerTyping && (
-              <div className="flex items-center gap-1.5 text-gray-500 bg-white/90 border border-gray-200 py-1 px-2.5 rounded-full w-fit text-[11px] shadow-2xs animate-pulse my-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#3869A0] animate-ping" />
-                <span className="text-[10px] text-gray-600 font-medium">
+              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 bg-white/90 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 py-1 px-2.5 rounded-full w-fit text-[11px] shadow-2xs animate-pulse my-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#3869A0] dark:bg-blue-400 animate-ping" />
+                <span className="text-[10px] text-gray-600 dark:text-gray-300 font-medium">
                   {targetUser.nombre} está escribiendo...
                 </span>
               </div>
@@ -412,7 +412,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
           </div>
 
           {/* Quick Retro Replies Chips */}
-          <div className="px-2 py-1 bg-gray-50 border-t border-gray-200 flex items-center gap-1 overflow-x-auto no-scrollbar">
+          <div className="px-2 py-1 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 flex items-center gap-1 overflow-x-auto no-scrollbar">
             {['¡Hola! ^^', '¿Qué tal?', 'Jajaja XD', 'Hablamos luego!'].map((quick) => (
               <button
                 key={quick}
@@ -420,7 +420,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
                 onClick={() => {
                   setInputText(quick);
                 }}
-                className="whitespace-nowrap bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 text-gray-600 hover:text-[#3869A0] text-[10px] px-1.5 py-0.5 rounded cursor-pointer transition"
+                className="whitespace-nowrap bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 hover:border-blue-300 text-gray-600 dark:text-gray-300 hover:text-[#3869A0] text-[10px] px-1.5 py-0.5 rounded cursor-pointer transition"
               >
                 {quick}
               </button>
@@ -430,14 +430,14 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
           {/* Chat Input Bar */}
           <form
             onSubmit={handleSend}
-            className="p-1.5 bg-white border-t border-gray-200 flex items-center gap-1.5 relative"
+            className="p-1.5 bg-white dark:bg-[#0e1726] border-t border-gray-200 dark:border-slate-800 flex items-center gap-1.5 relative"
           >
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setEmoticonOpen(!emoticonOpen)}
-                className={`p-1 rounded text-gray-500 hover:text-[#3869A0] hover:bg-gray-100 cursor-pointer transition ${
-                  emoticonOpen ? 'text-[#3869A0] bg-blue-50' : ''
+                className={`p-1 rounded text-gray-500 dark:text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition ${
+                  emoticonOpen ? 'text-[#3869A0] bg-blue-50 dark:bg-blue-950/40' : ''
                 }`}
                 title="Insertar emoticonos"
               >
@@ -457,13 +457,13 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
               placeholder="Escribe un mensaje..."
               value={inputText}
               onChange={handleInputChange}
-              className="flex-1 text-xs p-1.5 rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] focus:ring-1 focus:ring-[#3869A0]"
+              className="flex-1 text-xs p-1.5 rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-[#3869A0] focus:ring-1 focus:ring-[#3869A0]"
             />
 
             <button
               type="submit"
               disabled={!inputText.trim()}
-              className="p-1.5 bg-[#3869A0] text-white rounded hover:bg-[#2c537f] disabled:bg-gray-300 transition cursor-pointer disabled:cursor-not-allowed shadow-2xs"
+              className="p-1.5 bg-[#3869A0] text-white rounded hover:bg-[#2c537f] disabled:bg-gray-300 dark:disabled:bg-slate-700 transition cursor-pointer disabled:cursor-not-allowed shadow-2xs"
               title="Enviar mensaje"
             >
               <Send className="w-3.5 h-3.5" />

@@ -174,17 +174,17 @@ export const MessagesViewV2: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         {/* Left Navigation Sidebar */}
         <div className="md:col-span-4 lg:col-span-3 space-y-3">
-          <div className="bg-white rounded border border-[#ccd5df] overflow-hidden text-xs shadow-xs">
-            <div className="bg-[#f0f4f8] px-3 py-2 border-b border-[#ccd5df] font-bold text-gray-700 flex items-center gap-1.5">
-              <Mail className="w-4 h-4 text-[#3869A0]" />
+          <div className="bg-white dark:bg-[#0e1726] rounded border border-[#ccd5df] dark:border-[#1d2b40] overflow-hidden text-xs shadow-xs">
+            <div className="bg-[#f0f4f8] dark:bg-[#152238] px-3 py-2 border-b border-[#ccd5df] dark:border-[#1d2b40] font-bold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
+              <Mail className="w-4 h-4 text-[#3869A0] dark:text-blue-400" />
               Mensajería Privada
             </div>
-            <div className="divide-y divide-gray-100 font-medium">
+            <div className="divide-y divide-gray-100 dark:divide-slate-800 font-medium">
               <button
                 type="button"
                 onClick={() => { setMode('enviar'); setSelectedMessage(null); }}
                 className={`w-full text-left px-3 py-2.5 flex items-center gap-2 cursor-pointer transition ${
-                  mode === 'enviar' ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 text-gray-800'
+                  mode === 'enviar' ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 dark:hover:bg-slate-800 text-gray-800 dark:text-gray-200'
                 }`}
               >
                 <SendHorizontal className="w-3.5 h-3.5" />
@@ -194,14 +194,14 @@ export const MessagesViewV2: React.FC = () => {
                 type="button"
                 onClick={() => { setMode('recibidos'); setSelectedMessage(null); setVisibleCount(15); }}
                 className={`w-full text-left px-3 py-2.5 flex items-center justify-between cursor-pointer transition ${
-                  mode === 'recibidos' && !selectedMessage ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 text-gray-800'
+                  mode === 'recibidos' && !selectedMessage ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 dark:hover:bg-slate-800 text-gray-800 dark:text-gray-200'
                 }`}
               >
                 <span className="flex items-center gap-2">
                   <Inbox className="w-3.5 h-3.5" />
                   <span>Mensajes Recibidos</span>
                 </span>
-                <span className="bg-gray-100 text-gray-600 text-[10px] px-1.5 rounded-full font-bold">
+                <span className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 text-[10px] px-1.5 rounded-full font-bold">
                   {received.filter(m => !m.leido).length}
                 </span>
               </button>
@@ -209,37 +209,37 @@ export const MessagesViewV2: React.FC = () => {
                 type="button"
                 onClick={() => { setMode('enviados'); setSelectedMessage(null); setVisibleCount(15); }}
                 className={`w-full text-left px-3 py-2.5 flex items-center justify-between cursor-pointer transition ${
-                  mode === 'enviados' && !selectedMessage ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 text-gray-800'
+                  mode === 'enviados' && !selectedMessage ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 dark:hover:bg-slate-800 text-gray-800 dark:text-gray-200'
                 }`}
               >
                 <span className="flex items-center gap-2">
                   <Send className="w-3.5 h-3.5" />
                   <span>Mensajes Enviados</span>
                 </span>
-                <span className="bg-gray-100 text-gray-600 text-[10px] px-1.5 rounded-full font-bold">
+                <span className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 text-[10px] px-1.5 rounded-full font-bold">
                   {sent.length}
                 </span>
               </button>
             </div>
           </div>
 
-          <div className="bg-blue-50/70 border border-blue-200 rounded p-3 text-[11px] text-gray-600">
-            <p className="font-bold text-[#3869A0]">💡 Mensajes privados seguros</p>
+          <div className="bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded p-3 text-[11px] text-gray-600 dark:text-gray-400">
+            <p className="font-bold text-[#3869A0] dark:text-blue-400">💡 Mensajes privados seguros</p>
             <p className="mt-0.5">Los mensajes privados de Inkorium solo los podéis leer tú y tu destinatario.</p>
           </div>
         </div>
 
         {/* Right Content Area */}
         <div className="md:col-span-8 lg:col-span-9">
-          <div className="bg-white rounded border border-[#ccd5df] p-4 shadow-xs min-h-[400px]">
+          <div className="bg-white dark:bg-[#0e1726] rounded border border-[#ccd5df] dark:border-[#1d2b40] p-4 shadow-xs min-h-[400px]">
             {selectedMessage ? (
               /* Message Detail View */
               <div className="space-y-4 text-xs">
-                <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => setSelectedMessage(null)}
-                    className="flex items-center gap-1.5 text-[#3869A0] font-bold hover:underline cursor-pointer"
+                    className="flex items-center gap-1.5 text-[#3869A0] dark:text-blue-400 font-bold hover:underline cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Volver a la lista</span>
@@ -264,7 +264,7 @@ export const MessagesViewV2: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDelete(selectedMessage)}
-                      className="p-1 text-gray-400 hover:text-red-600 cursor-pointer rounded hover:bg-red-50"
+                      className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer rounded hover:bg-red-50 dark:hover:bg-red-950/30"
                       title="Eliminar mensaje"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -272,47 +272,47 @@ export const MessagesViewV2: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded border border-gray-200">
+                <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-800/60 rounded border border-gray-200 dark:border-slate-700">
                   <img
                     src={selectedMessage.emisorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
                     alt=""
-                    className="w-10 h-10 rounded object-cover border border-gray-300 cursor-pointer"
+                    className="w-10 h-10 rounded object-cover border border-gray-300 dark:border-slate-600 cursor-pointer"
                     onClick={() => viewUserProfile(selectedMessage.emisorId)}
                   />
                   <div className="flex-1">
-                    <h2 className="text-sm font-bold text-gray-900">{selectedMessage.asunto}</h2>
-                    <p className="text-gray-600 mt-0.5">
+                    <h2 className="text-sm font-bold text-gray-900 dark:text-white">{selectedMessage.asunto}</h2>
+                    <p className="text-gray-600 dark:text-gray-300 mt-0.5">
                       De:{' '}
                       <span
                         onClick={() => viewUserProfile(selectedMessage.emisorId)}
-                        className="text-[#3869A0] font-bold hover:underline cursor-pointer"
+                        className="text-[#3869A0] dark:text-blue-400 font-bold hover:underline cursor-pointer"
                       >
                         {selectedMessage.emisorNombre}
                       </span>{' '}
-                      para <span className="font-semibold">{selectedMessage.receptorNombre}</span>
+                      para <span className="font-semibold text-gray-900 dark:text-gray-100">{selectedMessage.receptorNombre}</span>
                     </p>
                     <span className="text-[10px] text-gray-400 block mt-0.5">{selectedMessage.fecha}</span>
                   </div>
                 </div>
 
-                <div className="p-4 bg-white rounded border border-gray-200 text-gray-800 whitespace-pre-line leading-relaxed text-xs min-h-[160px]">
+                <div className="p-4 bg-white dark:bg-slate-900/60 rounded border border-gray-200 dark:border-slate-700 text-gray-800 dark:text-gray-200 whitespace-pre-line leading-relaxed text-xs min-h-[160px]">
                   {selectedMessage.mensaje}
                 </div>
               </div>
             ) : mode === 'enviar' ? (
               /* Compose Message Form */
               <div className="space-y-4 text-xs">
-                <h2 className="font-bold text-sm text-gray-900 pb-2 border-b border-gray-200 flex items-center gap-1.5">
-                  <SendHorizontal className="w-4 h-4 text-[#3869A0]" />
+                <h2 className="font-bold text-sm text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-slate-800 flex items-center gap-1.5">
+                  <SendHorizontal className="w-4 h-4 text-[#3869A0] dark:text-blue-400" />
                   <span>Redactar nuevo mensaje privado</span>
                 </h2>
                 <form onSubmit={handleSend} className="space-y-3">
                   <div>
-                    <label className="font-bold text-gray-700 block mb-1">Para (Destinatario):</label>
+                    <label className="font-bold text-gray-700 dark:text-gray-200 block mb-1">Para (Destinatario):</label>
                     <select
                       value={targetUserId}
                       onChange={e => setTargetUserId(e.target.value)}
-                      className="w-full p-2 text-xs rounded border border-gray-300 bg-white focus:outline-none focus:border-[#3869A0]"
+                      className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-[#3869A0]"
                       required
                     >
                       <option value="">Selecciona a un usuario de Inkorium...</option>
@@ -324,17 +324,17 @@ export const MessagesViewV2: React.FC = () => {
                     </select>
 
                     {selectedTargetUser && (
-                      <div className="mt-2 p-2 bg-blue-50/70 border border-blue-200 rounded flex items-center gap-2.5">
+                      <div className="mt-2 p-2 bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded flex items-center gap-2.5">
                         <img 
                           src={selectedTargetUser.avatar} 
                           alt="" 
-                          className="w-7 h-7 rounded object-cover border border-blue-300"
+                          className="w-7 h-7 rounded object-cover border border-blue-300 dark:border-blue-700"
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="font-bold text-gray-800 text-xs truncate">
+                          <p className="font-bold text-gray-800 dark:text-gray-200 text-xs truncate">
                             {selectedTargetUser.nombre} {selectedTargetUser.apellidos}
                           </p>
-                          <p className="text-[10px] text-gray-500 truncate">
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
                             {selectedTargetUser.provincia} • {selectedTargetUser.ocupacion || 'Usuario de Inkorium'}
                           </p>
                         </div>
@@ -342,30 +342,30 @@ export const MessagesViewV2: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <label className="font-bold text-gray-700 block mb-1">Asunto:</label>
+                    <label className="font-bold text-gray-700 dark:text-gray-200 block mb-1">Asunto:</label>
                     <input
                       value={subject}
                       onChange={e => setSubject(e.target.value)}
                       placeholder="Escribe el asunto del mensaje..."
-                      className="w-full p-2 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                      className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-[#3869A0]"
                     />
                   </div>
                   <div>
-                    <label className="font-bold text-gray-700 block mb-1">Mensaje:</label>
+                    <label className="font-bold text-gray-700 dark:text-gray-200 block mb-1">Mensaje:</label>
                     <textarea
                       rows={6}
                       value={body}
                       onChange={e => setBody(e.target.value)}
                       placeholder="Escribe el contenido de tu mensaje..."
-                      className="w-full p-2 text-xs rounded border border-gray-300 resize-none focus:outline-none focus:border-[#3869A0]"
+                      className="w-full p-2 text-xs rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white resize-none focus:outline-none focus:border-[#3869A0]"
                       required
                     />
                   </div>
-                  <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+                  <div className="flex justify-end gap-2 pt-2 border-t border-gray-200 dark:border-slate-800">
                     <button
                       type="button"
                       onClick={() => setMode('recibidos')}
-                      className="px-3.5 py-1.5 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 cursor-pointer"
+                      className="px-3.5 py-1.5 rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-200 dark:hover:bg-slate-700 cursor-pointer"
                     >
                       Cancelar
                     </button>
@@ -382,8 +382,8 @@ export const MessagesViewV2: React.FC = () => {
             ) : (
               /* Message Inbox / Sent list */
               <div className="space-y-3 text-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-gray-200">
-                  <h2 className="font-bold text-sm text-gray-900">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-slate-800">
+                  <h2 className="font-bold text-sm text-gray-900 dark:text-white">
                     {mode === 'enviados' ? `Mensajes Enviados (${sent.length})` : `Mensajes Recibidos (${received.length})`}
                   </h2>
 
@@ -392,10 +392,10 @@ export const MessagesViewV2: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleSelectAll}
-                        className="text-xs text-gray-600 hover:text-[#3869A0] flex items-center gap-1 font-semibold px-2 py-1 rounded hover:bg-gray-100 cursor-pointer"
+                        className="text-xs text-gray-600 dark:text-gray-300 hover:text-[#3869A0] dark:hover:text-blue-400 flex items-center gap-1 font-semibold px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer"
                         title={isAllSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}
                       >
-                        {isAllSelected ? <CheckSquare className="w-3.5 h-3.5 text-[#3869A0]" /> : <Square className="w-3.5 h-3.5" />}
+                        {isAllSelected ? <CheckSquare className="w-3.5 h-3.5 text-[#3869A0] dark:text-blue-400" /> : <Square className="w-3.5 h-3.5" />}
                         <span>{isAllSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}</span>
                       </button>
 
@@ -405,7 +405,7 @@ export const MessagesViewV2: React.FC = () => {
                             <button
                               type="button"
                               onClick={handleMarkSelectedAsRead}
-                              className="text-xs bg-gray-100 hover:bg-blue-50 text-[#3869A0] border border-gray-200 hover:border-blue-300 font-bold px-2 py-1 rounded flex items-center gap-1 cursor-pointer transition"
+                              className="text-xs bg-gray-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-[#3869A0] dark:text-blue-400 border border-gray-200 dark:border-slate-700 hover:border-blue-300 font-bold px-2 py-1 rounded flex items-center gap-1 cursor-pointer transition"
                             >
                               <CheckCheck className="w-3.5 h-3.5" />
                               <span>Marcar leídos ({selectedIds.length})</span>
@@ -414,7 +414,7 @@ export const MessagesViewV2: React.FC = () => {
                           <button
                             type="button"
                             onClick={handleDeleteSelected}
-                            className="text-xs bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold px-2.5 py-1 rounded flex items-center gap-1 cursor-pointer transition shadow-xs"
+                            className="text-xs bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/50 font-bold px-2.5 py-1 rounded flex items-center gap-1 cursor-pointer transition shadow-xs"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             <span>Borrar ({selectedIds.length})</span>
@@ -431,7 +431,7 @@ export const MessagesViewV2: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 dark:divide-slate-800">
                       {displayedList.map(m => {
                         const isSelected = selectedIds.includes(m.id);
                         return (
@@ -440,10 +440,10 @@ export const MessagesViewV2: React.FC = () => {
                             onClick={() => open(m)}
                             className={`group py-2 px-2.5 rounded-sm cursor-pointer flex items-center justify-between gap-3 transition ${
                               isSelected
-                                ? 'bg-blue-50/90 border-l-2 border-[#3869A0]'
+                                ? 'bg-blue-50/90 dark:bg-blue-950/40 border-l-2 border-[#3869A0]'
                                 : !m.leido && mode === 'recibidos'
-                                ? 'bg-blue-50/50 font-semibold hover:bg-blue-100/60'
-                                : 'hover:bg-gray-50'
+                                ? 'bg-blue-50/50 dark:bg-slate-800/60 font-semibold hover:bg-blue-100/60 dark:hover:bg-slate-800'
+                                : 'hover:bg-gray-50 dark:hover:bg-slate-800/40'
                             }`}
                           >
                             <div className="flex items-center gap-2.5 overflow-hidden flex-1">
@@ -451,13 +451,13 @@ export const MessagesViewV2: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={(e) => handleToggleSelect(e, m.id)}
-                                className="p-1 text-gray-400 hover:text-[#3869A0] shrink-0 cursor-pointer rounded"
+                                className="p-1 text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 shrink-0 cursor-pointer rounded"
                                 title={isSelected ? 'Deseleccionar' : 'Seleccionar'}
                               >
                                 {isSelected ? (
-                                  <CheckSquare className="w-4 h-4 text-[#3869A0]" />
+                                  <CheckSquare className="w-4 h-4 text-[#3869A0] dark:text-blue-400" />
                                 ) : (
-                                  <Square className="w-4 h-4 text-gray-300 hover:text-gray-500" />
+                                  <Square className="w-4 h-4 text-gray-300 dark:text-gray-600 hover:text-gray-500" />
                                 )}
                               </button>
 
@@ -465,11 +465,11 @@ export const MessagesViewV2: React.FC = () => {
                                 <img
                                   src={mode === 'enviados' ? currentUser.avatar : m.emisorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
                                   alt=""
-                                  className="w-8 h-8 rounded object-cover border border-gray-300 shrink-0"
+                                  className="w-8 h-8 rounded object-cover border border-gray-300 dark:border-slate-700 shrink-0"
                                 />
                                 {!m.leido && mode === 'recibidos' && (
                                   <span
-                                    className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-white"
+                                    className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-white dark:ring-[#0e1726]"
                                     title="Mensaje no leído"
                                   />
                                 )}
@@ -477,7 +477,7 @@ export const MessagesViewV2: React.FC = () => {
                               <div className="overflow-hidden min-w-0 flex-1">
                                 {mode === 'recibidos' ? (
                                   <div className="flex items-center gap-2">
-                                    <span className={`text-xs truncate ${!m.leido ? 'font-black text-[#224e7a]' : 'font-bold text-[#3869A0]'}`}>
+                                    <span className={`text-xs truncate ${!m.leido ? 'font-black text-[#224e7a] dark:text-blue-300' : 'font-bold text-[#3869A0] dark:text-blue-400'}`}>
                                       {m.emisorNombre}
                                     </span>
                                     {!m.leido && (
@@ -488,25 +488,25 @@ export const MessagesViewV2: React.FC = () => {
                                     )}
                                   </div>
                                 ) : (
-                                  <p className="font-bold text-gray-900 text-xs truncate">Para: {m.receptorNombre}</p>
+                                  <p className="font-bold text-gray-900 dark:text-white text-xs truncate">Para: {m.receptorNombre}</p>
                                 )}
-                                <p className={`text-xs truncate ${!m.leido && mode === 'recibidos' ? 'font-bold text-gray-950' : 'font-medium text-gray-800'}`}>
+                                <p className={`text-xs truncate ${!m.leido && mode === 'recibidos' ? 'font-bold text-gray-950 dark:text-white' : 'font-medium text-gray-800 dark:text-gray-300'}`}>
                                   {m.asunto}
                                 </p>
-                                <p className={`text-[11px] truncate ${!m.leido && mode === 'recibidos' ? 'font-medium text-gray-700' : 'text-gray-500'}`}>
+                                <p className={`text-[11px] truncate ${!m.leido && mode === 'recibidos' ? 'font-medium text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'}`}>
                                   {m.mensaje}
                                 </p>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="text-[10px] text-gray-400 whitespace-nowrap hidden sm:inline mr-1">{m.fecha}</span>
+                              <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap hidden sm:inline mr-1">{m.fecha}</span>
                               
                               {/* Direct Delete Message Button */}
                               <button
                                 type="button"
                                 onClick={(e) => handleDeleteDirect(e, m)}
-                                className="px-2 py-1 text-gray-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 rounded text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer"
+                                className="px-2 py-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 border border-transparent hover:border-red-200 dark:hover:border-red-900/40 rounded text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer"
                                 title="Eliminar este mensaje"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -517,7 +517,7 @@ export const MessagesViewV2: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={(e) => handleDeleteThreadDirect(e, m)}
-                                className="px-2 py-1 text-gray-400 hover:text-amber-700 hover:bg-amber-50 border border-transparent hover:border-amber-200 rounded text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer"
+                                className="px-2 py-1 text-gray-400 hover:text-amber-700 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 border border-transparent hover:border-amber-200 dark:hover:border-amber-900/40 rounded text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer"
                                 title={`Eliminar todo el hilo de conversación con ${mode === 'enviados' ? m.receptorNombre : m.emisorNombre}`}
                               >
                                 <MessagesSquare className="w-3.5 h-3.5" />
@@ -534,7 +534,7 @@ export const MessagesViewV2: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setVisibleCount(prev => prev + 15)}
-                          className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-[#3869A0] font-bold rounded text-xs inline-flex items-center gap-1.5 cursor-pointer"
+                          className="px-4 py-1.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-[#3869A0] dark:text-blue-400 font-bold rounded text-xs inline-flex items-center gap-1.5 cursor-pointer"
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
                           <span>Cargar mensajes anteriores ({currentList.length - displayedList.length} restantes)</span>

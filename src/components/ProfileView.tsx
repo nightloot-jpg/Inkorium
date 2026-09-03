@@ -106,7 +106,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     canUserViewPhoto(p, currentUser.id)
   );
   // User's custom albums
-  const userAlbums = albums.filter(a => a.userId === profileUser.id);
+  const userAlbums = albums.filter(a => a.userId === profileUser.id || a.propietarioId === profileUser.id);
 
   // Wall comments for this user
   const userWallComments = useMemo(() => {

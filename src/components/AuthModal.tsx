@@ -501,8 +501,8 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
                     onChange={e => setRegProvincia(e.target.value)}
                     className="w-full p-1.5 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] bg-white cursor-pointer"
                   >
-                    {availableRegZones.map(p => (
-                      <option key={p} value={p}>{p}</option>
+                    {availableRegZones.map((p, idx) => (
+                      <option key={`${p}-${idx}`} value={p}>{p}</option>
                     ))}
                   </select>
                 </div>

@@ -120,7 +120,10 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
 
   const handleCreateNewAlbum = () => {
     if (!newAlbumName.trim()) return;
-    createAlbum(newAlbumName.trim());
+    const createdId = createAlbum(newAlbumName.trim());
+    if (createdId) {
+      setAlbumId(createdId);
+    }
     setNewAlbumName('');
     setShowNewAlbumInput(false);
   };
@@ -165,7 +168,7 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
     }
   };
 
-  const myAlbums = albums.filter(a => a.userId === currentUser.id);
+  const myAlbums = albums.filter(a => a.userId === currentUser.id || a.propietarioId === currentUser.id);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">

@@ -85,7 +85,7 @@ export const ChatBar: React.FC = () => {
 
       {/* Retro Bottom-Right Chat Dock */}
       <div className="pointer-events-auto">
-        <div className="w-56 bg-white rounded-t-lg shadow-2xl border border-gray-300 overflow-hidden text-xs">
+        <div className="w-56 bg-white dark:bg-[#0e1726] rounded-t-lg shadow-2xl border border-gray-300 dark:border-slate-700 overflow-hidden text-xs">
           <div
             onClick={() => setDockOpen(!dockOpen)}
             className="bg-[#3869A0] text-white px-3 py-2 flex items-center justify-between cursor-pointer select-none hover:bg-[#2e5785] transition"
@@ -105,10 +105,10 @@ export const ChatBar: React.FC = () => {
           </div>
 
           {dockOpen && (
-            <div className="p-2 bg-white border-t border-gray-200 space-y-2 max-h-80 flex flex-col">
+            <div className="p-2 bg-white dark:bg-[#0e1726] border-t border-gray-200 dark:border-slate-800 space-y-2 max-h-80 flex flex-col">
               {/* Presence Status Selector */}
-              <div className="bg-gray-50 border border-gray-200 rounded p-1.5">
-                <div className="flex items-center justify-between text-[10px] text-gray-500 font-semibold mb-1">
+              <div className="bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded p-1.5">
+                <div className="flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400 font-semibold mb-1">
                   <span>Tu presencia:</span>
                   <span className={`capitalize font-bold ${PRESENCE_DOTS[presence].text}`}>
                     {PRESENCE_DOTS[presence].label}
@@ -127,8 +127,8 @@ export const ChatBar: React.FC = () => {
                         title={cfg.label}
                         className={`flex items-center justify-center gap-1 py-1 px-0.5 rounded border text-[10px] font-medium transition cursor-pointer disabled:opacity-60 ${
                           isSelected
-                            ? 'bg-white border-[#3869A0] text-[#3869A0] font-bold shadow-2xs'
-                            : 'bg-gray-100/80 border-gray-200 text-gray-600 hover:bg-gray-200'
+                            ? 'bg-white dark:bg-slate-700 border-[#3869A0] text-[#3869A0] dark:text-blue-400 font-bold shadow-2xs'
+                            : 'bg-gray-100/80 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                         }`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -146,7 +146,7 @@ export const ChatBar: React.FC = () => {
                   placeholder="Buscar amigos..."
                   value={chatSearch}
                   onChange={(e) => setChatSearch(e.target.value)}
-                  className="w-full p-1.5 pl-6 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0] bg-gray-50"
+                  className="w-full p-1.5 pl-6 text-xs rounded border border-gray-300 dark:border-slate-700 focus:outline-none focus:border-[#3869A0] bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white"
                 />
                 <Search className="w-3.5 h-3.5 text-gray-400 absolute left-1.5 top-2 pointer-events-none" />
               </div>
@@ -154,7 +154,7 @@ export const ChatBar: React.FC = () => {
               {/* Friends list */}
               <div className="overflow-y-auto space-y-1 flex-1 max-h-48">
                 {chatFriends.length === 0 ? (
-                  <div className="text-center py-4 text-gray-400 text-[11px]">
+                  <div className="text-center py-4 text-gray-400 dark:text-gray-500 text-[11px]">
                     No se encontraron amigos
                   </div>
                 ) : (
@@ -172,7 +172,7 @@ export const ChatBar: React.FC = () => {
                         key={friend.id}
                         onClick={() => openChatWith(friend.id)}
                         className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition ${
-                          hasUnread ? 'bg-blue-50/80 hover:bg-blue-100/70' : 'hover:bg-blue-50'
+                          hasUnread ? 'bg-blue-50/80 dark:bg-blue-950/40 hover:bg-blue-100/70 dark:hover:bg-blue-950/60' : 'hover:bg-blue-50 dark:hover:bg-slate-800'
                         }`}
                       >
                         <div className="flex items-center gap-2 truncate">
@@ -180,18 +180,18 @@ export const ChatBar: React.FC = () => {
                             <img
                               src={friend.avatar}
                               alt=""
-                              className="w-6 h-6 rounded object-cover border border-gray-300"
+                              className="w-6 h-6 rounded object-cover border border-gray-300 dark:border-slate-600"
                             />
                             <span
                               className={`absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${dotColor}`}
                             />
                             {hasUnread && (
-                              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-600 ring-1 ring-white" />
+                              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-600 ring-1 ring-white dark:ring-slate-900" />
                             )}
                           </div>
                           <span
                             className={`truncate text-[11px] ${
-                              hasUnread ? 'font-bold text-gray-950' : 'font-semibold text-gray-800'
+                              hasUnread ? 'font-bold text-gray-950 dark:text-white' : 'font-semibold text-gray-800 dark:text-gray-200'
                             }`}
                           >
                             {friend.nombre} {friend.apellidos}
@@ -201,7 +201,7 @@ export const ChatBar: React.FC = () => {
                           {hasUnread && (
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
                           )}
-                          <span className="text-[10px] text-gray-400 capitalize">
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500 capitalize">
                             {friend.presencia || (friend.online ? 'Online' : 'Off')}
                           </span>
                         </div>

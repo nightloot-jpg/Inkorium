@@ -155,16 +155,16 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss, onAction }) => 
       animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
       exit={{ opacity: 0, scale: 0.9, x: 50, transition: { duration: 0.2 } }}
       transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-      className={`w-[320px] sm:w-[350px] bg-white rounded-lg shadow-2xl border border-gray-300 border-l-4 ${theme.borderAccent} overflow-hidden text-xs relative pointer-events-auto select-none`}
+      className={`w-[320px] sm:w-[350px] bg-white dark:bg-[#152338] rounded-lg shadow-2xl border border-gray-300 dark:border-slate-700 border-l-4 ${theme.borderAccent} overflow-hidden text-xs relative pointer-events-auto select-none`}
     >
       {/* Top Header */}
-      <div className="px-3 py-2 bg-gradient-to-r from-gray-50 to-slate-100 border-b border-gray-200 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 font-bold text-gray-700">
-          <span className="p-0.5 rounded bg-white shadow-2xs border border-gray-200">
+      <div className="px-3 py-2 bg-gradient-to-r from-gray-50 to-slate-100 dark:from-[#111c2e] dark:to-[#17263c] border-b border-gray-200 dark:border-slate-700/80 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 font-bold text-gray-700 dark:text-gray-200">
+          <span className="p-0.5 rounded bg-white dark:bg-[#1e2f47] shadow-2xs border border-gray-200 dark:border-slate-600">
             {theme.icon}
           </span>
           <span className="text-[11px] font-bold tracking-tight">{theme.title}</span>
-          <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold uppercase animate-pulse">
+          <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold uppercase animate-pulse">
             En vivo
           </span>
         </div>
@@ -174,7 +174,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss, onAction }) => 
             e.stopPropagation();
             onDismiss(toast.id);
           }}
-          className="text-gray-400 hover:text-gray-700 p-0.5 rounded transition cursor-pointer hover:bg-gray-200"
+          className="text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-0.5 rounded transition cursor-pointer hover:bg-gray-200 dark:hover:bg-slate-700"
           title="Cerrar notificación"
         >
           <X className="w-3.5 h-3.5" />
@@ -189,23 +189,23 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss, onAction }) => 
             <img
               src={toast.fromUserAvatar}
               alt={toast.fromUserName}
-              className="w-10 h-10 rounded-md object-cover border border-gray-300 shadow-2xs"
+              className="w-10 h-10 rounded-md object-cover border border-gray-300 dark:border-slate-600 shadow-2xs"
             />
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" title="Conectado"></div>
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-[#152338]" title="Conectado"></div>
           </div>
 
           {/* Text Content */}
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-900 leading-tight truncate">
+            <p className="font-semibold text-gray-900 dark:text-white leading-tight truncate">
               {toast.fromUserName}
             </p>
-            <p className="text-gray-600 text-[11px] mt-0.5 line-clamp-2 leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-300 text-[11px] mt-0.5 line-clamp-2 leading-relaxed">
               {toast.mensaje}
             </p>
 
             {/* Optional message snippet / quote */}
             {toast.detalle && (
-              <div className="mt-1.5 p-1.5 bg-gray-50 rounded border border-gray-200 text-[10px] text-gray-600 italic line-clamp-2">
+              <div className="mt-1.5 p-1.5 bg-gray-50 dark:bg-[#111c2e]/90 rounded border border-gray-200 dark:border-slate-700/70 text-[10px] text-gray-600 dark:text-gray-300 italic line-clamp-2">
                 "{toast.detalle}"
               </div>
             )}
@@ -213,7 +213,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss, onAction }) => 
 
           {/* Optional Photo Thumbnail preview */}
           {(toast.photoThumbnail || toast.targetPhotoUrl) && (
-            <div className="flex-shrink-0 w-11 h-11 rounded border border-gray-300 overflow-hidden bg-gray-100 shadow-2xs mt-0.5">
+            <div className="flex-shrink-0 w-11 h-11 rounded border border-gray-300 dark:border-slate-600 overflow-hidden bg-gray-100 dark:bg-[#111c2e] shadow-2xs mt-0.5">
               <img 
                 src={toast.photoThumbnail || toast.targetPhotoUrl} 
                 alt="Foto" 
@@ -224,8 +224,8 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss, onAction }) => 
         </div>
 
         {/* Action Row */}
-        <div className="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between">
-          <span className="text-[10px] text-gray-400 font-medium">
+        <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-slate-700/60 flex items-center justify-between">
+          <span className="text-[10px] text-gray-400 dark:text-gray-400 font-medium">
             {toast.fecha || 'Ahora mismo'}
           </span>
 
@@ -242,7 +242,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss, onAction }) => 
       </div>
 
       {/* Expiration Progress Bar */}
-      <div className="h-1 bg-gray-100 w-full overflow-hidden">
+      <div className="h-1 bg-gray-100 dark:bg-slate-800 w-full overflow-hidden">
         <div 
           className={`h-full ${theme.barColor} transition-all duration-75 ease-linear`}
           style={{ width: `${progress}%` }}

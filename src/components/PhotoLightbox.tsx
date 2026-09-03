@@ -522,10 +522,10 @@ export const PhotoLightbox: React.FC = () => {
                   <div className="w-16 h-16 border-2 border-amber-400 bg-amber-400/30 rounded animate-pulse shadow-2xl"></div>
                   
                   {/* Friend Search & Tag Selector Card */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white text-gray-800 p-3 rounded-lg shadow-2xl border border-gray-300 z-50 w-64 text-xs animate-fade-in">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-[#152338] text-gray-800 dark:text-gray-200 p-3 rounded-lg shadow-2xl border border-gray-300 dark:border-slate-700 z-50 w-64 text-xs animate-fade-in">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="font-bold text-gray-900 flex items-center gap-1.5 text-xs">
-                        <Tag className="w-3.5 h-3.5 text-[#3869A0]" />
+                      <p className="font-bold text-gray-900 dark:text-white flex items-center gap-1.5 text-xs">
+                        <Tag className="w-3.5 h-3.5 text-[#3869A0] dark:text-blue-400" />
                         <span>Etiquetar amigo</span>
                       </p>
                       <button
@@ -533,7 +533,7 @@ export const PhotoLightbox: React.FC = () => {
                           setTagCoords(null);
                           setTaggingMode(false);
                         }}
-                        className="text-gray-400 hover:text-gray-700 font-bold text-xs cursor-pointer"
+                        className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-bold text-xs cursor-pointer"
                       >
                         ✕
                       </button>
@@ -544,7 +544,7 @@ export const PhotoLightbox: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleSelfTag}
-                        className="w-full mb-2.5 py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-[#3869A0] rounded font-bold text-[11px] flex items-center justify-center gap-1.5 border border-blue-200 cursor-pointer transition"
+                        className="w-full mb-2.5 py-1.5 px-2 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-[#3869A0] dark:text-blue-300 rounded font-bold text-[11px] flex items-center justify-center gap-1.5 border border-blue-200 dark:border-blue-800 cursor-pointer transition"
                       >
                         <UserPlus className="w-3.5 h-3.5" />
                         <span>Etiquetarme a mí mismo</span>
@@ -559,15 +559,15 @@ export const PhotoLightbox: React.FC = () => {
                         placeholder="Buscar amigo..."
                         value={tagSearchQuery}
                         onChange={e => setTagSearchQuery(e.target.value)}
-                        className="w-full pl-7 pr-2 py-1.5 border border-gray-300 rounded text-xs bg-gray-50 focus:outline-none focus:border-[#3869A0] font-medium"
+                        className="w-full pl-7 pr-2 py-1.5 border border-gray-300 dark:border-slate-700 rounded text-xs bg-gray-50 dark:bg-[#111c2e] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#3869A0] font-medium"
                         autoFocus
                       />
                     </div>
                     
                     {/* Friends list scrollable */}
-                    <div className="max-h-36 overflow-y-auto border border-gray-200 rounded divide-y divide-gray-100 mb-2.5 bg-gray-50/50">
+                    <div className="max-h-36 overflow-y-auto border border-gray-200 dark:border-slate-700 rounded divide-y divide-gray-100 dark:divide-slate-800 mb-2.5 bg-gray-50/50 dark:bg-[#111c2e]/60">
                       {filteredFriendsToTag.length === 0 ? (
-                        <div className="p-3 text-center text-gray-400 text-[11px]">
+                        <div className="p-3 text-center text-gray-400 dark:text-gray-500 text-[11px]">
                           No se encontraron amigos
                         </div>
                       ) : (
@@ -576,14 +576,14 @@ export const PhotoLightbox: React.FC = () => {
                             key={u.id}
                             type="button"
                             onClick={() => handleConfirmTag(u.id)}
-                            className="w-full text-left p-1.5 hover:bg-blue-50 transition flex items-center gap-2 cursor-pointer group"
+                            className="w-full text-left p-1.5 hover:bg-blue-50 dark:hover:bg-[#1d2d44] transition flex items-center gap-2 cursor-pointer group"
                           >
-                            <img src={u.avatar} alt="" className="w-6 h-6 rounded-full object-cover border border-gray-300 flex-shrink-0" />
+                            <img src={u.avatar} alt="" className="w-6 h-6 rounded-full object-cover border border-gray-300 dark:border-slate-600 flex-shrink-0" />
                             <div className="overflow-hidden flex-1">
-                              <span className="font-semibold text-gray-800 group-hover:text-[#3869A0] block truncate text-[11px]">
+                              <span className="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-[#3869A0] dark:group-hover:text-blue-400 block truncate text-[11px]">
                                 {u.nombre} {u.apellidos}
                               </span>
-                              <span className="text-[9px] text-gray-400 block truncate">@{u.username || u.id}</span>
+                              <span className="text-[9px] text-gray-400 dark:text-gray-500 block truncate">@{u.username || u.id}</span>
                             </div>
                           </button>
                         ))
@@ -597,7 +597,7 @@ export const PhotoLightbox: React.FC = () => {
                           setTagCoords(null);
                           setTaggingMode(false);
                         }}
-                        className="px-2.5 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-[11px] font-semibold rounded cursor-pointer transition"
+                        className="px-2.5 py-1 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 text-[11px] font-semibold rounded cursor-pointer transition"
                       >
                         Cancelar
                       </button>
