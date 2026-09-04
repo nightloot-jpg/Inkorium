@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import type { User } from '../types';
 
+const PENDING_PROFILE_KEY = 'inkorium:pending-public-profile';
+
 function normalizeUserId(id?: string): string {
   return String(id || '').trim().toLowerCase().replace(/^user-/, '');
 }
@@ -23,6 +25,8 @@ function applyRemoteProfile(profile: any, current: User): User {
     apellidos: nameParts.slice(1).join(' ') || current.apellidos,
     avatar: profile.avatar_url ?? current.avatar,
     ciudad: profile.city ?? current.ciudad,
+    pais: profile.country ?? current.pais,
+    provincia: profile.province ?? current.provincia,
     fnac: profile.birth_date ?? current.fnac,
     estado: profile.user_status ?? current.estado,
     intereses: interests || current.intereses,
@@ -44,15 +48,25 @@ function applyRemoteProfile(profile: any, current: User): User {
 
 function profileNeedsSync(local: User, remote: User): boolean {
   const fields: Array<keyof User> = [
-    'username', 'full_name', 'nombre', 'apellidos', 'avatar', 'ciudad', 'fnac',
+    'username', 'full_name', 'nombre', 'apellidos', 'avatar', 'ciudad', 'pais', 'provincia', 'fnac',
     'estado', 'intereses', 'sexo', 'situacionSentimental', 'ocupacion', 'musica', 'presencia'
   ];
   return fields.some(field => String(local[field] ?? '') !== String(remote[field] ?? ''));
 }
 
 export function PublicProfileSync() {
-  const { selectedUserId, currentUser, users } = useInkorium();
+  const { selectedUserId, currentUser, users, viewUserProfile } = useInkorium();
   const syncingRef = useRef(false);
+
+  // Restore a profile that was being opened when a targeted sync required one reload.
+  useEffect(() => {
+    const pendingId = localStorage.getItem(PENDING_PROFILE_KEY);
+    if (!pendingId) return;
+    localStorage.removeItem(PENDING_PROFILE_KEY);
+    if (normalizeUserId(pendingId) !== normalizeUserId(currentUser.id)) {
+      viewUserProfile(pendingId);
+    }
+  }, [currentUser.id, viewUserProfile]);
 
   useEffect(() => {
     const targetId = String(selectedUserId || '').trim();
@@ -97,6 +111,7 @@ export function PublicProfileSync() {
           );
           localStorage.setItem('inkorium:users', JSON.stringify(updated));
           if (remoteStamp) sessionStorage.setItem(syncKey, remoteStamp);
+          localStorage.setItem(PENDING_PROFILE_KEY, localTarget.id);
         } catch {
           return;
         }
@@ -107,7 +122,7 @@ export function PublicProfileSync() {
       .finally(() => {
         syncingRef.current = false;
       });
-  }, [selectedUserId, currentUser.id, users]);
+  }, [selectedUserId, currentUser.id, users, viewUserProfile]);
 
   return null;
 }
