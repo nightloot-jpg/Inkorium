@@ -1,0 +1,145 @@
+name: Apply avatar resolver fix
+on:
+  push:
+    branches: [fix/avatar-resolver-auto-repair]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[avatar-resolver-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch avatar resolver
+        shell: python
+        run: |
+          from pathlib import Path
+
+          server = Path('server.ts')
+          text = server.read_text()
+          marker = '// INKORIUM_AVATAR_RESOLVER_V1'
+          if marker not in text:
+              anchor = "app.get('/api/storage/status', (_req, res) => {"
+              helper = r'''
+// INKORIUM_AVATAR_RESOLVER_V1
+const AVATAR_ALLOWED_HOSTS = new Set(['media.inkorium.es']);
+
+function getCanonicalAvatarHost(hetzner: ReturnType<typeof getHetznerS3Client>): string | null {
+  if (!hetzner) return null;
+  try {
+    if (hetzner.publicUrlBase) return new URL(hetzner.publicUrlBase).host;
+    return `${hetzner.bucket}.${process.env.HETZNER_S3_REGION || 'hel1'}.your-objectstorage.com`;
+  } catch {
+    return null;
+  }
+}
+
+function buildAvatarCandidates(rawUrl: string, hetzner: ReturnType<typeof getHetznerS3Client>): string[] {
+  const value = String(rawUrl || '').trim();
+  if (!value) return [];
+  const out = [value];
+  try {
+    const parsed = new URL(value);
+    const canonicalHost = getCanonicalAvatarHost(hetzner);
+    if (parsed.protocol === 'https:' && AVATAR_ALLOWED_HOSTS.has(parsed.host) && canonicalHost) {
+      out.unshift(`https://${canonicalHost}${parsed.pathname}${parsed.search}`);
+    }
+  } catch {}
+  return Array.from(new Set(out));
+}
+
+async function fetchPublicAvatar(url: string): Promise<Response | null> {
+  try {
+    const parsed = new URL(url);
+    const configured = getHetznerS3Client();
+    const canonicalHost = getCanonicalAvatarHost(configured);
+    if (parsed.protocol !== 'https:' || (parsed.host !== canonicalHost && !AVATAR_ALLOWED_HOSTS.has(parsed.host))) return null;
+    const response = await fetch(url, { headers: { Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8' } });
+    if (!response.ok) return null;
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().startsWith('image/')) return null;
+    return response;
+  } catch {
+    return null;
+  }
+}
+
+async function repairAvatarUrl(profileId: string, canonicalUrl: string, supabaseUrl: string, key: string): Promise<void> {
+  try {
+    await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profileId)}`, {
+      method: 'PATCH',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ avatar_url: canonicalUrl, updated_at: new Date().toISOString() })
+    });
+  } catch {}
+}
+
+app.get('/api/avatar/:id', async (req, res) => {
+  try {
+    const profileId = String(req.params.id || '').trim();
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(profileId)) return res.status(400).json({ error: 'INVALID_PROFILE_ID' });
+
+    const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig();
+    if (!supabaseKey) return res.status(404).end();
+    const dbKey = serviceRoleKey || supabaseKey;
+    const lookup = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profileId)}&select=id,avatar_url`, {
+      headers: { apikey: dbKey, Authorization: `Bearer ${dbKey}`, Accept: 'application/json' }
+    });
+    if (!lookup.ok) return res.status(404).end();
+    const rows = await lookup.json().catch(() => []);
+    const row = Array.isArray(rows) ? rows[0] : null;
+    const rawUrl = String(row?.avatar_url || '').trim();
+    const hetzner = getHetznerS3Client();
+    const candidates = buildAvatarCandidates(rawUrl, hetzner);
+
+    for (const candidate of candidates) {
+      const upstream = await fetchPublicAvatar(candidate);
+      if (!upstream) continue;
+      const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+      const buffer = Buffer.from(await upstream.arrayBuffer());
+      res.status(200);
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Length', String(buffer.length));
+      res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
+      if (candidate !== rawUrl && candidate.startsWith('https://')) await repairAvatarUrl(profileId, candidate, supabaseUrl, dbKey);
+      return res.end(buffer);
+    }
+
+    return res.status(404).end();
+  } catch {
+    return res.status(404).end();
+  }
+});
+
+'''
+              if anchor not in text:
+                  raise SystemExit('storage status anchor not found')
+              text = text.replace(anchor, helper + anchor, 1)
+              server.write_text(text)
+
+          pv = Path('src/components/ProfileView.tsx')
+          text = pv.read_text()
+          if 'const profileAvatarSrc = useMemo' not in text:
+              end = "  }, [isOwnProfile, currentUser, users, selectedUserId]);\n"
+              insertion = end + "\n  const profileAvatarSrc = useMemo(() => {\n    if (profileUser.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileUser.id)) {\n      return `/api/avatar/${encodeURIComponent(profileUser.id)}`;\n    }\n    return profileUser.avatar;\n  }, [profileUser.id, profileUser.avatar]);\n"
+              if end not in text:
+                  raise SystemExit('profile user memo anchor not found')
+              text = text.replace(end, insertion, 1)
+              text = text.replace('src={profileUser.avatar}', 'src={profileAvatarSrc}', 1)
+              pv.write_text(text)
+
+          Path('.github/workflows/_avatar_fix.yml').unlink()
+      - name: Commit patched files
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server.ts src/components/ProfileView.tsx .github/workflows/_avatar_fix.yml
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "fix: add same-origin avatar resolver and auto-repair [avatar-resolver-applied]"
+          git push origin HEAD:fix/avatar-resolver-auto-repair
