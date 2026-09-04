@@ -272,7 +272,9 @@ export {
   ALL_COUNTRIES, 
   getZonesForCountry, 
   getCountryByZone, 
-  formatFullLocation 
+  formatFullLocation,
+  calculateAge,
+  formatBirthDate
 } from './data/locations';
 
 // ==========================================

@@ -447,3 +447,61 @@ export function formatFullLocation(
 
   return parts.filter(Boolean).join(', ') || 'España 🇪🇸';
 }
+
+// Helper: Calculate age accurately from birth date string (supports YYYY-MM-DD, DD/MM/YYYY, etc.)
+export function calculateAge(fnac?: string | null): number | null {
+  if (!fnac || !fnac.trim()) return null;
+  const str = fnac.trim();
+  
+  let birthDate: Date | null = null;
+  // Format YYYY-MM-DD or YYYY/MM/DD
+  const ymd = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (ymd) {
+    birthDate = new Date(parseInt(ymd[1], 10), parseInt(ymd[2], 10) - 1, parseInt(ymd[3], 10));
+  } else {
+    // Format DD/MM/YYYY or DD-MM-YYYY
+    const dmy = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (dmy) {
+      birthDate = new Date(parseInt(dmy[3], 10), parseInt(dmy[2], 10) - 1, parseInt(dmy[1], 10));
+    } else {
+      const parsed = new Date(str);
+      if (!isNaN(parsed.getTime())) birthDate = parsed;
+    }
+  }
+
+  if (birthDate && !isNaN(birthDate.getTime())) {
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    if (age >= 0 && age <= 125) return age;
+  }
+
+  const yearMatch = str.match(/\b(19\d\d|20\d\d)\b/);
+  if (yearMatch) {
+    const y = parseInt(yearMatch[1], 10);
+    const age = new Date().getFullYear() - y;
+    if (age >= 0 && age <= 125) return age;
+  }
+
+  return null;
+}
+
+// Helper: Format birth date in user-friendly Spanish format
+export function formatBirthDate(fnac?: string | null): string {
+  if (!fnac || !fnac.trim()) return 'No especificado';
+  const str = fnac.trim();
+  const ymd = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (ymd) {
+    const d = parseInt(ymd[3], 10);
+    const m = parseInt(ymd[2], 10) - 1;
+    const y = parseInt(ymd[1], 10);
+    const date = new Date(y, m, d);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+  }
+  return str;
+}

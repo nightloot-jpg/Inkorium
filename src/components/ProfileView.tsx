@@ -11,7 +11,9 @@ import {
   Users, UserMinus, UserX, Clock, Search, X, ShieldAlert, CheckCheck, Globe, Ban,
   Eye, Star, Award
 } from 'lucide-react';
-import { UserPresence, User, formatFullLocation } from '../types';
+import { UserPresence, User, formatFullLocation, calculateAge, formatBirthDate } from '../types';
+
+const normalizeUserId = (id?: string) => (id || '').toLowerCase().replace(/^user-/, '').trim();
 
 const PRESENCE_CONFIG: Record<UserPresence, { label: string; dot: string; text: string; bg: string }> = {
   conectado: { label: 'Conectado', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' },
@@ -65,8 +67,19 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     updateTopAmigos
   } = useInkorium();
 
-  const profileUser = users.find(u => u.id === selectedUserId) || currentUser;
-  const isOwnProfile = profileUser.id === currentUser.id;
+  const isOwnProfile = useMemo(() => {
+    if (!selectedUserId) return true;
+    if (!currentUser.id) return false;
+    return selectedUserId === currentUser.id || normalizeUserId(selectedUserId) === normalizeUserId(currentUser.id);
+  }, [selectedUserId, currentUser.id]);
+
+  const profileUser = useMemo(() => {
+    if (isOwnProfile) {
+      return currentUser;
+    }
+    const found = users.find(u => u.id === selectedUserId || normalizeUserId(u.id) === normalizeUserId(selectedUserId));
+    return found || currentUser;
+  }, [isOwnProfile, currentUser, users, selectedUserId]);
 
   // Track and record profile visit when viewing someone else's profile
   useEffect(() => {
@@ -81,8 +94,8 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   // Pending incoming request from this profile to current user
   const incomingReqFromProfile = useMemo(() => {
     return friendRequests.find(
-      r => r.emisorId === profileUser.id && 
-           r.receptorId === currentUser.id && 
+      r => (r.emisorId === profileUser.id || normalizeUserId(r.emisorId) === normalizeUserId(profileUser.id)) && 
+           (r.receptorId === currentUser.id || normalizeUserId(r.receptorId) === normalizeUserId(currentUser.id)) && 
            r.estado === 'pendiente'
     );
   }, [friendRequests, profileUser.id, currentUser.id]);
@@ -90,7 +103,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   // Current user's all incoming pending requests (to display in Amigos tab if on own profile)
   const allMyPendingRequests = useMemo(() => {
     return friendRequests.filter(
-      r => r.receptorId === currentUser.id && 
+      r => (r.receptorId === currentUser.id || normalizeUserId(r.receptorId) === normalizeUserId(currentUser.id)) && 
            r.estado === 'pendiente'
     );
   }, [friendRequests, currentUser.id]);
@@ -99,13 +112,17 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const topAmigosIds = profileUser.topAmigos || [];
   const topAmigosList = useMemo(() => {
     return topAmigosIds
-      .map(id => users.find(u => u.id === id))
+      .map(id => users.find(u => u.id === id || normalizeUserId(u.id) === normalizeUserId(id)))
       .filter((u): u is User => !!u);
   }, [topAmigosIds, users]);
 
-  // Visits to this profile
+  // Real visits to this profile (matching exact or normalized id)
   const myProfileVisits = useMemo(() => {
-    return profileVisits.filter(v => v.visitedUserId === profileUser.id);
+    const profIdNorm = normalizeUserId(profileUser.id);
+    return profileVisits.filter(v => 
+      v.visitedUserId === profileUser.id || 
+      normalizeUserId(v.visitedUserId) === profIdNorm
+    );
   }, [profileVisits, profileUser.id]);
 
   // Profile View Sub-tab
@@ -152,9 +169,9 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     });
   }, [wallComments, profileUser.id, profileUser.username, isOwnProfile, currentUser.id]);
 
-  // Calculate age from fnac
-  const birthYear = parseInt(profileUser.fnac.split('-')[0], 10) || 1993;
-  const userAge = new Date().getFullYear() - birthYear;
+  // Synchronized age and location calculations for profile header and personal info card
+  const userAge = useMemo(() => calculateAge(profileUser.fnac), [profileUser.fnac]);
+  const userLocation = useMemo(() => formatFullLocation(profileUser), [profileUser.pais, profileUser.provincia, profileUser.ciudad]);
 
   // Filtered friends list for the Amigos tab
   const filteredFriends = useMemo(() => {
@@ -279,16 +296,45 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
               </div>
 
               <p className="text-xs text-gray-600 font-medium flex items-center gap-2 flex-wrap">
-                <span>{userAge} años</span>
+                <span 
+                  id="profile-header-age"
+                  className={isOwnProfile ? "cursor-pointer hover:text-[#3869A0] transition" : ""}
+                  onClick={() => isOwnProfile && setShowEditProfileModal(true)}
+                  title={isOwnProfile ? "Editar edad en Información personal" : undefined}
+                >
+                  {userAge !== null ? `${userAge} años` : 'Edad no indicada'}
+                </span>
                 <span>•</span>
-                <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3 text-gray-400" /> {formatFullLocation(profileUser)}</span>
+                <span 
+                  id="profile-header-location"
+                  className={`flex items-center gap-0.5 ${isOwnProfile ? "cursor-pointer hover:text-[#3869A0] transition" : ""}`}
+                  onClick={() => isOwnProfile && setShowEditProfileModal(true)}
+                  title={isOwnProfile ? "Editar ubicación en Información personal" : undefined}
+                >
+                  <MapPin className="w-3 h-3 text-gray-400" /> {userLocation}
+                </span>
                 <span>•</span>
-                <span className="text-[#3869A0] font-semibold">{profileUser.situacionSentimental}</span>
+                <span className="text-[#3869A0] font-semibold">{profileUser.situacionSentimental || 'Soltero/a'}</span>
                 <span>•</span>
-                <span className="text-gray-700 font-semibold flex items-center gap-1 bg-blue-50/80 px-2 py-0.5 rounded border border-blue-200/60" title="Visitas acumuladas en este perfil">
+                <span 
+                  id="profile-header-visits-counter"
+                  className="text-gray-700 font-semibold flex items-center gap-1 bg-blue-50/80 px-2 py-0.5 rounded border border-blue-200/60" 
+                  title="Visitas reales acumuladas en este perfil"
+                >
                   <Eye className="w-3 h-3 text-[#3869A0]" />
                   <span>{myProfileVisits.length} {myProfileVisits.length === 1 ? 'visita' : 'visitas'}</span>
                 </span>
+                {isOwnProfile && (
+                  <button
+                    type="button"
+                    onClick={() => setShowEditProfileModal(true)}
+                    className="text-[10px] text-[#3869A0] hover:underline font-bold ml-1 cursor-pointer flex items-center gap-0.5"
+                    title="Editar información personal"
+                  >
+                    <Edit3 className="w-2.5 h-2.5" />
+                    <span>Editar info</span>
+                  </button>
+                )}
               </p>
 
               {/* Status Quote bubble */}
@@ -911,12 +957,32 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                 </div>
                 <div className="flex items-start justify-between">
                   <span className="text-gray-400 font-medium">Cumpleaños:</span>
-                  <span className="font-semibold text-right">{profileUser.fnac} ({userAge} años)</span>
+                  <span className="font-semibold text-right">
+                    {profileUser.fnac ? formatBirthDate(profileUser.fnac) : <span className="text-gray-400 italic">No especificado</span>}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between">
+                  <span className="text-gray-400 font-medium">Edad:</span>
+                  <span className="font-semibold text-right">
+                    {userAge !== null ? `${userAge} años` : <span className="text-gray-400 italic">No especificada</span>}
+                  </span>
                 </div>
                 <div className="flex items-start justify-between">
                   <span className="text-gray-400 font-medium">Sexo:</span>
-                  <span className="font-semibold text-right">{profileUser.sexo === 'h' ? 'Chico (Hombre)' : 'Chica (Mujer)'}</span>
+                  <span className="font-semibold text-right">{profileUser.sexo === 'h' ? 'Chico (Hombre)' : profileUser.sexo === 'm' ? 'Chica (Mujer)' : 'Otro'}</span>
                 </div>
+                {profileUser.ciudad && (
+                  <div className="flex items-start justify-between">
+                    <span className="text-gray-400 font-medium">Ciudad:</span>
+                    <span className="font-semibold text-right">{profileUser.ciudad}</span>
+                  </div>
+                )}
+                {profileUser.provincia && (
+                  <div className="flex items-start justify-between">
+                    <span className="text-gray-400 font-medium">Provincia / Zona:</span>
+                    <span className="font-semibold text-right">{profileUser.provincia}</span>
+                  </div>
+                )}
                 {profileUser.pais && (
                   <div className="flex items-start justify-between">
                     <span className="text-gray-400 font-medium">País:</span>
@@ -925,11 +991,11 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                 )}
                 <div className="flex items-start justify-between">
                   <span className="text-gray-400 font-medium">Ubicación:</span>
-                  <span className="font-semibold text-right">{formatFullLocation(profileUser)}</span>
+                  <span className="font-semibold text-right">{userLocation}</span>
                 </div>
                 <div className="flex items-start justify-between">
                   <span className="text-gray-400 font-medium">Situación:</span>
-                  <span className="font-semibold text-right text-[#3869A0]">{profileUser.situacionSentimental}</span>
+                  <span className="font-semibold text-right text-[#3869A0]">{profileUser.situacionSentimental || 'Soltero/a'}</span>
                 </div>
 
                 {profileUser.ocupacion && (

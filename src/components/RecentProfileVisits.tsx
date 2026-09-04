@@ -7,6 +7,8 @@ import {
 import { User, ProfileVisit, formatFullLocation } from '../types';
 import { useInkorium } from '../context/InkoriumContext';
 
+const normalizeUserId = (id?: string) => (id || '').toLowerCase().replace(/^user-/, '').trim();
+
 interface RecentProfileVisitsProps {
   profileUser: User;
   isOwnProfile: boolean;
@@ -84,18 +86,20 @@ export const RecentProfileVisits: React.FC<RecentProfileVisitsProps> = ({
 
   // Filter visits for this profile
   const userVisits = useMemo(() => {
+    const profIdNorm = normalizeUserId(profileUser.id);
     return profileVisits.filter(v => 
       v.visitedUserId === profileUser.id || 
-      v.visitedUserId.replace(/^user-/, '') === profileUser.id.replace(/^user-/, '')
+      normalizeUserId(v.visitedUserId) === profIdNorm
     );
   }, [profileVisits, profileUser.id]);
 
   // Enrich each visit with fresh data from users catalog
   const enrichedVisits = useMemo(() => {
     return userVisits.map(visit => {
+      const visitorNorm = normalizeUserId(visit.visitorId);
       const matchedUser = users.find(u => 
         u.id === visit.visitorId || 
-        u.id.replace(/^user-/, '') === visit.visitorId.replace(/^user-/, '')
+        normalizeUserId(u.id) === visitorNorm
       );
 
       const avatar = matchedUser?.avatar || visit.visitorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';

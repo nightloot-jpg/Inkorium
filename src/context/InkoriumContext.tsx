@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag, PhotoPrivacy, SocialEvent, EventAttendanceStatus, EventAttendee, EventComment, EventPhoto, ProfileVisit, TuentiPage, PagePost, UserInvitation, GameScore, CampusCommunity, CampusPost, CampusReply } from '../types';
+import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag, PhotoPrivacy, SocialEvent, EventAttendanceStatus, EventAttendee, EventComment, EventPhoto, ProfileVisit, TuentiPage, PagePost, UserInvitation, GameScore, CampusCommunity, CampusPost, CampusReply, getCountryByZone } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
 import { fetchPhotos, insertPhoto, addPhotoTagApi, removePhotoTagApi, updatePhotoPrivacyApi, addPhotoCommentApi, likePhotoApi } from '../lib/photosApi';
@@ -389,42 +389,16 @@ const addDeletedMessageIds = (ids: string[]) => {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed;
+          if (Array.isArray(parsed)) {
+            // Filter out any mock/simulated visits - visits must be 100% real
+            const clean = parsed.filter(v => v && !String(v.id).startsWith('vis-1') && !String(v.id).startsWith('vis-2') && !String(v.id).startsWith('vis-3') && !isMockId(v.visitorId));
+            return clean;
+          }
         } catch {}
       }
     }
-    return [
-      {
-        id: 'vis-1',
-        visitorId: 'user-laura',
-        visitorName: 'Laura Gómez',
-        visitorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
-        visitorProvincia: 'Madrid',
-        visitedUserId: storedUserId || 'user-nightloot',
-        fecha: 'Hoy a las 12:45',
-        timestamp: Date.now() - 1000 * 60 * 45
-      },
-      {
-        id: 'vis-2',
-        visitorId: 'user-carlos',
-        visitorName: 'Carlos Ruiz',
-        visitorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-        visitorProvincia: 'Madrid',
-        visitedUserId: storedUserId || 'user-nightloot',
-        fecha: 'Ayer a las 23:10',
-        timestamp: Date.now() - 1000 * 60 * 60 * 14
-      },
-      {
-        id: 'vis-3',
-        visitorId: 'user-elena',
-        visitorName: 'Elena Martínez',
-        visitorAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&auto=format&fit=crop&q=80',
-        visitorProvincia: 'Madrid',
-        visitedUserId: storedUserId || 'user-nightloot',
-        fecha: 'Hace 2 días',
-        timestamp: Date.now() - 1000 * 60 * 60 * 48
-      }
-    ];
+    // No simulated visits - starts empty and only records real visits
+    return [];
   });
 
   const [gameScores, setGameScores] = useState<GameScore[]>(() => {
@@ -840,7 +814,10 @@ const addDeletedMessageIds = (ids: string[]) => {
   }, [wallComments]);
 
   // Keep currentUser initialized before callbacks/effects that depend on it.
-  const currentUser = users.find(user => user.id === currentUserId) || users[0] || EMPTY_USER;
+  const currentUser = users.find(user => 
+    user.id === currentUserId || 
+    (Boolean(currentUserId) && normalizeUserId(user.id) === normalizeUserId(currentUserId))
+  ) || users[0] || EMPTY_USER;
 
   const mapProfileToUser = useCallback((p: any): User => {
     const username = String(p.username ?? '').trim();
@@ -850,6 +827,7 @@ const addDeletedMessageIds = (ids: string[]) => {
     const apellidos = String(p.apellidos ?? parts.slice(1).join(' ')).trim();
     const city = String(p.city ?? p.ciudad ?? '').trim();
     const province = String(p.province ?? p.provincia ?? city).trim();
+    const country = String(p.country ?? p.pais ?? '').trim();
     const rawPresence = String(p.presence ?? p.presencia ?? p.user_status ?? p.estado ?? '').trim().toLowerCase();
     const presencia: UserPresence = ['conectado','ausente','ocupado','invisible'].includes(rawPresence) ? rawPresence as UserPresence : 'conectado';
     const gender = String(p.gender ?? p.sexo ?? '').trim().toLowerCase();
@@ -864,6 +842,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       email: String(p.email ?? '').trim(),
       sexo: gender === 'female' || gender === 'mujer' || gender === 'm' ? 'm' : (gender === 'male' || gender === 'hombre' || gender === 'h' ? 'h' : 'otro'),
       fnac: String(p.birth_date ?? p.fnac ?? '').trim(),
+      pais: country || (province ? getCountryByZone(province)?.name : undefined) || 'España',
       provincia: province,
       ciudad: city || undefined,
       estado: String(p.user_status ?? p.estado ?? '').trim(),
@@ -1742,10 +1721,16 @@ const addDeletedMessageIds = (ids: string[]) => {
   const updateUserData = useCallback((data: Partial<User>) => {
     if (!currentUserId) return;
     setUsers(prev => {
-      const updated = prev.map(user => user.id === currentUserId ? { ...user, ...data } : user);
+      const updated = prev.map(user => 
+        (user.id === currentUserId || (Boolean(currentUserId) && normalizeUserId(user.id) === normalizeUserId(currentUserId)))
+          ? { ...user, ...data }
+          : user
+      );
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('inkorium:users', JSON.stringify(updated));
-        const currentUpdated = updated.find(u => u.id === currentUserId);
+        const currentUpdated = updated.find(u => 
+          u.id === currentUserId || (Boolean(currentUserId) && normalizeUserId(u.id) === normalizeUserId(currentUserId))
+        );
         if (currentUpdated) {
           localStorage.setItem(`inkorium:user_profile_${currentUserId}`, JSON.stringify(currentUpdated));
         }
@@ -1784,7 +1769,11 @@ const addDeletedMessageIds = (ids: string[]) => {
   const updateStatusText = useCallback(async (statusText: string) => {
     if (!currentUserId) return;
     const nextStatus = statusText.trim().slice(0, 140);
-    setUsers(prev => prev.map(user => user.id === currentUserId ? { ...user, estado: nextStatus, estadoFecha: 'Reciente' } : user));
+    setUsers(prev => prev.map(user => 
+      (user.id === currentUserId || (Boolean(currentUserId) && normalizeUserId(user.id) === normalizeUserId(currentUserId)))
+        ? { ...user, estado: nextStatus, estadoFecha: 'Reciente' } 
+        : user
+    ));
     try {
       if (supabase) {
         const sessionResult = await supabase.auth.getSession();
