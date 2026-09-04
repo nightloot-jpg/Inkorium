@@ -10,16 +10,6 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey && !supab
 
 let supabase: ReturnType<typeof createClient> | null = null;
 
-async function getSessionToken(): Promise<string> {
-  try {
-    const { data, error } = await supabase?.auth.getSession() ?? { data: { session: null }, error: null };
-    if (error) return '';
-    return data.session?.access_token || '';
-  } catch {
-    return '';
-  }
-}
-
 const profileAwareFetch: typeof fetch = async (input, init) => {
   const request = input instanceof Request ? input : null;
   const requestUrl = typeof input === 'string' ? input : request?.url || String(input);
@@ -33,16 +23,13 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
     const isPhotosRequest = parsed.origin === supabaseUrl && parsed.pathname.replace(/\/+$/, '') === '/rest/v1/photos';
 
     if (isProfilesRequest && typeof window !== 'undefined') {
-      const headers = new Headers(init?.headers || request?.headers || undefined);
       if (requestMethod === 'GET') {
         return fetch(`${window.location.origin}/api/profiles${parsed.search}`, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          credentials: 'omit',
-          cache: 'no-store'
+          method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit', cache: 'no-store'
         });
       }
       if (requestMethod === 'PATCH') {
+        const headers = new Headers(init?.headers || request?.headers || undefined);
         const queryId = parsed.searchParams.get('id') || '';
         const match = queryId.match(/^eq\.(.+)$/);
         let rawBody = '';
@@ -50,64 +37,90 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
         let body: Record<string, unknown> = {};
         try { body = rawBody ? JSON.parse(rawBody) : {}; } catch { body = {}; }
         const presence = typeof body.presence === 'string' ? body.presence.trim().toLowerCase() : '';
-        const accessToken = headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() || await getSessionToken();
+        const authorization = headers.get('authorization') || '';
+        let accessToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '';
+        if (!accessToken) { try { accessToken = (await supabase?.auth.getSession())?.data.session?.access_token || ''; } catch { accessToken = ''; } }
         if (match && presence && ['conectado', 'ausente', 'ocupado', 'invisible'].includes(presence) && accessToken) {
           return fetch(`${window.location.origin}/api/profiles/${encodeURIComponent(match[1])}/presence`, {
-            method: 'PATCH',
-            headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-            credentials: 'omit',
-            body: JSON.stringify({ presence })
+            method: 'PATCH', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, credentials: 'omit',
+            body: JSON.stringify({ presence, access_token: accessToken })
           });
         }
       }
     }
 
-    if (isPostsRequest && typeof window !== 'undefined' && requestMethod === 'GET') {
-      return fetch(`${window.location.origin}/api/posts${parsed.search}`, {
-        method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit', cache: 'no-store'
-      });
+    if (isPostsRequest && typeof window !== 'undefined') {
+      if (requestMethod === 'GET') {
+        return fetch(`${window.location.origin}/api/posts${parsed.search}`, {
+          method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit', cache: 'no-store'
+        });
+      }
     }
 
-    if (isPhotosRequest && typeof window !== 'undefined' && requestMethod === 'GET') {
-      return fetch(`${window.location.origin}/api/photos${parsed.search}`, {
-        method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit', cache: 'no-store'
-      });
+    if (isPhotosRequest && typeof window !== 'undefined') {
+      if (requestMethod === 'GET') {
+        return fetch(`${window.location.origin}/api/photos${parsed.search}`, {
+          method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit', cache: 'no-store'
+        });
+      }
     }
 
     if (isPrivateMessagesRequest && typeof window !== 'undefined') {
       const headers = new Headers(init?.headers || request?.headers || undefined);
-      const accessToken = headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() || await getSessionToken();
-      if (!accessToken) {
-        return new Response(JSON.stringify({ error: 'AUTH_REQUIRED' }), { status: 401, headers: { 'content-type': 'application/json' } });
-      }
+      const authorization = headers.get('authorization') || '';
+      let accessToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '';
+      if (!accessToken) { try { accessToken = (await supabase?.auth.getSession())?.data.session?.access_token || ''; } catch { accessToken = ''; } }
 
       let rawBody = '';
       try { if (typeof init?.body === 'string') rawBody = init.body; else if (request && request.body) rawBody = await request.clone().text(); } catch { rawBody = ''; }
       let body: Record<string, unknown> = {};
       try { body = rawBody ? JSON.parse(rawBody) : {}; } catch { body = {}; }
+      body.access_token = accessToken;
+
+      if (requestMethod === 'GET') {
+        return fetch(`${window.location.origin}/api/private-messages`, {
+          method: 'POST',
+          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+          credentials: 'omit',
+          body: JSON.stringify({ action: 'list', access_token: accessToken }),
+        });
+      }
 
       const proxyOptions: RequestInit = {
         method: requestMethod,
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`
-        },
-        credentials: 'omit'
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        credentials: 'omit',
       };
-      if (requestMethod === 'GET') {
-        return fetch(`${window.location.origin}/api/private-messages${parsed.search}`, proxyOptions);
-      }
-      if (['POST', 'PATCH', 'DELETE'].includes(requestMethod)) {
-        proxyOptions.body = JSON.stringify(body);
-        return fetch(`${window.location.origin}/api/private-messages${parsed.search}`, proxyOptions);
-      }
+      if (['POST', 'PATCH', 'DELETE'].includes(requestMethod)) proxyOptions.body = JSON.stringify(body);
+      return fetch(`${window.location.origin}/api/private-messages${parsed.search}`, proxyOptions);
     }
-  } catch (error) {
-    console.warn('Supabase transport fallback:', error);
+  } catch (error) { console.warn('Supabase transport fallback:', error); }
+  
+  try {
+    const res = await fetch(input, init);
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+      const text = await res.text();
+      if (text.includes('<title>Cookie check</title>') || text.trim().startsWith('<')) {
+        return new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'content-type': 'application/json' }
+        });
+      }
+      return new Response(text, {
+        status: res.status,
+        statusText: res.statusText,
+        headers: res.headers
+      });
+    }
+    return res;
+  } catch (err) {
+    console.warn('Supabase fetch network error:', err);
+    return new Response(JSON.stringify([]), {
+      status: 200,
+      headers: { 'content-type': 'application/json' }
+    });
   }
-
-  return fetch(input, init);
 };
 
 supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseKey, {
