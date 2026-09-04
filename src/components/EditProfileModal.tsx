@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
+import { supabase } from '../lib/supabase';
 import { 
   X, Check, Sparkles, MapPin, Heart, Briefcase, 
   Music, User as UserIcon, Calendar, Camera, Info, Save
@@ -78,16 +79,75 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim()) return;
 
     setIsSaving(true);
+
+    const fullName = `${nombre.trim()} ${apellidos.trim()}`.trim();
+    const profileInterests = intereses
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
+
+    // Persist the profile to the shared Supabase row first. This is the
+    // source of truth used when another device/account opens the profile.
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName || null,
+          avatar_url: currentUser.avatar || null,
+          city: ciudad.trim() || null,
+          country: pais || null,
+          province: provincia || null,
+          birth_date: fnac || null,
+          user_status: estado.trim() || currentUser.estado || null,
+          gender: sexo || null,
+          relationship_status: situacion || null,
+          occupation: ocupacion.trim() || null,
+          profile_interests: profileInterests,
+          music: musica.trim() || null
+        })
+        .eq('id', currentUser.id);
+
+      if (error) {
+        console.error('[Inkorium] Error guardando perfil en Supabase:', error);
+        pushNotification({
+          id: `notif-profile-edit-error-${Date.now()}`,
+          tipo: 'sistema',
+          userId: currentUser.id,
+          fromUserId: currentUser.id,
+          fromUserName: 'Inkorium Sistema',
+          mensaje: 'No se han podido guardar tus cambios en el servidor. Inténtalo de nuevo.',
+          fecha: 'Ahora mismo',
+          leido: true
+        });
+        setIsSaving(false);
+        return;
+      }
+    } catch (error) {
+      console.error('[Inkorium] Error guardando perfil en Supabase:', error);
+      pushNotification({
+        id: `notif-profile-edit-error-${Date.now()}`,
+        tipo: 'sistema',
+        userId: currentUser.id,
+        fromUserId: currentUser.id,
+        fromUserName: 'Inkorium Sistema',
+        mensaje: 'No se han podido guardar tus cambios en el servidor. Inténtalo de nuevo.',
+        fecha: 'Ahora mismo',
+        leido: true
+      });
+      setIsSaving(false);
+      return;
+    }
     
+    // Keep the local UI/cache in sync after the cloud write succeeds.
     updateUserData({
       nombre: nombre.trim(),
       apellidos: apellidos.trim(),
-      full_name: `${nombre.trim()} ${apellidos.trim()}`.trim(),
+      full_name: fullName,
       sexo,
       fnac,
       pais,
