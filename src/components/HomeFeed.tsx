@@ -4,7 +4,8 @@ import { useInkorium } from '../context/InkoriumContext';
 import { 
   Send, Image as ImageIcon, Smile, MessageCircle, Heart, 
   UserPlus, Sparkles, Clock, CheckCircle2, ChevronRight,
-  Upload, Camera, Loader2, X, Edit2, Check, ChevronDown, Music, Disc, Globe, MapPin
+  Upload, Camera, Loader2, X, Edit2, Check, ChevronDown, Music, Disc, Globe, MapPin,
+  ShieldCheck, GraduationCap, Users, Shield, SlidersHorizontal, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { FeedItem, UserPresence, formatFullLocation } from '../types';
 import { uploadMediaFile } from '../lib/storage';
@@ -43,7 +44,10 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
     musicPlaylist,
     currentTrack,
     isMusicPlaying,
-    canUserViewPhoto
+    canUserViewPhoto,
+    isAntiAlgorithmMode,
+    toggleAntiAlgorithmMode,
+    campusCommunities
   } = useInkorium();
 
   const [statusText, setStatusText] = useState('');
@@ -128,6 +132,16 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
         return false;
       }
     }
+
+    // Anti-Algorithm Filter: Feed 100% cronológico exclusivo de amigos reales
+    if (isAntiAlgorithmMode) {
+      const isMine = item.propietarioId === currentUser.id;
+      const isMyFriend = isFriend(currentUser.id, item.propietarioId);
+      if (!isMine && !isMyFriend) {
+        return false;
+      }
+    }
+
     if (activeFilter === 'estados') return item.tipo === 'estado';
     if (activeFilter === 'fotos') return item.tipo === 'foto' || item.tipo === 'album';
     if (activeFilter === 'tablon') return item.tipo === 'tablon';
@@ -379,6 +393,42 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
           </div>
         </div>
 
+        {/* Campus & Comunidades Locales Mini Card */}
+        <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2">
+          <div className="flex items-center justify-between pb-1.5 border-b border-gray-200">
+            <span className="font-bold text-gray-800 flex items-center gap-1.5">
+              <GraduationCap className="w-4 h-4 text-emerald-600" />
+              <span>Campus & Barrios</span>
+            </span>
+            <button
+              onClick={() => setActiveTab('campus')}
+              className="text-[10px] text-[#3869A0] font-bold hover:underline cursor-pointer"
+            >
+              Explorar ({campusCommunities.length})
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-500 leading-tight">
+            Comunidades de tu universidad, instituto o barrio para compartir apuntes, fiestas y quedadas.
+          </p>
+          <div className="space-y-1 pt-1">
+            {campusCommunities.slice(0, 3).map(comm => (
+              <div
+                key={comm.id}
+                onClick={() => setActiveTab('campus')}
+                className="flex items-center justify-between p-1.5 rounded hover:bg-emerald-50/70 border border-gray-100 hover:border-emerald-200 cursor-pointer transition text-[11px]"
+              >
+                <div className="truncate">
+                  <span className="font-bold text-gray-800 block truncate">{comm.nombre}</span>
+                  <span className="text-[9px] text-gray-400 capitalize">{comm.tipo} • {comm.ciudad}</span>
+                </div>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded flex-shrink-0">
+                  {comm.miembros.length}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Mini Chat Widget */}
         <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs">
           <div className="flex items-center justify-between pb-2 border-b border-gray-200 mb-2">
@@ -602,43 +652,90 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
           </form>
         </div>
 
-        {/* Novedades Filter Tabs */}
-        <div className="flex items-center justify-between border-b border-[#ccd5df] dark:border-[#1d2b40] pb-1 px-1 text-xs">
-          <div className="flex items-center gap-1 sm:gap-2 font-semibold">
-            <span className="font-bold text-gray-800 dark:text-gray-100 mr-1 text-sm">Novedades</span>
+        {/* Novedades Filter Tabs & Anti-Algoritmo Switch */}
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ccd5df] dark:border-[#1d2b40] pb-1 px-1 text-xs">
+            <div className="flex items-center gap-1 sm:gap-2 font-semibold">
+              <span className="font-bold text-gray-800 dark:text-gray-100 mr-1 text-sm">Novedades</span>
+              <button
+                onClick={() => setActiveFilter('todos')}
+                className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                  activeFilter === 'todos' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
+                }`}
+              >
+                Todas
+              </button>
+              <button
+                onClick={() => setActiveFilter('estados')}
+                className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                  activeFilter === 'estados' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
+                }`}
+              >
+                Estados
+              </button>
+              <button
+                onClick={() => setActiveFilter('fotos')}
+                className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                  activeFilter === 'fotos' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
+                }`}
+              >
+                Fotos
+              </button>
+              <button
+                onClick={() => setActiveFilter('tablon')}
+                className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                  activeFilter === 'tablon' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
+                }`}
+              >
+                Tablón
+              </button>
+            </div>
+
+            {/* Anti-Algorithm Toggle Switch */}
             <button
-              onClick={() => setActiveFilter('todos')}
-              className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                activeFilter === 'todos' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
+              onClick={toggleAntiAlgorithmMode}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition shadow-xs cursor-pointer ${
+                isAntiAlgorithmMode
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
               }`}
+              title={isAntiAlgorithmMode ? 'Desactivar modo Anti-Algoritmo (ver todas las publicaciones)' : 'Activar Anti-Algoritmo: solo amigos reales, 100% cronológico'}
             >
-              Todas
-            </button>
-            <button
-              onClick={() => setActiveFilter('estados')}
-              className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                activeFilter === 'estados' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
-              }`}
-            >
-              Estados
-            </button>
-            <button
-              onClick={() => setActiveFilter('fotos')}
-              className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                activeFilter === 'fotos' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
-              }`}
-            >
-              Fotos
-            </button>
-            <button
-              onClick={() => setActiveFilter('tablon')}
-              className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                activeFilter === 'tablon' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
-              }`}
-            >
-              Tablón
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Anti-Algoritmo:</span>
+              <span className={`uppercase text-[10px] px-1.5 py-0.2 rounded font-extrabold ${
+                isAntiAlgorithmMode ? 'bg-emerald-800 text-white' : 'bg-gray-300 dark:bg-slate-700 text-gray-600 dark:text-gray-300'
+              }`}>
+                {isAntiAlgorithmMode ? 'ACTIVO' : 'OFF'}
+              </span>
             </button>
           </div>
+
+          {/* Anti-Algoritmo Explanatory Banner */}
+          {isAntiAlgorithmMode && (
+            <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 rounded p-2.5 text-xs text-emerald-900 dark:text-emerald-200 flex items-start justify-between gap-2 shadow-2xs animate-fade-in">
+              <div className="flex items-start gap-2">
+                <div className="w-6 h-6 rounded-full bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-emerald-900 dark:text-emerald-100 text-[12px] flex items-center gap-1.5">
+                    <span>🌿 El internet de amigos de verdad (Modo Anti-Algoritmo)</span>
+                    <span className="bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-100 text-[10px] px-1.5 py-0.2 rounded font-semibold">100% Cronológico</span>
+                  </h4>
+                  <p className="text-[11px] text-emerald-800 dark:text-emerald-300 mt-0.5 leading-relaxed">
+                    Estás en un refugio íntimo: solo ves publicaciones de tus <strong>amigos agregados</strong> en orden cronológico real, sin influencers, marcas, algoritmos adictivos ni métricas públicas de vanidad.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={toggleAntiAlgorithmMode}
+                className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 text-[11px] underline shrink-0 font-medium cursor-pointer"
+              >
+                Ver todo
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Feed Items List */}
@@ -741,7 +838,17 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                       }`}
                     >
                       <Heart className={`w-3.5 h-3.5 ${item.likes.includes(currentUser.id) ? 'fill-current' : ''}`} />
-                      <span>{item.likes.length > 0 ? `${item.likes.length} Me gusta` : 'Me gusta'}</span>
+                      <span>
+                        {isAntiAlgorithmMode ? (
+                          item.likes.includes(currentUser.id) ? (
+                            item.likes.length > 1 ? `Te gusta a ti y a otros amigos` : 'Te gusta'
+                          ) : (
+                            item.likes.length > 0 ? `Les gusta a amigos` : 'Me gusta'
+                          )
+                        ) : (
+                          item.likes.length > 0 ? `${item.likes.length} Me gusta` : 'Me gusta'
+                        )}
+                      </span>
                     </button>
 
                     <button

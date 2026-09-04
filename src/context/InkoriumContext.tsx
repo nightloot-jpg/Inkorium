@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag, PhotoPrivacy, SocialEvent, EventAttendanceStatus, EventAttendee, EventComment, ProfileVisit, TuentiPage, PagePost, UserInvitation, GameScore } from '../types';
+import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag, PhotoPrivacy, SocialEvent, EventAttendanceStatus, EventAttendee, EventComment, EventPhoto, ProfileVisit, TuentiPage, PagePost, UserInvitation, GameScore, CampusCommunity, CampusPost, CampusReply } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
 import { fetchPhotos, insertPhoto, addPhotoTagApi, removePhotoTagApi, updatePhotoPrivacyApi, addPhotoCommentApi, likePhotoApi } from '../lib/photosApi';
 import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WALL_COMMENTS, INITIAL_FRIENDSHIPS, INITIAL_FRIEND_REQUESTS, INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_ACCESS_LOGS, INITIAL_ACTIVITIES } from '../data/mockData';
 import { INITIAL_EVENTS, INITIAL_PAGES, INITIAL_GAME_SCORES } from '../data/mockEventsAndPages';
+import { INITIAL_CAMPUS_COMMUNITIES } from '../data/mockCampus';
 import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
 import { musicAudioEngine } from '../utils/audioEngine';
 import { appendMessageToConversation, updateMessageInConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents, markConversationAsRead, applyReadReceiptsToConversation, getStoredBlockedUserIds, saveStoredBlockedUserIds } from '../lib/chatHistory';
@@ -54,9 +55,12 @@ interface InkoriumContextType {
   currentUser: User; users: User[]; photos: Photo[]; albums: Album[]; feed: FeedItem[]; wallComments: WallComment[];
   messages: PrivateMessage[]; friendRequests: FriendRequest[]; friendships: Friendship[]; chatMessages: ChatMessage[];
   notifications: InkoriumNotification[]; toasts: InkoriumNotification[]; accessLogs: AccessLog[]; activities: UserActivity[];
-  activeChatWindows: ChatWindow[]; activeTab: 'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'notificaciones' | 'ajustes' | 'musica' | 'eventos' | 'paginas' | 'juegos';
+  activeChatWindows: ChatWindow[]; activeTab: 'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'notificaciones' | 'ajustes' | 'musica' | 'eventos' | 'paginas' | 'juegos' | 'campus';
   selectedUserId: string; selectedPhotoId: string | null; selectedAlbumId: string | null;
   composeRecipientId: string | null;
+  // Anti-Algoritmo Mode
+  isAntiAlgorithmMode: boolean;
+  toggleAntiAlgorithmMode: () => void;
   // Retro Tuenti Features
   events: SocialEvent[];
   pages: TuentiPage[];
@@ -72,6 +76,16 @@ interface InkoriumContextType {
   rsvpEvent: (eventId: string, status: EventAttendanceStatus) => void;
   commentEvent: (eventId: string, text: string) => void;
   deleteEvent: (eventId: string) => void;
+  addEventPhoto: (eventId: string, photoData: { url: string; caption?: string }) => void;
+  // Campus y Comunidades Locales
+  campusCommunities: CampusCommunity[];
+  selectedCampusId: string | null;
+  setSelectedCampusId: (id: string | null) => void;
+  joinCampus: (campusId: string) => void;
+  leaveCampus: (campusId: string) => void;
+  postToCampus: (campusId: string, tipo: CampusPost['tipo'], texto: string, titulo?: string) => void;
+  replyToCampusPost: (campusId: string, postId: string, texto: string) => void;
+  createCampus: (data: Omit<CampusCommunity, 'id' | 'miembros' | 'posts'>) => string;
   createPage: (pageData: Omit<TuentiPage, 'id' | 'creadorId' | 'seguidores' | 'fechaCreacion' | 'posts'>) => string;
   toggleFollowPage: (pageId: string) => void;
   postPageComment: (pageId: string, text: string, fotoUrl?: string) => void;
@@ -433,6 +447,39 @@ const addDeletedMessageIds = (ids: string[]) => {
     }
     return INITIAL_GAME_SCORES;
   });
+
+  // Anti-Algoritmo state (Active by default for real friends intimate web)
+  const [isAntiAlgorithmMode, setIsAntiAlgorithmMode] = useState<boolean>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:anti_algorithm');
+      if (saved !== null) return saved === 'true';
+    }
+    return true;
+  });
+
+  const toggleAntiAlgorithmMode = useCallback(() => {
+    setIsAntiAlgorithmMode(prev => {
+      const next = !prev;
+      safeSetLocalStorage('inkorium:anti_algorithm', String(next));
+      return next;
+    });
+  }, []);
+
+  // Campus y Comunidades Locales state
+  const [selectedCampusId, setSelectedCampusId] = useState<string | null>(null);
+  const [campusCommunities, setCampusCommunities] = useState<CampusCommunity[]>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:campus');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return INITIAL_CAMPUS_COMMUNITIES;
+  });
+
   const [activeChatWindows, setActiveChatWindows] = useState<ChatWindow[]>([]);
   const [blockedUserIds, setBlockedUserIds] = useState<string[]>(() => {
     return getStoredBlockedUserIds(storedUserId || '');
@@ -2209,6 +2256,164 @@ const addDeletedMessageIds = (ids: string[]) => {
     });
   }, []);
 
+  const addEventPhoto = useCallback((eventId: string, photoData: { url: string; caption?: string }) => {
+    if (!currentUserId) return;
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const newPhoto: EventPhoto = {
+      id: `ev-photo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      url: photoData.url,
+      uploaderId: currentUserId,
+      uploaderName: myName,
+      uploaderAvatar: currentUser.avatar,
+      caption: photoData.caption,
+      fecha: 'Ahora mismo',
+      timestamp: Date.now(),
+      likes: []
+    };
+
+    setEvents(prev => {
+      const updated = prev.map(ev => {
+        if (ev.id === eventId) {
+          const list = ev.fotosColaborativas || [];
+          return {
+            ...ev,
+            fotosColaborativas: [newPhoto, ...list]
+          };
+        }
+        return ev;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:events', JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    pushNotification({
+      id: `notif-ev-photo-${Date.now()}`,
+      tipo: 'foto',
+      userId: currentUserId,
+      fromUserId: currentUserId,
+      fromUserName: myName,
+      fromUserAvatar: currentUser.avatar,
+      mensaje: 'Has añadido una foto al álbum colaborativo del evento.',
+      enlace: 'eventos',
+      targetId: eventId,
+      photoThumbnail: photoData.url,
+      fecha: 'Ahora mismo',
+      leido: true
+    });
+  }, [currentUserId, currentUser, pushNotification]);
+
+  const joinCampus = useCallback((campusId: string) => {
+    if (!currentUserId) return;
+    setCampusCommunities(prev => {
+      const updated = prev.map(c => {
+        if (c.id === campusId && !c.miembros.includes(currentUserId)) {
+          return { ...c, miembros: [...c.miembros, currentUserId] };
+        }
+        return c;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:campus', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, [currentUserId]);
+
+  const leaveCampus = useCallback((campusId: string) => {
+    if (!currentUserId) return;
+    setCampusCommunities(prev => {
+      const updated = prev.map(c => {
+        if (c.id === campusId) {
+          return { ...c, miembros: c.miembros.filter(id => id !== currentUserId) };
+        }
+        return c;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:campus', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, [currentUserId]);
+
+  const postToCampus = useCallback((campusId: string, tipo: CampusPost['tipo'], texto: string, titulo?: string) => {
+    if (!currentUserId || !texto.trim()) return;
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const newPost: CampusPost = {
+      id: `cpost-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      autorId: currentUserId,
+      autorNombre: myName,
+      autorAvatar: currentUser.avatar,
+      tipo,
+      titulo: titulo?.trim(),
+      texto: texto.trim(),
+      fecha: 'Ahora mismo',
+      likes: [],
+      respuestas: []
+    };
+
+    setCampusCommunities(prev => {
+      const updated = prev.map(c => {
+        if (c.id === campusId) {
+          return { ...c, posts: [newPost, ...c.posts] };
+        }
+        return c;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:campus', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, [currentUserId, currentUser]);
+
+  const replyToCampusPost = useCallback((campusId: string, postId: string, texto: string) => {
+    if (!currentUserId || !texto.trim()) return;
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const newReply: CampusReply = {
+      id: `creply-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      autorId: currentUserId,
+      autorNombre: myName,
+      autorAvatar: currentUser.avatar,
+      texto: texto.trim(),
+      fecha: 'Ahora mismo'
+    };
+
+    setCampusCommunities(prev => {
+      const updated = prev.map(c => {
+        if (c.id === campusId) {
+          return {
+            ...c,
+            posts: c.posts.map(p => p.id === postId ? { ...p, respuestas: [...p.respuestas, newReply] } : p)
+          };
+        }
+        return c;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:campus', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, [currentUserId, currentUser]);
+
+  const createCampus = useCallback((data: Omit<CampusCommunity, 'id' | 'miembros' | 'posts'>): string => {
+    const newId = `campus_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const newCampus: CampusCommunity = {
+      ...data,
+      id: newId,
+      miembros: currentUserId ? [currentUserId] : [],
+      posts: []
+    };
+
+    setCampusCommunities(prev => {
+      const updated = [newCampus, ...prev];
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:campus', JSON.stringify(updated));
+      }
+      return updated;
+    });
+    return newId;
+  }, [currentUserId]);
+
   const createPage = useCallback((pageData: Omit<TuentiPage, 'id' | 'creadorId' | 'seguidores' | 'fechaCreacion' | 'posts'>): string => {
     const newId = `page-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const newPage: TuentiPage = {
@@ -3241,12 +3446,17 @@ const addDeletedMessageIds = (ids: string[]) => {
       setIsMusicPlayerOpen, setIsMusicPlayerMinimized,
       openMusicPlayer, addCustomTrack,
       removeTrackFromPlaylist,
+      // Anti-Algoritmo Mode
+      isAntiAlgorithmMode, toggleAntiAlgorithmMode,
       // Retro Tuenti Features
       events, pages, profileVisits, gameScores,
       selectedEventId, setSelectedEventId,
       selectedPageId, setSelectedPageId,
       isInvitationsModalOpen, setIsInvitationsModalOpen,
-      createEvent, rsvpEvent, commentEvent, deleteEvent,
+      createEvent, rsvpEvent, commentEvent, deleteEvent, addEventPhoto,
+      // Campus y Comunidades Locales
+      campusCommunities, selectedCampusId, setSelectedCampusId,
+      joinCampus, leaveCampus, postToCampus, replyToCampusPost, createCampus,
       createPage, toggleFollowPage, postPageComment,
       recordProfileVisit, updateTopAmigos,
       setActiveTab, viewUserProfile, openComposeMessage, viewPhoto, viewAlbum, setCurrentUserById,

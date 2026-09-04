@@ -299,6 +299,18 @@ export interface EventComment {
   fecha: string;
 }
 
+export interface EventPhoto {
+  id: string;
+  url: string;
+  uploaderId: string;
+  uploaderName: string;
+  uploaderAvatar: string;
+  caption?: string;
+  fecha: string;
+  timestamp: number;
+  likes: string[];
+}
+
 export interface SocialEvent {
   id: string;
   creadorId: string;
@@ -317,6 +329,7 @@ export interface SocialEvent {
   comentarios: EventComment[];
   privacidad: 'publico' | 'amigos' | 'invitacion';
   fotosAlbumId?: string; // Álbum colaborativo opcional del evento
+  fotosColaborativas?: EventPhoto[]; // Fotos volcadas post-fiesta por los asistentes
 }
 
 // 2. VISITAS AL PERFIL ("Quién ha visto mi perfil")
@@ -385,5 +398,42 @@ export interface GameScore {
   date?: string;
   fecha?: string;
 }
+
+// 6. COMUNIDADES LOCALES / CAMPUS UNIVERSITARIOS E INSTITUTOS
+export interface CampusReply {
+  id: string;
+  autorId: string;
+  autorNombre: string;
+  autorAvatar: string;
+  texto: string;
+  fecha: string;
+}
+
+export interface CampusPost {
+  id: string;
+  autorId: string;
+  autorNombre: string;
+  autorAvatar: string;
+  tipo: 'apuntes' | 'quedada' | 'fiesta' | 'duda' | 'general';
+  titulo?: string;
+  texto: string;
+  fecha: string;
+  likes: string[];
+  respuestas: CampusReply[];
+}
+
+export interface CampusCommunity {
+  id: string;
+  nombre: string;
+  tipo: 'universidad' | 'instituto' | 'barrio';
+  ciudad: string;
+  siglas?: string;
+  descripcion: string;
+  avatar: string;
+  portada: string;
+  miembros: string[]; // userIds que pertenecen a este campus
+  posts: CampusPost[];
+}
+
 
 

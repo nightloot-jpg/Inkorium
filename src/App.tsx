@@ -12,6 +12,8 @@ import { MusicView } from './components/MusicView';
 import { EventsView } from './components/EventsView';
 import { PagesView } from './components/PagesView';
 import { GamesView } from './components/GamesView';
+import { CampusView } from './components/CampusView';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { InvitationsModal } from './components/InvitationsModal';
 import { PhotoLightbox } from './components/PhotoLightbox';
 import { UploadModal } from './components/UploadModal';
@@ -42,6 +44,7 @@ const InkoriumAppContent: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#e8eef4] dark:bg-[#0b111e] text-[#1c1e21] dark:text-[#f1f5f9] font-sans antialiased selection:bg-[#3869A0] selection:text-white transition-colors duration-150">
       {/* Top Main Navigation */}
+      <OfflineIndicator />
       <Navbar 
         onOpenUpload={() => setIsUploadOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
@@ -54,6 +57,7 @@ const InkoriumAppContent: React.FC = () => {
         {activeTab === 'fotos' && <PhotosView onOpenUpload={() => setIsUploadOpen(true)} />}
         {activeTab === 'gente' && <PeopleSearch />}
         {activeTab === 'eventos' && <EventsView />}
+        {activeTab === 'campus' && <CampusView />}
         {activeTab === 'paginas' && <PagesView />}
         {activeTab === 'juegos' && <GamesView />}
         {activeTab === 'mensajes' && <MessagesView />}
@@ -78,6 +82,7 @@ const InkoriumAppContent: React.FC = () => {
             <button onClick={() => setActiveTab('fotos')} className="hover:underline text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 cursor-pointer">Fotos</button>
             <button onClick={() => setActiveTab('gente')} className="hover:underline text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 cursor-pointer">Gente</button>
             <button onClick={() => setActiveTab('eventos')} className="hover:underline text-[#3869A0] dark:text-blue-400 font-semibold cursor-pointer">Eventos</button>
+            <button onClick={() => setActiveTab('campus')} className="hover:underline text-emerald-600 dark:text-emerald-400 font-bold cursor-pointer">🏫 Campus</button>
             <button onClick={() => setActiveTab('paginas')} className="hover:underline text-[#3869A0] dark:text-blue-400 font-semibold cursor-pointer">Páginas</button>
             <button onClick={() => setActiveTab('juegos')} className="hover:underline text-[#3869A0] dark:text-blue-400 font-semibold cursor-pointer">Juegos</button>
             <button onClick={() => setActiveTab('musica')} className="hover:underline text-[#3869A0] dark:text-blue-400 font-semibold cursor-pointer">Música</button>

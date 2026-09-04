@@ -1,12 +1,33 @@
 <!doctype html>
 <html lang="es">
   <head>
+    <script>
+      // Filter benign Vite HMR websocket reconnection noise in sandboxed preview
+      (function() {
+        var originalError = console.error;
+        console.error = function() {
+          var firstArg = arguments[0];
+          if (typeof firstArg === 'string' && firstArg.indexOf('[vite]') !== -1) {
+            console.debug.apply(console, arguments);
+            return;
+          }
+          originalError.apply(console, arguments);
+        };
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Inkorium</title>
-    <meta name="description" content="Inkorium - La red social nostálgica inspirada en Tuenti y Nuenti. Conéctate con tus amigos, fotos, tablón y chat." />
+    <meta name="description" content="Red social nostálgica inspirada en Tuenti: feed anti-algoritmo cronológico de amigos reales, álbumes colaborativos post-evento, filtro retro Cámara 2008 con fecha analógica, comunidades de campus y tablón." />
+    <meta name="theme-color" content="#3869A0" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Inkorium" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <meta property="og:title" content="Inkorium" />
-    <meta property="og:description" content="Inkorium - La red social nostálgica inspirada en Tuenti y Nuenti. Conéctate con tus amigos, fotos, tablón y chat." />
+    <meta property="og:description" content="Red social nostálgica inspirada en Tuenti: feed anti-algoritmo cronológico de amigos reales, álbumes colaborativos post-evento, filtro retro Cámara 2008 con fecha analógica, comunidades de campus y tablón." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">

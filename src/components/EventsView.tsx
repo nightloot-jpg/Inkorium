@@ -3,9 +3,10 @@ import { useInkorium } from '../context/InkoriumContext';
 import { 
   Calendar, MapPin, Users, Plus, MessageSquare, Clock, Check, 
   HelpCircle, X, Sparkles, Search, PartyPopper, Cake, Wine, 
-  Music, Trophy, ChevronRight, Share2, AlertCircle, Camera, CheckCircle2
+  Music, Trophy, ChevronRight, Share2, AlertCircle, Camera, CheckCircle2,
+  Upload, Eye, Heart, Image as ImageIcon, Flame
 } from 'lucide-react';
-import { SocialEvent, EventAttendanceStatus } from '../types';
+import { SocialEvent, EventAttendanceStatus, EventPhoto } from '../types';
 
 const CATEGORY_ICONS: Record<SocialEvent['categoria'], { label: string; icon: React.ReactNode; badgeBg: string }> = {
   fiesta: { label: 'Fiesta', icon: <PartyPopper className="w-3.5 h-3.5" />, badgeBg: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' },
@@ -25,6 +26,13 @@ const PRESET_COVERS = [
   { label: 'Parque / Retiro', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop&q=80' }
 ];
 
+const PARTY_PHOTO_SAMPLES = [
+  { label: 'Brindis con amigos', url: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=800&auto=format&fit=crop&q=80' },
+  { label: 'Foto de grupo', url: 'https://images.unsplash.com/photo-1543807535-eceef0bc6599?w=800&auto=format&fit=crop&q=80' },
+  { label: 'En la pista', url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&auto=format&fit=crop&q=80' },
+  { label: 'Risas en el botellón', url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&auto=format&fit=crop&q=80' }
+];
+
 export const EventsView: React.FC = () => {
   const { 
     events, 
@@ -33,6 +41,7 @@ export const EventsView: React.FC = () => {
     rsvpEvent, 
     commentEvent, 
     deleteEvent,
+    addEventPhoto,
     viewUserProfile,
     setActiveTab,
     selectedEventId,
@@ -48,6 +57,19 @@ export const EventsView: React.FC = () => {
     }
     return null;
   });
+
+  // Keep active event reactive to events updates
+  const currentEvent = useMemo(() => {
+    if (!activeEventDetail) return null;
+    return events.find(e => e.id === activeEventDetail.id) || activeEventDetail;
+  }, [events, activeEventDetail]);
+
+  // Collaborative Album State
+  const [isAddPhotoModalOpen, setIsAddPhotoModalOpen] = useState(false);
+  const [newPhotoUrl, setNewPhotoUrl] = useState('');
+  const [newPhotoCaption, setNewPhotoCaption] = useState('');
+  const [applyRetroFilter, setApplyRetroFilter] = useState(true);
+  const [previewingEventPhoto, setPreviewingEventPhoto] = useState<EventPhoto | null>(null);
 
   // Create Form State
   const [newTitle, setNewTitle] = useState('');
@@ -420,6 +442,85 @@ export const EventsView: React.FC = () => {
                         {activeEventDetail.creadorNombre}
                       </button>
                     </div>
+                  </div>
+
+                  {/* Álbum Colaborativo Post-Fiesta / Post-Evento */}
+                  <div className="bg-[#fbfcff] dark:bg-[#101b2d] border border-[#ccd5df] dark:border-[#1d2b40] rounded-lg p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 dark:border-[#1d2b40] pb-3">
+                      <div>
+                        <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                          <Camera className="w-4 h-4 text-[#3869A0]" />
+                          <span>Álbum Colaborativo Post-Evento</span>
+                          <span className="bg-blue-100 dark:bg-blue-900/50 text-[#3869A0] dark:text-blue-300 text-xs px-2 py-0.5 rounded-full font-bold">
+                            {(currentEvent?.fotosColaborativas || []).length} fotos
+                          </span>
+                        </h3>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                          Todos los amigos que asistieron pueden volcar sus fotos aquí en lugar de tenerlas dispersas en chats de mensajería.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => setIsAddPhotoModalOpen(true)}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-md shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Subir fotos a este álbum</span>
+                      </button>
+                    </div>
+
+                    {/* Collaborative photos grid */}
+                    {(currentEvent?.fotosColaborativas || []).length === 0 ? (
+                      <div className="p-6 text-center border-2 border-dashed border-gray-200 dark:border-gray-700/60 rounded-lg">
+                        <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2 opacity-60" />
+                        <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                          El álbum colaborativo está esperando tus recuerdos
+                        </h4>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 max-w-sm mx-auto mt-1 mb-3">
+                          ¿Asististe o estás en esta quedada? Sube tus fotos de la fiesta para compartirlas con todos los amigos que fueron.
+                        </p>
+                        <button
+                          onClick={() => setIsAddPhotoModalOpen(true)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3869A0] hover:bg-[#2a517c] text-white font-bold text-xs rounded shadow-xs cursor-pointer"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Añadir la primera foto</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                        {currentEvent?.fotosColaborativas.map(foto => (
+                          <div
+                            key={foto.id}
+                            onClick={() => setPreviewingEventPhoto(foto)}
+                            className="group bg-white dark:bg-[#152238] border border-gray-200 dark:border-[#1d2b40] rounded-md p-1.5 shadow-2xs hover:shadow-md transition-all cursor-pointer relative"
+                          >
+                            <div className="relative aspect-4/3 rounded overflow-hidden bg-black/5">
+                              <img
+                                src={foto.url}
+                                alt={foto.caption || 'Foto del evento'}
+                                className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                              />
+                              {/* Analog 2008 retro date stamp */}
+                              <div className="absolute bottom-1 right-1.5 font-mono text-[10px] font-bold text-[#ff9000] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] select-none tracking-widest">
+                                '08 09 14
+                              </div>
+                            </div>
+                            <div className="mt-1.5 px-1">
+                              {foto.caption && (
+                                <p className="text-[11px] text-gray-800 dark:text-gray-200 font-medium truncate">
+                                  {foto.caption}
+                                </p>
+                              )}
+                              <div className="flex items-center justify-between text-[9px] text-gray-400 mt-0.5">
+                                <span className="truncate">Por {foto.uploaderName}</span>
+                                <span>{foto.fecha}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Tablón de comentarios del evento */}
@@ -816,6 +917,173 @@ export const EventsView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Añadir foto al Álbum Colaborativo */}
+      {isAddPhotoModalOpen && currentEvent && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white dark:bg-[#152238] rounded-lg max-w-lg w-full p-5 border border-[#ccd5df] dark:border-[#1d2b40] shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Camera className="w-4 h-4 text-emerald-600" />
+                <span>Añadir foto a "{currentEvent.titulo}"</span>
+              </h3>
+              <button
+                onClick={() => setIsAddPhotoModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                if (!newPhotoUrl.trim()) return;
+                addEventPhoto(currentEvent.id, {
+                  url: newPhotoUrl.trim(),
+                  caption: newPhotoCaption.trim()
+                });
+                setNewPhotoUrl('');
+                setNewPhotoCaption('');
+                setIsAddPhotoModalOpen(false);
+              }}
+              className="space-y-3 text-xs"
+            >
+              <div>
+                <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                  Elige una foto de la fiesta o pega una URL
+                </label>
+                <div className="grid grid-cols-4 gap-2 mb-2">
+                  {PARTY_PHOTO_SAMPLES.map(sample => (
+                    <div
+                      key={sample.url}
+                      onClick={() => setNewPhotoUrl(sample.url)}
+                      className={`h-16 rounded cursor-pointer overflow-hidden border-2 transition-all relative ${
+                        newPhotoUrl === sample.url ? 'border-emerald-600 scale-105 shadow-xs' : 'border-transparent opacity-70 hover:opacity-100'
+                      }`}
+                      title={sample.label}
+                    >
+                      <img src={sample.url} alt={sample.label} className="w-full h-full object-cover" />
+                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] truncate px-1 text-center">
+                        {sample.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <input
+                  type="url"
+                  value={newPhotoUrl}
+                  onChange={e => setNewPhotoUrl(e.target.value)}
+                  placeholder="O pega una URL de imagen (https://...)"
+                  className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#1d2b40] rounded bg-gray-50 dark:bg-[#0e1726] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  required
+                />
+              </div>
+
+              {/* Retro filter toggle */}
+              <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 p-2.5 rounded flex items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  id="retroFilter"
+                  checked={applyRetroFilter}
+                  onChange={e => setApplyRetroFilter(e.target.checked)}
+                  className="mt-0.5 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                />
+                <label htmlFor="retroFilter" className="cursor-pointer">
+                  <span className="font-bold text-amber-900 dark:text-amber-200 block text-xs">
+                    📸 Estética "Cámara 2008" con fecha analógica
+                  </span>
+                  <span className="text-[11px] text-amber-800 dark:text-amber-300 leading-tight block mt-0.5">
+                    Añade el sello de fecha clásico en naranja ('08 09 14) y calidez vintage al álbum colaborativo.
+                  </span>
+                </label>
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 dark:text-gray-300 block mb-1">
+                  Pie de foto o recuerdo
+                </label>
+                <input
+                  type="text"
+                  value={newPhotoCaption}
+                  onChange={e => setNewPhotoCaption(e.target.value)}
+                  placeholder="Ej: Con Laura y Dani antes de que cerrara la carpa..."
+                  className="w-full px-3 py-1.5 border border-gray-300 dark:border-[#1d2b40] rounded bg-gray-50 dark:bg-[#0e1726] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-gray-200 dark:border-[#1d2b40] flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddPhotoModalOpen(false)}
+                  className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newPhotoUrl.trim()}
+                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded cursor-pointer flex items-center gap-1.5"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Publicar en el álbum</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Visualizador en detalle de Foto Colaborativa */}
+      {previewingEventPhoto && (
+        <div 
+          onClick={() => setPreviewingEventPhoto(null)}
+          className="fixed inset-0 bg-black/90 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in"
+        >
+          <div 
+            onClick={e => e.stopPropagation()}
+            className="bg-[#111c2e] border border-gray-800 rounded-lg max-w-2xl w-full overflow-hidden shadow-2xl space-y-0"
+          >
+            <div className="p-3 bg-black/40 flex items-center justify-between border-b border-gray-800 text-white text-xs">
+              <div className="flex items-center gap-2">
+                <img
+                  src={previewingEventPhoto.uploaderAvatar}
+                  alt={previewingEventPhoto.uploaderName}
+                  className="w-6 h-6 rounded-full object-cover border border-emerald-500"
+                />
+                <div>
+                  <span className="font-bold text-gray-200">{previewingEventPhoto.uploaderName}</span>
+                  <span className="text-gray-400 text-[10px] ml-2">{previewingEventPhoto.fecha}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewingEventPhoto(null)}
+                className="text-gray-400 hover:text-white p-1 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="relative bg-black flex items-center justify-center max-h-[70vh]">
+              <img
+                src={previewingEventPhoto.url}
+                alt={previewingEventPhoto.caption || 'Foto del evento'}
+                className="max-h-[70vh] w-auto object-contain"
+              />
+              <div className="absolute bottom-3 right-4 font-mono text-sm font-bold text-[#ff9000] drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)] select-none tracking-widest">
+                '08 09 14
+              </div>
+            </div>
+
+            {previewingEventPhoto.caption && (
+              <div className="p-3 bg-[#152238] border-t border-gray-800 text-xs text-gray-200">
+                <p className="italic">"{previewingEventPhoto.caption}"</p>
+              </div>
+            )}
           </div>
         </div>
       )}

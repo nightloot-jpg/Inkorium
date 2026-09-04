@@ -70,6 +70,45 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
     setAllowedUserIds([]);
   };
 
+  const isRetro2008Active = editState.filterId === 'tuenti_2008' && editState.addDateStamp;
+
+  const handleToggleRetro2008 = () => {
+    if (isRetro2008Active) {
+      setEditState({
+        ...editState,
+        filterId: 'none',
+        brightness: 100,
+        contrast: 100,
+        saturation: 100,
+        sepia: 0,
+        grayscale: 0,
+        hueRotate: 0,
+        vignette: false,
+        overlayStyle: 'none',
+        addDateStamp: false
+      });
+    } else {
+      const now = new Date();
+      const yy = "'08";
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      setEditState({
+        ...editState,
+        filterId: 'tuenti_2008',
+        brightness: 106,
+        contrast: 112,
+        saturation: 120,
+        sepia: 18,
+        grayscale: 0,
+        hueRotate: -8,
+        vignette: false,
+        overlayStyle: 'warm',
+        addDateStamp: true,
+        dateStampText: `${yy} ${mm} ${dd}`
+      });
+    }
+  };
+
   // User's own albums or general albums
   const myAlbums = useMemo(() => {
     return albums.filter(a => !a.userId || a.userId === currentUser.id || a.propietarioId === currentUser.id);
@@ -334,6 +373,41 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
                     className="hidden"
                   />
                 </div>
+              </div>
+
+              {/* Filtro Automático Retro: Cámara 2008 con Fecha Analógica */}
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-300 dark:border-amber-800/70 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs font-mono">
+                    '08
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-amber-950 dark:text-amber-100">
+                        Filtro Automático Retro: "Cámara 2008"
+                      </span>
+                      <span className="bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">
+                        FECHA ANALÓGICA
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-900/80 dark:text-amber-300 leading-tight mt-0.5">
+                      Añade grano de época, balance cálido y el legendario sello de fecha naranja en la esquina como en las cámaras compactas de 2008.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleToggleRetro2008}
+                  className={`px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                    isRetro2008Active
+                      ? 'bg-amber-600 text-white hover:bg-amber-700 ring-2 ring-amber-400'
+                      : 'bg-white dark:bg-slate-800 text-amber-900 dark:text-amber-200 border border-amber-300 hover:bg-amber-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Camera className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{isRetro2008Active ? 'Filtro 2008 Aplicado ✓' : 'Aplicar Estilo 2008'}</span>
+                </button>
               </div>
 
               {/* Editor Controls & Live Canvas */}

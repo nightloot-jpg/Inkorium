@@ -4,7 +4,7 @@ import {
   Home, User as UserIcon, Users, Image as ImageIcon, Mail, 
   Settings, Bell, Volume2, VolumeX, Search, LogOut, Check,
   UserPlus, MessageSquare, Sparkles, Moon, Sun, Palette,
-  Calendar, Building2, Gamepad2, Ticket, Music
+  Calendar, Building2, Gamepad2, Ticket, Music, GraduationCap
 } from 'lucide-react';
 import { isSoundEnabled, toggleSound } from '../utils/sound';
 
@@ -161,6 +161,17 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
             >
               <Calendar className="w-3.5 h-3.5 text-yellow-300" />
               <span>Eventos</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('campus')}
+              className={`px-2.5 py-1.5 rounded flex items-center gap-1.5 transition cursor-pointer ${
+                activeTab === 'campus' ? 'bg-[#294e77] text-white shadow-inner' : 'text-blue-100 hover:bg-[#2f5988] hover:text-white'
+              }`}
+              title="Comunidades locales, universidades y campus"
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Campus</span>
             </button>
 
             <button
@@ -607,6 +618,13 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
         >
           <Calendar className="w-4 h-4 text-yellow-300" />
           <span>Eventos</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('campus')} 
+          className={`flex flex-col items-center gap-0.5 shrink-0 ${activeTab === 'campus' ? 'text-white font-bold' : 'text-blue-200'}`}
+        >
+          <GraduationCap className="w-4 h-4 text-emerald-300" />
+          <span>Campus</span>
         </button>
         <button 
           onClick={() => setActiveTab('paginas')} 
