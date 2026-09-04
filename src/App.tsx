@@ -25,6 +25,7 @@ import { FloatingMusicPlayer } from './components/FloatingMusicPlayer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PublicProfileSync } from './components/PublicProfileSync';
 import { ProfileSignatureCloudSync } from './components/ProfileSignatureCloudSync';
+import { ProfileRealtimeSync } from './components/ProfileRealtimeSync';
 
 const InkoriumAppContent: React.FC = () => {
   const { 
@@ -110,6 +111,7 @@ export function App() {
       <InkoriumProvider>
         <PublicProfileSync />
         <ProfileSignatureCloudSync />
+        <ProfileRealtimeSync />
         <InkoriumAppContent />
       </InkoriumProvider>
     </ErrorBoundary>
