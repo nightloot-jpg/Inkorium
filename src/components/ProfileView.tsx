@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { ActivityLog } from './ActivityLog';
 import { AvatarModal } from './AvatarModal';
 import { EditProfileModal } from './EditProfileModal';
+import { RecentProfileVisits } from './RecentProfileVisits';
 import { 
   UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon, 
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
@@ -59,11 +60,20 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     openMusicPlayer,
     canUserViewPhoto,
     profileVisits,
+    recordProfileVisit,
+    openComposeMessage,
     updateTopAmigos
   } = useInkorium();
 
   const profileUser = users.find(u => u.id === selectedUserId) || currentUser;
   const isOwnProfile = profileUser.id === currentUser.id;
+
+  // Track and record profile visit when viewing someone else's profile
+  useEffect(() => {
+    if (!isOwnProfile && profileUser.id && currentUser.id) {
+      recordProfileVisit(profileUser.id);
+    }
+  }, [profileUser.id, isOwnProfile, currentUser.id, recordProfileVisit]);
   const friendsList = getFriendsOf(profileUser.id);
   const alreadyFriend = isFriend(currentUser.id, profileUser.id);
   const pendingOutgoingReq = hasPendingRequest(currentUser.id, profileUser.id);
@@ -268,12 +278,17 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                 )}
               </div>
 
-              <p className="text-xs text-gray-600 font-medium flex items-center gap-2">
+              <p className="text-xs text-gray-600 font-medium flex items-center gap-2 flex-wrap">
                 <span>{userAge} años</span>
                 <span>•</span>
                 <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3 text-gray-400" /> {formatFullLocation(profileUser)}</span>
                 <span>•</span>
                 <span className="text-[#3869A0] font-semibold">{profileUser.situacionSentimental}</span>
+                <span>•</span>
+                <span className="text-gray-700 font-semibold flex items-center gap-1 bg-blue-50/80 px-2 py-0.5 rounded border border-blue-200/60" title="Visitas acumuladas en este perfil">
+                  <Eye className="w-3 h-3 text-[#3869A0]" />
+                  <span>{myProfileVisits.length} {myProfileVisits.length === 1 ? 'visita' : 'visitas'}</span>
+                </span>
               </p>
 
               {/* Status Quote bubble */}
@@ -1335,76 +1350,13 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
             </div>
 
             {/* ================= QUIÉN HA VISTO MI PERFIL (VISITAS AL PERFIL) ================= */}
-            <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2.5">
-              <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-gray-900">
-                  <Eye className="w-3.5 h-3.5 text-[#3869A0]" />
-                  <span>Visitas al perfil</span>
-                </div>
-                <span className="text-[10px] bg-blue-100 text-[#3869A0] font-bold px-1.5 py-0.5 rounded">
-                  {myProfileVisits.length + (isOwnProfile ? 38 : 124)} visitas
-                </span>
-              </div>
-
-              {isOwnProfile ? (
-                <div className="space-y-2">
-                  <p className="text-[11px] text-gray-500">
-                    Amigos que han visto tu perfil recientemente:
-                  </p>
-
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                    {myProfileVisits.length === 0 ? (
-                      <p className="text-[11px] text-gray-400 py-2 text-center">
-                        Aún no tienes visitas registradas hoy.
-                      </p>
-                    ) : (
-                      myProfileVisits.slice(0, 6).map((visit) => (
-                        <div
-                          key={visit.id}
-                          onClick={() => viewUserProfile(visit.visitorId)}
-                          className="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded cursor-pointer transition group"
-                        >
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={visit.visitorAvatar}
-                              alt={visit.visitorName}
-                              className="w-7 h-7 rounded object-cover border border-gray-200 group-hover:border-[#3869A0]"
-                            />
-                            <div>
-                              <span className="font-semibold text-gray-800 group-hover:text-[#3869A0] text-[11px] block">
-                                {visit.visitorName}
-                              </span>
-                              {visit.visitorProvincia && (
-                                <span className="text-[9px] text-gray-400">
-                                  {visit.visitorProvincia}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <span className="text-[10px] text-gray-400">
-                            {visit.fecha}
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[10px] text-gray-400">
-                    <span>🔒 Solo visible por ti</span>
-                    <span className="text-[#3869A0] font-medium">Contador activo</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-2.5 bg-gray-50 rounded border border-gray-100 text-center space-y-1">
-                  <p className="text-[11px] text-gray-600">
-                    Este perfil ha recibido <span className="font-bold text-[#3869A0]">142 visitas</span> de amigos en Inkorium.
-                  </p>
-                  <p className="text-[10px] text-gray-400">
-                    Al visitar su perfil, tu visita queda registrada en su historial.
-                  </p>
-                </div>
-              )}
-            </div>
+            <RecentProfileVisits
+              profileUser={profileUser}
+              isOwnProfile={isOwnProfile}
+              onViewUserProfile={viewUserProfile}
+              onOpenDirectMessage={openComposeMessage}
+              onOpenChat={openChatWith}
+            />
 
             {/* ================= REGISTRO DE ACTIVIDAD (ACTIVITY LOG WIDGET) ================= */}
             <ActivityLog 

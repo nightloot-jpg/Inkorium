@@ -227,7 +227,7 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
             </div>
             <div>
               <h2 className="font-bold text-base text-gray-900 leading-tight">Inkorium</h2>
-              <p className="text-[11px] text-gray-500">Inicia sesión con tu cuenta de Supabase</p>
+              <p className="text-[11px] text-gray-500">Inicia sesión con tu cuenta de Inkorium</p>
             </div>
           </div>
 

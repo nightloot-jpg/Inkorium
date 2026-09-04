@@ -4,8 +4,8 @@ import {
   Home, User as UserIcon, Users, Image as ImageIcon, Mail, 
   Settings, Bell, Volume2, VolumeX, Search, LogOut, Check,
   UserPlus, MessageSquare, Sparkles, Moon, Sun, Palette,
-  Calendar, Building2, Gamepad2, Ticket, Music, GraduationCap,
-  LayoutGrid, ChevronDown, Upload
+  Calendar, Building2, Gamepad2, Ticket, GraduationCap,
+  ChevronDown, Upload
 } from 'lucide-react';
 import { isSoundEnabled, toggleSound } from '../utils/sound';
 
@@ -27,13 +27,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
     viewPhoto,
     setCurrentUserById,
     logout,
-    resetToDefaultData,
-    simulateIncomingMessage,
-    simulateWallComment,
-    simulateFriendRequest,
-    simulatePhotoInteraction,
-    isRealtimeSimulationEnabled,
-    setIsRealtimeSimulationEnabled,
     theme,
     isDarkMode,
     toggleTheme,

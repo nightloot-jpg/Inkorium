@@ -179,7 +179,7 @@ export const AuthPage: React.FC = () => {
     }
 
     if (!regInviteCode.trim() || regInviteCode.trim().length < 4) {
-      setRegError('Inkorium es una red exclusiva por invitación. Introduce un código válido (puedes usar TUENTI-2008).');
+      setRegError('Inkorium es una red exclusiva por invitación. Introduce un código de invitación válido.');
       return;
     }
 
@@ -469,18 +469,10 @@ export const AuthPage: React.FC = () => {
                             type="text"
                             value={regInviteCode}
                             onChange={e => setRegInviteCode(e.target.value.toUpperCase())}
-                            placeholder="Ej: TUENTI-2008"
-                            className="flex-1 p-2 text-xs rounded border border-amber-300 bg-white font-mono uppercase tracking-wider font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#3869A0]"
+                            placeholder="Introduce tu código (Ej: TUENTI-8921)"
+                            className="w-full p-2 text-xs rounded border border-amber-300 bg-white font-mono uppercase tracking-wider font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#3869A0]"
                             required
                           />
-                          <button
-                            type="button"
-                            onClick={() => setRegInviteCode('TUENTI-2008')}
-                            className="px-2.5 py-1 text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded cursor-pointer transition shrink-0"
-                            title="Usar invitación retro de prueba"
-                          >
-                            Usar pase demo
-                          </button>
                         </div>
                         <p className="text-[10px] text-gray-500">
                           Inkorium es un club exclusivo. Para registrarte necesitas el código que te dio un amigo.

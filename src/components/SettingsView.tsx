@@ -33,7 +33,6 @@ export const SettingsView: React.FC = () => {
     viewPhoto,
     setActiveTab,
     logout,
-    resetToDefaultData,
     theme,
     isDarkMode,
     setTheme,

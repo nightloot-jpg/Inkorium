@@ -92,7 +92,7 @@ interface InkoriumContextType {
   recordProfileVisit: (targetUserId: string) => void;
   updateTopAmigos: (friendIds: string[]) => void;
   unreadMessagesCount: number; unreadNotificationsCount: number; pendingRequestsCount: number;
-  isRealtimeSimulationEnabled: boolean; isLoggedIn: boolean;
+  isLoggedIn: boolean;
   theme: ThemeMode; isDarkMode: boolean; setTheme: (theme: ThemeMode) => void; toggleTheme: () => void;
   // Music System
   currentTrack: Track | null; isMusicPlaying: boolean; musicPosition: number; musicDuration: number;
@@ -136,8 +136,7 @@ interface InkoriumContextType {
   isUserBlocked: (targetUserId: string) => boolean;
   logUserActivity: (activity: Omit<UserActivity, 'id' | 'timestamp'>) => void; deleteUserActivity: (activityId: string) => void; getUserActivities: (userId: string) => UserActivity[];
   pushNotification: (notif: InkoriumNotification) => void; dismissToast: (toastId: string) => void; markNotificationAsRead: (notifId: string) => void;
-  markAllNotificationsAsRead: () => void; deleteNotification: (notifId: string) => void; setIsRealtimeSimulationEnabled: (enabled: boolean) => void;
-  simulateIncomingMessage: () => void; simulateWallComment: () => void; simulateFriendRequest: () => void; simulatePhotoInteraction: () => void;
+  markAllNotificationsAsRead: () => void; deleteNotification: (notifId: string) => void;
   updateUserData: (data: Partial<User>) => void; resetToDefaultData: () => void; registerNewUser: (nombre: string, apellidos: string, email: string, sexo: 'h' | 'm', provincia: string, fnac: string, pais?: string, ciudad?: string) => void;
 }
 
@@ -347,13 +346,6 @@ const addDeletedMessageIds = (ids: string[]) => {
   const [toasts, setToasts] = useState<InkoriumNotification[]>([]);
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>(INITIAL_ACCESS_LOGS);
   const [activities, setActivities] = useState<UserActivity[]>(INITIAL_ACTIVITIES);
-  const [isRealtimeSimulationEnabled, setIsRealtimeSimulationEnabledState] = useState<boolean>(() => {
-    if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem('inkorium:realtime_sim');
-      if (saved !== null) return saved === 'true';
-    }
-    return false;
-  });
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(storedLoggedIn);
   const [activeTab, setActiveTabState] = useState<InkoriumContextType['activeTab']>('inicio');
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -1811,13 +1803,6 @@ const addDeletedMessageIds = (ids: string[]) => {
     }
   }, [currentUserId]);
 
-  const setIsRealtime = useCallback((enabled: boolean) => {
-    setIsRealtimeSimulationEnabledState(enabled);
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('inkorium:realtime_sim', String(enabled));
-    }
-  }, []);
-
   const sendChatReadReceipt = useCallback((targetUserId: string, messageIds?: string[]) => {
     if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
     const now = Date.now();
@@ -2121,21 +2106,25 @@ const addDeletedMessageIds = (ids: string[]) => {
   const recordProfileVisit = useCallback((targetUserId: string) => {
     if (!currentUserId || !targetUserId || normalizeUserId(targetUserId) === normalizeUserId(currentUserId)) return;
     const authorName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const now = Date.now();
     const newVisit: ProfileVisit = {
-      id: `vis-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: `vis-${now}-${Math.random().toString(36).slice(2, 6)}`,
       visitorId: currentUserId,
       visitorName: authorName,
       visitorAvatar: currentUser.avatar,
       visitorProvincia: currentUser.provincia,
       visitedUserId: targetUserId,
       fecha: 'Ahora mismo',
-      timestamp: Date.now()
+      timestamp: now
     };
 
     setProfileVisits(prev => {
-      // Avoid duplicate visits in the same 30 mins
-      const filtered = prev.filter(v => !(v.visitorId === currentUserId && v.visitedUserId === targetUserId && (Date.now() - v.timestamp < 1000 * 60 * 30)));
-      const updated = [newVisit, ...filtered].slice(0, 50);
+      // Avoid duplicated entries for the same visitor on this profile: bring latest visit to top
+      const filtered = prev.filter(v => !(
+        (normalizeUserId(v.visitorId) === normalizeUserId(currentUserId) || v.visitorId === currentUserId) &&
+        (normalizeUserId(v.visitedUserId) === normalizeUserId(targetUserId) || v.visitedUserId === targetUserId)
+      ));
+      const updated = [newVisit, ...filtered].slice(0, 100);
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('inkorium:profile_visits', JSON.stringify(updated));
       }
@@ -2860,7 +2849,7 @@ const addDeletedMessageIds = (ids: string[]) => {
         console.warn('Silent private message backend sync error:', err);
       }
     })();
-  }, [currentUserId, currentUser, users, isRealtimeSimulationEnabled, pushNotification]);
+  }, [currentUserId, currentUser, users, pushNotification]);
 
   const markMessageAsRead = useCallback((messageId: string) => {
     setMessages(prev => {
@@ -3401,13 +3390,6 @@ const addDeletedMessageIds = (ids: string[]) => {
     setFeed(INITIAL_FEED);
   }, []);
 
-  // Realtime simulation events (disabled to prevent mock injections)
-  const simulateIncomingMessage = useCallback(() => {}, []);
-  const simulateWallComment = useCallback(() => {}, []);
-
-  const simulateFriendRequest = useCallback(() => {}, []);
-  const simulatePhotoInteraction = useCallback(() => {}, []);
-
   // Dynamic counts for current user
   const isMessageForCurrentUser = (m: PrivateMessage) => {
     if (!currentUserId) return false;
@@ -3433,7 +3415,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       notifications, toasts, accessLogs, activities, activeChatWindows, activeTab, selectedUserId, selectedPhotoId, selectedAlbumId,
       composeRecipientId,
       unreadMessagesCount, unreadNotificationsCount, pendingRequestsCount,
-      isRealtimeSimulationEnabled, isLoggedIn,
+      isLoggedIn,
       theme, isDarkMode, setTheme, toggleTheme,
       // Music System
       currentTrack, isMusicPlaying, musicPosition, musicDuration,
@@ -3470,8 +3452,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       blockedUserIds, blockUser, unblockUser, isUserBlocked,
       logUserActivity, deleteUserActivity, getUserActivities,
       pushNotification, dismissToast, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification,
-      setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage, simulateWallComment,
-      simulateFriendRequest, simulatePhotoInteraction, updateUserData, resetToDefaultData, registerNewUser
+      updateUserData, resetToDefaultData, registerNewUser
     }}>
       {children}
     </InkoriumContext.Provider>

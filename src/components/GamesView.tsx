@@ -201,6 +201,14 @@ export const GamesView: React.FC = () => {
 
     canvas.addEventListener('click', handleCanvasClick);
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleCanvasClick();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
     const loop = (timestamp: number) => {
       if (timestamp - lastTime > speed) {
         blockX += direction;
@@ -225,6 +233,7 @@ export const GamesView: React.FC = () => {
     return () => {
       cancelAnimationFrame(animId);
       canvas.removeEventListener('click', handleCanvasClick);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [activeGame, stackerPlaying]);
 

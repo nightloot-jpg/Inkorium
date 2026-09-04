@@ -333,7 +333,7 @@ export const PeopleSearch: React.FC = () => {
                 </p>
                 <p className="text-gray-400 text-xs max-w-md mx-auto">
                   {otherUsersInDb.length === 0
-                    ? 'Los perfiles que se registren en Supabase aparecerán aquí automáticamente.'
+                    ? 'Los perfiles de tus amigos que se unan a Inkorium aparecerán aquí automáticamente.'
                     : 'Prueba a limpiar los filtros o buscar con otros términos como el nombre de usuario o ciudad.'}
                 </p>
                 {otherUsersInDb.length > 0 && (

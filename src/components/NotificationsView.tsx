@@ -3,10 +3,10 @@ import { useInkorium } from '../context/InkoriumContext';
 import { 
   Bell, UserPlus, Image as ImageIcon, MessageSquare, Tag, 
   Heart, Mail, Check, CheckCheck, Trash2, Search, Filter, 
-  Sparkles, ExternalLink, ShieldAlert, ArrowRight, UserCheck, 
-  Clock, RefreshCw, X, MessageCircle
+  ExternalLink, ShieldAlert, ArrowRight, UserCheck, 
+  Clock, X, MessageCircle
 } from 'lucide-react';
-import { InkoriumNotification, UserPresence } from '../types';
+import { InkoriumNotification } from '../types';
 
 type NotificationFilter = 'todas' | 'peticiones' | 'fotos' | 'tablon' | 'no_leidas';
 
@@ -69,7 +69,6 @@ export const NotificationsView: React.FC = () => {
     viewUserProfile,
     viewPhoto,
     setActiveTab,
-    pushNotification,
     unreadNotificationsCount,
     pendingRequestsCount
   } = useInkorium();
@@ -157,69 +156,6 @@ export const NotificationsView: React.FC = () => {
     }
   };
 
-  // Interactive Quick Simulations to easily test
-  const handleSimulatePhotoComment = () => {
-    const randomUser = users.find(u => u.id !== currentUser.id) || users[1];
-    const newNotif: InkoriumNotification = {
-      id: `notif-${Date.now()}`,
-      userId: currentUser.id,
-      fromUserId: randomUser.id,
-      fromUserName: `${randomUser.nombre} ${randomUser.apellidos}`.trim(),
-      fromUserAvatar: randomUser.avatar,
-      tipo: 'foto',
-      mensaje: 'ha comentado en tu foto del álbum "Verano":',
-      detalle: '¡Vaya fotaza! Qué envidia de vacaciones 🌊🏖️',
-      enlace: 'fotos',
-      targetId: 'photo-1',
-      targetPhotoUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&auto=format&fit=crop&q=80',
-      fecha: 'Ahora mismo',
-      leido: false
-    };
-    pushNotification(newNotif);
-    showFeedback(`✨ Notificación simulada de comentario en foto recibida de ${randomUser.nombre}`);
-  };
-
-  const handleSimulateWallMention = () => {
-    const randomUser = users.find(u => u.id !== currentUser.id) || users[2];
-    const newNotif: InkoriumNotification = {
-      id: `notif-${Date.now()}`,
-      userId: currentUser.id,
-      fromUserId: randomUser.id,
-      fromUserName: `${randomUser.nombre} ${randomUser.apellidos}`.trim(),
-      fromUserAvatar: randomUser.avatar,
-      tipo: 'tablon',
-      mensaje: 'ha dejado una nueva firma en tu tablón:',
-      detalle: '¡Hey! A ver si nos vemos pronto y nos tomamos algo por el centro 🍺🎉',
-      enlace: 'perfil',
-      targetId: 'wall-new',
-      fecha: 'Ahora mismo',
-      leido: false
-    };
-    pushNotification(newNotif);
-    showFeedback(`✨ Notificación simulada de firma en tablón recibida de ${randomUser.nombre}`);
-  };
-
-  const handleSimulateFriendRequest = () => {
-    const randomUser = users.find(u => u.id !== currentUser.id && u.id !== 'user-laura' && u.id !== 'user-carlos') || users[3] || users[1];
-    const reqId = `req-${Date.now()}`;
-    const newNotif: InkoriumNotification = {
-      id: `notif-${Date.now()}`,
-      userId: currentUser.id,
-      fromUserId: randomUser.id,
-      fromUserName: `${randomUser.nombre} ${randomUser.apellidos}`.trim(),
-      fromUserAvatar: randomUser.avatar,
-      tipo: 'peticion',
-      mensaje: 'te ha enviado una solicitud de amistad.',
-      enlace: 'gente',
-      fecha: 'Ahora mismo',
-      leido: false,
-      estadoPeticion: 'pendiente',
-      targetId: reqId
-    };
-    pushNotification(newNotif);
-    showFeedback(`✨ Solicitud de amistad recibida de ${randomUser.nombre}`);
-  };
-
   return (
     <div className="w-full max-w-[1720px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-6 lg:px-8 py-4">
       {/* Toast feedback banner */}
@@ -280,37 +216,6 @@ export const NotificationsView: React.FC = () => {
               className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-300 rounded text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
             >
               <span>Ajustes de avisos</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Quick Simulation Bar (interactive helper) */}
-        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs bg-gray-50/70 p-2.5 rounded border">
-          <div className="flex items-center gap-1.5 text-gray-600 font-medium">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span className="text-[11px]">Probar eventos retro en tiempo real:</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              onClick={handleSimulateFriendRequest}
-              className="px-2 py-1 bg-white hover:bg-amber-50 border border-amber-300 text-amber-800 rounded text-[11px] font-semibold flex items-center gap-1 shadow-2xs cursor-pointer transition"
-            >
-              <UserPlus className="w-3 h-3 text-amber-600" />
-              <span>+ Petición amistad</span>
-            </button>
-            <button
-              onClick={handleSimulatePhotoComment}
-              className="px-2 py-1 bg-white hover:bg-blue-50 border border-blue-300 text-blue-800 rounded text-[11px] font-semibold flex items-center gap-1 shadow-2xs cursor-pointer transition"
-            >
-              <ImageIcon className="w-3 h-3 text-[#3869A0]" />
-              <span>+ Comentario foto</span>
-            </button>
-            <button
-              onClick={handleSimulateWallMention}
-              className="px-2 py-1 bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-800 rounded text-[11px] font-semibold flex items-center gap-1 shadow-2xs cursor-pointer transition"
-            >
-              <MessageCircle className="w-3 h-3 text-emerald-600" />
-              <span>+ Mención tablón</span>
             </button>
           </div>
         </div>

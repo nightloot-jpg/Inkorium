@@ -16,23 +16,7 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({ isOpen, onCl
   const [isSuccessToast, setIsSuccessToast] = useState(false);
 
   const availableCount = currentUser.invitacionesDisponibles ?? 10;
-  const userInvitations: UserInvitation[] = currentUser.invitacionesEnviadas || [
-    {
-      id: 'inv-demo-1',
-      code: 'TUENTI-9842',
-      email: 'marcos.sanz@gmail.com',
-      creada: 'Hace 3 días',
-      estado: 'usada',
-      usadaPorNombre: 'Marcos Sanz'
-    },
-    {
-      id: 'inv-demo-2',
-      code: 'TUENTI-1108',
-      email: 'patri.morales@hotmail.com',
-      creada: 'Ayer',
-      estado: 'pendiente'
-    }
-  ];
+  const userInvitations: UserInvitation[] = currentUser.invitacionesEnviadas || [];
 
   if (!isOpen) return null;
 
@@ -168,7 +152,12 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({ isOpen, onCl
               Historial de invitaciones enviadas ({userInvitations.length})
             </h4>
 
-            <div className="space-y-2 max-h-48 overflow-y-auto">
+            {userInvitations.length === 0 ? (
+              <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[#0e1726] rounded border border-dashed border-gray-200 dark:border-[#1d2b40]">
+                Aún no has enviado ninguna invitación. Introduce arriba el correo de tus amigos para enviarles su código exclusivo.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto">
               {userInvitations.map(inv => (
                 <div
                   key={inv.id}
@@ -215,6 +204,7 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({ isOpen, onCl
                 </div>
               ))}
             </div>
+            )}
           </div>
         </div>
 
