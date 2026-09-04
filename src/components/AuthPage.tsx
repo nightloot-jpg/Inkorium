@@ -3,7 +3,7 @@ import { useInkorium } from '../context/InkoriumContext';
 import { 
   LogIn, UserPlus, Sparkles, MessageSquare, 
   Users, ShieldCheck, AlertCircle, CheckCircle2,
-  Camera, Lock, Mail, Check, X, ShieldAlert, KeyRound, Globe, MapPin
+  Camera, Lock, Mail, Check, X, ShieldAlert, KeyRound, Globe, MapPin, Ticket
 } from 'lucide-react';
 import { COUNTRIES_LIST, getZonesForCountry } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -41,8 +41,17 @@ export const AuthPage: React.FC = () => {
   const [regCiudad, setRegCiudad] = useState('');
   const [regSexo, setRegSexo] = useState<'h' | 'm'>('h');
   const [regTos, setRegTos] = useState(true);
+  const [regInviteCode, setRegInviteCode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('invitacion') || params.get('codigo') || 'TUENTI-2008';
+    }
+    return 'TUENTI-2008';
+  });
   const [regError, setRegError] = useState('');
   const [regTouched, setRegTouched] = useState<Record<string, boolean>>({});
+
+  const isInviteValid = regInviteCode.trim().length >= 4;
 
   const availableRegZones = useMemo(() => {
     return getZonesForCountry(regPais);
@@ -166,6 +175,11 @@ export const AuthPage: React.FC = () => {
 
     if (!birthDateValidation.isValid) {
       setRegError(birthDateValidation.message || 'Fecha de nacimiento no válida.');
+      return;
+    }
+
+    if (!regInviteCode.trim() || regInviteCode.trim().length < 4) {
+      setRegError('Inkorium es una red exclusiva por invitación. Introduce un código válido (puedes usar TUENTI-2008).');
       return;
     }
 
@@ -435,6 +449,44 @@ export const AuthPage: React.FC = () => {
                     )}
 
                     <form onSubmit={handleRegisterSubmit} className="space-y-3">
+                      {/* Código de Invitación Exclusiva (Tuenti Nostalgia) */}
+                      <div className="p-3 bg-gradient-to-r from-amber-50 to-blue-50 border border-amber-200 rounded-md space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="font-bold text-gray-800 text-[11px] flex items-center gap-1.5">
+                            <Ticket className="w-4 h-4 text-amber-600" />
+                            <span>Código de Invitación Exclusiva:</span>
+                          </label>
+                          {isInviteValid ? (
+                            <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              <Check className="w-3 h-3" /> Invitación Válida
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-amber-700 font-medium">Requerido</span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={regInviteCode}
+                            onChange={e => setRegInviteCode(e.target.value.toUpperCase())}
+                            placeholder="Ej: TUENTI-2008"
+                            className="flex-1 p-2 text-xs rounded border border-amber-300 bg-white font-mono uppercase tracking-wider font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#3869A0]"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setRegInviteCode('TUENTI-2008')}
+                            className="px-2.5 py-1 text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded cursor-pointer transition shrink-0"
+                            title="Usar invitación retro de prueba"
+                          >
+                            Usar pase demo
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-gray-500">
+                          Inkorium es un club exclusivo. Para registrarte necesitas el código que te dio un amigo.
+                        </p>
+                      </div>
+
                       {/* Nombre y Apellidos */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>

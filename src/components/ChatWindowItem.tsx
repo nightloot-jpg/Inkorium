@@ -2,7 +2,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMe
 import { 
   Minus, X, Send, Smile, ArrowDown, Loader2, CheckCheck, Clock, 
   UserCheck, Image as ImageIcon, Zap, Heart, Maximize2, Images, 
-  MessageSquare, ChevronLeft, ChevronRight, Download, FileText, Paperclip, File, Archive, Music 
+  MessageSquare, ChevronLeft, ChevronRight, Download, FileText, Paperclip, File, Archive, Music, Ban 
 } from 'lucide-react';
 import { User, ChatWindow, ChatMessage, UserPresence } from '../types';
 import { getFullConversation, formatChatDateDivider, normalizeUserId, subscribeCrossTabEvents } from '../lib/chatHistory';
@@ -34,7 +34,8 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   onOpenProfile,
   getUserPresenceDot,
 }) => {
-  const { sendChatMessage, sendChatNudge, reactToChatMessage, sendChatTyping, sendChatReadReceipt } = useInkorium();
+  const { sendChatMessage, sendChatNudge, reactToChatMessage, sendChatTyping, sendChatReadReceipt, isUserBlocked, blockUser, unblockUser } = useInkorium();
+  const isBlocked = isUserBlocked(targetUser.id);
   const [allMessages, setAllMessages] = useState<ChatMessage[]>(() => {
     return getFullConversation(currentUser.id, targetUser.id, `${targetUser.nombre} ${targetUser.apellidos}`);
   });
@@ -567,6 +568,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
 
   const handleSend = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (isBlocked) return;
     const text = inputText.trim();
     const hasImage = Boolean(imagePreview);
     const hasFile = Boolean(attachedFile);
@@ -593,7 +595,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   };
 
   const handleSendNudge = () => {
-    if (!currentUser.id || !targetUser.id) return;
+    if (isBlocked || !currentUser.id || !targetUser.id) return;
     sendChatNudge(targetUser.id);
   };
 
@@ -885,15 +887,38 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
               </span>
             )}
           </button>
-          {/* Quick Nudge button in header */}
+          {/* Block / Unblock User */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              if (isBlocked) {
+                unblockUser(targetUser.id);
+              } else {
+                if (window.confirm(`¿Bloquear a ${targetUser.nombre} en el chat? No podrás enviar ni recibir mensajes de este usuario.`)) {
+                  blockUser(targetUser.id);
+                }
+              }
+            }}
+            className={`p-1 rounded cursor-pointer transition ${
+              isBlocked 
+                ? 'text-rose-300 bg-rose-900/60 hover:bg-rose-900/80 hover:text-white' 
+                : 'text-white/75 hover:text-rose-200 hover:bg-black/20'
+            }`}
+            title={isBlocked ? 'Desbloquear en el chat' : 'Bloquear en el chat'}
+          >
+            <Ban className="w-3.5 h-3.5" />
+          </button>
+          {/* Quick Nudge button in header */}
+          <button
+            type="button"
+            disabled={isBlocked}
+            onClick={(e) => {
+              e.stopPropagation();
               handleSendNudge();
             }}
-            className="p-1 text-amber-300 hover:text-white rounded hover:bg-black/20 cursor-pointer transition"
-            title="¡Enviar zumbido!"
+            className="p-1 text-amber-300 hover:text-white rounded hover:bg-black/20 cursor-pointer transition disabled:opacity-40 disabled:cursor-not-allowed"
+            title={isBlocked ? 'No se pueden enviar zumbidos a un usuario bloqueado' : '¡Enviar zumbido!'}
           >
             <Zap className="w-3.5 h-3.5 fill-amber-300" />
           </button>
@@ -1167,94 +1192,113 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
                 </div>
               )}
 
-              {/* Quick Retro Replies Chips */}
-              <div className="px-2 py-1 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 flex items-center gap-1 overflow-x-auto no-scrollbar">
-                {['¡Hola! ^^', '¿Qué tal?', 'Jajaja XD', 'Hablamos luego!'].map((quick) => (
-                  <button
-                    key={quick}
-                    type="button"
-                    onClick={() => {
-                      setInputText(quick);
-                    }}
-                    className="whitespace-nowrap bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 hover:border-blue-300 text-gray-600 dark:text-gray-300 hover:text-[#3869A0] text-[10px] px-1.5 py-0.5 rounded cursor-pointer transition"
-                  >
-                    {quick}
-                  </button>
-                ))}
-              </div>
-
-              {/* Chat Input Bar */}
-              <form
-                onSubmit={handleSend}
-                onPaste={handlePaste}
-                className="p-1.5 bg-white dark:bg-[#0e1726] border-t border-gray-200 dark:border-slate-800 flex items-center gap-1.5 relative"
-              >
-                {/* Emoticon Picker Toggle */}
-                <div className="relative">
+              {/* Block notice OR Quick Retro Replies & Input Bar */}
+              {isBlocked ? (
+                <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border-t border-rose-200 dark:border-rose-900/60 flex items-center justify-between gap-2 text-rose-800 dark:text-rose-200">
+                  <div className="flex items-center gap-2 text-xs">
+                    <Ban className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                    <span>Has bloqueado a <strong>{targetUser.nombre}</strong>.</span>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => setEmoticonOpen(!emoticonOpen)}
-                    className={`p-1 rounded text-gray-500 dark:text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition ${
-                      emoticonOpen ? 'text-[#3869A0] bg-blue-50 dark:bg-blue-950/40' : ''
-                    }`}
-                    title="Insertar emoticonos retro y emojis"
+                    onClick={() => unblockUser(targetUser.id)}
+                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-semibold shadow-xs transition cursor-pointer"
                   >
-                    <Smile className="w-4 h-4" />
+                    Desbloquear
                   </button>
-
-                  {emoticonOpen && (
-                    <EmoticonPicker
-                      onSelect={handleInsertEmoticon}
-                      onClose={() => setEmoticonOpen(false)}
-                    />
-                  )}
                 </div>
+              ) : (
+                <>
+                  {/* Quick Retro Replies Chips */}
+                  <div className="px-2 py-1 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 flex items-center gap-1 overflow-x-auto no-scrollbar">
+                    {['¡Hola! ^^', '¿Qué tal?', 'Jajaja XD', 'Hablamos luego!'].map((quick) => (
+                      <button
+                        key={quick}
+                        type="button"
+                        onClick={() => {
+                          setInputText(quick);
+                        }}
+                        className="whitespace-nowrap bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 hover:border-blue-300 text-gray-600 dark:text-gray-300 hover:text-[#3869A0] text-[10px] px-1.5 py-0.5 rounded cursor-pointer transition"
+                      >
+                        {quick}
+                      </button>
+                    ))}
+                  </div>
 
-                {/* Photo / File Attachment Button */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingImage}
-                  className="p-1 rounded text-gray-500 dark:text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition disabled:opacity-50"
-                  title="Enviar foto o archivo"
-                >
-                  {isUploadingImage ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#3869A0]" />
-                  ) : (
-                    <ImageIcon className="w-4 h-4" />
-                  )}
-                </button>
+                  {/* Chat Input Bar */}
+                  <form
+                    onSubmit={handleSend}
+                    onPaste={handlePaste}
+                    className="p-1.5 bg-white dark:bg-[#0e1726] border-t border-gray-200 dark:border-slate-800 flex items-center gap-1.5 relative"
+                  >
+                    {/* Emoticon Picker Toggle */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setEmoticonOpen(!emoticonOpen)}
+                        className={`p-1 rounded text-gray-500 dark:text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition ${
+                          emoticonOpen ? 'text-[#3869A0] bg-blue-50 dark:bg-blue-950/40' : ''
+                        }`}
+                        title="Insertar emoticonos retro y emojis"
+                      >
+                        <Smile className="w-4 h-4" />
+                      </button>
 
-                {/* Zumbido (Nudge) Button */}
-                <button
-                  type="button"
-                  onClick={handleSendNudge}
-                  className="p-1 rounded text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 cursor-pointer transition"
-                  title="¡Enviar zumbido! (hace vibrar la pantalla con sonido)"
-                >
-                  <Zap className="w-4 h-4 fill-amber-500" />
-                </button>
+                      {emoticonOpen && (
+                        <EmoticonPicker
+                          onSelect={handleInsertEmoticon}
+                          onClose={() => setEmoticonOpen(false)}
+                        />
+                      )}
+                    </div>
 
-                {/* Text input */}
-                <input
-                  type="text"
-                  placeholder="Escribe un mensaje o pega una foto..."
-                  value={inputText}
-                  onChange={handleInputChange}
-                  onFocus={handleUserInteraction}
-                  className="flex-1 text-xs p-1.5 rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-[#3869A0] focus:ring-1 focus:ring-[#3869A0]"
-                />
+                    {/* Photo / File Attachment Button */}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingImage}
+                      className="p-1 rounded text-gray-500 dark:text-gray-400 hover:text-[#3869A0] dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition disabled:opacity-50"
+                      title="Enviar foto o archivo"
+                    >
+                      {isUploadingImage ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-[#3869A0]" />
+                      ) : (
+                        <ImageIcon className="w-4 h-4" />
+                      )}
+                    </button>
 
-                {/* Send button */}
-                <button
-                  type="submit"
-                  disabled={!inputText.trim() && !imagePreview && !attachedFile}
-                  className="p-1.5 bg-[#3869A0] text-white rounded hover:bg-[#2c537f] disabled:bg-gray-300 dark:disabled:bg-slate-700 transition cursor-pointer disabled:cursor-not-allowed shadow-2xs"
-                  title="Enviar mensaje"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </form>
+                    {/* Zumbido (Nudge) Button */}
+                    <button
+                      type="button"
+                      onClick={handleSendNudge}
+                      className="p-1 rounded text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 cursor-pointer transition"
+                      title="¡Enviar zumbido! (hace vibrar la pantalla con sonido)"
+                    >
+                      <Zap className="w-4 h-4 fill-amber-500" />
+                    </button>
+
+                    {/* Text input */}
+                    <input
+                      type="text"
+                      placeholder="Escribe un mensaje o pega una foto..."
+                      value={inputText}
+                      onChange={handleInputChange}
+                      onFocus={handleUserInteraction}
+                      className="flex-1 text-xs p-1.5 rounded border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-[#3869A0] focus:ring-1 focus:ring-[#3869A0]"
+                    />
+
+                    {/* Send button */}
+                    <button
+                      type="submit"
+                      disabled={!inputText.trim() && !imagePreview && !attachedFile}
+                      className="p-1.5 bg-[#3869A0] text-white rounded hover:bg-[#2c537f] disabled:bg-gray-300 dark:disabled:bg-slate-700 transition cursor-pointer disabled:cursor-not-allowed shadow-2xs"
+                      title="Enviar mensaje"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                </>
+              )}
             </>
           )}
         </>

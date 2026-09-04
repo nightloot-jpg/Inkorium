@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag, PhotoPrivacy } from '../types';
+import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag, PhotoPrivacy, SocialEvent, EventAttendanceStatus, EventAttendee, EventComment, ProfileVisit, TuentiPage, PagePost, UserInvitation, GameScore } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
 import { fetchPhotos, insertPhoto, addPhotoTagApi, removePhotoTagApi, updatePhotoPrivacyApi, addPhotoCommentApi, likePhotoApi } from '../lib/photosApi';
 import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WALL_COMMENTS, INITIAL_FRIENDSHIPS, INITIAL_FRIEND_REQUESTS, INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_ACCESS_LOGS, INITIAL_ACTIVITIES } from '../data/mockData';
+import { INITIAL_EVENTS, INITIAL_PAGES, INITIAL_GAME_SCORES } from '../data/mockEventsAndPages';
 import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
 import { musicAudioEngine } from '../utils/audioEngine';
-import { appendMessageToConversation, updateMessageInConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents, markConversationAsRead, applyReadReceiptsToConversation } from '../lib/chatHistory';
+import { appendMessageToConversation, updateMessageInConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents, markConversationAsRead, applyReadReceiptsToConversation, getStoredBlockedUserIds, saveStoredBlockedUserIds } from '../lib/chatHistory';
 import { playMessageSound, playNotificationChime, playNudgeSound } from '../utils/sound';
 import { RealtimeManager } from '../lib/realtimeManager';
 
@@ -53,9 +54,29 @@ interface InkoriumContextType {
   currentUser: User; users: User[]; photos: Photo[]; albums: Album[]; feed: FeedItem[]; wallComments: WallComment[];
   messages: PrivateMessage[]; friendRequests: FriendRequest[]; friendships: Friendship[]; chatMessages: ChatMessage[];
   notifications: InkoriumNotification[]; toasts: InkoriumNotification[]; accessLogs: AccessLog[]; activities: UserActivity[];
-  activeChatWindows: ChatWindow[]; activeTab: 'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'notificaciones' | 'ajustes' | 'musica';
+  activeChatWindows: ChatWindow[]; activeTab: 'inicio' | 'perfil' | 'gente' | 'fotos' | 'mensajes' | 'notificaciones' | 'ajustes' | 'musica' | 'eventos' | 'paginas' | 'juegos';
   selectedUserId: string; selectedPhotoId: string | null; selectedAlbumId: string | null;
   composeRecipientId: string | null;
+  // Retro Tuenti Features
+  events: SocialEvent[];
+  pages: TuentiPage[];
+  profileVisits: ProfileVisit[];
+  gameScores: GameScore[];
+  selectedEventId: string | null;
+  setSelectedEventId: (id: string | null) => void;
+  selectedPageId: string | null;
+  setSelectedPageId: (id: string | null) => void;
+  isInvitationsModalOpen: boolean;
+  setIsInvitationsModalOpen: (open: boolean) => void;
+  createEvent: (eventData: Omit<SocialEvent, 'id' | 'creadorId' | 'creadorNombre' | 'creadorAvatar' | 'asistentes' | 'comentarios'>) => string;
+  rsvpEvent: (eventId: string, status: EventAttendanceStatus) => void;
+  commentEvent: (eventId: string, text: string) => void;
+  deleteEvent: (eventId: string) => void;
+  createPage: (pageData: Omit<TuentiPage, 'id' | 'creadorId' | 'seguidores' | 'fechaCreacion' | 'posts'>) => string;
+  toggleFollowPage: (pageId: string) => void;
+  postPageComment: (pageId: string, text: string, fotoUrl?: string) => void;
+  recordProfileVisit: (targetUserId: string) => void;
+  updateTopAmigos: (friendIds: string[]) => void;
   unreadMessagesCount: number; unreadNotificationsCount: number; pendingRequestsCount: number;
   isRealtimeSimulationEnabled: boolean; isLoggedIn: boolean;
   theme: ThemeMode; isDarkMode: boolean; setTheme: (theme: ThemeMode) => void; toggleTheme: () => void;
@@ -95,6 +116,10 @@ interface InkoriumContextType {
   sendChatTyping: (targetUserId: string, isTyping: boolean) => void;
   sendChatReadReceipt: (targetUserId: string, messageIds?: string[]) => void;
   setChatEstado: (estado: '1' | '0') => void;
+  blockedUserIds: string[];
+  blockUser: (targetUserId: string) => void;
+  unblockUser: (targetUserId: string) => void;
+  isUserBlocked: (targetUserId: string) => boolean;
   logUserActivity: (activity: Omit<UserActivity, 'id' | 'timestamp'>) => void; deleteUserActivity: (activityId: string) => void; getUserActivities: (userId: string) => UserActivity[];
   pushNotification: (notif: InkoriumNotification) => void; dismissToast: (toastId: string) => void; markNotificationAsRead: (notifId: string) => void;
   markAllNotificationsAsRead: () => void; deleteNotification: (notifId: string) => void; setIsRealtimeSimulationEnabled: (enabled: boolean) => void;
@@ -321,7 +346,97 @@ const addDeletedMessageIds = (ids: string[]) => {
   const [composeRecipientId, setComposeRecipientId] = useState<string | null>(null);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+  const [isInvitationsModalOpen, setIsInvitationsModalOpen] = useState(false);
+
+  // Retro Tuenti Features State
+  const [events, setEvents] = useState<SocialEvent[]>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:events');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return INITIAL_EVENTS;
+  });
+
+  const [pages, setPages] = useState<TuentiPage[]>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:pages');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return INITIAL_PAGES;
+  });
+
+  const [profileVisits, setProfileVisits] = useState<ProfileVisit[]>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:profile_visits');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {}
+      }
+    }
+    return [
+      {
+        id: 'vis-1',
+        visitorId: 'user-laura',
+        visitorName: 'Laura Gómez',
+        visitorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
+        visitorProvincia: 'Madrid',
+        visitedUserId: storedUserId || 'user-nightloot',
+        fecha: 'Hoy a las 12:45',
+        timestamp: Date.now() - 1000 * 60 * 45
+      },
+      {
+        id: 'vis-2',
+        visitorId: 'user-carlos',
+        visitorName: 'Carlos Ruiz',
+        visitorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+        visitorProvincia: 'Madrid',
+        visitedUserId: storedUserId || 'user-nightloot',
+        fecha: 'Ayer a las 23:10',
+        timestamp: Date.now() - 1000 * 60 * 60 * 14
+      },
+      {
+        id: 'vis-3',
+        visitorId: 'user-elena',
+        visitorName: 'Elena Martínez',
+        visitorAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&auto=format&fit=crop&q=80',
+        visitorProvincia: 'Madrid',
+        visitedUserId: storedUserId || 'user-nightloot',
+        fecha: 'Hace 2 días',
+        timestamp: Date.now() - 1000 * 60 * 60 * 48
+      }
+    ];
+  });
+
+  const [gameScores, setGameScores] = useState<GameScore[]>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:game_scores');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return INITIAL_GAME_SCORES;
+  });
   const [activeChatWindows, setActiveChatWindows] = useState<ChatWindow[]>([]);
+  const [blockedUserIds, setBlockedUserIds] = useState<string[]>(() => {
+    return getStoredBlockedUserIds(storedUserId || '');
+  });
 
   // Dark/Light Theme state with LocalStorage persistence
   const [theme, setThemeState] = useState<ThemeMode>(() => {
@@ -385,6 +500,27 @@ const addDeletedMessageIds = (ids: string[]) => {
   const toggleTheme = useCallback(() => {
     setThemeState(prev => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
+
+  // Sync blocked users for current user from localStorage & server
+  useEffect(() => {
+    if (currentUserId) {
+      setBlockedUserIds(getStoredBlockedUserIds(currentUserId));
+      fetch(`/api/chat-blocks?userId=${encodeURIComponent(currentUserId)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && Array.isArray(data.blockedUserIds)) {
+            setBlockedUserIds(prev => {
+              const merged = Array.from(new Set([...prev, ...data.blockedUserIds]));
+              saveStoredBlockedUserIds(currentUserId, merged);
+              return merged;
+            });
+          }
+        })
+        .catch(() => null);
+    } else {
+      setBlockedUserIds([]);
+    }
+  }, [currentUserId]);
 
   // ==========================================
   // MUSIC PLAYER STATE & CONTROLS
@@ -1339,7 +1475,8 @@ const addDeletedMessageIds = (ids: string[]) => {
         const { message, senderUserId } = event.payload;
         const normCurrentUser = normalizeUserId(currentUserId);
         const normRecipient = normalizeUserId(message.receptorId);
-        if (normRecipient === normCurrentUser && normalizeUserId(senderUserId) !== normCurrentUser) {
+        const isSenderBlocked = blockedUserIds.some(b => normalizeUserId(b) === normalizeUserId(senderUserId || message.emisorId));
+        if (normRecipient === normCurrentUser && normalizeUserId(senderUserId) !== normCurrentUser && !isSenderBlocked) {
           setChatMessages(prev => {
             if (prev.some(m => m.id === message.id)) return prev;
             return [...prev, message];
@@ -1371,7 +1508,8 @@ const addDeletedMessageIds = (ids: string[]) => {
       } else if (event.type === 'CHAT_NUDGE') {
         const { targetUserId, senderUserId } = event.payload;
         const normCurrentUser = normalizeUserId(currentUserId);
-        if (normalizeUserId(targetUserId) === normCurrentUser) {
+        const isSenderBlocked = blockedUserIds.some(b => normalizeUserId(b) === normalizeUserId(senderUserId));
+        if (normalizeUserId(targetUserId) === normCurrentUser && !isSenderBlocked) {
           try {
             playNudgeSound();
           } catch {}
@@ -1385,6 +1523,19 @@ const addDeletedMessageIds = (ids: string[]) => {
               detail: { targetUserId: currentUserId, senderUserId }
             }));
           }
+        }
+      } else if (event.type === 'CHAT_BLOCK_UPDATE') {
+        const { blockerId, blockedId, isBlocked } = event.payload;
+        if (normalizeUserId(blockerId) === normalizeUserId(currentUserId)) {
+          setBlockedUserIds(prev => {
+            const normTarget = normalizeUserId(blockedId);
+            if (isBlocked) {
+              if (prev.some(id => normalizeUserId(id) === normTarget)) return prev;
+              return [...prev, blockedId];
+            } else {
+              return prev.filter(id => normalizeUserId(id) !== normTarget);
+            }
+          });
         }
       } else if (event.type === 'CHAT_REACTION') {
         const { messageId, emoji, userId, targetUserId } = event.payload;
@@ -1466,7 +1617,7 @@ const addDeletedMessageIds = (ids: string[]) => {
     });
 
     return () => unsubscribe();
-  }, [currentUserId]);
+  }, [currentUserId, blockedUserIds]);
 
   const updateUserPresence = useCallback((presencia: UserPresence) => {
     if (!currentUserId) return;
@@ -1678,8 +1829,75 @@ const addDeletedMessageIds = (ids: string[]) => {
     }).catch(() => null);
   }, [currentUserId]);
 
+  const isUserBlocked = useCallback((targetUserId: string): boolean => {
+    if (!targetUserId) return false;
+    const normTarget = normalizeUserId(targetUserId);
+    return blockedUserIds.some(id => normalizeUserId(id) === normTarget);
+  }, [blockedUserIds]);
+
+  const blockUser = useCallback((targetUserId: string) => {
+    if (!currentUserId || !targetUserId || normalizeUserId(targetUserId) === normalizeUserId(currentUserId)) return;
+    setBlockedUserIds(prev => {
+      const normTarget = normalizeUserId(targetUserId);
+      if (prev.some(id => normalizeUserId(id) === normTarget)) return prev;
+      const updated = [...prev, targetUserId];
+      saveStoredBlockedUserIds(currentUserId, updated);
+      return updated;
+    });
+
+    // Close any active chat window with this user
+    setActiveChatWindows(prev => prev.filter(w => normalizeUserId(w.targetUserId) !== normalizeUserId(targetUserId)));
+
+    broadcastCrossTabEvent({
+      type: 'CHAT_BLOCK_UPDATE',
+      payload: { blockerId: currentUserId, blockedId: targetUserId, isBlocked: true }
+    });
+
+    void fetch('/api/chat-blocks', {
+      method: 'POST',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blockerId: currentUserId, blockedId: targetUserId })
+    }).catch(() => null);
+  }, [currentUserId]);
+
+  const unblockUser = useCallback((targetUserId: string) => {
+    if (!currentUserId || !targetUserId) return;
+    setBlockedUserIds(prev => {
+      const normTarget = normalizeUserId(targetUserId);
+      const updated = prev.filter(id => normalizeUserId(id) !== normTarget);
+      saveStoredBlockedUserIds(currentUserId, updated);
+      return updated;
+    });
+
+    broadcastCrossTabEvent({
+      type: 'CHAT_BLOCK_UPDATE',
+      payload: { blockerId: currentUserId, blockedId: targetUserId, isBlocked: false }
+    });
+
+    void fetch('/api/chat-blocks', {
+      method: 'DELETE',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blockerId: currentUserId, blockedId: targetUserId })
+    }).catch(() => null);
+  }, [currentUserId]);
+
   const openChatWith = useCallback((targetUserId: string) => {
     if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
+    if (isUserBlocked(targetUserId)) {
+      pushNotification({
+        id: `block-notif-${Date.now()}`,
+        tipo: 'sistema',
+        userId: currentUserId,
+        fromUserId: currentUserId,
+        fromUserName: 'Inkorium',
+        mensaje: 'No puedes abrir el chat con este usuario porque lo tienes bloqueado.',
+        fecha: 'Ahora mismo',
+        leido: false
+      });
+      return;
+    }
     setActiveChatWindows(prev => {
       const existing = prev.find(win => normalizeUserId(win.targetUserId) === normalizeUserId(targetUserId));
       if (existing) return prev.map(win => normalizeUserId(win.targetUserId) === normalizeUserId(targetUserId) ? { ...win, minimized: false } : win);
@@ -1687,7 +1905,7 @@ const addDeletedMessageIds = (ids: string[]) => {
     });
     // Send read receipt immediately upon opening chat
     sendChatReadReceipt(targetUserId);
-  }, [currentUserId, sendChatReadReceipt]);
+  }, [currentUserId, isUserBlocked, sendChatReadReceipt, pushNotification]);
 
   const closeChat = useCallback((targetUserId: string) => {
     setActiveChatWindows(prev => prev.filter(win => normalizeUserId(win.targetUserId) !== normalizeUserId(targetUserId)));
@@ -1709,6 +1927,7 @@ const addDeletedMessageIds = (ids: string[]) => {
   const sendChatMessage = useCallback((targetUserId: string, text: string, imageUrl?: string, fileData?: { url: string; name: string; size?: number; type?: string }) => {
     const message = text.trim();
     if (!currentUserId || !targetUserId || targetUserId === currentUserId || (!message && !imageUrl && !fileData)) return;
+    if (isUserBlocked(targetUserId)) return;
 
     const msgId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `chat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const newMsg: ChatMessage = {
@@ -1757,10 +1976,11 @@ const addDeletedMessageIds = (ids: string[]) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newMsg)
     }).catch(() => null);
-  }, [currentUserId]);
+  }, [currentUserId, isUserBlocked]);
 
   const sendChatNudge = useCallback((targetUserId: string) => {
     if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
+    if (isUserBlocked(targetUserId)) return;
 
     try {
       playNudgeSound();
@@ -1804,7 +2024,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fromUserId: currentUserId, targetUserId })
     }).catch(() => null);
-  }, [currentUserId]);
+  }, [currentUserId, isUserBlocked]);
 
   const reactToChatMessage = useCallback((targetUserId: string, messageId: string, emoji: string) => {
     if (!currentUserId || !targetUserId || !messageId || !emoji) return;
@@ -1851,11 +2071,224 @@ const addDeletedMessageIds = (ids: string[]) => {
     }).catch(() => null);
   }, [currentUserId]);
 
+  const recordProfileVisit = useCallback((targetUserId: string) => {
+    if (!currentUserId || !targetUserId || normalizeUserId(targetUserId) === normalizeUserId(currentUserId)) return;
+    const authorName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const newVisit: ProfileVisit = {
+      id: `vis-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      visitorId: currentUserId,
+      visitorName: authorName,
+      visitorAvatar: currentUser.avatar,
+      visitorProvincia: currentUser.provincia,
+      visitedUserId: targetUserId,
+      fecha: 'Ahora mismo',
+      timestamp: Date.now()
+    };
+
+    setProfileVisits(prev => {
+      // Avoid duplicate visits in the same 30 mins
+      const filtered = prev.filter(v => !(v.visitorId === currentUserId && v.visitedUserId === targetUserId && (Date.now() - v.timestamp < 1000 * 60 * 30)));
+      const updated = [newVisit, ...filtered].slice(0, 50);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:profile_visits', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, [currentUserId, currentUser]);
+
+  const updateTopAmigos = useCallback((friendIds: string[]) => {
+    updateUserData({ topAmigos: friendIds.slice(0, 8) });
+  }, [updateUserData]);
+
+  const createEvent = useCallback((eventData: Omit<SocialEvent, 'id' | 'creadorId' | 'creadorNombre' | 'creadorAvatar' | 'asistentes' | 'comentarios'>): string => {
+    const newId = `evt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const newEvent: SocialEvent = {
+      ...eventData,
+      id: newId,
+      creadorId: currentUserId,
+      creadorNombre: myName,
+      creadorAvatar: currentUser.avatar,
+      asistentes: [
+        {
+          userId: currentUserId,
+          userName: myName,
+          userAvatar: currentUser.avatar,
+          estado: 'asistire',
+          fecha: 'Ahora mismo'
+        }
+      ],
+      comentarios: []
+    };
+
+    setEvents(prev => {
+      const updated = [newEvent, ...prev];
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:events', JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    const newFeedItem: FeedItem = {
+      id: `feed-evt-${Date.now()}`,
+      tipo: 'evento',
+      propietarioId: currentUserId,
+      propietarioNombre: myName,
+      propietarioAvatar: currentUser.avatar,
+      datos: `Ha creado un nuevo evento: "${newEvent.titulo}" (${newEvent.fechaTexto} en ${newEvent.lugar}).`,
+      fecha: 'Ahora mismo',
+      likes: [],
+      comentarios: []
+    };
+    setFeed(prev => [newFeedItem, ...prev]);
+
+    return newId;
+  }, [currentUserId, currentUser]);
+
+  const rsvpEvent = useCallback((eventId: string, status: EventAttendanceStatus) => {
+    if (!currentUserId) return;
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    setEvents(prev => {
+      const updated = prev.map(ev => {
+        if (ev.id === eventId) {
+          const currentAttendees = ev.asistentes.filter(a => a.userId !== currentUserId);
+          const nextAttendees = [
+            ...currentAttendees,
+            {
+              userId: currentUserId,
+              userName: myName,
+              userAvatar: currentUser.avatar,
+              estado: status,
+              fecha: 'Ahora mismo'
+            }
+          ];
+          return { ...ev, asistentes: nextAttendees };
+        }
+        return ev;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:events', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, [currentUserId, currentUser]);
+
+  const commentEvent = useCallback((eventId: string, text: string) => {
+    if (!currentUserId || !text.trim()) return;
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const newComment: EventComment = {
+      id: `ev-cmt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      autorId: currentUserId,
+      autorNombre: myName,
+      autorAvatar: currentUser.avatar,
+      texto: text.trim(),
+      fecha: 'Ahora mismo'
+    };
+
+    setEvents(prev => {
+      const updated = prev.map(ev => {
+        if (ev.id === eventId) {
+          return { ...ev, comentarios: [...ev.comentarios, newComment] };
+        }
+        return ev;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:events', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, [currentUserId, currentUser]);
+
+  const deleteEvent = useCallback((eventId: string) => {
+    setEvents(prev => {
+      const updated = prev.filter(e => e.id !== eventId);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:events', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, []);
+
+  const createPage = useCallback((pageData: Omit<TuentiPage, 'id' | 'creadorId' | 'seguidores' | 'fechaCreacion' | 'posts'>): string => {
+    const newId = `page-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const newPage: TuentiPage = {
+      ...pageData,
+      id: newId,
+      creadorId: currentUserId,
+      seguidores: [currentUserId],
+      fechaCreacion: new Date().toLocaleDateString('es-ES'),
+      posts: []
+    };
+
+    setPages(prev => {
+      const updated = [newPage, ...prev];
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:pages', JSON.stringify(updated));
+      }
+      return updated;
+    });
+    return newId;
+  }, [currentUserId]);
+
+  const toggleFollowPage = useCallback((pageId: string) => {
+    if (!currentUserId) return;
+    setPages(prev => {
+      const updated = prev.map(p => {
+        if (p.id === pageId) {
+          const isFan = p.seguidores.includes(currentUserId);
+          const nextSeguidores = isFan
+            ? p.seguidores.filter(id => id !== currentUserId)
+            : [...p.seguidores, currentUserId];
+          return { ...p, seguidores: nextSeguidores };
+        }
+        return p;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:pages', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, [currentUserId]);
+
+  const postPageComment = useCallback((pageId: string, text: string, fotoUrl?: string) => {
+    if (!currentUserId || !text.trim()) return;
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const newPost: PagePost = {
+      id: `page-post-${Date.now()}`,
+      autorId: currentUserId,
+      autorNombre: myName,
+      autorAvatar: currentUser.avatar,
+      texto: text.trim(),
+      fecha: 'Ahora mismo',
+      likes: [],
+      fotoUrl
+    };
+
+    setPages(prev => {
+      const updated = prev.map(p => {
+        if (p.id === pageId) {
+          return { ...p, posts: [newPost, ...p.posts] };
+        }
+        return p;
+      });
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('inkorium:pages', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, [currentUserId, currentUser]);
+
   const setActiveTab = useCallback((tab: InkoriumContextType['activeTab']) => {
     if (tab !== 'mensajes') setComposeRecipientId(null);
     setActiveTabState(tab);
   }, []);
-  const viewUserProfile = useCallback((id: string) => { setSelectedUserId(id); setActiveTabState('perfil'); }, []);
+  const viewUserProfile = useCallback((id: string) => { 
+    setSelectedUserId(id); 
+    setActiveTabState('perfil'); 
+    if (id && currentUserId && normalizeUserId(id) !== normalizeUserId(currentUserId)) {
+      recordProfileVisit(id);
+    }
+  }, [currentUserId, recordProfileVisit]);
   const openComposeMessage = useCallback((recipientId?: string) => {
     setComposeRecipientId(recipientId || null);
     setActiveTabState('mensajes');
@@ -2808,6 +3241,14 @@ const addDeletedMessageIds = (ids: string[]) => {
       setIsMusicPlayerOpen, setIsMusicPlayerMinimized,
       openMusicPlayer, addCustomTrack,
       removeTrackFromPlaylist,
+      // Retro Tuenti Features
+      events, pages, profileVisits, gameScores,
+      selectedEventId, setSelectedEventId,
+      selectedPageId, setSelectedPageId,
+      isInvitationsModalOpen, setIsInvitationsModalOpen,
+      createEvent, rsvpEvent, commentEvent, deleteEvent,
+      createPage, toggleFollowPage, postPageComment,
+      recordProfileVisit, updateTopAmigos,
       setActiveTab, viewUserProfile, openComposeMessage, viewPhoto, viewAlbum, setCurrentUserById,
       login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence,
       likeFeedItem, commentFeedItem, postWallComment, deleteWallComment,
@@ -2816,6 +3257,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, removeFriendship, cancelFriendRequest, isFriend, hasPendingRequest, getFriendsOf,
       sendPrivateMessage, markMessageAsRead, deleteMessage, deleteConversation,
       sendChatMessage, sendChatNudge, reactToChatMessage, sendChatTyping, sendChatReadReceipt, openChatWith, closeChat, toggleMinimizeChat, setChatEstado,
+      blockedUserIds, blockUser, unblockUser, isUserBlocked,
       logUserActivity, deleteUserActivity, getUserActivities,
       pushNotification, dismissToast, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification,
       setIsRealtimeSimulationEnabled: setIsRealtime, simulateIncomingMessage, simulateWallComment,

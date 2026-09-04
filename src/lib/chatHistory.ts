@@ -26,7 +26,8 @@ export type InkoriumCrossTabEvent =
   | { type: 'PEER_TYPING'; payload: { targetUserId: string; isTyping: boolean } }
   | { type: 'PRIVATE_MESSAGE'; payload: { message: any; recipientId: string } }
   | { type: 'NOTIFICATION'; payload: { notification: any } }
-  | { type: 'PROFILE_UPDATE'; payload: { userId: string; data: any } };
+  | { type: 'PROFILE_UPDATE'; payload: { userId: string; data: any } }
+  | { type: 'CHAT_BLOCK_UPDATE'; payload: { blockerId: string; blockedId: string; isBlocked: boolean } };
 
 export function broadcastCrossTabEvent(event: InkoriumCrossTabEvent): void {
   try {
@@ -224,4 +225,26 @@ export function formatChatDateDivider(timestampOrDateStr: number | string | unde
   if (isYesterday) return 'Ayer';
 
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+const BLOCKED_USERS_STORAGE_PREFIX = 'inkorium:blocked_chat_users:';
+
+export function getStoredBlockedUserIds(currentUserId: string): string[] {
+  if (typeof localStorage === 'undefined' || !currentUserId) return [];
+  try {
+    const raw = localStorage.getItem(`${BLOCKED_USERS_STORAGE_PREFIX}${normalizeUserId(currentUserId)}`);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveStoredBlockedUserIds(currentUserId: string, blockedIds: string[]): void {
+  if (typeof localStorage === 'undefined' || !currentUserId) return;
+  try {
+    const unique = Array.from(new Set(blockedIds.map(String)));
+    localStorage.setItem(`${BLOCKED_USERS_STORAGE_PREFIX}${normalizeUserId(currentUserId)}`, JSON.stringify(unique));
+  } catch {}
 }

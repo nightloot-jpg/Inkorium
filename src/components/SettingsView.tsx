@@ -4,7 +4,7 @@ import { AvatarModal } from './AvatarModal';
 import { 
   Settings, UserCheck, Shield, KeyRound, UserPlus, 
   Check, X, RefreshCw, Smartphone, Globe, Sparkles, Bell, Volume2, MessageSquare, Image as ImageIcon,
-  Camera, Upload, Moon, Sun, Monitor, Palette
+  Camera, Upload, Moon, Sun, Monitor, Palette, Ban
 } from 'lucide-react';
 import { 
   COUNTRIES_LIST, 
@@ -37,10 +37,13 @@ export const SettingsView: React.FC = () => {
     theme,
     isDarkMode,
     setTheme,
-    toggleTheme
+    toggleTheme,
+    blockedUserIds,
+    unblockUser,
+    users,
   } = useInkorium();
 
-  const [section, setSection] = useState<'datos' | 'peticiones' | 'notificaciones' | 'ip' | 'seguridad' | 'apariencia'>('datos');
+  const [section, setSection] = useState<'datos' | 'peticiones' | 'notificaciones' | 'ip' | 'seguridad' | 'apariencia' | 'bloqueados'>('datos');
   const [soundActive, setSoundActive] = useState(isSoundEnabled());
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [themeNotification, setThemeNotification] = useState<string | null>(null);
@@ -212,6 +215,23 @@ export const SettingsView: React.FC = () => {
                 }`}
               >
                 <span>Seguridad y Contraseña</span>
+              </button>
+
+              <button
+                onClick={() => setSection('bloqueados')}
+                className={`w-full text-left px-3 py-2.5 transition cursor-pointer flex items-center justify-between ${
+                  section === 'bloqueados' ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 text-gray-800'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Ban className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Usuarios bloqueados (chat)</span>
+                </div>
+                {blockedUserIds.length > 0 && (
+                  <span className="bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-bold px-1.5 py-0.2 rounded-full text-[10px]">
+                    {blockedUserIds.length}
+                  </span>
+                )}
               </button>
 
               <button
@@ -986,6 +1006,100 @@ export const SettingsView: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* ================= 7. USUARIOS BLOQUEADOS (CHAT) ================= */}
+            {section === 'bloqueados' && (
+              <div className="space-y-4 text-xs text-gray-800 dark:text-gray-100">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <Ban className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                    <h2 className="font-bold text-sm text-gray-900 dark:text-white">Usuarios bloqueados en el chat</h2>
+                  </div>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {blockedUserIds.length} {blockedUserIds.length === 1 ? 'bloqueado' : 'bloqueados'}
+                  </span>
+                </div>
+
+                <div className="p-3 bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-lg text-[11.5px] text-rose-900 dark:text-rose-200 leading-relaxed">
+                  <p className="font-semibold mb-1 flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                    Protección y privacidad de conversaciones
+                  </p>
+                  <p>
+                    Al bloquear a un usuario en el chat:
+                  </p>
+                  <ul className="list-disc list-inside mt-1 space-y-0.5 text-rose-800 dark:text-rose-300">
+                    <li>Se ocultan inmediatamente todos sus mensajes en las ventanas de chat.</li>
+                    <li>No se le permite enviarte mensajes directos en vivo ni zumbidos.</li>
+                    <li>Se impide el inicio de nuevas conversaciones con esta persona.</li>
+                  </ul>
+                </div>
+
+                {blockedUserIds.length === 0 ? (
+                  <div className="py-12 text-center text-gray-500 dark:text-gray-400 space-y-2 border border-dashed border-gray-300 dark:border-slate-700 rounded-lg">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-gray-400">
+                      <Ban className="w-5 h-5" />
+                    </div>
+                    <p className="font-bold text-gray-700 dark:text-gray-200 text-xs">No tienes a ningún usuario bloqueado</p>
+                    <p className="text-[11px] max-w-sm mx-auto">
+                      Puedes bloquear usuarios en cualquier momento desde la cabecera de una ventana de chat o desde su perfil de usuario.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100 dark:divide-slate-800 border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden">
+                    {blockedUserIds.map((blockedId) => {
+                      const userObj = users.find(
+                        (u) => u.id.toLowerCase() === blockedId.toLowerCase() || (u.username && u.username.toLowerCase() === blockedId.toLowerCase())
+                      ) || {
+                        id: blockedId,
+                        nombre: blockedId,
+                        apellidos: '',
+                        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces',
+                        username: blockedId,
+                      };
+
+                      return (
+                        <div key={blockedId} className="p-3 flex items-center justify-between gap-3 bg-white dark:bg-[#0e1726] hover:bg-gray-50 dark:hover:bg-slate-800/50 transition">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img
+                              src={userObj.avatar}
+                              alt=""
+                              className="w-9 h-9 rounded-full object-cover border border-rose-300 dark:border-rose-800 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <p className="font-bold text-xs text-gray-900 dark:text-white truncate">
+                                {userObj.nombre} {userObj.apellidos}
+                              </p>
+                              {userObj.username && (
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                                  @{userObj.username} • ID: {blockedId}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => viewUserProfile(userObj.id)}
+                              className="px-2.5 py-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded text-xs transition cursor-pointer"
+                            >
+                              Ver perfil
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => unblockUser(blockedId)}
+                              className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-bold transition shadow-2xs cursor-pointer"
+                            >
+                              Desbloquear
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>

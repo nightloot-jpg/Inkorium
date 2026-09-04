@@ -187,6 +187,7 @@ async function resolveProfileIdInSupabase(identifier: string, supabaseUrl: strin
 const inMemoryPosts: any[] = [];
 const inMemoryMessages: any[] = [];
 const inMemoryChatMessages: any[] = [];
+const inMemoryChatBlocks = new Set<string>();
 const inMemoryPhotos: any[] = [];
 const inMemoryProfiles = new Map<string, any>();
 
@@ -709,11 +710,58 @@ app.post('/api/chat-nudge', (req, res) => {
     const fromUserId = String(req.body?.fromUserId || '').trim();
     const targetUserId = String(req.body?.targetUserId || '').trim();
     if (fromUserId && targetUserId) {
+      if (inMemoryChatBlocks.has(`${targetUserId}:${fromUserId}`)) {
+        return res.status(403).json({ error: 'USER_BLOCKED', message: 'No puedes enviar zumbidos a este usuario' });
+      }
       broadcastRealtimeEvent([targetUserId], 'chat_nudge', {
         fromUserId,
         targetUserId,
         timestamp: Date.now()
       });
+    }
+    return res.status(200).json({ success: true });
+  } catch {
+    return res.status(200).json({ success: true });
+  }
+});
+
+// Chat Block endpoints
+app.get('/api/chat-blocks', (req, res) => {
+  try {
+    const userId = String(req.query.userId || '').trim();
+    if (!userId) return res.status(200).json({ blockedUserIds: [] });
+    const blocked: string[] = [];
+    const prefix = `${userId}:`;
+    inMemoryChatBlocks.forEach((key) => {
+      if (key.startsWith(prefix)) {
+        blocked.push(key.slice(prefix.length));
+      }
+    });
+    return res.status(200).json({ blockedUserIds: blocked });
+  } catch {
+    return res.status(200).json({ blockedUserIds: [] });
+  }
+});
+
+app.post('/api/chat-blocks', (req, res) => {
+  try {
+    const blockerId = String(req.body?.blockerId || '').trim();
+    const blockedId = String(req.body?.blockedId || '').trim();
+    if (blockerId && blockedId) {
+      inMemoryChatBlocks.add(`${blockerId}:${blockedId}`);
+    }
+    return res.status(200).json({ success: true });
+  } catch {
+    return res.status(200).json({ success: true });
+  }
+});
+
+app.delete('/api/chat-blocks', (req, res) => {
+  try {
+    const blockerId = String(req.body?.blockerId || req.query?.blockerId || '').trim();
+    const blockedId = String(req.body?.blockedId || req.query?.blockedId || '').trim();
+    if (blockerId && blockedId) {
+      inMemoryChatBlocks.delete(`${blockerId}:${blockedId}`);
     }
     return res.status(200).json({ success: true });
   } catch {
@@ -732,6 +780,10 @@ app.post('/api/chat-messages', async (req, res) => {
 
     if (!emisorId || !receptorId || (!mensaje && !imageUrl && !isNudge)) {
       return res.status(400).json({ error: 'INVALID_CHAT_PAYLOAD' });
+    }
+
+    if (inMemoryChatBlocks.has(`${receptorId}:${emisorId}`)) {
+      return res.status(403).json({ error: 'USER_BLOCKED', message: 'No puedes enviar mensajes a este usuario' });
     }
 
     const timestamp = payload.timestamp || Date.now();

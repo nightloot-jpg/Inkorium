@@ -7,7 +7,8 @@ import {
   UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon, 
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
   Trash2, Send, Check, Shield, UserCheck, Camera, Upload, ChevronDown, ChevronRight,
-  Users, UserMinus, UserX, Clock, Search, X, ShieldAlert, CheckCheck, Globe
+  Users, UserMinus, UserX, Clock, Search, X, ShieldAlert, CheckCheck, Globe, Ban,
+  Eye, Star, Award
 } from 'lucide-react';
 import { UserPresence, User, formatFullLocation } from '../types';
 
@@ -42,6 +43,9 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     getFriendsOf,
     sendPrivateMessage,
     openChatWith,
+    isUserBlocked,
+    blockUser,
+    unblockUser,
     updateUserData,
     updateUserPresence,
     updateStatusText,
@@ -53,7 +57,9 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     isMusicPlaying,
     togglePlayMusic,
     openMusicPlayer,
-    canUserViewPhoto
+    canUserViewPhoto,
+    profileVisits,
+    updateTopAmigos
   } = useInkorium();
 
   const profileUser = users.find(u => u.id === selectedUserId) || currentUser;
@@ -79,6 +85,19 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     );
   }, [friendRequests, currentUser.id]);
 
+  // Top Amigos calculation
+  const topAmigosIds = profileUser.topAmigos || [];
+  const topAmigosList = useMemo(() => {
+    return topAmigosIds
+      .map(id => users.find(u => u.id === id))
+      .filter((u): u is User => !!u);
+  }, [topAmigosIds, users]);
+
+  // Visits to this profile
+  const myProfileVisits = useMemo(() => {
+    return profileVisits.filter(v => v.visitedUserId === profileUser.id);
+  }, [profileVisits, profileUser.id]);
+
   // Profile View Sub-tab
   const [profileSubTab, setProfileSubTab] = useState<'perfil' | 'amigos' | 'fotos'>('perfil');
   const [friendSearchQuery, setFriendSearchQuery] = useState('');
@@ -91,6 +110,8 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const [showDirectMessageModal, setShowDirectMessageModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [showTopAmigosModal, setShowTopAmigosModal] = useState(false);
+  const [selectedTopIds, setSelectedTopIds] = useState<string[]>(profileUser.topAmigos || []);
   const [showPresenceMenu, setShowPresenceMenu] = useState(false);
   const [mpSubject, setMpSubject] = useState('');
   const [mpBody, setMpBody] = useState('');
@@ -367,6 +388,30 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                   </button>
                 )}
 
+                {isUserBlocked(profileUser.id) ? (
+                  <button
+                    onClick={() => unblockUser(profileUser.id)}
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                    title="Desbloquear este usuario en el chat"
+                  >
+                    <Ban className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Desbloquear en chat</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`¿Seguro que deseas bloquear a ${profileUser.nombre} en el chat? Dejarán de aparecer sus mensajes y no se podrán abrir conversaciones.`)) {
+                        blockUser(profileUser.id);
+                      }
+                    }}
+                    className="px-2.5 py-1.5 bg-white hover:bg-rose-50 text-gray-500 hover:text-rose-700 border border-gray-300 hover:border-rose-300 rounded text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                    title="Bloquear este usuario en el chat"
+                  >
+                    <Ban className="w-3.5 h-3.5" />
+                    <span>Bloquear chat</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => setShowDirectMessageModal(true)}
                   className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
@@ -377,7 +422,12 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
 
                 <button
                   onClick={() => openChatWith(profileUser.id)}
-                  className="px-3 py-1.5 bg-[#e8f0fe] hover:bg-[#d2e3fc] text-[#3869A0] border border-[#bcd0ee] rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                  className={`px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer ${
+                    isUserBlocked(profileUser.id)
+                      ? 'bg-gray-100 hover:bg-gray-200 text-gray-400 border border-gray-300'
+                      : 'bg-[#e8f0fe] hover:bg-[#d2e3fc] text-[#3869A0] border border-[#bcd0ee]'
+                  }`}
+                  title={isUserBlocked(profileUser.id) ? 'Usuario bloqueado en el chat' : 'Abrir chat en vivo'}
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
                   <span>Chat en vivo</span>
@@ -963,6 +1013,77 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                 </div>
               </div>
             </div>
+
+            {/* Top Amigos / Amigos Destacados (Classic Tuenti Sidebar Feature) */}
+            <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2.5">
+              <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-gray-900">
+                  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                  <span>Top Amigos</span>
+                  <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded-full">
+                    {topAmigosList.length > 0 ? topAmigosList.length : Math.min(friendsList.length, 6)}/8
+                  </span>
+                </div>
+                {isOwnProfile && (
+                  <button
+                    onClick={() => {
+                      setSelectedTopIds(profileUser.topAmigos || []);
+                      setShowTopAmigosModal(true);
+                    }}
+                    className="text-[#3869A0] hover:underline font-bold text-[11px] cursor-pointer"
+                  >
+                    Editar Top
+                  </button>
+                )}
+              </div>
+
+              {topAmigosList.length === 0 && friendsList.length === 0 ? (
+                <p className="text-[11px] text-gray-400 py-2 text-center">
+                  Aún no hay amigos en el Top.
+                </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {(topAmigosList.length > 0 ? topAmigosList : friendsList.slice(0, 6)).map((friend) => (
+                    <div
+                      key={friend.id}
+                      onClick={() => viewUserProfile(friend.id)}
+                      className="cursor-pointer group text-center space-y-1 relative"
+                    >
+                      <div className="relative">
+                        <img
+                          src={friend.avatar}
+                          alt={friend.nombre}
+                          className="w-full aspect-square object-cover rounded border border-gray-200 group-hover:border-[#3869A0] transition"
+                        />
+                        <span
+                          className={`absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full ring-1 ring-white ${
+                            friend.online || friend.presencia === 'conectado' ? 'bg-emerald-500' : 'bg-gray-400'
+                          }`}
+                        />
+                        <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-400 absolute top-0.5 left-0.5 drop-shadow-xs" />
+                      </div>
+                      <p className="text-[10px] font-semibold text-[#3869A0] group-hover:underline truncate">
+                        {friend.nombre}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {isOwnProfile && topAmigosList.length === 0 && friendsList.length > 0 && (
+                <div className="pt-2 border-t border-gray-100 text-center">
+                  <button
+                    onClick={() => {
+                      setSelectedTopIds(friendsList.slice(0, 6).map(f => f.id));
+                      setShowTopAmigosModal(true);
+                    }}
+                    className="text-[11px] text-[#3869A0] font-bold hover:underline cursor-pointer"
+                  >
+                    ★ Personalizar mis 6-8 amigos del Top
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ================= CENTER COLUMN: TABLÓN DE FIRMAS (WALL ONLY) ================= */}
@@ -1213,6 +1334,78 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
               )}
             </div>
 
+            {/* ================= QUIÉN HA VISTO MI PERFIL (VISITAS AL PERFIL) ================= */}
+            <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2.5">
+              <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-gray-900">
+                  <Eye className="w-3.5 h-3.5 text-[#3869A0]" />
+                  <span>Visitas al perfil</span>
+                </div>
+                <span className="text-[10px] bg-blue-100 text-[#3869A0] font-bold px-1.5 py-0.5 rounded">
+                  {myProfileVisits.length + (isOwnProfile ? 38 : 124)} visitas
+                </span>
+              </div>
+
+              {isOwnProfile ? (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-gray-500">
+                    Amigos que han visto tu perfil recientemente:
+                  </p>
+
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {myProfileVisits.length === 0 ? (
+                      <p className="text-[11px] text-gray-400 py-2 text-center">
+                        Aún no tienes visitas registradas hoy.
+                      </p>
+                    ) : (
+                      myProfileVisits.slice(0, 6).map((visit) => (
+                        <div
+                          key={visit.id}
+                          onClick={() => viewUserProfile(visit.visitorId)}
+                          className="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded cursor-pointer transition group"
+                        >
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={visit.visitorAvatar}
+                              alt={visit.visitorName}
+                              className="w-7 h-7 rounded object-cover border border-gray-200 group-hover:border-[#3869A0]"
+                            />
+                            <div>
+                              <span className="font-semibold text-gray-800 group-hover:text-[#3869A0] text-[11px] block">
+                                {visit.visitorName}
+                              </span>
+                              {visit.visitorProvincia && (
+                                <span className="text-[9px] text-gray-400">
+                                  {visit.visitorProvincia}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-gray-400">
+                            {visit.fecha}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[10px] text-gray-400">
+                    <span>🔒 Solo visible por ti</span>
+                    <span className="text-[#3869A0] font-medium">Contador activo</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-2.5 bg-gray-50 rounded border border-gray-100 text-center space-y-1">
+                  <p className="text-[11px] text-gray-600">
+                    Este perfil ha recibido <span className="font-bold text-[#3869A0]">142 visitas</span> de amigos en Inkorium.
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    Al visitar su perfil, tu visita queda registrada en su historial.
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* ================= REGISTRO DE ACTIVIDAD (ACTIVITY LOG WIDGET) ================= */}
             <ActivityLog 
               userId={profileUser.id} 
@@ -1296,6 +1489,123 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
         onClose={() => setShowEditProfileModal(false)}
         onOpenAvatarModal={() => setShowAvatarModal(true)}
       />
+
+      {/* Top Amigos Selection Modal */}
+      {showTopAmigosModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg border border-[#ccd5df] shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="bg-[#3869A0] text-white p-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
+                <h3 className="font-bold text-sm">Elegir tus 6-8 Amigos Destacados (Top Amigos)</h3>
+              </div>
+              <button
+                onClick={() => setShowTopAmigosModal(false)}
+                className="text-white/80 hover:text-white text-base font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto space-y-3 text-xs flex-1">
+              <div className="bg-amber-50 border border-amber-200 rounded p-2.5 text-amber-800 text-[11px] flex items-center gap-2">
+                <Star className="w-4 h-4 text-amber-600 fill-amber-400 shrink-0" />
+                <span>
+                  Selecciona entre 1 y 8 amigos para mostrarlos en el bloque de honor en el lateral izquierdo de tu perfil, tal como en el Tuenti de 2008.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between font-bold text-gray-700 pt-1">
+                <span>Tus amigos disponibles ({friendsList.length}):</span>
+                <span className="text-[#3869A0]">{selectedTopIds.length} / 8 seleccionados</span>
+              </div>
+
+              {friendsList.length === 0 ? (
+                <p className="text-gray-400 py-6 text-center">
+                  Primero necesitas añadir amigos para poder agregarlos a tu Top.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto p-1">
+                  {friendsList.map(friend => {
+                    const isSelected = selectedTopIds.includes(friend.id);
+                    return (
+                      <div
+                        key={friend.id}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedTopIds(prev => prev.filter(id => id !== friend.id));
+                          } else {
+                            if (selectedTopIds.length >= 8) {
+                              alert('Has alcanzado el límite máximo de 8 amigos en el Top.');
+                              return;
+                            }
+                            setSelectedTopIds(prev => [...prev, friend.id]);
+                          }
+                        }}
+                        className={`p-2 rounded border cursor-pointer transition flex items-center gap-2 relative select-none ${
+                          isSelected
+                            ? 'bg-blue-50 border-[#3869A0] shadow-xs'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <img
+                          src={friend.avatar}
+                          alt={friend.nombre}
+                          className="w-9 h-9 rounded object-cover border border-gray-200 shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-gray-800 text-[11px] truncate">
+                            {friend.nombre}
+                          </p>
+                          <p className="text-[10px] text-gray-400 truncate">
+                            {friend.provincia || 'España'}
+                          </p>
+                        </div>
+                        {isSelected ? (
+                          <div className="w-5 h-5 rounded-full bg-[#3869A0] text-white flex items-center justify-center shrink-0">
+                            <Check className="w-3 h-3" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full border border-gray-300 shrink-0" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs">
+              <button
+                type="button"
+                onClick={() => setSelectedTopIds([])}
+                className="text-gray-500 hover:text-red-600 text-[11px] font-medium cursor-pointer"
+              >
+                Limpiar selección
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTopAmigosModal(false)}
+                  className="px-3 py-1.5 rounded bg-gray-200 text-gray-700 font-semibold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateTopAmigos(selectedTopIds);
+                    setShowTopAmigosModal(false);
+                  }}
+                  className="px-4 py-1.5 rounded bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold cursor-pointer shadow-xs"
+                >
+                  Guardar Top Amigos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

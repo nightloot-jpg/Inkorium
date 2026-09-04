@@ -46,6 +46,10 @@ export interface User {
   online: boolean;
   ultimoAcceso: string;
   chatEstado: '1' | '0'; // '1' = activo, '0' = desactivado
+  topAmigos?: string[]; // IDs de los 6-8 amigos destacados del perfil
+  invitacionesRestantes?: number;
+  invitacionesDisponibles?: number;
+  invitacionesEnviadas?: UserInvitation[];
 }
 
 export interface PhotoTag {
@@ -120,7 +124,7 @@ export interface WallComment {
 
 export interface FeedItem {
   id: string;
-  tipo: 'estado' | 'foto' | 'tablon' | 'amistad' | 'album';
+  tipo: 'estado' | 'foto' | 'tablon' | 'amistad' | 'album' | 'evento' | 'pagina';
   propietarioId: string;
   propietarioNombre: string;
   propietarioAvatar: string;
@@ -270,4 +274,116 @@ export {
   getCountryByZone, 
   formatFullLocation 
 } from './data/locations';
+
+// ==========================================
+// NUEVAS FUNCIONALIDADES TUENTI CLÁSICAS
+// ==========================================
+
+// 1. EVENTOS Y QUEDADAS
+export type EventAttendanceStatus = 'asistire' | 'quizas' | 'no_asistire';
+
+export interface EventAttendee {
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  estado: EventAttendanceStatus;
+  fecha: string;
+}
+
+export interface EventComment {
+  id: string;
+  autorId: string;
+  autorNombre: string;
+  autorAvatar: string;
+  texto: string;
+  fecha: string;
+}
+
+export interface SocialEvent {
+  id: string;
+  creadorId: string;
+  creadorNombre: string;
+  creadorAvatar: string;
+  titulo: string;
+  descripcion: string;
+  lugar: string;
+  ciudad?: string;
+  provincia?: string;
+  fechaHora: string; // Formato legible ej "Viernes, 23:00" o fecha ISO
+  fechaTexto: string;
+  portada?: string;
+  categoria: 'fiesta' | 'cumpleanos' | 'botellon' | 'concierto' | 'deporte' | 'quedada' | 'otro';
+  asistentes: EventAttendee[];
+  comentarios: EventComment[];
+  privacidad: 'publico' | 'amigos' | 'invitacion';
+  fotosAlbumId?: string; // Álbum colaborativo opcional del evento
+}
+
+// 2. VISITAS AL PERFIL ("Quién ha visto mi perfil")
+export interface ProfileVisit {
+  id: string;
+  visitorId: string;
+  visitorName: string;
+  visitorAvatar: string;
+  visitorProvincia?: string;
+  visitedUserId: string;
+  fecha: string;
+  timestamp: number;
+}
+
+// 3. PÁGINAS Y SITIOS DE TUENTI
+export interface PagePost {
+  id: string;
+  autorId: string;
+  autorNombre: string;
+  autorAvatar: string;
+  texto: string;
+  fecha: string;
+  likes: string[];
+  fotoUrl?: string;
+}
+
+export interface TuentiPage {
+  id: string;
+  nombre: string;
+  categoria: 'discoteca' | 'musica' | 'comunidad' | 'ocio' | 'humor' | 'universidad' | 'local';
+  descripcion: string;
+  avatar: string;
+  portada?: string;
+  creadorId: string;
+  seguidores: string[]; // userIds que son "fans"
+  fechaCreacion: string;
+  posts: PagePost[];
+  ubicacion?: string;
+  verificada?: boolean;
+}
+
+// 4. INVITACIONES EXCLUSIVAS
+export interface UserInvitation {
+  id: string;
+  codigo?: string;
+  code?: string;
+  email?: string;
+  fecha?: string;
+  creada?: string;
+  canjeada?: boolean;
+  canjeadaPorNombre?: string;
+  estado?: 'pendiente' | 'usada';
+  usadaPorNombre?: string;
+}
+
+// 5. JUEGOS Y RANKINGS
+export interface GameScore {
+  id: string;
+  gameId?: 'trivia' | 'stacker';
+  juego: 'trivia' | 'stacker';
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  score?: number;
+  puntos: number;
+  date?: string;
+  fecha?: string;
+}
+
 
