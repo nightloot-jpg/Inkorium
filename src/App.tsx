@@ -23,6 +23,7 @@ import { ChatBar } from './components/ChatBar';
 import { NotificationToasts } from './components/NotificationToasts';
 import { FloatingMusicPlayer } from './components/FloatingMusicPlayer';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { PublicProfileSync } from './components/PublicProfileSync';
 
 const InkoriumAppContent: React.FC = () => {
   const { 
@@ -111,6 +112,7 @@ export function App() {
   return (
     <ErrorBoundary>
       <InkoriumProvider>
+        <PublicProfileSync />
         <InkoriumAppContent />
       </InkoriumProvider>
     </ErrorBoundary>
