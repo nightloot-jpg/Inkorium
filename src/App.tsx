@@ -24,6 +24,7 @@ import { NotificationToasts } from './components/NotificationToasts';
 import { FloatingMusicPlayer } from './components/FloatingMusicPlayer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PublicProfileSync } from './components/PublicProfileSync';
+import { ProfileSignatureCloudSync } from './components/ProfileSignatureCloudSync';
 
 const InkoriumAppContent: React.FC = () => {
   const { 
@@ -37,21 +38,18 @@ const InkoriumAppContent: React.FC = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  // If user is not logged in, render the dedicated Login/Register Page
   if (!isLoggedIn) {
     return <AuthPage />;
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#e8eef4] dark:bg-[#0b111e] text-[#1c1e21] dark:text-[#f1f5f9] font-sans antialiased selection:bg-[#3869A0] selection:text-white transition-colors duration-150">
-      {/* Top Main Navigation */}
       <OfflineIndicator />
       <Navbar 
         onOpenUpload={() => setIsUploadOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
       />
 
-      {/* Main Content Area based on activeTab */}
       <main className="flex-1 pb-16">
         {activeTab === 'inicio' && <HomeFeed onOpenUpload={() => setIsUploadOpen(true)} />}
         {activeTab === 'perfil' && <ProfileView onOpenUpload={() => setIsUploadOpen(true)} />}
@@ -67,7 +65,6 @@ const InkoriumAppContent: React.FC = () => {
         {activeTab === 'musica' && <MusicView />}
       </main>
 
-      {/* Footer */}
       <footer className="bg-white dark:bg-[#0e1726] border-t border-[#ccd5df] dark:border-[#1d2b40] py-4 text-center text-xs text-gray-500 dark:text-gray-400 transition-colors">
         <div className="w-full max-w-[1720px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 font-bold text-[#3869A0] dark:text-blue-400">
@@ -96,7 +93,6 @@ const InkoriumAppContent: React.FC = () => {
         </div>
       </footer>
 
-      {/* Global Overlays & Real-time Live Toasts */}
       <NotificationToasts />
       <PhotoLightbox />
       <FloatingMusicPlayer />
@@ -113,6 +109,7 @@ export function App() {
     <ErrorBoundary>
       <InkoriumProvider>
         <PublicProfileSync />
+        <ProfileSignatureCloudSync />
         <InkoriumAppContent />
       </InkoriumProvider>
     </ErrorBoundary>
