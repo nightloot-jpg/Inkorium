@@ -4,7 +4,8 @@ import {
   Home, User as UserIcon, Users, Image as ImageIcon, Mail, 
   Settings, Bell, Volume2, VolumeX, Search, LogOut, Check,
   UserPlus, MessageSquare, Sparkles, Moon, Sun, Palette,
-  Calendar, Building2, Gamepad2, Ticket, Music, GraduationCap
+  Calendar, Building2, Gamepad2, Ticket, Music, GraduationCap,
+  LayoutGrid, ChevronDown, Upload
 } from 'lucide-react';
 import { isSoundEnabled, toggleSound } from '../utils/sound';
 
@@ -111,7 +112,7 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
             </span>
           </button>
 
-          <nav className="hidden xl:flex items-center space-x-1 text-[12px] font-semibold">
+          <nav className="hidden md:flex items-center space-x-1 text-[12px] font-semibold">
             <button
               onClick={() => setActiveTab('inicio')}
               className={`px-2.5 py-1.5 rounded flex items-center gap-1.5 transition cursor-pointer ${
@@ -153,50 +154,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
             </button>
 
             <button
-              onClick={() => setActiveTab('eventos')}
-              className={`px-2.5 py-1.5 rounded flex items-center gap-1.5 transition cursor-pointer ${
-                activeTab === 'eventos' ? 'bg-[#294e77] text-white shadow-inner' : 'text-blue-100 hover:bg-[#2f5988] hover:text-white'
-              }`}
-              title="Eventos, quedadas y fiestas de amigos"
-            >
-              <Calendar className="w-3.5 h-3.5 text-yellow-300" />
-              <span>Eventos</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('campus')}
-              className={`px-2.5 py-1.5 rounded flex items-center gap-1.5 transition cursor-pointer ${
-                activeTab === 'campus' ? 'bg-[#294e77] text-white shadow-inner' : 'text-blue-100 hover:bg-[#2f5988] hover:text-white'
-              }`}
-              title="Comunidades locales, universidades y campus"
-            >
-              <GraduationCap className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Campus</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('paginas')}
-              className={`px-2.5 py-1.5 rounded flex items-center gap-1.5 transition cursor-pointer ${
-                activeTab === 'paginas' ? 'bg-[#294e77] text-white shadow-inner' : 'text-blue-100 hover:bg-[#2f5988] hover:text-white'
-              }`}
-              title="Páginas, discotecas y comunidades"
-            >
-              <Building2 className="w-3.5 h-3.5 text-orange-300" />
-              <span>Páginas</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('juegos')}
-              className={`px-2.5 py-1.5 rounded flex items-center gap-1.5 transition cursor-pointer ${
-                activeTab === 'juegos' ? 'bg-[#294e77] text-white shadow-inner' : 'text-blue-100 hover:bg-[#2f5988] hover:text-white'
-              }`}
-              title="Juegos Flash retro: Trivia & Stacker"
-            >
-              <Gamepad2 className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Juegos</span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('mensajes')}
               className={`px-2.5 py-1.5 rounded flex items-center gap-1.5 transition relative cursor-pointer ${
                 activeTab === 'mensajes' ? 'bg-[#294e77] text-white shadow-inner' : 'text-blue-100 hover:bg-[#2f5988] hover:text-white'
@@ -224,45 +181,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
                   {unreadNotificationsCount}
                 </span>
               )}
-            </button>
-          </nav>
-
-          {/* Medium screens compact nav */}
-          <nav className="hidden md:flex xl:hidden items-center space-x-1 text-[12px] font-semibold">
-            <button
-              onClick={() => setActiveTab('inicio')}
-              className={`px-2 py-1.5 rounded flex items-center gap-1 transition ${activeTab === 'inicio' ? 'bg-[#294e77] text-white' : 'text-blue-100 hover:bg-[#2f5988]'}`}
-            >
-              <Home className="w-3.5 h-3.5" />
-              <span>Inicio</span>
-            </button>
-            <button
-              onClick={() => viewUserProfile(currentUser.id)}
-              className={`px-2 py-1.5 rounded flex items-center gap-1 transition ${isViewingOwnProfile ? 'bg-[#294e77] text-white' : 'text-blue-100 hover:bg-[#2f5988]'}`}
-            >
-              <UserIcon className="w-3.5 h-3.5" />
-              <span>Perfil</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('eventos')}
-              className={`px-2 py-1.5 rounded flex items-center gap-1 transition ${activeTab === 'eventos' ? 'bg-[#294e77] text-white' : 'text-blue-100 hover:bg-[#2f5988]'}`}
-            >
-              <Calendar className="w-3.5 h-3.5 text-yellow-300" />
-              <span>Eventos</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('paginas')}
-              className={`px-2 py-1.5 rounded flex items-center gap-1 transition ${activeTab === 'paginas' ? 'bg-[#294e77] text-white' : 'text-blue-100 hover:bg-[#2f5988]'}`}
-            >
-              <Building2 className="w-3.5 h-3.5 text-orange-300" />
-              <span>Páginas</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('juegos')}
-              className={`px-2 py-1.5 rounded flex items-center gap-1 transition ${activeTab === 'juegos' ? 'bg-[#294e77] text-white' : 'text-blue-100 hover:bg-[#2f5988]'}`}
-            >
-              <Gamepad2 className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Juegos</span>
             </button>
           </nav>
         </div>
@@ -492,12 +410,16 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
                     <span>Mi Perfil y Tablón</span>
                   </button>
 
+                  <div className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    Accesos directos
+                  </div>
+
                   <button
                     onClick={() => {
                       setActiveTab('eventos');
                       setShowUserMenu(false);
                     }}
-                    className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center gap-2 cursor-pointer font-medium"
+                    className="w-full text-left px-3 py-1.5 hover:bg-blue-50 flex items-center gap-2 cursor-pointer font-medium"
                   >
                     <Calendar className="w-4 h-4 text-purple-600" />
                     <span>Eventos y Quedadas</span>
@@ -508,10 +430,21 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
                       setActiveTab('paginas');
                       setShowUserMenu(false);
                     }}
-                    className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center gap-2 cursor-pointer font-medium"
+                    className="w-full text-left px-3 py-1.5 hover:bg-blue-50 flex items-center gap-2 cursor-pointer font-medium"
                   >
                     <Building2 className="w-4 h-4 text-orange-600" />
                     <span>Páginas y Sitios</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab('campus');
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-blue-50 flex items-center gap-2 cursor-pointer font-medium"
+                  >
+                    <GraduationCap className="w-4 h-4 text-emerald-600" />
+                    <span>Campus & Comunidades</span>
                   </button>
 
                   <button
@@ -597,59 +530,38 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
         </div>
       </div>
 
-      <div className="md:hidden flex items-center justify-start gap-4 overflow-x-auto bg-[#2e5785] border-t border-[#23456c] py-1.5 px-3 text-[11px] whitespace-nowrap scrollbar-none">
+      <div className="md:hidden flex items-center justify-around bg-[#2e5785] border-t border-[#23456c] py-1.5 px-2 text-[11px] whitespace-nowrap">
         <button 
           onClick={() => setActiveTab('inicio')} 
-          className={`flex flex-col items-center gap-0.5 shrink-0 ${activeTab === 'inicio' ? 'text-white font-bold' : 'text-blue-200'}`}
+          className={`flex flex-col items-center gap-0.5 ${activeTab === 'inicio' ? 'text-white font-bold' : 'text-blue-200'}`}
         >
           <Home className="w-4 h-4" />
           <span>Inicio</span>
         </button>
         <button 
           onClick={() => viewUserProfile(currentUser.id)} 
-          className={`flex flex-col items-center gap-0.5 shrink-0 ${isViewingOwnProfile ? 'text-white font-bold' : 'text-blue-200'}`}
+          className={`flex flex-col items-center gap-0.5 ${isViewingOwnProfile ? 'text-white font-bold' : 'text-blue-200'}`}
         >
           <UserIcon className="w-4 h-4" />
           <span>Perfil</span>
         </button>
         <button 
-          onClick={() => setActiveTab('eventos')} 
-          className={`flex flex-col items-center gap-0.5 shrink-0 ${activeTab === 'eventos' ? 'text-white font-bold' : 'text-blue-200'}`}
+          onClick={() => setActiveTab('gente')} 
+          className={`flex flex-col items-center gap-0.5 ${activeTab === 'gente' ? 'text-white font-bold' : 'text-blue-200'}`}
         >
-          <Calendar className="w-4 h-4 text-yellow-300" />
-          <span>Eventos</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab('campus')} 
-          className={`flex flex-col items-center gap-0.5 shrink-0 ${activeTab === 'campus' ? 'text-white font-bold' : 'text-blue-200'}`}
-        >
-          <GraduationCap className="w-4 h-4 text-emerald-300" />
-          <span>Campus</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab('paginas')} 
-          className={`flex flex-col items-center gap-0.5 shrink-0 ${activeTab === 'paginas' ? 'text-white font-bold' : 'text-blue-200'}`}
-        >
-          <Building2 className="w-4 h-4 text-orange-300" />
-          <span>Páginas</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab('juegos')} 
-          className={`flex flex-col items-center gap-0.5 shrink-0 ${activeTab === 'juegos' ? 'text-white font-bold' : 'text-blue-200'}`}
-        >
-          <Gamepad2 className="w-4 h-4 text-emerald-300" />
-          <span>Juegos</span>
+          <Users className="w-4 h-4" />
+          <span>Gente</span>
         </button>
         <button 
           onClick={() => setActiveTab('fotos')} 
-          className={`flex flex-col items-center gap-0.5 shrink-0 ${activeTab === 'fotos' ? 'text-white font-bold' : 'text-blue-200'}`}
+          className={`flex flex-col items-center gap-0.5 ${activeTab === 'fotos' ? 'text-white font-bold' : 'text-blue-200'}`}
         >
           <ImageIcon className="w-4 h-4" />
           <span>Fotos</span>
         </button>
         <button 
           onClick={() => setActiveTab('mensajes')} 
-          className={`flex flex-col items-center gap-0.5 shrink-0 relative ${activeTab === 'mensajes' ? 'text-white font-bold' : 'text-blue-200'}`}
+          className={`flex flex-col items-center gap-0.5 relative ${activeTab === 'mensajes' ? 'text-white font-bold' : 'text-blue-200'}`}
         >
           <Mail className="w-4 h-4" />
           <span>Mensajes</span>
@@ -661,7 +573,7 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
         </button>
         <button 
           onClick={() => setActiveTab('notificaciones')} 
-          className={`flex flex-col items-center gap-0.5 shrink-0 relative ${activeTab === 'notificaciones' ? 'text-white font-bold' : 'text-blue-200'}`}
+          className={`flex flex-col items-center gap-0.5 relative ${activeTab === 'notificaciones' ? 'text-white font-bold' : 'text-blue-200'}`}
         >
           <Bell className="w-4 h-4" />
           <span>Avisos</span>

@@ -5,7 +5,8 @@ import {
   Send, Image as ImageIcon, Smile, MessageCircle, Heart, 
   UserPlus, Sparkles, Clock, CheckCircle2, ChevronRight,
   Upload, Camera, Loader2, X, Edit2, Check, ChevronDown, Music, Disc, Globe, MapPin,
-  ShieldCheck, GraduationCap, Users, Shield, SlidersHorizontal, ToggleLeft, ToggleRight
+  ShieldCheck, GraduationCap, Users, Shield, SlidersHorizontal, ToggleLeft, ToggleRight,
+  Calendar, Building2, Gamepad2
 } from 'lucide-react';
 import { FeedItem, UserPresence, formatFullLocation } from '../types';
 import { uploadMediaFile } from '../lib/storage';
@@ -47,7 +48,9 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
     canUserViewPhoto,
     isAntiAlgorithmMode,
     toggleAntiAlgorithmMode,
-    campusCommunities
+    campusCommunities,
+    events,
+    pages
   } = useInkorium();
 
   const [statusText, setStatusText] = useState('');
@@ -337,26 +340,120 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
           </div>
         )}
 
-        {/* Quick Menu / Navigation Links */}
-        <div className="bg-white rounded border border-[#ccd5df] overflow-hidden text-xs shadow-xs">
-          <div className="bg-[#f0f4f8] px-3 py-1.5 border-b border-[#ccd5df] font-bold text-gray-700">
-            Accesos directos
+        {/* Quick Menu / Navigation Links - Accesos directos */}
+        <div className="bg-white dark:bg-[#152238] rounded border border-[#ccd5df] dark:border-[#1d2b40] overflow-hidden text-xs shadow-xs">
+          <div className="bg-[#f0f4f8] dark:bg-[#101927] px-3 py-2 border-b border-[#ccd5df] dark:border-[#1d2b40] font-bold text-gray-700 dark:text-gray-200 flex items-center justify-between">
+            <span>Accesos directos</span>
+            <span className="text-[10px] text-gray-500 font-normal">Navegación</span>
           </div>
-          <div className="divide-y divide-gray-100 font-medium">
+          <div className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
+            {/* Eventos */}
+            <button 
+              onClick={() => setActiveTab('eventos')}
+              className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
+              title="Eventos, quedadas, fiestas y cumpleaños de amigos"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Calendar className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100 block text-xs">Eventos</span>
+                  <span className="text-[10px] text-gray-400 block -mt-0.5">Quedadas, fiestas y álbumes</span>
+                </div>
+              </div>
+              <span className="text-[10px] bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 px-1.5 py-0.5 rounded-full font-bold">
+                {events?.length ?? 0}
+              </span>
+            </button>
+
+            {/* Páginas */}
+            <button 
+              onClick={() => setActiveTab('paginas')}
+              className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
+              title="Páginas oficiales de discotecas, marcas y sitios"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded bg-orange-100 dark:bg-orange-950/80 text-orange-700 dark:text-orange-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Building2 className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100 block text-xs">Páginas</span>
+                  <span className="text-[10px] text-gray-400 block -mt-0.5">Discotecas, sitios y marcas</span>
+                </div>
+              </div>
+              <span className="text-[10px] bg-orange-100 dark:bg-orange-900/60 text-orange-800 dark:text-orange-200 px-1.5 py-0.5 rounded-full font-bold">
+                {pages?.length ?? 0}
+              </span>
+            </button>
+
+            {/* Campus */}
+            <button 
+              onClick={() => setActiveTab('campus')}
+              className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
+              title="Comunidades locales de institutos, universidades y barrios"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <GraduationCap className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100 block text-xs">Campus</span>
+                  <span className="text-[10px] text-gray-400 block -mt-0.5">Universidad, instituto y barrios</span>
+                </div>
+              </div>
+              <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 px-1.5 py-0.5 rounded-full font-bold">
+                {campusCommunities?.length ?? 0}
+              </span>
+            </button>
+
+            {/* Juegos */}
+            <button 
+              onClick={() => setActiveTab('juegos')}
+              className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
+              title="Juegos Flash retro: Trivia y Stacker"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Gamepad2 className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100 block text-xs">Juegos</span>
+                  <span className="text-[10px] text-gray-400 block -mt-0.5">Flash Retro: Trivia & Stacker</span>
+                </div>
+              </div>
+              <span className="text-[9px] bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-1.5 py-0.5 rounded font-bold">
+                FLASH
+              </span>
+            </button>
+
+            {/* Subir fotos */}
             <button 
               onClick={onOpenUpload}
-              className="w-full text-left px-3 py-2 hover:bg-blue-50 text-[#3869A0] flex items-center gap-2 cursor-pointer"
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#3869A0] dark:text-blue-400 flex items-center gap-2.5 cursor-pointer transition"
             >
-              <Upload className="w-3.5 h-3.5" />
-              <span>Subir fotos</span>
+              <div className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-950/80 text-[#3869A0] dark:text-blue-300 flex items-center justify-center shrink-0">
+                <Upload className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <span className="font-semibold block text-xs">Subir fotos</span>
+                <span className="text-[10px] text-gray-400 block -mt-0.5">Etiquetar amigos y filtro 2008</span>
+              </div>
             </button>
+
+            {/* Música */}
             <button 
               onClick={() => setActiveTab('musica')}
-              className="w-full text-left px-3 py-2 hover:bg-blue-50 text-gray-700 flex items-center justify-between group cursor-pointer"
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
             >
-              <div className="flex items-center gap-2">
-                <Music className="w-3.5 h-3.5 text-[#3869A0] group-hover:scale-110 transition-transform" />
-                <span className="font-semibold text-gray-800">Música</span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+                  <Music className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100 block text-xs">Música</span>
+                  <span className="text-[10px] text-gray-400 block -mt-0.5">Reproductor y pistas retro</span>
+                </div>
               </div>
               {isMusicPlaying ? (
                 <div className="flex items-center gap-1">
@@ -364,30 +461,42 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                   <span className="text-[10px] text-[#3869A0] font-bold">Sonando</span>
                 </div>
               ) : (
-                <span className="text-[10px] bg-blue-100 text-[#3869A0] px-1.5 py-0.5 rounded-full font-bold">
+                <span className="text-[10px] bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200 px-1.5 py-0.5 rounded-full font-bold">
                   {musicPlaylist.length}
                 </span>
               )}
             </button>
+
+            {/* Buscar gente */}
             <button 
               onClick={() => setActiveTab('gente')}
-              className="w-full text-left px-3 py-2 hover:bg-blue-50 text-gray-700 flex items-center gap-2 cursor-pointer"
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center gap-2.5 cursor-pointer transition"
             >
-              <UserPlus className="w-3.5 h-3.5 text-gray-500" />
-              <span>Buscar gente / amigos</span>
+              <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center shrink-0">
+                <UserPlus className="w-3.5 h-3.5" />
+              </div>
+              <span>Buscar amigos / gente</span>
             </button>
+
+            {/* Redactar mensaje privado */}
             <button 
               onClick={() => openComposeMessage()}
-              className="w-full text-left px-3 py-2 hover:bg-blue-50 text-gray-700 flex items-center gap-2 cursor-pointer"
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center gap-2.5 cursor-pointer transition"
             >
-              <MessageCircle className="w-3.5 h-3.5 text-gray-500" />
+              <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center shrink-0">
+                <MessageCircle className="w-3.5 h-3.5" />
+              </div>
               <span>Redactar mensaje privado</span>
             </button>
+
+            {/* Ajustes de mi cuenta */}
             <button 
               onClick={() => setActiveTab('ajustes')}
-              className="w-full text-left px-3 py-2 hover:bg-blue-50 text-gray-700 flex items-center gap-2 cursor-pointer"
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center gap-2.5 cursor-pointer transition"
             >
-              <span className="text-gray-500">⚙️</span>
+              <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center shrink-0">
+                <span className="text-xs">⚙️</span>
+              </div>
               <span>Ajustes de mi cuenta</span>
             </button>
           </div>
