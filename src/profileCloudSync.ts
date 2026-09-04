@@ -135,3 +135,5 @@ export function installProfileCloudSync(): void {
     queueMicrotask(() => void persistCurrentProfile(value));
   }) as Storage['setItem'];
 }
+
+installProfileCloudSync();
