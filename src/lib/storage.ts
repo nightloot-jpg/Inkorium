@@ -1,6 +1,7 @@
 /**
  * Storage client for Hetzner Object Storage (S3-compatible).
  * All persistent media uploads go through the same-origin /api/upload endpoint.
+ * Supabase Storage is intentionally not used as a browser-side fallback.
  */
 
 export const STORAGE_PUBLIC_URL = import.meta.env.VITE_STORAGE_PUBLIC_URL || '';
@@ -35,20 +36,12 @@ export async function uploadMediaFile(
   formData.append('file', blob, originalName);
   formData.append('folder', folder);
 
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    throw new Error('Sesión no válida. Inicia sesión de nuevo para subir archivos.');
-  }
-
   let response: Response;
   try {
     response = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
-      credentials: 'omit',
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+      credentials: 'omit'
     });
   } catch (error: any) {
     throw new Error(error?.message || 'No se pudo conectar con el servidor de almacenamiento.');
@@ -71,16 +64,4 @@ export async function uploadMediaFile(
   }
 
   return body.url;
-}
-
-async function getAccessToken(): Promise<string> {
-  try {
-    const { supabase } = await import('./supabase');
-    if (!supabase) return '';
-    const { data, error } = await supabase.auth.getSession();
-    if (error) return '';
-    return data.session?.access_token || '';
-  } catch {
-    return '';
-  }
 }
