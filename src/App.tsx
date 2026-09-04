@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { InkoriumProvider, useInkorium } from './context/InkoriumContext';
 import { Navbar } from './components/Navbar';
 import { HomeFeed } from './components/HomeFeed';
@@ -26,6 +26,74 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { PublicProfileSync } from './components/PublicProfileSync';
 import { ProfileSignatureCloudSync } from './components/ProfileSignatureCloudSync';
 import { ProfileRealtimeSync } from './components/ProfileRealtimeSync';
+
+const AVATAR_RESOLVER_BASE = `${import.meta.env.VITE_SUPABASE_URL || 'https://zllwzmfsfzfedorljgtg.supabase.co'}/functions/v1/avatar-resolver`;
+const PROFILE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const normalizeAvatarKey = (value: string) => {
+  try {
+    return new URL(value, window.location.href).href;
+  } catch {
+    return value.trim();
+  }
+};
+
+const AvatarProxySync: React.FC = () => {
+  const { users, currentUser } = useInkorium();
+
+  const avatarMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const user of [currentUser, ...users]) {
+      if (!user?.id || !PROFILE_UUID.test(user.id)) continue;
+      const avatar = String(user.avatar || '').trim();
+      if (!avatar || avatar.startsWith('data:')) continue;
+      if (!/^https?:\/\//i.test(avatar)) continue;
+      const resolverUrl = `${AVATAR_RESOLVER_BASE}/${encodeURIComponent(user.id)}`;
+      map.set(avatar, resolverUrl);
+      map.set(normalizeAvatarKey(avatar), resolverUrl);
+    }
+    return map;
+  }, [users, currentUser]);
+
+  useEffect(() => {
+    const rewriteImage = (img: HTMLImageElement) => {
+      const raw = img.getAttribute('src') || '';
+      if (!raw) return;
+      const key = avatarMap.get(raw) || avatarMap.get(normalizeAvatarKey(raw));
+      if (!key || img.src === key) return;
+      img.setAttribute('src', key);
+    };
+
+    const scan = (root: ParentNode = document) => {
+      root.querySelectorAll('img[src]').forEach(node => rewriteImage(node as HTMLImageElement));
+    };
+
+    scan();
+    const observer = new MutationObserver(mutations => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.target instanceof HTMLImageElement) {
+          rewriteImage(mutation.target);
+          continue;
+        }
+        mutation.addedNodes.forEach(node => {
+          if (node instanceof HTMLImageElement) rewriteImage(node);
+          if (node instanceof Element) scan(node);
+        });
+      }
+    });
+
+    observer.observe(document.documentElement, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['src'],
+    });
+
+    return () => observer.disconnect();
+  }, [avatarMap]);
+
+  return null;
+};
 
 const InkoriumAppContent: React.FC = () => {
   const { 
@@ -112,6 +180,7 @@ export function App() {
         <PublicProfileSync />
         <ProfileSignatureCloudSync />
         <ProfileRealtimeSync />
+        <AvatarProxySync />
         <InkoriumAppContent />
       </InkoriumProvider>
     </ErrorBoundary>
