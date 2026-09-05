@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useInkorium } from '../context/InkoriumContext';
+import { useInkorium, toProfileAvatarUrl } from '../context/InkoriumContext';
 import type { User } from '../types';
 
 const PENDING_PROFILE_KEY = 'inkorium:pending-public-profile';
@@ -16,6 +16,9 @@ function applyRemoteProfile(profile: any, current: User): User {
     : String(profile.profile_interests ?? '').trim();
   const presence = String(profile.presence ?? current.presencia ?? 'conectado').trim().toLowerCase();
   const gender = String(profile.gender ?? current.sexo ?? 'otro').trim().toLowerCase();
+  const displayName = fullName || nameParts[0] || current.nombre || 'Usuario';
+  const rawAvatar = profile.avatar_url ?? profile.avatar;
+  const avatar = rawAvatar ? toProfileAvatarUrl(rawAvatar, displayName) : current.avatar;
 
   return {
     ...current,
@@ -23,7 +26,7 @@ function applyRemoteProfile(profile: any, current: User): User {
     full_name: fullName || current.full_name,
     nombre: nameParts[0] || current.nombre,
     apellidos: nameParts.slice(1).join(' ') || current.apellidos,
-    avatar: profile.avatar_url ?? current.avatar,
+    avatar,
     ciudad: profile.city ?? current.ciudad,
     pais: profile.country ?? current.pais,
     provincia: profile.province ?? current.provincia,

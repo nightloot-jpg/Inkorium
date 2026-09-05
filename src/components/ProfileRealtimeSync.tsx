@@ -1,11 +1,13 @@
 import React, { useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { broadcastCrossTabEvent } from '../lib/chatHistory';
+import { toProfileAvatarUrl } from '../context/InkoriumContext';
 import { UserPresence } from '../types';
 
 const mapRealtimeProfile = (profile: any) => {
   const fullName = String(profile?.full_name ?? '').trim();
   const parts = fullName ? fullName.split(/\s+/) : [];
+  const displayName = parts[0] || String(profile?.username ?? '').trim() || 'Usuario';
   const gender = String(profile?.gender ?? '').trim().toLowerCase();
   const presenceRaw = String(profile?.presence ?? profile?.user_status ?? '').trim().toLowerCase();
   const presencia: UserPresence = ['conectado', 'ausente', 'ocupado', 'invisible'].includes(presenceRaw)
@@ -14,13 +16,15 @@ const mapRealtimeProfile = (profile: any) => {
   const interests = Array.isArray(profile?.profile_interests)
     ? profile.profile_interests.join(', ')
     : String(profile?.profile_interests ?? '').trim();
+  const rawAvatar = profile?.avatar_url ?? profile?.avatar;
+  const avatar = rawAvatar ? toProfileAvatarUrl(rawAvatar, displayName) : undefined;
 
   return {
     username: String(profile?.username ?? '').trim() || undefined,
     full_name: fullName || undefined,
-    nombre: parts[0] || String(profile?.username ?? '').trim() || 'Usuario',
+    nombre: displayName,
     apellidos: parts.slice(1).join(' '),
-    avatar: String(profile?.avatar_url ?? '').trim(),
+    avatar,
     pais: String(profile?.country ?? '').trim() || undefined,
     provincia: String(profile?.province ?? '').trim(),
     ciudad: String(profile?.city ?? '').trim() || undefined,

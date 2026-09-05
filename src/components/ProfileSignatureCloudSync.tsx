@@ -78,7 +78,7 @@ export function ProfileSignatureCloudSync() {
     };
 
     void syncLocalSignatures();
-    const interval = window.setInterval(() => void syncLocalSignatures(), 3000);
+    const interval = window.setInterval(() => void syncLocalSignatures(), 20000);
     return () => window.clearInterval(interval);
   }, [currentUser.id]);
 

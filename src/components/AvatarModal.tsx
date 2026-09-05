@@ -147,26 +147,32 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({ isOpen, onClose }) => 
       }
 
       // 3. Actualizar estado y almacenamiento local
-      updateUserData({ avatar: finalAvatarUrl });
+      updateUserData({ avatar: finalAvatarUrl, avatar_url: finalAvatarUrl as any });
 
-      // 4. Intentar sincronización con Supabase de forma segura
-      if (isSupabaseConfigured && supabase) {
-        try {
-          const sessionResult = await supabase.auth.getSession().catch(() => null);
-          const token = sessionResult?.data?.session?.access_token;
-          await fetch(`/api/profiles/${encodeURIComponent(currentUser.id)}/avatar`, {
-            method: 'PATCH',
-            credentials: 'omit',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            },
-            body: JSON.stringify({ avatar_url: finalAvatarUrl })
-          }).catch(() => null);
-        } catch (syncErr) {
-          console.warn('Error silencioso sincronizando avatar:', syncErr);
+      // 4. Sincronización robusta con backend y Supabase
+      try {
+        const sessionResult = supabase ? await supabase.auth.getSession().catch(() => null) : null;
+        const token = sessionResult?.data?.session?.access_token;
+        await fetch(`/api/profiles/${encodeURIComponent(currentUser.id)}/avatar`, {
+          method: 'PATCH',
+          credentials: 'omit',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ avatar_url: finalAvatarUrl, avatar: finalAvatarUrl })
+        }).catch(() => null);
+
+        if (isSupabaseConfigured && supabase) {
+          await supabase
+            .from('profiles')
+            .update({ avatar_url: finalAvatarUrl, updated_at: new Date().toISOString() })
+            .eq('id', currentUser.id)
+            .catch(() => null);
         }
+      } catch (syncErr) {
+        console.warn('Error silencioso sincronizando avatar:', syncErr);
       }
 
       await refreshProfiles?.().catch(() => null);

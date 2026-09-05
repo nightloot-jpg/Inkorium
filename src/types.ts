@@ -42,6 +42,7 @@ export interface User {
   intereses?: string;
   musica?: string;
   avatar: string;
+  avatar_url?: string;
   fechaReg: string;
   online: boolean;
   ultimoAcceso: string;

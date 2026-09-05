@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import http from 'node:http';
 import path from 'path';
 import multer from 'multer';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
@@ -920,20 +921,23 @@ app.post('/api/chat-read', (req, res) => {
 
 app.get('/api/profiles', async (req, res) => {
   try {
-    const { supabaseUrl, supabaseKey } = getSupabaseConfig(); 
+    const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig(); 
     const query = new URLSearchParams(); 
     for (const [key, value] of Object.entries(req.query)) { 
       if (Array.isArray(value)) value.forEach(item => query.append(key, String(item))); 
       else if (value != null) query.set(key, String(value)); 
     }
-    if (!query.has('select')) query.set('select', 'id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at'); 
+    if (!query.has('select')) {
+      query.set('select', 'id,username,full_name,avatar_url,city,country,province,birth_date,user_status,profile_interests,updated_at,relationship_status,occupation,music,gender,presence'); 
+    }
     if (!query.has('limit')) query.set('limit', '1000');
 
     let profilesList: any[] = [];
-    if (supabaseKey) {
+    const authKey = serviceRoleKey || supabaseKey;
+    if (authKey) {
       try {
         const upstream = await fetch(`${supabaseUrl}/rest/v1/profiles?${query.toString()}`, { 
-          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, Accept: 'application/json' } 
+          headers: { apikey: authKey, Authorization: `Bearer ${authKey}`, Accept: 'application/json' } 
         }); 
         const body = await upstream.text();
         if (upstream.ok && !body.trim().startsWith('<')) {
@@ -962,7 +966,25 @@ app.get('/api/profiles', async (req, res) => {
 
     // Standardize avatar and avatar_url for all items
     profilesList = profilesList.map(p => {
-      const av = p.avatar_url || p.avatar || '';
+      let av = String(p.avatar_url || p.avatar || '').trim();
+      const displayName = p.full_name || p.username || 'Usuario';
+      if (av && !av.startsWith('data:') && !av.startsWith('blob:') && !av.startsWith('/api/profile-avatar')) {
+        if (av.includes('avatar-resolver')) {
+          const cached = inMemoryProfiles.get(String(p.id))?.avatar_url;
+          av = (cached && !cached.includes('avatar-resolver'))
+            ? cached
+            : `/api/profile-avatar?userId=${encodeURIComponent(p.id)}&name=${encodeURIComponent(displayName)}`;
+        } else {
+          for (const marker of ['avatars/', 'user-avatars/', 'profile-media/', 'photos/', 'wall/']) {
+            const idx = av.indexOf(marker);
+            if (idx >= 0) {
+              const key = av.slice(idx).replace(/^\/+/, '');
+              av = `/api/profile-avatar?key=${encodeURIComponent(key)}&name=${encodeURIComponent(displayName)}`;
+              break;
+            }
+          }
+        }
+      }
       return {
         ...p,
         avatar_url: av,
@@ -1001,6 +1023,7 @@ app.get('/api/profile-avatar', async (req, res) => {
   const key = String(req.query.key || '').trim();
   const url = String(req.query.url || '').trim();
   const name = String(req.query.name || 'Usuario').trim();
+  const userId = String(req.query.userId || req.query.user_id || req.query.id || '').trim();
 
   const sendSvgFallback = () => {
     const initial = (name[0] || 'U').toUpperCase();
@@ -1021,24 +1044,180 @@ app.get('/api/profile-avatar', async (req, res) => {
     return res.status(200).send(svg);
   };
 
-  if (!key && !url) {
+  let rawSource = key || url;
+
+  // If rawSource contains avatar-resolver, extract user id and check memory first
+  if (rawSource && rawSource.includes('avatar-resolver')) {
+    const match = rawSource.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    const extractedId = match ? match[0] : userId;
+    if (extractedId) {
+      const cached = inMemoryProfiles.get(extractedId);
+      if (cached?.avatar_url && !cached.avatar_url.includes('avatar-resolver')) {
+        rawSource = String(cached.avatar_url);
+      } else if (cached?.avatar && !cached.avatar.includes('avatar-resolver')) {
+        rawSource = String(cached.avatar);
+      } else {
+        return sendSvgFallback();
+      }
+    } else {
+      return sendSvgFallback();
+    }
+  }
+
+  // If userId is provided but no key/url, look up user's avatar
+  if (!rawSource && userId) {
+    const cached = inMemoryProfiles.get(userId);
+    if (cached?.avatar_url || cached?.avatar) {
+      rawSource = String(cached.avatar_url || cached.avatar);
+    } else {
+      const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig();
+      const authKey = serviceRoleKey || supabaseKey;
+      if (authKey) {
+        try {
+          const resp = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=avatar_url,full_name,username`, {
+            headers: { apikey: authKey, Authorization: `Bearer ${authKey}`, Accept: 'application/json' }
+          });
+          if (resp.ok) {
+            const rows = await resp.json();
+            if (Array.isArray(rows) && rows[0]?.avatar_url) {
+              rawSource = String(rows[0].avatar_url);
+            }
+          }
+        } catch {}
+      }
+    }
+  }
+
+  if (!rawSource) {
     return sendSvgFallback();
   }
 
-  // External URL redirect
-  if (url && /^https?:\/\//i.test(url)) {
-    return res.redirect(302, url);
-  }
-
-  const cleanKey = key.replace(/^\/+/, '');
-  if (cleanKey.includes('..') || cleanKey.includes('\\')) {
-    return sendSvgFallback();
-  }
-
-  // 1. Try Hetzner S3 if configured
-  const hetzner = getHetznerS3Client();
-  if (hetzner) {
+  // Handle Base64 Data URLs directly
+  if (rawSource.startsWith('data:')) {
     try {
+      const match = rawSource.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        const contentType = match[1];
+        const buffer = Buffer.from(match[2], 'base64');
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        return res.status(200).send(buffer);
+      }
+    } catch {}
+  }
+
+  // Extract S3 object key from rawSource
+  let cleanKey = '';
+  try {
+    const decoded = decodeURIComponent(rawSource).trim();
+    if (/^https?:\/\//i.test(decoded)) {
+      const parsed = new URL(decoded);
+      const pathname = parsed.pathname.replace(/^\/+/, '');
+      for (const prefix of ['avatars/', 'user-avatars/', 'profile-media/', 'photos/', 'wall/', 'chat/']) {
+        const idx = pathname.indexOf(prefix);
+        if (idx >= 0) {
+          cleanKey = pathname.slice(idx);
+          break;
+        }
+      }
+    } else {
+      const pathOnly = decoded.replace(/^\/+/, '');
+      for (const prefix of ['avatars/', 'user-avatars/', 'profile-media/', 'photos/', 'wall/', 'chat/']) {
+        const idx = pathOnly.indexOf(prefix);
+        if (idx >= 0) {
+          cleanKey = pathOnly.slice(idx);
+          break;
+        }
+      }
+      if (!cleanKey && !pathOnly.includes('..') && !pathOnly.includes('\\')) {
+        cleanKey = pathOnly;
+      }
+    }
+  } catch {}
+
+  // 1. If we have a clean key, try fetching directly from Hetzner S3 via GetObjectCommand
+  if (cleanKey && !cleanKey.includes('..') && !cleanKey.includes('\\')) {
+    const hetzner = getHetznerS3Client();
+    if (hetzner) {
+      try {
+        const obj = await hetzner.client.send(new GetObjectCommand({
+          Bucket: hetzner.bucket,
+          Key: cleanKey
+        }));
+        if (obj.Body) {
+          const bytes = Buffer.from(await obj.Body.transformToByteArray());
+          res.setHeader('Content-Type', obj.ContentType || 'image/jpeg');
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          if (obj.ContentLength != null) res.setHeader('Content-Length', String(obj.ContentLength));
+          return res.status(200).send(bytes);
+        }
+      } catch (err: any) {
+        // Continue to next fallback
+      }
+    }
+
+    // 2. Try Supabase Storage (both public and authenticated routes with RLS support)
+    const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig();
+    if (supabaseUrl) {
+      try {
+        const authHeader = req.headers.authorization;
+        const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+        const authKey = serviceRoleKey || token || supabaseKey;
+        const headers: Record<string, string> = {};
+        if (supabaseKey) headers.apikey = supabaseKey;
+        if (authKey) headers.Authorization = `Bearer ${authKey}`;
+
+        // Attempt public object endpoint first
+        let targetUrl = `${supabaseUrl}/storage/v1/object/public/${cleanKey}`;
+        let upstream = await fetch(targetUrl, { headers: Object.keys(headers).length ? headers : undefined });
+        if (!upstream.ok) {
+          // Attempt authenticated object endpoint if bucket is non-public or subject to strict RLS
+          targetUrl = `${supabaseUrl}/storage/v1/object/authenticated/${cleanKey}`;
+          upstream = await fetch(targetUrl, { headers: Object.keys(headers).length ? headers : undefined });
+        }
+
+        if (upstream.ok) {
+          const arrayBuf = await upstream.arrayBuffer();
+          const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          return res.status(200).send(Buffer.from(arrayBuf));
+        }
+      } catch {}
+    }
+  }
+
+  // 3. If rawSource is a genuine external URL (not an internal S3 URL), redirect
+  if (/^https?:\/\//i.test(rawSource)) {
+    // If it points to private Hetzner, media.inkorium.es, or avatar-resolver that failed, do NOT redirect
+    if (rawSource.includes('your-objectstorage.com') || rawSource.includes('media.inkorium.es') || rawSource.includes('avatar-resolver')) {
+      return sendSvgFallback();
+    }
+    return res.redirect(302, rawSource);
+  }
+
+  // 4. Fallback to SVG avatar
+  return sendSvgFallback();
+});
+
+// Direct media streaming route for avatars, photos, and wall uploads
+app.get(['/api/media/*', '/avatars/*', '/photos/*', '/wall/*'], async (req, res) => {
+  try {
+    let cleanKey = '';
+    const reqPath = decodeURIComponent(req.path).replace(/^\/+/, '');
+    const prefixMatch = reqPath.match(/^(api\/media\/|media\/)?((avatars|photos|wall|chat)\/.+)$/);
+    if (prefixMatch) {
+      cleanKey = prefixMatch[2];
+    } else {
+      cleanKey = reqPath.replace(/^api\/media\//, '');
+    }
+
+    if (!cleanKey || cleanKey.includes('..') || cleanKey.includes('\\')) {
+      return res.status(404).send('Not found');
+    }
+
+    const hetzner = getHetznerS3Client();
+    if (hetzner) {
       const obj = await hetzner.client.send(new GetObjectCommand({
         Bucket: hetzner.bucket,
         Key: cleanKey
@@ -1050,33 +1229,12 @@ app.get('/api/profile-avatar', async (req, res) => {
         if (obj.ContentLength != null) res.setHeader('Content-Length', String(obj.ContentLength));
         return res.status(200).send(bytes);
       }
-    } catch {
-      // Continue to Supabase fallback
     }
-  }
 
-  // 2. Try Supabase Storage
-  const { supabaseUrl, supabaseKey } = getSupabaseConfig();
-  if (supabaseUrl) {
-    try {
-      const targetUrl = `${supabaseUrl}/storage/v1/object/public/${cleanKey}`;
-      const upstream = await fetch(targetUrl, {
-        headers: supabaseKey ? { apikey: supabaseKey } : undefined
-      });
-      if (upstream.ok) {
-        const arrayBuf = await upstream.arrayBuffer();
-        const contentType = upstream.headers.get('content-type') || 'image/jpeg';
-        res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        return res.status(200).send(Buffer.from(arrayBuf));
-      }
-    } catch {
-      // Continue to SVG fallback
-    }
+    return res.status(404).send('Media not found');
+  } catch (err: any) {
+    return res.status(404).send('Media not found');
   }
-
-  // 3. Clean SVG avatar fallback
-  return sendSvgFallback();
 });
 
 app.patch('/api/profiles/:id', async (req, res) => {
@@ -1108,6 +1266,10 @@ app.patch('/api/profiles/:id', async (req, res) => {
     if (payload.city !== undefined) updateObj.city = String(payload.city || '').trim();
     else if (payload.provincia !== undefined) updateObj.city = String(payload.provincia || '').trim();
     else if (payload.ciudad !== undefined) updateObj.city = String(payload.ciudad || '').trim();
+    if (payload.province !== undefined) updateObj.province = String(payload.province || '').trim();
+    else if (payload.provincia !== undefined) updateObj.province = String(payload.provincia || '').trim();
+    if (payload.country !== undefined) updateObj.country = String(payload.country || '').trim();
+    else if (payload.pais !== undefined) updateObj.country = String(payload.pais || '').trim();
     if (payload.birth_date !== undefined) updateObj.birth_date = String(payload.birth_date || '').trim();
     else if (payload.fnac !== undefined) updateObj.birth_date = String(payload.fnac || '').trim();
     if (payload.gender !== undefined) updateObj.gender = String(payload.gender || '').trim();
@@ -1538,6 +1700,67 @@ app.post('/api/posts', async (req, res) => {
   }
 });
 
+// Resilient signatures store and proxy to avoid CORS/520 in browser
+const inMemorySignatures: any[] = [];
+app.all(['/api/profile-signatures', '/api/profile_signatures'], async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig();
+    const authKey = serviceRoleKey || supabaseKey;
+    const token = extractToken(req);
+    const bearer = serviceRoleKey ? serviceRoleKey : (token || authKey);
+
+    if (authKey && supabaseUrl) {
+      try {
+        const query = new URLSearchParams();
+        for (const [key, value] of Object.entries(req.query)) {
+          if (Array.isArray(value)) value.forEach(item => query.append(key, String(item)));
+          else if (value != null) query.set(key, String(value));
+        }
+        const upstream = await fetch(`${supabaseUrl}/rest/v1/profile_signatures?${query.toString()}`, {
+          method: req.method,
+          headers: {
+            apikey: authKey,
+            Authorization: `Bearer ${bearer}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            ...(req.headers.prefer ? { Prefer: String(req.headers.prefer) } : {})
+          },
+          body: ['POST', 'PATCH', 'PUT'].includes(req.method) ? JSON.stringify(req.body) : undefined
+        });
+
+        const bodyText = await upstream.text();
+        if (upstream.ok && !bodyText.trim().startsWith('<')) {
+          try {
+            const parsed = JSON.parse(bodyText);
+            return res.status(upstream.status).json(parsed);
+          } catch {}
+        }
+      } catch (err) {
+        console.warn('profile_signatures upstream proxy error:', err);
+      }
+    }
+
+    if (req.method === 'POST') {
+      const items = Array.isArray(req.body) ? req.body : [req.body];
+      for (const item of items) {
+        if (item && typeof item === 'object') {
+          inMemorySignatures.push({ id: `sig-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, ...item, created_at: new Date().toISOString() });
+        }
+      }
+      return res.status(201).json(inMemorySignatures.slice(-items.length));
+    }
+
+    const profileId = String(req.query.profile_id || '').replace(/^eq\./, '');
+    const authorId = String(req.query.author_id || '').replace(/^eq\./, '');
+    let filtered = inMemorySignatures;
+    if (profileId) filtered = filtered.filter(s => String(s.profile_id) === profileId);
+    if (authorId) filtered = filtered.filter(s => String(s.author_id) === authorId);
+    return res.status(200).json(filtered);
+  } catch (err: any) {
+    return res.status(200).json([]);
+  }
+});
+
 app.post('/api/upload', (req: express.Request, res: express.Response) => {
   (upload.single('file') as any)(req, res, async (err: any) => {
     if (err) {
@@ -1583,7 +1806,10 @@ app.post('/api/upload', (req: express.Request, res: express.Response) => {
         const endpointUrl = new URL(`${hetzner.endpoint}/`);
         publicUrl = `${endpointUrl.protocol}//${hetzner.bucket}.${endpointUrl.host}/${key}`;
       }
-      return res.json({ success: true, url: publicUrl, key, bucket: hetzner.bucket, provider: 'hetzner' });
+      const proxyUrl = folder === 'avatars' 
+        ? `/api/profile-avatar?key=${encodeURIComponent(key)}`
+        : `/api/media/${key}`;
+      return res.json({ success: true, url: proxyUrl, publicUrl, key, bucket: hetzner.bucket, provider: 'hetzner' });
     } catch (uploadErr: any) {
       console.error('Error uploading file to Hetzner Object Storage, using inline fallback:', uploadErr);
       if (req.file) {
@@ -1614,7 +1840,8 @@ async function startServer() {
     app.use(express.static(distPath));
     app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
   }
-  app.listen(PORT, '0.0.0.0', () => console.log(`Inkorium Server running on port ${PORT}`));
+  const server = http.createServer({ maxHeaderSize: 262144 }, app);
+  server.listen(PORT, '0.0.0.0', () => console.log(`Inkorium Server running on port ${PORT}`));
 }
 
 startServer();

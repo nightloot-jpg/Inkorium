@@ -31,14 +31,21 @@ const PROFILE_SELECT = [
   'presence'
 ].join(',');
 
-function toProfileAvatarUrl(value: unknown, name = 'Usuario'): string {
+export function toProfileAvatarUrl(value: unknown, name = 'Usuario'): string {
   const raw = String(value ?? '').trim();
   if (!raw || raw.startsWith('/api/profile-avatar') || raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
 
+  if (raw.includes('avatar-resolver')) {
+    const uuidMatch = raw.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    const userId = uuidMatch ? uuidMatch[0] : '';
+    return `/api/profile-avatar?${userId ? `userId=${encodeURIComponent(userId)}&` : ''}name=${encodeURIComponent(name)}`;
+  }
+
   try {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-    const pathname = decodeURIComponent(new URL(raw, origin).pathname || '').replace(/^\/+/, '');
-    for (const marker of ['profile-media/', 'avatars/', 'user-avatars/']) {
+    const parsed = new URL(raw, origin);
+    const pathname = decodeURIComponent(parsed.pathname || '').replace(/^\/+/, '');
+    for (const marker of ['avatars/', 'user-avatars/', 'profile-media/', 'photos/', 'wall/']) {
       const index = pathname.indexOf(marker);
       if (index >= 0) {
         const key = pathname.slice(index);
@@ -48,9 +55,11 @@ function toProfileAvatarUrl(value: unknown, name = 'Usuario'): string {
     }
   } catch {}
 
-  if (raw.startsWith('user-avatars/') || raw.startsWith('/user-avatars/') || raw.startsWith('profile-media/') || raw.startsWith('/profile-media/')) {
-    const key = raw.replace(/^\/+/, '');
-    return `/api/profile-avatar?key=${encodeURIComponent(key)}&name=${encodeURIComponent(name)}`;
+  const clean = raw.replace(/^\/+/, '');
+  for (const marker of ['avatars/', 'user-avatars/', 'profile-media/', 'photos/', 'wall/']) {
+    if (clean.startsWith(marker)) {
+      return `/api/profile-avatar?key=${encodeURIComponent(clean)}&name=${encodeURIComponent(name)}`;
+    }
   }
 
   return raw;
@@ -949,7 +958,9 @@ const addDeletedMessageIds = (ids: string[]) => {
             ...u,
             nombre: u.nombre || existing.nombre,
             apellidos: u.apellidos !== undefined ? u.apellidos : existing.apellidos,
-            avatar: u.avatar || existing.avatar,
+            avatar: (u.id === curId && existing.avatar && !existing.avatar.includes('avatar-resolver'))
+              ? existing.avatar
+              : ((u.avatar && !u.avatar.includes('avatar-resolver')) ? u.avatar : (existing.avatar || u.avatar)),
             provincia: u.provincia || existing.provincia,
             ciudad: u.ciudad || existing.ciudad,
             situacionSentimental: u.situacionSentimental || existing.situacionSentimental,
