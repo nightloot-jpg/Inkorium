@@ -11,7 +11,50 @@ import { musicAudioEngine } from '../utils/audioEngine';
 import { appendMessageToConversation, updateMessageInConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents, markConversationAsRead, applyReadReceiptsToConversation, getStoredBlockedUserIds, saveStoredBlockedUserIds } from '../lib/chatHistory';
 import { playMessageSound, playNotificationChime, playNudgeSound } from '../utils/sound';
 import { RealtimeManager } from '../lib/realtimeManager';
-import { toProfileAvatarUrl, PROFILE_SELECT } from '../lib/profileBootstrap';
+
+const PROFILE_SELECT = [
+  'id',
+  'username',
+  'full_name',
+  'avatar_url',
+  'city',
+  'country',
+  'province',
+  'birth_date',
+  'user_status',
+  'profile_interests',
+  'updated_at',
+  'relationship_status',
+  'occupation',
+  'music',
+  'gender',
+  'presence'
+].join(',');
+
+function toProfileAvatarUrl(value: unknown, name = 'Usuario'): string {
+  const raw = String(value ?? '').trim();
+  if (!raw || raw.startsWith('/api/profile-avatar') || raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
+
+  try {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    const pathname = decodeURIComponent(new URL(raw, origin).pathname || '').replace(/^\/+/, '');
+    for (const marker of ['profile-media/', 'avatars/', 'user-avatars/']) {
+      const index = pathname.indexOf(marker);
+      if (index >= 0) {
+        const key = pathname.slice(index);
+        if (!key || key.includes('..') || key.includes('\\')) return raw;
+        return `/api/profile-avatar?key=${encodeURIComponent(key)}&name=${encodeURIComponent(name)}`;
+      }
+    }
+  } catch {}
+
+  if (raw.startsWith('user-avatars/') || raw.startsWith('/user-avatars/') || raw.startsWith('profile-media/') || raw.startsWith('/profile-media/')) {
+    const key = raw.replace(/^\/+/, '');
+    return `/api/profile-avatar?key=${encodeURIComponent(key)}&name=${encodeURIComponent(name)}`;
+  }
+
+  return raw;
+}
 
 const PHOTO_TAGS_STORAGE_KEY = 'inkorium:photo_tags';
 

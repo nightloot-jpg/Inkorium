@@ -8,7 +8,7 @@ const supabaseKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || impo
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey && !supabaseUrl.includes('your-project'));
 
-let supabase: ReturnType<typeof createClient> | null = null;
+let supabase: any = null;
 
 const profileAwareFetch: typeof fetch = async (input, init) => {
   const request = input instanceof Request ? input : null;

@@ -30,7 +30,7 @@ const mapRealtimeProfile = (profile: any) => {
       (gender === 'male' || gender === 'hombre' || gender === 'h' ? 'h' : 'otro'),
     situacionSentimental: profile?.relationship_status ?? 'Soltero/a',
     ocupacion: profile?.occupation ?? '',
-    intereses,
+    intereses: interests,
     musica: profile?.music ?? '',
     presencia,
     online: presencia !== 'invisible',
