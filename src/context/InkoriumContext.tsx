@@ -1410,10 +1410,15 @@ const addDeletedMessageIds = (ids: string[]) => {
   const fetchAndMapWallComments = useCallback(async (targetProfileId?: string) => {
     try {
       const query = targetProfileId ? `?profile_id=${encodeURIComponent(targetProfileId)}` : '';
+      console.log(`[InkoriumContext] fetchAndMapWallComments requesting signatures for profile: ${targetProfileId || 'ALL'}`);
       const res = await fetch(`/api/profile-signatures${query}`);
       if (!res.ok) return;
       const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) return;
+      if (!Array.isArray(data) || data.length === 0) {
+        console.log(`[InkoriumContext] fetchAndMapWallComments returned 0 items for profile: ${targetProfileId || 'ALL'}`);
+        return;
+      }
+      console.log(`[InkoriumContext] fetchAndMapWallComments received ${data.length} signature(s) from cloud backend.`);
 
       setWallComments(prev => {
         let changed = false;
@@ -1456,6 +1461,7 @@ const addDeletedMessageIds = (ids: string[]) => {
         try {
           safeSetLocalStorage('inkorium:wall_comments', JSON.stringify(updated));
         } catch {}
+        console.log(`[InkoriumContext] fetchAndMapWallComments updated local state with new signatures. Total now: ${updated.length}`);
         return updated;
       });
     } catch (err) {
@@ -1677,6 +1683,15 @@ const addDeletedMessageIds = (ids: string[]) => {
         const authorName = String(data.author_name || data.autorNombre || (author ? (author.full_name || author.nombre) : 'Usuario'));
         const authorAvatar = String(data.author_avatar || data.autorAvatar || author?.avatar || '');
 
+        console.log('[InkoriumContext] onWallComment processing real-time SSE signature:', {
+          id: data.id,
+          profileId,
+          authorId,
+          authorName,
+          contentSnippet: content.slice(0, 40),
+          currentUserId
+        });
+
         const newComment: WallComment = {
           id: String(data.id),
           propietarioId: profileId,
@@ -1694,13 +1709,23 @@ const addDeletedMessageIds = (ids: string[]) => {
         };
 
         setWallComments(prev => {
-          if (prev.some(c => c.id === newComment.id)) return prev;
+          if (prev.some(c => c.id === newComment.id)) {
+            console.log('[InkoriumContext] onWallComment: signature already exists in local state, skipping duplicate:', newComment.id);
+            return prev;
+          }
           const updated = [newComment, ...prev];
           try {
             safeSetLocalStorage('inkorium:wall_comments', JSON.stringify(updated));
           } catch {}
+          console.log('[InkoriumContext] onWallComment: added new signature to local state and storage. Total:', updated.length);
           return updated;
         });
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('inkorium:signature_update', {
+            detail: { type: 'WALL_COMMENT_REALTIME', comment: newComment, raw: data }
+          }));
+        }
 
         // Add to feed
         const feedId = `feed-wall-${newComment.id}`;
@@ -1732,6 +1757,7 @@ const addDeletedMessageIds = (ids: string[]) => {
         const isAuthor = normalizeUserId(authorId) === normCur || stripUserPrefix(normalizeUserId(authorId)) === stripUserPrefix(normCur);
 
         if (isRecipient && !isAuthor) {
+          console.log('[InkoriumContext] onWallComment: Signature target is CURRENT USER! Displaying notification and chime.');
           try {
             playNotificationChime();
           } catch {}
@@ -1769,8 +1795,14 @@ const addDeletedMessageIds = (ids: string[]) => {
         }
       },
       onWallCommentDelete: (data: any) => {
+        console.log('[InkoriumContext] onWallCommentDelete received real-time deletion:', data);
         if (data?.id) {
           setWallComments(prev => prev.filter(c => c.id !== data.id));
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('inkorium:signature_update', {
+              detail: { type: 'WALL_COMMENT_DELETED', id: data.id, profile_id: data.profile_id }
+            }));
+          }
         }
       }
     });
@@ -3322,6 +3354,19 @@ const addDeletedMessageIds = (ids: string[]) => {
 
     setWallComments(prev => [newComment, ...prev]);
 
+    console.log('[InkoriumContext] postWallComment locally registered:', {
+      id: newComment.id,
+      profileId: resolvedPropietarioId,
+      authorId: currentUserId,
+      contentSnippet: cleanText.slice(0, 40)
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('inkorium:signature_update', {
+        detail: { type: 'WALL_COMMENT_POSTED', comment: newComment }
+      }));
+    }
+
     // Broadcast across tabs immediately
     broadcastCrossTabEvent({
       type: 'WALL_COMMENT',
@@ -3329,6 +3374,7 @@ const addDeletedMessageIds = (ids: string[]) => {
     });
 
     // Save to persistent backend store & emit real-time SSE
+    console.log('[InkoriumContext] Sending signature to /api/profile-signatures:', newComment.id);
     fetch('/api/profile-signatures', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3341,7 +3387,15 @@ const addDeletedMessageIds = (ids: string[]) => {
         content: cleanText,
         created_at: new Date().toISOString()
       })
-    }).catch(err => console.warn('Error saving wall comment to cloud:', err));
+    })
+    .then(async (res) => {
+      if (res.ok) {
+        console.log('[InkoriumContext] Signature saved successfully to backend /api/profile-signatures:', newComment.id);
+      } else {
+        console.warn('[InkoriumContext] Warning: backend responded with non-ok status for signature:', res.status);
+      }
+    })
+    .catch(err => console.warn('[InkoriumContext] Error saving wall comment to cloud:', err));
 
     // Añadir al feed de novedades como evento de tablón
     const newFeedItem: FeedItem = {

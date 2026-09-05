@@ -153,6 +153,14 @@ export class RealtimeManager {
         if (this.status !== 'connected') this.updateStatus('connected');
         try {
           const data = JSON.parse(e.data);
+          console.log('[Realtime SSE Stream] Received "wall_comment" event:', {
+            id: data?.id,
+            profile_id: data?.profile_id || data?.propietarioId || data?.receptorId,
+            author_id: data?.author_id || data?.autorId || data?.emisorId,
+            author_name: data?.author_name || data?.autorNombre,
+            content_snippet: String(data?.content || data?.texto || '').slice(0, 50),
+            timestamp: new Date().toISOString()
+          });
           this.onWallComment?.(data);
         } catch (err) {
           console.warn('Realtime wall_comment parse error:', err);
@@ -162,6 +170,11 @@ export class RealtimeManager {
       es.addEventListener('wall_comment_delete', (e) => {
         try {
           const data = JSON.parse(e.data);
+          console.log('[Realtime SSE Stream] Received "wall_comment_delete" event:', {
+            id: data?.id,
+            profile_id: data?.profile_id,
+            timestamp: new Date().toISOString()
+          });
           this.onWallCommentDelete?.(data);
         } catch (err) {
           console.warn('Realtime wall_comment_delete parse error:', err);

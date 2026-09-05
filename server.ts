@@ -345,22 +345,32 @@ const sseClients = new Map<string, Set<express.Response>>();
 function registerSseClient(userId: string, res: express.Response) {
   if (!userId) return;
   const normId = userId.toLowerCase().trim();
-  if (!sseClients.has(normId)) {
-    sseClients.set(normId, new Set());
-  }
-  sseClients.get(normId)!.add(res);
+  const cleanId = normId.replace(/^user-/, '');
+
+  [normId, cleanId].forEach(id => {
+    if (!sseClients.has(id)) {
+      sseClients.set(id, new Set());
+    }
+    sseClients.get(id)!.add(res);
+  });
+  console.log(`[SSE Server] Registered client for userId="${userId}" (keys: ${normId}, ${cleanId}). Total unique keys: ${sseClients.size}`);
 }
 
 function removeSseClient(userId: string, res: express.Response) {
   if (!userId) return;
   const normId = userId.toLowerCase().trim();
-  const set = sseClients.get(normId);
-  if (set) {
-    set.delete(res);
-    if (set.size === 0) {
-      sseClients.delete(normId);
+  const cleanId = normId.replace(/^user-/, '');
+
+  [normId, cleanId].forEach(id => {
+    const set = sseClients.get(id);
+    if (set) {
+      set.delete(res);
+      if (set.size === 0) {
+        sseClients.delete(id);
+      }
     }
-  }
+  });
+  console.log(`[SSE Server] Disconnected client for userId="${userId}". Total unique keys: ${sseClients.size}`);
 }
 
 function broadcastRealtimeEvent(targetUserIds: string[], eventName: string, data: any) {
@@ -375,17 +385,53 @@ function broadcastRealtimeEvent(targetUserIds: string[], eventName: string, data
     }
   });
 
+  // If wildcard '*' is in targets, broadcast to all connected clients!
+  if (targets.has('*')) {
+    let clientCount = 0;
+    const sentResponses = new Set<express.Response>();
+    for (const clients of sseClients.values()) {
+      clients.forEach(client => {
+        if (!sentResponses.has(client)) {
+          sentResponses.add(client);
+          try {
+            client.write(payload);
+            clientCount++;
+          } catch {
+            // Client disconnected
+          }
+        }
+      });
+    }
+    console.log(`[SSE Server] Wildcard broadcast "${eventName}" delivered to ${clientCount} unique clients. Data:`, {
+      id: data?.id,
+      profile_id: data?.profile_id,
+      author_id: data?.author_id
+    });
+    return;
+  }
+
+  let clientCount = 0;
+  const sentResponses = new Set<express.Response>();
   targets.forEach(userId => {
     const clients = sseClients.get(userId);
     if (clients) {
       clients.forEach(client => {
-        try {
-          client.write(payload);
-        } catch {
-          // Client disconnected
+        if (!sentResponses.has(client)) {
+          sentResponses.add(client);
+          try {
+            client.write(payload);
+            clientCount++;
+          } catch {
+            // Client disconnected
+          }
         }
       });
     }
+  });
+  console.log(`[SSE Server] Targeted broadcast "${eventName}" delivered to ${clientCount} clients (targets: ${Array.from(targets).join(', ')}). Data:`, {
+    id: data?.id,
+    profile_id: data?.profile_id,
+    author_id: data?.author_id
   });
 }
 
