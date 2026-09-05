@@ -82,7 +82,7 @@ function installOnRouteMethod(method: 'post' | 'put' | 'patch' | 'delete' | 'get
           const profileId = String(req.query.profile_id || req.query.target_id || '').replace(/^eq\./, '').trim();
           const authorId = String(req.query.author_id || '').replace(/^eq\./, '').trim();
           const supabaseUrl = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
-          const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
+          const key = String(process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
           if (supabaseUrl && key) {
             try {
               const params = new URLSearchParams();
@@ -91,7 +91,7 @@ function installOnRouteMethod(method: 'post' | 'put' | 'patch' | 'delete' | 'get
               if (authorId) params.set('author_id', `eq.${authorId}`);
               params.set('order', 'created_at.desc');
               const upstream = await fetch(`${supabaseUrl}/rest/v1/profile_signatures?${params.toString()}`, {
-                headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' }
+                headers: { apikey: key, Accept: 'application/json' }
               });
               if (upstream.ok) return res.status(200).json(await upstream.json());
             } catch {}
