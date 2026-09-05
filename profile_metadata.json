@@ -1,0 +1,18 @@
+{
+  "cb28b2f8-0000-0000-0000-000000000000": {
+    "updated_at": "2026-09-05T12:58:25.487Z",
+    "avatar_url": "test",
+    "avatar": "test",
+    "user_status": "test",
+    "estado": "test",
+    "id": "cb28b2f8-0000-0000-0000-000000000000"
+  },
+  "user-marta": {
+    "updated_at": "2026-09-05T13:03:25.913Z",
+    "full_name": "Marta Sanchez Garcia",
+    "city": "Madrid",
+    "user_status": "Probando representación",
+    "estado": "Probando representación",
+    "id": "user-marta"
+  }
+}

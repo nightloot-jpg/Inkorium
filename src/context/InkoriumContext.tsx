@@ -951,20 +951,23 @@ const addDeletedMessageIds = (ids: string[]) => {
         
         // Merge remote server data with previous local state, prioritizing fresh server profile updates
         combined = combined.map(u => {
-          const existing = prevUsers.find(p => p.id === u.id);
+          const existing = prevUsers.find(p => p.id === u.id || (Boolean(u.id) && normalizeUserId(p.id) === normalizeUserId(u.id)));
           if (!existing) return u;
+          const isCurrent = u.id === curId || (Boolean(curId) && normalizeUserId(u.id) === normalizeUserId(curId));
           return {
             ...existing,
             ...u,
-            nombre: u.nombre || existing.nombre,
-            apellidos: u.apellidos !== undefined ? u.apellidos : existing.apellidos,
-            avatar: (u.id === curId && existing.avatar && !existing.avatar.includes('avatar-resolver'))
+            nombre: (isCurrent && existing.nombre && (!u.nombre || u.nombre.startsWith('Usuario_'))) ? existing.nombre : (u.nombre || existing.nombre),
+            apellidos: u.apellidos !== undefined && u.apellidos !== '' ? u.apellidos : existing.apellidos,
+            avatar: (isCurrent && existing.avatar && !existing.avatar.includes('avatar-resolver'))
               ? existing.avatar
               : ((u.avatar && !u.avatar.includes('avatar-resolver')) ? u.avatar : (existing.avatar || u.avatar)),
+            pais: u.pais || existing.pais,
             provincia: u.provincia || existing.provincia,
             ciudad: u.ciudad || existing.ciudad,
             situacionSentimental: u.situacionSentimental || existing.situacionSentimental,
             fnac: u.fnac || existing.fnac,
+            sexo: u.sexo || existing.sexo,
             ocupacion: u.ocupacion || existing.ocupacion,
             intereses: u.intereses || existing.intereses,
             musica: u.musica || existing.musica,
@@ -975,8 +978,9 @@ const addDeletedMessageIds = (ids: string[]) => {
         });
 
         // Keep current user in list if not in mapped
-        const existingCurrent = prevUsers.find(u => u.id === curId);
-        if (existingCurrent && !combined.some(u => u.id === curId)) {
+        const isCurrentMatch = (uid: string) => uid === curId || (Boolean(curId) && normalizeUserId(uid) === normalizeUserId(curId));
+        const existingCurrent = prevUsers.find(u => isCurrentMatch(u.id));
+        if (existingCurrent && !combined.some(u => isCurrentMatch(u.id))) {
           combined = [existingCurrent, ...combined];
         }
 
@@ -1817,20 +1821,21 @@ const addDeletedMessageIds = (ids: string[]) => {
   }, [currentUserId, currentUser, mapPhotoToPhoto]);
 
   const updateUserData = useCallback((data: Partial<User>) => {
-    if (!currentUserId) return;
+    const targetUserId = currentUserId || currentUser?.id;
+    if (!targetUserId) return;
     setUsers(prev => {
       const updated = prev.map(user => 
-        (user.id === currentUserId || (Boolean(currentUserId) && normalizeUserId(user.id) === normalizeUserId(currentUserId)))
+        (user.id === targetUserId || (Boolean(targetUserId) && normalizeUserId(user.id) === normalizeUserId(targetUserId)))
           ? { ...user, ...data }
           : user
       );
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('inkorium:users', JSON.stringify(updated));
         const currentUpdated = updated.find(u => 
-          u.id === currentUserId || (Boolean(currentUserId) && normalizeUserId(u.id) === normalizeUserId(currentUserId))
+          u.id === targetUserId || (Boolean(targetUserId) && normalizeUserId(u.id) === normalizeUserId(targetUserId))
         );
         if (currentUpdated) {
-          localStorage.setItem(`inkorium:user_profile_${currentUserId}`, JSON.stringify(currentUpdated));
+          localStorage.setItem(`inkorium:user_profile_${targetUserId}`, JSON.stringify(currentUpdated));
         }
       }
       return updated;
@@ -1838,7 +1843,7 @@ const addDeletedMessageIds = (ids: string[]) => {
 
     broadcastCrossTabEvent({
       type: 'PROFILE_UPDATE',
-      payload: { userId: currentUserId, data }
+      payload: { userId: targetUserId, data }
     });
 
     // Remote sync in background
@@ -1849,7 +1854,7 @@ const addDeletedMessageIds = (ids: string[]) => {
           const session = await supabase.auth.getSession().catch(() => null);
           token = session?.data?.session?.access_token || '';
         }
-        await fetch(`/api/profiles/${encodeURIComponent(currentUserId)}`, {
+        await fetch(`/api/profiles/${encodeURIComponent(targetUserId)}`, {
           method: 'PATCH',
           credentials: 'omit',
           headers: {
@@ -1862,33 +1867,37 @@ const addDeletedMessageIds = (ids: string[]) => {
         console.warn('Profile remote update warning:', err);
       }
     })();
-  }, [currentUserId]);
+  }, [currentUserId, currentUser?.id]);
 
   const updateStatusText = useCallback(async (statusText: string) => {
-    if (!currentUserId) return;
+    const targetUserId = currentUserId || currentUser?.id;
+    if (!targetUserId) return;
     const nextStatus = statusText.trim().slice(0, 140);
     setUsers(prev => prev.map(user => 
-      (user.id === currentUserId || (Boolean(currentUserId) && normalizeUserId(user.id) === normalizeUserId(currentUserId)))
+      (user.id === targetUserId || (Boolean(targetUserId) && normalizeUserId(user.id) === normalizeUserId(targetUserId)))
         ? { ...user, estado: nextStatus, estadoFecha: 'Reciente' } 
         : user
     ));
     try {
+      let accessToken = '';
       if (supabase) {
-        const sessionResult = await supabase.auth.getSession();
-        const accessToken = sessionResult.data.session?.access_token;
-        if (accessToken) {
-          await fetch(`/api/profiles/${encodeURIComponent(currentUserId)}/status`, {
-            method: 'PATCH',
-            credentials: 'omit',
-            headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-            body: JSON.stringify({ status: nextStatus })
-          }).catch(() => null);
-        }
+        const sessionResult = await supabase.auth.getSession().catch(() => null);
+        accessToken = sessionResult?.data?.session?.access_token || '';
       }
+      await fetch(`/api/profiles/${encodeURIComponent(targetUserId)}/status`, {
+        method: 'PATCH',
+        credentials: 'omit',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        },
+        body: JSON.stringify({ status: nextStatus })
+      }).catch(() => null);
     } catch (error) {
       console.warn('Status remote sync skipped:', error);
     }
-  }, [currentUserId]);
+  }, [currentUserId, currentUser?.id]);
 
   const sendChatReadReceipt = useCallback((targetUserId: string, messageIds?: string[]) => {
     if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;

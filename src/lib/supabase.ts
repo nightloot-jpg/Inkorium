@@ -41,10 +41,25 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
         const authorization = headers.get('authorization') || '';
         let accessToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length).trim() : '';
         if (!accessToken) { try { accessToken = (await supabase?.auth.getSession())?.data.session?.access_token || ''; } catch { accessToken = ''; } }
-        if (match && presence && ['conectado', 'ausente', 'ocupado', 'invisible'].includes(presence) && accessToken) {
-          return fetch(`${window.location.origin}/api/profiles/${encodeURIComponent(match[1])}/presence`, {
-            method: 'PATCH', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, credentials: 'omit',
-            body: JSON.stringify({ presence, access_token: accessToken })
+
+        if (match) {
+          const targetProfileId = decodeURIComponent(match[1]);
+          if (presence && ['conectado', 'ausente', 'ocupado', 'invisible'].includes(presence) && accessToken) {
+            return fetch(`${window.location.origin}/api/profiles/${encodeURIComponent(targetProfileId)}/presence`, {
+              method: 'PATCH', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, credentials: 'omit',
+              body: JSON.stringify({ presence, access_token: accessToken })
+            });
+          }
+
+          return fetch(`${window.location.origin}/api/profiles/${encodeURIComponent(targetProfileId)}`, {
+            method: 'PATCH',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+            },
+            credentials: 'omit',
+            body: rawBody || JSON.stringify(body)
           });
         }
       }

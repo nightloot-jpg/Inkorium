@@ -1302,6 +1302,29 @@ app.patch('/api/profiles/:id', async (req, res) => {
       const authorId = token ? await verifySupabaseJwt(token, supabaseUrl, jwtSecret) : profileId;
       const key = serviceRoleKey || supabaseKey;
       const authorization = serviceRoleKey ? `Bearer ${serviceRoleKey}` : (token ? `Bearer ${token}` : `Bearer ${supabaseKey}`);
+
+      // Strip non-PostgreSQL columns so PostgREST schema cache doesn't reject with 400
+      const supabasePayload: Record<string, any> = {
+        updated_at: updateObj.updated_at
+      };
+      if (updateObj.full_name !== undefined) supabasePayload.full_name = updateObj.full_name;
+      if (updateObj.username !== undefined) supabasePayload.username = updateObj.username;
+      if (updateObj.avatar_url !== undefined) supabasePayload.avatar_url = updateObj.avatar_url;
+      if (updateObj.city !== undefined) supabasePayload.city = updateObj.city;
+      if (updateObj.province !== undefined) supabasePayload.province = updateObj.province;
+      if (updateObj.country !== undefined) supabasePayload.country = updateObj.country;
+      if (updateObj.birth_date !== undefined) supabasePayload.birth_date = updateObj.birth_date;
+      if (updateObj.gender !== undefined) supabasePayload.gender = updateObj.gender;
+      if (updateObj.user_status !== undefined) supabasePayload.user_status = updateObj.user_status;
+      if (updateObj.relationship_status !== undefined) supabasePayload.relationship_status = updateObj.relationship_status;
+      if (updateObj.occupation !== undefined) supabasePayload.occupation = updateObj.occupation;
+      if (updateObj.profile_interests !== undefined) {
+        supabasePayload.profile_interests = Array.isArray(updateObj.profile_interests)
+          ? updateObj.profile_interests
+          : String(updateObj.profile_interests || '').split(',').map(s => s.trim()).filter(Boolean);
+      }
+      if (updateObj.music !== undefined) supabasePayload.music = updateObj.music;
+
       try {
         await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profileId)}`, {
           method: 'PATCH',
@@ -1311,14 +1334,19 @@ app.patch('/api/profiles/:id', async (req, res) => {
             'Content-Type': 'application/json',
             Prefer: 'return=representation'
           },
-          body: JSON.stringify(updateObj)
+          body: JSON.stringify(supabasePayload)
         });
       } catch (err) {
         console.warn('Supabase profile direct PATCH warning:', err);
       }
     }
 
-    return res.status(200).json({ success: true, profile: mergedProfile });
+    const preferHeader = String(req.headers['prefer'] || '');
+    const isSupabaseClient = Boolean(req.headers['apikey'] || preferHeader.includes('return='));
+    if (isSupabaseClient) {
+      return res.status(200).json([mergedProfile]);
+    }
+    return res.status(200).json({ success: true, profile: mergedProfile, data: [mergedProfile] });
   } catch (err: any) {
     return res.status(200).json({ success: true, local: true });
   }

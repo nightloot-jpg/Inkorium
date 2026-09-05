@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { supabase } from '../lib/supabase';
 import { 
@@ -24,7 +24,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   onClose,
   onOpenAvatarModal
 }) => {
-  const { currentUser, updateUserData, pushNotification } = useInkorium();
+  const { currentUser, updateUserData, refreshProfiles, pushNotification } = useInkorium();
 
   const [nombre, setNombre] = useState(currentUser.nombre || '');
   const [apellidos, setApellidos] = useState(currentUser.apellidos || '');
@@ -44,14 +44,15 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessBadge, setShowSuccessBadge] = useState(false);
+  const prevIsOpenRef = useRef(false);
 
   // Available zones for current selected country
   const currentCountryObj = COUNTRIES_LIST.find(c => c.name.toLowerCase() === pais.toLowerCase()) || COUNTRIES_LIST[0];
   const availableZones = currentCountryObj?.zones || [];
 
-  // Sync state when modal opens or currentUser updates
+  // Sync state only when modal opens so typing isn't interrupted by background poll cycles
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpenRef.current) {
       const userCountry = currentUser.pais || getCountryByZone(currentUser.provincia)?.name || 'España';
       setNombre(currentUser.nombre || '');
       setApellidos(currentUser.apellidos || '');
@@ -67,6 +68,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setEstado(currentUser.estado || '');
       setShowSuccessBadge(false);
     }
+    prevIsOpenRef.current = isOpen;
   }, [isOpen, currentUser]);
 
   const handleCountryChange = (newCountryName: string) => {
@@ -85,68 +87,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
     setIsSaving(true);
 
-    const fullName = `${nombre.trim()} ${apellidos.trim()}`.trim();
+    const trimmedNombre = nombre.trim();
+    const trimmedApellidos = apellidos.trim();
+    const fullName = `${trimmedNombre} ${trimmedApellidos}`.trim();
     const profileInterests = intereses
       .split(',')
       .map(item => item.trim())
       .filter(Boolean);
 
-    // Persist the profile to the shared Supabase row first. This is the
-    // source of truth used when another device/account opens the profile.
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: fullName || null,
-          avatar_url: currentUser.avatar || null,
-          city: ciudad.trim() || null,
-          country: pais || null,
-          province: provincia || null,
-          birth_date: fnac || null,
-          user_status: estado.trim() || currentUser.estado || null,
-          gender: sexo || null,
-          relationship_status: situacion || null,
-          occupation: ocupacion.trim() || null,
-          profile_interests: profileInterests,
-          music: musica.trim() || null
-        })
-        .eq('id', currentUser.id);
-
-      if (error) {
-        console.error('[Inkorium] Error guardando perfil en Supabase:', error);
-        pushNotification({
-          id: `notif-profile-edit-error-${Date.now()}`,
-          tipo: 'sistema',
-          userId: currentUser.id,
-          fromUserId: currentUser.id,
-          fromUserName: 'Inkorium Sistema',
-          mensaje: 'No se han podido guardar tus cambios en el servidor. Inténtalo de nuevo.',
-          fecha: 'Ahora mismo',
-          leido: true
-        });
-        setIsSaving(false);
-        return;
-      }
-    } catch (error) {
-      console.error('[Inkorium] Error guardando perfil en Supabase:', error);
-      pushNotification({
-        id: `notif-profile-edit-error-${Date.now()}`,
-        tipo: 'sistema',
-        userId: currentUser.id,
-        fromUserId: currentUser.id,
-        fromUserName: 'Inkorium Sistema',
-        mensaje: 'No se han podido guardar tus cambios en el servidor. Inténtalo de nuevo.',
-        fecha: 'Ahora mismo',
-        leido: true
-      });
-      setIsSaving(false);
-      return;
-    }
-    
-    // Keep the local UI/cache in sync after the cloud write succeeds.
-    updateUserData({
-      nombre: nombre.trim(),
-      apellidos: apellidos.trim(),
+    const updatedData = {
+      nombre: trimmedNombre,
+      apellidos: trimmedApellidos,
       full_name: fullName,
       sexo,
       fnac,
@@ -158,12 +109,70 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       intereses: intereses.trim(),
       musica: musica.trim(),
       estado: estado.trim() || currentUser.estado
-    });
+    };
+
+    // 1. Inmediatamente actualizar estado y almacenamiento local (UI optimista)
+    updateUserData(updatedData);
+
+    // 2. Sincronización robusta con backend y Supabase
+    try {
+      const sessionResult = supabase ? await supabase.auth.getSession().catch(() => null) : null;
+      const token = sessionResult?.data?.session?.access_token || '';
+
+      const apiPayload = {
+        ...updatedData,
+        city: ciudad.trim() || null,
+        province: provincia || null,
+        country: pais || null,
+        birth_date: fnac || null,
+        user_status: estado.trim() || currentUser.estado || null,
+        gender: sexo || null,
+        relationship_status: situacion || null,
+        occupation: ocupacion.trim() || null,
+        profile_interests: profileInterests,
+        music: musica.trim() || null
+      };
+
+      await fetch(`/api/profiles/${encodeURIComponent(currentUser.id)}`, {
+        method: 'PATCH',
+        credentials: 'omit',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(apiPayload)
+      }).catch(err => console.warn('Direct profile API sync warning:', err));
+
+      if (supabase) {
+        await supabase
+          .from('profiles')
+          .update({
+            full_name: fullName || null,
+            avatar_url: currentUser.avatar || null,
+            city: ciudad.trim() || null,
+            country: pais || null,
+            province: provincia || null,
+            birth_date: fnac || null,
+            user_status: estado.trim() || currentUser.estado || null,
+            gender: sexo || null,
+            relationship_status: situacion || null,
+            occupation: ocupacion.trim() || null,
+            profile_interests: profileInterests,
+            music: musica.trim() || null
+          })
+          .eq('id', currentUser.id)
+          .catch(err => console.warn('Supabase profile client sync warning:', err));
+      }
+
+      await refreshProfiles?.().catch(() => null);
+    } catch (error) {
+      console.warn('[Inkorium] Error guardando perfil en servidor:', error);
+    }
 
     setShowSuccessBadge(true);
     setIsSaving(false);
 
-    // Notificación visual de guardado exitoso
     pushNotification({
       id: `notif-profile-edit-${Date.now()}`,
       tipo: 'sistema',
@@ -177,7 +186,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
     setTimeout(() => {
       onClose();
-    }, 900);
+    }, 600);
   };
 
   return (

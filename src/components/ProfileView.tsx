@@ -153,7 +153,11 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
 
   const [wallInput, setWallInput] = useState('');
   const [editingStatus, setEditingStatus] = useState(false);
-  const [newStatusText, setNewStatusText] = useState(profileUser.estado);
+  const [newStatusText, setNewStatusText] = useState(profileUser.estado || '');
+
+  useEffect(() => {
+    setNewStatusText(profileUser.estado || '');
+  }, [profileUser.estado]);
   const [showDirectMessageModal, setShowDirectMessageModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
