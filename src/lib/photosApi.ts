@@ -61,23 +61,13 @@ async function requestPhotos<T>(body: Record<string, unknown>, requireAuth = fal
   catch { throw new Error('PHOTOS_API_INVALID_RESPONSE'); }
 }
 
+/** Supabase stores photo metadata only. Binary media is served from Hetzner Object Storage. */
 export async function fetchPhotos(): Promise<PhotoRow[]> {
   try {
     const data = await requestPhotos<PhotoRow[]>({ action: 'list' }, false);
     return Array.isArray(data) ? data : [];
   } catch (err) {
-    // If /api/photos fails, try direct Supabase query if available
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('photos')
-          .select('id,user_id,album_id,storage_path,url,caption,visibility,created_at,updated_at')
-          .order('created_at', { ascending: false });
-        if (!error && Array.isArray(data)) {
-          return data as PhotoRow[];
-        }
-      } catch {}
-    }
+    console.warn('[Inkorium] Photos API unavailable; direct Supabase photo fallback disabled:', err);
     return [];
   }
 }
@@ -100,55 +90,31 @@ export async function insertPhoto(input: {
 }
 
 export async function addPhotoTagApi(photoId: string, tag: any): Promise<any> {
-  try {
-    return await requestPhotos({ action: 'add_tag', photoId, tag }, false);
-  } catch (err) {
-    console.warn('addPhotoTagApi failed:', err);
-    return null;
-  }
+  try { return await requestPhotos({ action: 'add_tag', photoId, tag }, false); }
+  catch (err) { console.warn('addPhotoTagApi failed:', err); return null; }
 }
 
 export async function removePhotoTagApi(photoId: string, tagId: string): Promise<any> {
-  try {
-    return await requestPhotos({ action: 'remove_tag', photoId, tagId }, false);
-  } catch (err) {
-    console.warn('removePhotoTagApi failed:', err);
-    return null;
-  }
+  try { return await requestPhotos({ action: 'remove_tag', photoId, tagId }, false); }
+  catch (err) { console.warn('removePhotoTagApi failed:', err); return null; }
 }
 
 export async function updatePhotoTagsApi(photoId: string, tags: any[]): Promise<any> {
-  try {
-    return await requestPhotos({ action: 'update_tags', photoId, tags }, false);
-  } catch (err) {
-    console.warn('updatePhotoTagsApi failed:', err);
-    return null;
-  }
+  try { return await requestPhotos({ action: 'update_tags', photoId, tags }, false); }
+  catch (err) { console.warn('updatePhotoTagsApi failed:', err); return null; }
 }
 
 export async function updatePhotoPrivacyApi(photoId: string, privacidad: string, allowedUserIds: string[]): Promise<any> {
-  try {
-    return await requestPhotos({ action: 'update_privacy', photoId, privacidad, allowedUserIds }, false);
-  } catch (err) {
-    console.warn('updatePhotoPrivacyApi failed:', err);
-    return null;
-  }
+  try { return await requestPhotos({ action: 'update_privacy', photoId, privacidad, allowedUserIds }, false); }
+  catch (err) { console.warn('updatePhotoPrivacyApi failed:', err); return null; }
 }
 
 export async function addPhotoCommentApi(photoId: string, comment: any): Promise<any> {
-  try {
-    return await requestPhotos({ action: 'add_comment', photoId, comment }, false);
-  } catch (err) {
-    console.warn('addPhotoCommentApi failed:', err);
-    return null;
-  }
+  try { return await requestPhotos({ action: 'add_comment', photoId, comment }, false); }
+  catch (err) { console.warn('addPhotoCommentApi failed:', err); return null; }
 }
 
 export async function likePhotoApi(photoId: string, userId: string): Promise<any> {
-  try {
-    return await requestPhotos({ action: 'like', photoId, userId }, false);
-  } catch (err) {
-    console.warn('likePhotoApi failed:', err);
-    return null;
-  }
+  try { return await requestPhotos({ action: 'like', photoId, userId }, false); }
+  catch (err) { console.warn('likePhotoApi failed:', err); return null; }
 }
