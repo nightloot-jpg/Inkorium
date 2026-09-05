@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useInkorium, toProfileAvatarUrl } from '../context/InkoriumContext';
+import { broadcastCrossTabEvent } from '../lib/chatHistory';
 import type { User } from '../types';
 
 const PENDING_PROFILE_KEY = 'inkorium:pending-public-profile';
@@ -58,7 +59,7 @@ function profileNeedsSync(local: User, remote: User): boolean {
 }
 
 export function PublicProfileSync() {
-  const { selectedUserId, currentUser, users, viewUserProfile } = useInkorium();
+  const { selectedUserId, currentUser, users, viewUserProfile, refreshProfiles } = useInkorium();
   const syncingRef = useRef(false);
 
   // Restore a profile that was being opened when a targeted sync required one reload.
@@ -114,12 +115,17 @@ export function PublicProfileSync() {
           );
           localStorage.setItem('inkorium:users', JSON.stringify(updated));
           if (remoteStamp) sessionStorage.setItem(syncKey, remoteStamp);
-          localStorage.setItem(PENDING_PROFILE_KEY, localTarget.id);
+          broadcastCrossTabEvent({
+            type: 'PROFILE_UPDATE',
+            payload: {
+              userId: localTarget.id,
+              data: remoteUser
+            }
+          });
+          void refreshProfiles();
         } catch {
           return;
         }
-
-        window.location.reload();
       })
       .catch(() => null)
       .finally(() => {

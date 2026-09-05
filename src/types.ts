@@ -51,6 +51,7 @@ export interface User {
   invitacionesRestantes?: number;
   invitacionesDisponibles?: number;
   invitacionesEnviadas?: UserInvitation[];
+  updated_at?: string;
 }
 
 export interface PhotoTag {

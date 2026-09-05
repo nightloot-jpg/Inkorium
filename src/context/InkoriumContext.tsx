@@ -911,7 +911,8 @@ const addDeletedMessageIds = (ids: string[]) => {
       fechaReg: p.updated_at ? new Date(p.updated_at).toLocaleDateString('es-ES') : 'Reciente',
       online: presencia !== 'invisible',
       ultimoAcceso: p.updated_at ? new Date(p.updated_at).toLocaleString('es-ES') : 'Recientemente',
-      chatEstado: presencia === 'invisible' ? '0' : '1'
+      chatEstado: presencia === 'invisible' ? '0' : '1',
+      updated_at: p.updated_at ? String(p.updated_at) : undefined
     };
   }, []);
 
@@ -954,6 +955,10 @@ const addDeletedMessageIds = (ids: string[]) => {
           const existing = prevUsers.find(p => p.id === u.id || (Boolean(u.id) && normalizeUserId(p.id) === normalizeUserId(u.id)));
           if (!existing) return u;
           const isCurrent = u.id === curId || (Boolean(curId) && normalizeUserId(u.id) === normalizeUserId(curId));
+          const remoteTime = u.updated_at ? new Date(u.updated_at).getTime() : 0;
+          const localTime = existing.updated_at ? new Date(existing.updated_at).getTime() : 0;
+          const isRemoteNewer = remoteTime >= localTime;
+
           return {
             ...existing,
             ...u,
@@ -962,18 +967,19 @@ const addDeletedMessageIds = (ids: string[]) => {
             avatar: (isCurrent && existing.avatar && !existing.avatar.includes('avatar-resolver'))
               ? existing.avatar
               : ((u.avatar && !u.avatar.includes('avatar-resolver')) ? u.avatar : (existing.avatar || u.avatar)),
-            pais: u.pais || existing.pais,
-            provincia: u.provincia || existing.provincia,
-            ciudad: u.ciudad || existing.ciudad,
-            situacionSentimental: u.situacionSentimental || existing.situacionSentimental,
-            fnac: u.fnac || existing.fnac,
-            sexo: u.sexo || existing.sexo,
-            ocupacion: u.ocupacion || existing.ocupacion,
-            intereses: u.intereses || existing.intereses,
-            musica: u.musica || existing.musica,
-            estado: u.estado || existing.estado,
+            pais: isRemoteNewer ? (u.pais ?? existing.pais) : (existing.pais ?? u.pais),
+            provincia: isRemoteNewer ? (u.provincia ?? existing.provincia) : (existing.provincia ?? u.provincia),
+            ciudad: isRemoteNewer ? (u.ciudad ?? existing.ciudad) : (existing.ciudad ?? u.ciudad),
+            situacionSentimental: isRemoteNewer ? (u.situacionSentimental ?? existing.situacionSentimental) : (existing.situacionSentimental ?? u.situacionSentimental),
+            fnac: isRemoteNewer ? (u.fnac ?? existing.fnac) : (existing.fnac ?? u.fnac),
+            sexo: isRemoteNewer ? (u.sexo ?? existing.sexo) : (existing.sexo ?? u.sexo),
+            ocupacion: isRemoteNewer ? (u.ocupacion ?? existing.ocupacion) : (existing.ocupacion ?? u.ocupacion),
+            intereses: isRemoteNewer ? (u.intereses ?? existing.intereses) : (existing.intereses ?? u.intereses),
+            musica: isRemoteNewer ? (u.musica ?? existing.musica) : (existing.musica ?? u.musica),
+            estado: isRemoteNewer ? (u.estado ?? existing.estado) : (existing.estado ?? u.estado),
             presencia: existing.presencia || u.presencia,
-            online: existing.online !== undefined ? existing.online : u.online
+            online: existing.online !== undefined ? existing.online : u.online,
+            updated_at: u.updated_at || existing.updated_at
           };
         });
 
@@ -1288,8 +1294,17 @@ const addDeletedMessageIds = (ids: string[]) => {
       sse = new EventSource('/api/profiles/events');
       sse.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
-          if (data?.type === 'PROFILE_UPDATE') {
+          const parsed = JSON.parse(event.data);
+          if (parsed?.type === 'PROFILE_UPDATE') {
+            if (parsed.profileId && parsed.data) {
+              const mapped = mapProfileToUser({ ...parsed.data, id: parsed.profileId });
+              const targetId = String(parsed.profileId).trim();
+              const normTarget = normalizeUserId(targetId);
+              setUsers(prev => prev.map(u => {
+                const match = u.id === targetId || normalizeUserId(u.id) === normTarget || (u.username && normalizeUserId(u.username) === normTarget);
+                return match ? { ...u, ...mapped, id: u.id, updated_at: mapped.updated_at || new Date().toISOString() } : u;
+              }));
+            }
             void fetchProfiles();
           }
         } catch {}
@@ -1731,7 +1746,31 @@ const addDeletedMessageIds = (ids: string[]) => {
       } else if (event.type === 'PROFILE_UPDATE') {
         const { userId, data } = event.payload;
         if (userId && data) {
-          setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...data } : u));
+          const normTarget = normalizeUserId(userId);
+          setUsers(prev => {
+            const updated = prev.map(u => {
+              const match = u.id === userId || 
+                            normalizeUserId(u.id) === normTarget || 
+                            (u.username && normalizeUserId(u.username) === normTarget);
+              if (!match) return u;
+              return { 
+                ...u, 
+                ...data, 
+                id: u.id, 
+                updated_at: data.updated_at || new Date().toISOString() 
+              };
+            });
+            try {
+              localStorage.setItem('inkorium:users', JSON.stringify(updated));
+              const currentUpdated = updated.find(u => 
+                u.id === userId || normalizeUserId(u.id) === normTarget
+              );
+              if (currentUpdated) {
+                localStorage.setItem(`inkorium:user_profile_${userId}`, JSON.stringify(currentUpdated));
+              }
+            } catch {}
+            return updated;
+          });
         }
       }
     });
