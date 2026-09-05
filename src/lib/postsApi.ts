@@ -77,7 +77,7 @@ export async function fetchPosts(limit = 100): Promise<ApiPost[]> {
     const data = await parseResponse(response);
     return Array.isArray(data) ? data as ApiPost[] : [];
   } catch (error) {
-    // If API endpoint fails or returned HTML, try querying Supabase directly if available
+    // The backend is only a transport fallback. Supabase remains the source of truth for posts.
     if (supabase) {
       try {
         const { data, error: sbError } = await supabase
@@ -85,9 +85,7 @@ export async function fetchPosts(limit = 100): Promise<ApiPost[]> {
           .select('id,author_id,content,visibility,media_data,created_at,updated_at')
           .order('created_at', { ascending: false })
           .limit(safeLimit);
-        if (!sbError && Array.isArray(data)) {
-          return data as ApiPost[];
-        }
+        if (!sbError && Array.isArray(data)) return data as ApiPost[];
       } catch {
         // ignore fallback errors
       }
@@ -101,6 +99,28 @@ export async function createPost(content: string, mediaUrl?: string): Promise<Ap
   const normalizedContent = String(content || '').trim();
   const normalizedMediaUrl = mediaUrl ? String(mediaUrl).trim() : null;
   if (!normalizedContent && !normalizedMediaUrl) throw new Error('La publicación está vacía.');
+
+  // Write directly through the authenticated Supabase client first. RLS therefore sees
+  // auth.uid() as the actual user instead of relying on the server's service-role fallback.
+  if (supabase) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+    if (userId) {
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({
+          author_id: userId,
+          content: normalizedContent,
+          visibility: 'public',
+          media_data: normalizedMediaUrl ? { url: normalizedMediaUrl } : null,
+        })
+        .select('id,author_id,content,visibility,media_data,created_at,updated_at')
+        .single();
+
+      if (!error && data) return data as ApiPost;
+      if (error) console.warn('[Inkorium] Direct post insert failed, trying API fallback:', error.message);
+    }
+  }
 
   const response = await requestCreatePost(token, normalizedContent, normalizedMediaUrl);
   const data = await parseResponse(response);
