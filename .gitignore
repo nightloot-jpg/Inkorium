@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Runtime-only persistence, never commit user data
+profile_metadata.json
+photo_metadata.json
+signatures_metadata.json
