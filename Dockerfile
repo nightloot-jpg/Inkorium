@@ -40,9 +40,10 @@ RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
 # Copy compiled build artifacts and public assets
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/avatar-proxy.cjs ./avatar-proxy.cjs
 
 # Expose port 3000
 EXPOSE 3000
 
-# Run production server
-CMD ["node", "--max-http-header-size=65536", "dist/server.cjs"]
+# Run production server with the isolated profile-media proxy preloaded.
+CMD ["node", "--max-http-header-size=65536", "-r", "./avatar-proxy.cjs", "dist/server.cjs"]

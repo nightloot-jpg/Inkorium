@@ -63,5 +63,11 @@ export async function uploadMediaFile(
     throw new Error('El servidor de almacenamiento no devolvió una URL válida.');
   }
 
+  // New avatars use the same safe server-side path as existing profile-media
+  // objects. Other uploaded media keeps the original URL unchanged.
+  if (folder === 'avatars' && typeof body?.key === 'string' && body.key.trim()) {
+    return `/api/profile-avatar?key=${encodeURIComponent(body.key.trim())}`;
+  }
+
   return body.url;
 }
