@@ -134,6 +134,7 @@ function installOnRouteMethod(method: 'post' | 'put' | 'patch' | 'delete' | 'get
             force('readerId'); force('userId');
           } else if (requestPath.startsWith('/api/private-messages')) {
             force('sender_id');
+            if (method === 'delete') (req.query as any).currentUserId = userId;
           } else if (requestPath.startsWith('/api/posts')) {
             force('author_id');
           } else if (requestPath.startsWith('/api/profile-signatures') || requestPath.startsWith('/api/profile_signatures')) {
