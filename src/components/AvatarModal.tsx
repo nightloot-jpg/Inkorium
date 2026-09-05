@@ -71,7 +71,7 @@ async function processAvatarImage(
 }
 
 export const AvatarModal: React.FC<AvatarModalProps> = ({ isOpen, onClose }) => {
-  const { currentUser, updateUserData } = useInkorium();
+  const { currentUser, updateUserData, refreshProfiles } = useInkorium();
 
   const [previewUrl, setPreviewUrl] = useState<string>(currentUser.avatar || '');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -168,6 +168,8 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({ isOpen, onClose }) => 
           console.warn('Error silencioso sincronizando avatar:', syncErr);
         }
       }
+
+      await refreshProfiles?.().catch(() => null);
 
       setPreviewUrl(finalAvatarUrl);
       setSelectedFile(null);

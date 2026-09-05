@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import multer from 'multer';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { createServer as createViteServer } from 'vite';
 import { createHmac, createPublicKey, createVerify, timingSafeEqual } from 'node:crypto';
 import fs from 'node:fs';
@@ -190,6 +190,53 @@ const inMemoryChatMessages: any[] = [];
 const inMemoryChatBlocks = new Set<string>();
 const inMemoryPhotos: any[] = [];
 const inMemoryProfiles = new Map<string, any>();
+
+// Persistent profile metadata store
+const PROFILE_METADATA_FILE = path.join(process.cwd(), 'profile_metadata.json');
+function loadProfileMetadata() {
+  try {
+    if (fs.existsSync(PROFILE_METADATA_FILE)) {
+      const raw = fs.readFileSync(PROFILE_METADATA_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        for (const [k, v] of Object.entries(parsed)) {
+          if (v && typeof v === 'object') {
+            inMemoryProfiles.set(String(k), v);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read profile_metadata.json:', err);
+  }
+}
+
+function persistProfileMetadata() {
+  try {
+    const obj: Record<string, any> = {};
+    for (const [k, v] of inMemoryProfiles.entries()) {
+      obj[k] = v;
+    }
+    fs.writeFileSync(PROFILE_METADATA_FILE, JSON.stringify(obj, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Could not persist profile_metadata.json:', err);
+  }
+}
+loadProfileMetadata();
+
+// Active SSE client connections for real-time profile updates
+const profileSseClients = new Set<express.Response>();
+function broadcastProfileUpdate(profileId: string, data: any) {
+  const payload = JSON.stringify({ type: 'PROFILE_UPDATE', profileId, data, timestamp: Date.now() });
+  const message = `data: ${payload}\n\n`;
+  for (const client of profileSseClients) {
+    try {
+      client.write(message);
+    } catch {
+      profileSseClients.delete(client);
+    }
+  }
+}
 
 // Persistent photo metadata store (tags, comments, likes, custom privacy)
 const PHOTO_METADATA_FILE = path.join(process.cwd(), 'photo_metadata.json');
@@ -913,11 +960,123 @@ app.get('/api/profiles', async (req, res) => {
       profilesList = Array.from(mergedMap.values());
     }
 
+    // Standardize avatar and avatar_url for all items
+    profilesList = profilesList.map(p => {
+      const av = p.avatar_url || p.avatar || '';
+      return {
+        ...p,
+        avatar_url: av,
+        avatar: av
+      };
+    });
+
     return res.status(200).json(profilesList);
   } catch (err: any) { 
     console.warn('Supabase profiles proxy fallback to inMemory:', err?.message); 
-    return res.status(200).json(Array.from(inMemoryProfiles.values())); 
+    const fallbackList = Array.from(inMemoryProfiles.values()).map(p => {
+      const av = p.avatar_url || p.avatar || '';
+      return { ...p, avatar_url: av, avatar: av };
+    });
+    return res.status(200).json(fallbackList); 
   }
+});
+
+// Real-time Server-Sent Events stream for instant cross-user profile sync
+app.get('/api/profiles/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  profileSseClients.add(res);
+  res.write(`data: ${JSON.stringify({ type: 'CONNECTED', timestamp: Date.now() })}\n\n`);
+
+  req.on('close', () => {
+    profileSseClients.delete(res);
+  });
+});
+
+// Robust Avatar Proxy & Fallback Handler (Hetzner S3 + Supabase + SVG Fallback)
+app.get('/api/profile-avatar', async (req, res) => {
+  const key = String(req.query.key || '').trim();
+  const url = String(req.query.url || '').trim();
+  const name = String(req.query.name || 'Usuario').trim();
+
+  const sendSvgFallback = () => {
+    const initial = (name[0] || 'U').toUpperCase();
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+      <defs>
+        <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1e293b"/>
+          <stop offset="100%" stop-color="#0f172a"/>
+        </linearGradient>
+      </defs>
+      <rect width="128" height="128" fill="url(#g)"/>
+      <circle cx="64" cy="50" r="26" fill="#334155"/>
+      <path d="M24 112 C24 88 42 78 64 78 C86 78 104 88 104 112 Z" fill="#334155"/>
+      <text x="64" y="58" font-size="22" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" fill="#f8fafc" text-anchor="middle" dominant-baseline="middle">${initial}</text>
+    </svg>`;
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    return res.status(200).send(svg);
+  };
+
+  if (!key && !url) {
+    return sendSvgFallback();
+  }
+
+  // External URL redirect
+  if (url && /^https?:\/\//i.test(url)) {
+    return res.redirect(302, url);
+  }
+
+  const cleanKey = key.replace(/^\/+/, '');
+  if (cleanKey.includes('..') || cleanKey.includes('\\')) {
+    return sendSvgFallback();
+  }
+
+  // 1. Try Hetzner S3 if configured
+  const hetzner = getHetznerS3Client();
+  if (hetzner) {
+    try {
+      const obj = await hetzner.client.send(new GetObjectCommand({
+        Bucket: hetzner.bucket,
+        Key: cleanKey
+      }));
+      if (obj.Body) {
+        const bytes = Buffer.from(await obj.Body.transformToByteArray());
+        res.setHeader('Content-Type', obj.ContentType || 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        if (obj.ContentLength != null) res.setHeader('Content-Length', String(obj.ContentLength));
+        return res.status(200).send(bytes);
+      }
+    } catch {
+      // Continue to Supabase fallback
+    }
+  }
+
+  // 2. Try Supabase Storage
+  const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+  if (supabaseUrl) {
+    try {
+      const targetUrl = `${supabaseUrl}/storage/v1/object/public/${cleanKey}`;
+      const upstream = await fetch(targetUrl, {
+        headers: supabaseKey ? { apikey: supabaseKey } : undefined
+      });
+      if (upstream.ok) {
+        const arrayBuf = await upstream.arrayBuffer();
+        const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        return res.status(200).send(Buffer.from(arrayBuf));
+      }
+    } catch {
+      // Continue to SVG fallback
+    }
+  }
+
+  // 3. Clean SVG avatar fallback
+  return sendSvgFallback();
 });
 
 app.patch('/api/profiles/:id', async (req, res) => {
@@ -939,8 +1098,13 @@ app.patch('/api/profiles/:id', async (req, res) => {
       updateObj.full_name = `${payload.nombre || ''} ${payload.apellidos || ''}`.trim();
     }
     if (payload.username !== undefined) updateObj.username = String(payload.username || '').trim();
-    if (payload.avatar_url !== undefined) updateObj.avatar_url = String(payload.avatar_url || '').trim();
-    else if (payload.avatar !== undefined) updateObj.avatar_url = String(payload.avatar || '').trim();
+    if (payload.avatar_url !== undefined) {
+      updateObj.avatar_url = String(payload.avatar_url || '').trim();
+      updateObj.avatar = updateObj.avatar_url;
+    } else if (payload.avatar !== undefined) {
+      updateObj.avatar_url = String(payload.avatar || '').trim();
+      updateObj.avatar = updateObj.avatar_url;
+    }
     if (payload.city !== undefined) updateObj.city = String(payload.city || '').trim();
     else if (payload.provincia !== undefined) updateObj.city = String(payload.provincia || '').trim();
     else if (payload.ciudad !== undefined) updateObj.city = String(payload.ciudad || '').trim();
@@ -948,8 +1112,13 @@ app.patch('/api/profiles/:id', async (req, res) => {
     else if (payload.fnac !== undefined) updateObj.birth_date = String(payload.fnac || '').trim();
     if (payload.gender !== undefined) updateObj.gender = String(payload.gender || '').trim();
     else if (payload.sexo !== undefined) updateObj.gender = String(payload.sexo || '').trim();
-    if (payload.user_status !== undefined) updateObj.user_status = String(payload.user_status || '').trim();
-    else if (payload.estado !== undefined) updateObj.user_status = String(payload.estado || '').trim();
+    if (payload.user_status !== undefined) {
+      updateObj.user_status = String(payload.user_status || '').trim();
+      updateObj.estado = updateObj.user_status;
+    } else if (payload.estado !== undefined) {
+      updateObj.user_status = String(payload.estado || '').trim();
+      updateObj.estado = updateObj.user_status;
+    }
     if (payload.relationship_status !== undefined) updateObj.relationship_status = String(payload.relationship_status || '').trim();
     else if (payload.situacionSentimental !== undefined) updateObj.relationship_status = String(payload.situacionSentimental || '').trim();
     if (payload.occupation !== undefined) updateObj.occupation = String(payload.occupation || '').trim();
@@ -960,9 +1129,12 @@ app.patch('/api/profiles/:id', async (req, res) => {
     else if (payload.musica !== undefined) updateObj.music = String(payload.musica || '').trim();
     if (payload.email !== undefined) updateObj.email = String(payload.email || '').trim();
 
-    // Cache in in-memory map
+    // Cache in in-memory map & persist
     const existing = inMemoryProfiles.get(profileId) || {};
-    inMemoryProfiles.set(profileId, { ...existing, ...updateObj, id: profileId });
+    const mergedProfile = { ...existing, ...updateObj, id: profileId };
+    inMemoryProfiles.set(profileId, mergedProfile);
+    persistProfileMetadata();
+    broadcastProfileUpdate(profileId, mergedProfile);
 
     if (supabaseKey) {
       const authorId = token ? await verifySupabaseJwt(token, supabaseUrl, jwtSecret) : profileId;
@@ -984,7 +1156,7 @@ app.patch('/api/profiles/:id', async (req, res) => {
       }
     }
 
-    return res.status(200).json({ success: true, profile: { id: profileId, ...updateObj } });
+    return res.status(200).json({ success: true, profile: mergedProfile });
   } catch (err: any) {
     return res.status(200).json({ success: true, local: true });
   }
@@ -999,6 +1171,13 @@ app.patch('/api/profiles/:id/presence', async (req, res) => {
     if (!profileId || !['conectado','ausente','ocupado','invisible'].includes(presence)) {
       return res.status(400).json({ error: 'INVALID_PRESENCE' }); 
     }
+
+    const existing = inMemoryProfiles.get(profileId) || {};
+    const merged = { ...existing, presence, updated_at: new Date().toISOString(), id: profileId };
+    inMemoryProfiles.set(profileId, merged);
+    persistProfileMetadata();
+    broadcastProfileUpdate(profileId, { presence });
+
     if (!supabaseKey || !token) {
       return res.status(200).json({ success: true });
     }
@@ -1025,6 +1204,13 @@ app.patch('/api/profiles/:id/avatar', async (req, res) => {
     const token = extractToken(req);
     if (!profileId) return res.status(400).json({ error: 'INVALID_PROFILE_ID' });
     if (!avatarUrl) return res.status(400).json({ error: 'INVALID_AVATAR_URL' });
+
+    const existing = inMemoryProfiles.get(profileId) || {};
+    const merged = { ...existing, avatar_url: avatarUrl, avatar: avatarUrl, updated_at: new Date().toISOString(), id: profileId };
+    inMemoryProfiles.set(profileId, merged);
+    persistProfileMetadata();
+    broadcastProfileUpdate(profileId, { avatar_url: avatarUrl, avatar: avatarUrl });
+
     if (!supabaseKey) return res.status(200).json({ success: true, avatar_url: avatarUrl, local: true });
     const key = serviceRoleKey || supabaseKey;
     const authHeader = serviceRoleKey ? `Bearer ${serviceRoleKey}` : (token ? `Bearer ${token}` : `Bearer ${supabaseKey}`);
@@ -1050,6 +1236,13 @@ app.patch('/api/profiles/:id/status', async (req, res) => {
     const status = String(req.body?.status || '').trim().slice(0, 140); 
     const token = extractToken(req);
     if (!profileId) return res.status(400).json({ error: 'INVALID_PROFILE_ID' }); 
+
+    const existing = inMemoryProfiles.get(profileId) || {};
+    const merged = { ...existing, user_status: status, estado: status, updated_at: new Date().toISOString(), id: profileId };
+    inMemoryProfiles.set(profileId, merged);
+    persistProfileMetadata();
+    broadcastProfileUpdate(profileId, { user_status: status, estado: status });
+
     if (!supabaseKey) return res.status(200).json({ success: true, user_status: status });
     try {
       const authorId = token ? await verifySupabaseJwt(token, supabaseUrl, jwtSecret) : profileId; 

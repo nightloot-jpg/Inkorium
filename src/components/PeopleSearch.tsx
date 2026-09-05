@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
-import { Search, UserPlus, Users, MapPin, Check, Filter, MessageSquare, Mail, Globe } from 'lucide-react';
+import { Search, UserPlus, Users, MapPin, Check, Filter, MessageSquare, Mail, Globe, RefreshCw } from 'lucide-react';
 import { COUNTRIES_LIST, getZonesForCountry, formatFullLocation } from '../types';
 
 export const PeopleSearch: React.FC = () => {
@@ -12,8 +12,11 @@ export const PeopleSearch: React.FC = () => {
     isFriend,
     hasPendingRequest,
     openChatWith,
-    openComposeMessage
+    openComposeMessage,
+    refreshProfiles
   } = useInkorium();
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [generalQuery, setGeneralQuery] = useState('');
   const [nombre, setNombre] = useState('');
@@ -310,16 +313,36 @@ export const PeopleSearch: React.FC = () => {
         {/* ================= COLUMNA DE RESULTADOS ================= */}
         <div className="md:col-span-8 lg:col-span-9 space-y-4">
           <div className="bg-white rounded border border-[#ccd5df] p-4 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-gray-200">
               <h1 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Users className="w-5 h-5 text-[#3869A0]" />
                 <span>Resultados de la búsqueda ({filteredUsers.length})</span>
               </h1>
-              {otherUsersInDb.length > 0 && (
-                <span className="text-[11px] text-gray-500 font-medium">
-                  Total en Inkorium: {otherUsersInDb.length} {otherUsersInDb.length === 1 ? 'usuario' : 'usuarios'}
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (isRefreshing) return;
+                    setIsRefreshing(true);
+                    try {
+                      await refreshProfiles?.();
+                    } finally {
+                      setTimeout(() => setIsRefreshing(false), 500);
+                    }
+                  }}
+                  disabled={isRefreshing}
+                  className="px-2.5 py-1 text-xs font-semibold text-gray-700 hover:text-[#3869A0] bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                  title="Sincronizar perfiles y avatares ahora"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#3869A0] ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span>{isRefreshing ? 'Actualizando...' : 'Actualizar'}</span>
+                </button>
+                {otherUsersInDb.length > 0 && (
+                  <span className="text-[11px] text-gray-500 font-medium">
+                    Total en Inkorium: {otherUsersInDb.length} {otherUsersInDb.length === 1 ? 'usuario' : 'usuarios'}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Grid of Results */}

@@ -11,6 +11,7 @@ import { musicAudioEngine } from '../utils/audioEngine';
 import { appendMessageToConversation, updateMessageInConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents, markConversationAsRead, applyReadReceiptsToConversation, getStoredBlockedUserIds, saveStoredBlockedUserIds } from '../lib/chatHistory';
 import { playMessageSound, playNotificationChime, playNudgeSound } from '../utils/sound';
 import { RealtimeManager } from '../lib/realtimeManager';
+import { toProfileAvatarUrl, PROFILE_SELECT } from '../lib/profileBootstrap';
 
 const PHOTO_TAGS_STORAGE_KEY = 'inkorium:photo_tags';
 
@@ -138,6 +139,7 @@ interface InkoriumContextType {
   pushNotification: (notif: InkoriumNotification) => void; dismissToast: (toastId: string) => void; markNotificationAsRead: (notifId: string) => void;
   markAllNotificationsAsRead: () => void; deleteNotification: (notifId: string) => void;
   updateUserData: (data: Partial<User>) => void; resetToDefaultData: () => void; registerNewUser: (nombre: string, apellidos: string, email: string, sexo: 'h' | 'm', provincia: string, fnac: string, pais?: string, ciudad?: string) => void;
+  refreshProfiles: () => Promise<void>;
 }
 
 const InkoriumContext = createContext<InkoriumContextType | undefined>(undefined);
@@ -831,7 +833,8 @@ const addDeletedMessageIds = (ids: string[]) => {
     const rawPresence = String(p.presence ?? p.presencia ?? p.user_status ?? p.estado ?? '').trim().toLowerCase();
     const presencia: UserPresence = ['conectado','ausente','ocupado','invisible'].includes(rawPresence) ? rawPresence as UserPresence : 'conectado';
     const gender = String(p.gender ?? p.sexo ?? '').trim().toLowerCase();
-    const avatar = String(p.avatar_url ?? p.avatar ?? '').trim();
+    const rawAvatar = String(p.avatar_url ?? p.avatar ?? '').trim();
+    const avatar = toProfileAvatarUrl(rawAvatar, nombre || username || 'Usuario');
     const interests = Array.isArray(p.profile_interests) ? p.profile_interests.join(', ') : String(p.profile_interests ?? p.intereses ?? '').trim();
     return {
       id: String(p.id),
@@ -872,71 +875,71 @@ const addDeletedMessageIds = (ids: string[]) => {
   const profilesTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const fetchProfiles = useCallback(async () => {
     if (!isSupabaseConfigured) return;
-    if (profilesTimer.current) clearTimeout(profilesTimer.current);
-    profilesTimer.current = setTimeout(async () => {
+    try {
+      const response = await fetch(`/api/profiles?select=${encodeURIComponent(PROFILE_SELECT)}&limit=1000`, {
+        cache: 'no-store',
+        credentials: 'omit',
+        headers: { Accept: 'application/json' }
+      });
+      if (!response.ok) return;
+      const text = await response.text().catch(() => '');
+      if (!text || text.trim().startsWith('<')) return;
+      let data: any[] = [];
       try {
-        const response = await fetch('/api/profiles?select=id,username,full_name,avatar_url,city,birth_date,user_status,profile_interests,updated_at&limit=1000', {
-          cache: 'no-store',
-          credentials: 'omit',
-          headers: { Accept: 'application/json' }
-        });
-        if (!response.ok) return;
-        const text = await response.text().catch(() => '');
-        if (!text || text.trim().startsWith('<')) return;
-        let data: any[] = [];
-        try {
-          data = JSON.parse(text);
-        } catch {
-          return;
-        }
-        if (!Array.isArray(data)) return;
-        const mapped: User[] = data.map(mapProfileToUser);
-        const curId = currentUserIdRef.current;
-        setUsers(prevUsers => {
-          const storedPresence = localStorage.getItem('inkorium:presence') as UserPresence | null;
-          let combined = mapped.length > 0 ? mapped : INITIAL_USERS;
-          
-          // Preserve local custom edits for any user
-          combined = combined.map(u => {
-            const existing = prevUsers.find(p => p.id === u.id);
-            if (!existing) return u;
-            return {
-              ...u,
-              nombre: existing.nombre || u.nombre,
-              apellidos: existing.apellidos || u.apellidos,
-              avatar: existing.avatar || u.avatar,
-              provincia: existing.provincia || u.provincia,
-              ciudad: existing.ciudad || u.ciudad,
-              situacionSentimental: existing.situacionSentimental || u.situacionSentimental,
-              fnac: existing.fnac || u.fnac,
-              ocupacion: existing.ocupacion || u.ocupacion,
-              intereses: existing.intereses || u.intereses,
-              musica: existing.musica || u.musica,
-              estado: existing.estado || u.estado
-            };
-          });
-
-          // Keep current user in list if not in mapped
-          const existingCurrent = prevUsers.find(u => u.id === curId);
-          if (existingCurrent && !combined.some(u => u.id === curId)) {
-            combined = [existingCurrent, ...combined];
-          }
-
-          for (const initUser of INITIAL_USERS) {
-            if (!combined.some(u => u.id === initUser.id || (u.email && u.email === initUser.email))) {
-              combined.push(initUser);
-            }
-          }
-
-          if (storedPresence && ['conectado','ausente','ocupado','invisible'].includes(storedPresence)) {
-            return combined.map((user: User) => user.id === curId ? { ...user, presencia: storedPresence, online: storedPresence !== 'invisible', chatEstado: storedPresence === 'invisible' ? '0' : '1' } : user);
-          }
-          return combined;
-        });
-      } catch (error) {
-        console.error('Profiles load failed:', error);
+        data = JSON.parse(text);
+      } catch {
+        return;
       }
-    }, 100);
+      if (!Array.isArray(data)) return;
+      const mapped: User[] = data.map(mapProfileToUser);
+      const curId = currentUserIdRef.current;
+      setUsers(prevUsers => {
+        const storedPresence = localStorage.getItem('inkorium:presence') as UserPresence | null;
+        let combined = mapped.length > 0 ? mapped : INITIAL_USERS;
+        
+        // Merge remote server data with previous local state, prioritizing fresh server profile updates
+        combined = combined.map(u => {
+          const existing = prevUsers.find(p => p.id === u.id);
+          if (!existing) return u;
+          return {
+            ...existing,
+            ...u,
+            nombre: u.nombre || existing.nombre,
+            apellidos: u.apellidos !== undefined ? u.apellidos : existing.apellidos,
+            avatar: u.avatar || existing.avatar,
+            provincia: u.provincia || existing.provincia,
+            ciudad: u.ciudad || existing.ciudad,
+            situacionSentimental: u.situacionSentimental || existing.situacionSentimental,
+            fnac: u.fnac || existing.fnac,
+            ocupacion: u.ocupacion || existing.ocupacion,
+            intereses: u.intereses || existing.intereses,
+            musica: u.musica || existing.musica,
+            estado: u.estado || existing.estado,
+            presencia: existing.presencia || u.presencia,
+            online: existing.online !== undefined ? existing.online : u.online
+          };
+        });
+
+        // Keep current user in list if not in mapped
+        const existingCurrent = prevUsers.find(u => u.id === curId);
+        if (existingCurrent && !combined.some(u => u.id === curId)) {
+          combined = [existingCurrent, ...combined];
+        }
+
+        for (const initUser of INITIAL_USERS) {
+          if (!combined.some(u => u.id === initUser.id || (u.email && u.email === initUser.email))) {
+            combined.push(initUser);
+          }
+        }
+
+        if (storedPresence && ['conectado','ausente','ocupado','invisible'].includes(storedPresence)) {
+          return combined.map((user: User) => user.id === curId ? { ...user, presencia: storedPresence, online: storedPresence !== 'invisible', chatEstado: storedPresence === 'invisible' ? '0' : '1' } : user);
+        }
+        return combined;
+      });
+    } catch (error) {
+      console.error('Profiles load failed:', error);
+    }
   }, [mapProfileToUser]);
 
   const mapPhotoToPhoto = useCallback((row: any, prevPhotos: Photo[] = []): Photo => {
@@ -1195,7 +1198,17 @@ const addDeletedMessageIds = (ids: string[]) => {
       };
 
       const profilesChannel = supabase.channel('profiles-sync')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void fetchProfiles())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload: any) => {
+          if (payload?.new && typeof payload.new === 'object') {
+            try {
+              const mappedUser = mapProfileToUser(payload.new);
+              if (mappedUser && mappedUser.id) {
+                setUsers(prev => prev.map(u => u.id === mappedUser.id ? { ...u, ...mappedUser } : u));
+              }
+            } catch {}
+          }
+          void fetchProfiles();
+        })
         .subscribe(handleChannelStatus('profiles'));
 
       const photosChannel = supabase.channel('photos-sync')
@@ -1211,10 +1224,41 @@ const addDeletedMessageIds = (ids: string[]) => {
 
     const channels = setupChannels();
 
+    // Real-time SSE connection for instant cross-user profile sync
+    let sse: EventSource | null = null;
+    try {
+      sse = new EventSource('/api/profiles/events');
+      sse.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data?.type === 'PROFILE_UPDATE') {
+            void fetchProfiles();
+          }
+        } catch {}
+      };
+    } catch {}
+
+    // Fast periodic polling fallback to guarantee 100% sync reliability
+    const pollProfilesInterval = setInterval(() => {
+      void fetchProfiles();
+    }, 6000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchProfiles();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       mounted = false;
       if (profilesTimer.current) clearTimeout(profilesTimer.current);
       if (reconnectTimer) clearTimeout(reconnectTimer);
+      clearInterval(pollProfilesInterval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (sse) {
+        try { sse.close(); } catch {}
+      }
       auth.subscription.unsubscribe();
       void supabase.removeChannel(channels.profilesChannel);
       void supabase.removeChannel(channels.photosChannel);
@@ -3441,7 +3485,8 @@ const addDeletedMessageIds = (ids: string[]) => {
       blockedUserIds, blockUser, unblockUser, isUserBlocked,
       logUserActivity, deleteUserActivity, getUserActivities,
       pushNotification, dismissToast, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification,
-      updateUserData, resetToDefaultData, registerNewUser
+      updateUserData, resetToDefaultData, registerNewUser,
+      refreshProfiles: fetchProfiles
     }}>
       {children}
     </InkoriumContext.Provider>

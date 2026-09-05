@@ -9,7 +9,7 @@ import {
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
   Trash2, Send, Check, Shield, UserCheck, Camera, Upload, ChevronDown, ChevronRight,
   Users, UserMinus, UserX, Clock, Search, X, ShieldAlert, CheckCheck, Globe, Ban,
-  Eye, Star, Award
+  Eye, Star, Award, RefreshCw
 } from 'lucide-react';
 import { UserPresence, User, formatFullLocation, calculateAge, formatBirthDate } from '../types';
 
@@ -64,8 +64,28 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     profileVisits,
     recordProfileVisit,
     openComposeMessage,
-    updateTopAmigos
+    updateTopAmigos,
+    refreshProfiles
   } = useInkorium();
+
+  const [isRefreshingProfile, setIsRefreshingProfile] = useState(false);
+  const [refreshFeedback, setRefreshFeedback] = useState<string | null>(null);
+
+  const handleManualProfileRefresh = async () => {
+    if (isRefreshingProfile) return;
+    setIsRefreshingProfile(true);
+    setRefreshFeedback(null);
+    try {
+      await refreshProfiles();
+      setRefreshFeedback('Perfil actualizado');
+      setTimeout(() => setRefreshFeedback(null), 3000);
+    } catch {
+      setRefreshFeedback('Error al sincronizar');
+      setTimeout(() => setRefreshFeedback(null), 3000);
+    } finally {
+      setIsRefreshingProfile(false);
+    }
+  };
 
   const isOwnProfile = useMemo(() => {
     if (!selectedUserId) return true;
@@ -220,9 +240,16 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
           <div className="flex items-center gap-4">
             <div className="relative group">
               <img
-                src={profileUser.avatar}
+                src={profileUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.nombre || 'Usuario')}&background=3869A0&color=fff&size=200&bold=true`}
                 alt={profileUser.nombre}
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded object-cover border-2 border-gray-200 shadow-sm"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  if (!target.dataset.fallbackTried) {
+                    target.dataset.fallbackTried = 'true';
+                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.nombre || 'Usuario')}&background=3869A0&color=fff&size=200&bold=true`;
+                  }
+                }}
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded object-cover border-2 border-gray-200 shadow-sm bg-gray-100"
               />
               {isOwnProfile && (
                 <button
@@ -518,6 +545,23 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                   <span>Subir fotos</span>
                 </button>
               </>
+            )}
+
+            {/* Manual profile metadata refresh trigger */}
+            <button
+              type="button"
+              onClick={handleManualProfileRefresh}
+              disabled={isRefreshingProfile}
+              className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer disabled:opacity-60"
+              title="Actualizar datos del perfil en tiempo real"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-[#3869A0] ${isRefreshingProfile ? 'animate-spin' : ''}`} />
+              <span>{isRefreshingProfile ? 'Actualizando...' : 'Actualizar perfil'}</span>
+            </button>
+            {refreshFeedback && (
+              <span className="text-[11px] font-semibold text-emerald-600 self-center px-2 py-0.5 bg-emerald-50 rounded border border-emerald-200 animate-fade-in">
+                {refreshFeedback}
+              </span>
             )}
           </div>
         </div>
