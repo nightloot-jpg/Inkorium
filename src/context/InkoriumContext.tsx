@@ -192,6 +192,7 @@ interface InkoriumContextType {
   markAllNotificationsAsRead: () => void; deleteNotification: (notifId: string) => void;
   updateUserData: (data: Partial<User>) => void; resetToDefaultData: () => void; registerNewUser: (nombre: string, apellidos: string, email: string, sexo: 'h' | 'm', provincia: string, fnac: string, pais?: string, ciudad?: string) => void;
   refreshProfiles: () => Promise<void>;
+  refreshWallComments: (targetProfileId?: string) => Promise<void>;
 }
 
 const InkoriumContext = createContext<InkoriumContextType | undefined>(undefined);
@@ -1406,6 +1407,65 @@ const addDeletedMessageIds = (ids: string[]) => {
     setNotifications(prev => prev.filter(n => n.id !== notifId));
   }, []);
 
+  const fetchAndMapWallComments = useCallback(async (targetProfileId?: string) => {
+    try {
+      const query = targetProfileId ? `?profile_id=${encodeURIComponent(targetProfileId)}` : '';
+      const res = await fetch(`/api/profile-signatures${query}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) return;
+
+      setWallComments(prev => {
+        let changed = false;
+        const currentMap = new Map<string, WallComment>();
+        for (const c of prev) {
+          currentMap.set(c.id, c);
+        }
+
+        for (const row of data) {
+          if (!row || !row.id) continue;
+          const sigId = String(row.id);
+          const authorId = String(row.author_id || row.autorId || row.emisorId || '');
+          const profileId = String(row.profile_id || row.propietarioId || row.receptorId || '');
+          const content = String(row.content || row.texto || row.comentario || '');
+
+          if (!currentMap.has(sigId)) {
+            const author = usersRef.current.find(u => u.id === authorId || u.username === authorId);
+            const newMapped: WallComment = {
+              id: sigId,
+              propietarioId: profileId,
+              receptorId: profileId,
+              autorId: authorId,
+              emisorId: authorId,
+              autorNombre: row.author_name || row.autorNombre || (author ? (author.full_name || author.nombre) : 'Usuario'),
+              emisorNombre: row.author_name || row.emisorNombre || (author ? (author.full_name || author.nombre) : 'Usuario'),
+              autorAvatar: row.author_avatar || row.autorAvatar || author?.avatar || '',
+              emisorAvatar: row.author_avatar || row.emisorAvatar || author?.avatar || '',
+              texto: content,
+              comentario: content,
+              fecha: row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : 'Ahora mismo',
+              likes: []
+            };
+            currentMap.set(sigId, newMapped);
+            changed = true;
+          }
+        }
+
+        if (!changed) return prev;
+        const updated = Array.from(currentMap.values());
+        try {
+          safeSetLocalStorage('inkorium:wall_comments', JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+    } catch (err) {
+      console.warn('Error fetching wall comments:', err);
+    }
+  }, []);
+
+  const fetchAndMapWallCommentsRef = useRef(fetchAndMapWallComments);
+  fetchAndMapWallCommentsRef.current = fetchAndMapWallComments;
+
   const fetchAndMapPrivateMessagesRef = useRef(fetchAndMapPrivateMessages);
   fetchAndMapPrivateMessagesRef.current = fetchAndMapPrivateMessages;
 
@@ -1415,13 +1475,27 @@ const addDeletedMessageIds = (ids: string[]) => {
   const pushNotificationRef = useRef(pushNotification);
   pushNotificationRef.current = pushNotification;
 
+  // Sync signatures whenever profile is selected or current user is ready
+  useEffect(() => {
+    if (selectedUserId) {
+      void fetchAndMapWallComments(selectedUserId);
+    }
+    if (currentUserId) {
+      void fetchAndMapWallComments(currentUserId);
+    }
+  }, [selectedUserId, currentUserId, fetchAndMapWallComments]);
+
   // Periodic background polling and Server-Sent Events (SSE) for instant real-time messaging
   useEffect(() => {
     if (!currentUserId) return;
 
+    // Initial fetch of wall signatures
+    void fetchAndMapWallCommentsRef.current();
+
     const interval = setInterval(() => {
       void fetchAndMapPrivateMessagesRef.current();
       void fetchAndMapChatMessagesRef.current();
+      void fetchAndMapWallCommentsRef.current();
     }, 20000);
 
     // Instant Real-Time Push Stream via RealtimeManager with Exponential Backoff retry strategy
@@ -1591,6 +1665,112 @@ const addDeletedMessageIds = (ids: string[]) => {
       onNotification: (notifData: any) => {
         if (notifData) {
           pushNotificationRef.current(notifData);
+        }
+      },
+      onWallComment: (data: any) => {
+        if (!data || !data.id) return;
+        const authorId = String(data.author_id || data.autorId || data.emisorId || '');
+        const profileId = String(data.profile_id || data.propietarioId || data.receptorId || '');
+        const content = String(data.content || data.texto || data.comentario || '');
+
+        const author = usersRef.current.find(u => u.id === authorId || u.username === authorId);
+        const authorName = String(data.author_name || data.autorNombre || (author ? (author.full_name || author.nombre) : 'Usuario'));
+        const authorAvatar = String(data.author_avatar || data.autorAvatar || author?.avatar || '');
+
+        const newComment: WallComment = {
+          id: String(data.id),
+          propietarioId: profileId,
+          receptorId: profileId,
+          autorId: authorId,
+          emisorId: authorId,
+          autorNombre: authorName,
+          emisorNombre: authorName,
+          autorAvatar: authorAvatar,
+          emisorAvatar: authorAvatar,
+          texto: content,
+          comentario: content,
+          fecha: data.created_at ? new Date(data.created_at).toLocaleString('es-ES') : 'Ahora mismo',
+          likes: []
+        };
+
+        setWallComments(prev => {
+          if (prev.some(c => c.id === newComment.id)) return prev;
+          const updated = [newComment, ...prev];
+          try {
+            safeSetLocalStorage('inkorium:wall_comments', JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+
+        // Add to feed
+        const feedId = `feed-wall-${newComment.id}`;
+        setFeed(prev => {
+          if (prev.some(f => f.id === feedId || (f.tipo === 'tablon' && f.datos === content && f.visitanteId === authorId))) return prev;
+          const targetUser = usersRef.current.find(u => u.id === profileId || u.username === profileId);
+          const newFeedItem: FeedItem = {
+            id: feedId,
+            tipo: 'tablon',
+            propietarioId: profileId,
+            propietarioNombre: targetUser ? (targetUser.full_name || targetUser.nombre) : 'Usuario',
+            propietarioAvatar: targetUser?.avatar || '',
+            visitanteId: authorId,
+            visitanteNombre: authorName,
+            visitanteAvatar: authorAvatar,
+            datos: content,
+            fecha: 'Ahora mismo',
+            likes: [],
+            comentarios: []
+          };
+          return [newFeedItem, ...prev];
+        });
+
+        // Check if recipient is current user
+        const normCur = normalizeUserId(currentUserId);
+        const normRec = normalizeUserId(profileId);
+        const stripUserPrefix = (s: string) => s.replace(/^user-/, '');
+        const isRecipient = normRec === normCur || stripUserPrefix(normRec) === stripUserPrefix(normCur) || (currentUser.username && stripUserPrefix(normRec) === stripUserPrefix(normalizeUserId(currentUser.username)));
+        const isAuthor = normalizeUserId(authorId) === normCur || stripUserPrefix(normalizeUserId(authorId)) === stripUserPrefix(normCur);
+
+        if (isRecipient && !isAuthor) {
+          try {
+            playNotificationChime();
+          } catch {}
+          pushNotificationRef.current({
+            id: `notif-wall-${Date.now()}`,
+            tipo: 'tablon',
+            userId: currentUserId,
+            fromUserId: authorId,
+            fromUserName: authorName,
+            fromUserAvatar: authorAvatar,
+            mensaje: 'ha firmado en tu tablón.',
+            enlace: 'perfil',
+            targetId: newComment.id,
+            targetPreview: content.slice(0, 80),
+            fecha: 'Ahora mismo',
+            leido: false
+          });
+          setToasts(prev => [
+            {
+              id: `toast-wall-${Date.now()}`,
+              tipo: 'tablon',
+              userId: currentUserId,
+              fromUserId: authorId,
+              fromUserName: authorName,
+              fromUserAvatar: authorAvatar,
+              mensaje: `${authorName} ha firmado en tu tablón.`,
+              enlace: 'perfil',
+              targetId: newComment.id,
+              targetPreview: content.slice(0, 80),
+              fecha: 'Ahora mismo',
+              leido: false
+            },
+            ...prev.slice(0, 3)
+          ]);
+        }
+      },
+      onWallCommentDelete: (data: any) => {
+        if (data?.id) {
+          setWallComments(prev => prev.filter(c => c.id !== data.id));
         }
       }
     });
@@ -1771,6 +1951,19 @@ const addDeletedMessageIds = (ids: string[]) => {
             } catch {}
             return updated;
           });
+        }
+      } else if (event.type === 'WALL_COMMENT') {
+        const { comment } = event.payload;
+        if (comment && comment.id) {
+          setWallComments(prev => {
+            if (prev.some(c => c.id === comment.id)) return prev;
+            return [comment, ...prev];
+          });
+        }
+      } else if (event.type === 'WALL_COMMENT_DELETE') {
+        const { commentId } = event.payload;
+        if (commentId) {
+          setWallComments(prev => prev.filter(c => c.id !== commentId));
         }
       }
     });
@@ -3112,7 +3305,7 @@ const addDeletedMessageIds = (ids: string[]) => {
     const authorAvatar = currentUser.avatar || '';
 
     const newComment: WallComment = {
-      id: `wc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: `sig-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       propietarioId: resolvedPropietarioId,
       receptorId: resolvedPropietarioId,
       autorId: currentUserId,
@@ -3128,6 +3321,27 @@ const addDeletedMessageIds = (ids: string[]) => {
     };
 
     setWallComments(prev => [newComment, ...prev]);
+
+    // Broadcast across tabs immediately
+    broadcastCrossTabEvent({
+      type: 'WALL_COMMENT',
+      payload: { comment: newComment }
+    });
+
+    // Save to persistent backend store & emit real-time SSE
+    fetch('/api/profile-signatures', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: newComment.id,
+        profile_id: resolvedPropietarioId,
+        author_id: currentUserId,
+        author_name: authorName,
+        author_avatar: authorAvatar,
+        content: cleanText,
+        created_at: new Date().toISOString()
+      })
+    }).catch(err => console.warn('Error saving wall comment to cloud:', err));
 
     // Añadir al feed de novedades como evento de tablón
     const newFeedItem: FeedItem = {
@@ -3193,6 +3407,13 @@ const addDeletedMessageIds = (ids: string[]) => {
 
   const deleteWallComment = useCallback((commentId: string) => {
     setWallComments(prev => prev.filter(c => c.id !== commentId));
+    broadcastCrossTabEvent({
+      type: 'WALL_COMMENT_DELETE',
+      payload: { commentId }
+    });
+    fetch(`/api/profile-signatures?id=eq.${encodeURIComponent(commentId)}`, {
+      method: 'DELETE'
+    }).catch(err => console.warn('Error deleting wall comment:', err));
   }, []);
 
   const likeFeedItem = useCallback((feedId: string) => {
@@ -3588,7 +3809,8 @@ const addDeletedMessageIds = (ids: string[]) => {
       logUserActivity, deleteUserActivity, getUserActivities,
       pushNotification, dismissToast, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification,
       updateUserData, resetToDefaultData, registerNewUser,
-      refreshProfiles: fetchProfiles
+      refreshProfiles: fetchProfiles,
+      refreshWallComments: fetchAndMapWallComments
     }}>
       {children}
     </InkoriumContext.Provider>

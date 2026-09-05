@@ -286,6 +286,37 @@ function persistPhotoMetadata() {
 
 loadPhotoMetadata();
 
+// Persistent profile signatures store (tablón de firmas)
+const SIGNATURES_METADATA_FILE = path.join(process.cwd(), 'signatures_metadata.json');
+const inMemorySignatures: any[] = [];
+
+function loadSignaturesMetadata() {
+  try {
+    if (fs.existsSync(SIGNATURES_METADATA_FILE)) {
+      const raw = fs.readFileSync(SIGNATURES_METADATA_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        inMemorySignatures.length = 0;
+        inMemorySignatures.push(...parsed);
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read signatures_metadata.json:', err);
+  }
+}
+
+function persistSignaturesMetadata() {
+  try {
+    const tempPath = `${SIGNATURES_METADATA_FILE}.tmp`;
+    fs.writeFileSync(tempPath, JSON.stringify(inMemorySignatures, null, 2), 'utf-8');
+    fs.renameSync(tempPath, SIGNATURES_METADATA_FILE);
+  } catch (err) {
+    console.warn('Could not persist signatures_metadata.json:', err);
+  }
+}
+
+loadSignaturesMetadata();
+
 function enrichPhotoWithMetadata(photo: any) {
   if (!photo || typeof photo !== 'object') return photo;
   const photoId = String(photo.id);
@@ -1728,66 +1759,171 @@ app.post('/api/posts', async (req, res) => {
   }
 });
 
-// Resilient signatures store and proxy to avoid CORS/520 in browser
-const inMemorySignatures: any[] = [];
+// Resilient signatures store and proxy to avoid CORS/520 in browser with disk persistence and real-time SSE
 app.all(['/api/profile-signatures', '/api/profile_signatures'], async (req, res) => {
+  if (req.method === 'OPTIONS') return res.status(204).end();
   try {
     const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig();
     const authKey = serviceRoleKey || supabaseKey;
     const token = extractToken(req);
     const bearer = serviceRoleKey ? serviceRoleKey : (token || authKey);
 
-    if (authKey && supabaseUrl) {
-      try {
-        const query = new URLSearchParams();
-        for (const [key, value] of Object.entries(req.query)) {
-          if (Array.isArray(value)) value.forEach(item => query.append(key, String(item)));
-          else if (value != null) query.set(key, String(value));
-        }
-        const upstream = await fetch(`${supabaseUrl}/rest/v1/profile_signatures?${query.toString()}`, {
-          method: req.method,
-          headers: {
-            apikey: authKey,
-            Authorization: `Bearer ${bearer}`,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            ...(req.headers.prefer ? { Prefer: String(req.headers.prefer) } : {})
-          },
-          body: ['POST', 'PATCH', 'PUT'].includes(req.method) ? JSON.stringify(req.body) : undefined
-        });
+    const norm = (s?: string | null) => String(s || '').trim().toLowerCase();
+    const clean = (s?: string | null) => norm(s).replace(/^user-/, '');
 
-        const bodyText = await upstream.text();
-        if (upstream.ok && !bodyText.trim().startsWith('<')) {
-          try {
-            const parsed = JSON.parse(bodyText);
-            return res.status(upstream.status).json(parsed);
-          } catch {}
+    // Handle DELETE
+    if (req.method === 'DELETE') {
+      const queryId = String(req.query.id || '').replace(/^eq\./, '').trim();
+      const bodyId = String(req.body?.id || '').trim();
+      const targetId = queryId || bodyId;
+      if (targetId) {
+        const idx = inMemorySignatures.findIndex(s => s.id === targetId);
+        let removedItem: any = null;
+        if (idx !== -1) {
+          removedItem = inMemorySignatures.splice(idx, 1)[0];
+          persistSignaturesMetadata();
         }
-      } catch (err) {
-        console.warn('profile_signatures upstream proxy error:', err);
+        broadcastRealtimeEvent(['*'], 'wall_comment_delete', { id: targetId, profile_id: removedItem?.profile_id });
       }
+
+      if (authKey && supabaseUrl && targetId) {
+        try {
+          await fetch(`${supabaseUrl}/rest/v1/profile_signatures?id=eq.${encodeURIComponent(targetId)}`, {
+            method: 'DELETE',
+            headers: { apikey: authKey, Authorization: `Bearer ${bearer}` }
+          });
+        } catch {}
+      }
+      return res.status(200).json({ success: true });
     }
 
+    // Handle POST
     if (req.method === 'POST') {
       const items = Array.isArray(req.body) ? req.body : [req.body];
-      for (const item of items) {
-        if (item && typeof item === 'object') {
-          inMemorySignatures.push({ id: `sig-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, ...item, created_at: new Date().toISOString() });
+      const created: any[] = [];
+
+      for (const raw of items) {
+        if (raw && typeof raw === 'object') {
+          const sigId = String(raw.id || `sig-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
+          const profileId = String(raw.profile_id || raw.propietarioId || raw.receptorId || '').trim();
+          const authorId = String(raw.author_id || raw.autorId || raw.emisorId || '').trim();
+          const content = String(raw.content || raw.texto || raw.comentario || '').trim();
+          const authorName = String(raw.author_name || raw.autorNombre || raw.emisorNombre || 'Usuario').trim();
+          const authorAvatar = String(raw.author_avatar || raw.autorAvatar || raw.emisorAvatar || '').trim();
+          const createdAt = String(raw.created_at || new Date().toISOString());
+
+          if (!profileId || !content) continue;
+
+          // Check if already exists (avoid duplicate on re-sync)
+          const existingIdx = inMemorySignatures.findIndex(s =>
+            s.id === sigId ||
+            (norm(s.profile_id) === norm(profileId) && norm(s.author_id) === norm(authorId) && String(s.content || s.texto).trim() === content)
+          );
+
+          const sigRecord = {
+            id: sigId,
+            profile_id: profileId,
+            receptorId: profileId,
+            propietarioId: profileId,
+            author_id: authorId,
+            autorId: authorId,
+            emisorId: authorId,
+            author_name: authorName,
+            autorNombre: authorName,
+            emisorNombre: authorName,
+            author_avatar: authorAvatar,
+            autorAvatar: authorAvatar,
+            emisorAvatar: authorAvatar,
+            content,
+            texto: content,
+            comentario: content,
+            created_at: createdAt
+          };
+
+          if (existingIdx !== -1) {
+            inMemorySignatures[existingIdx] = { ...inMemorySignatures[existingIdx], ...sigRecord };
+            created.push(inMemorySignatures[existingIdx]);
+          } else {
+            inMemorySignatures.unshift(sigRecord);
+            if (inMemorySignatures.length > 1000) inMemorySignatures.length = 1000;
+            created.push(sigRecord);
+          }
+
+          // Broadcast real-time SSE event to recipient, author, and all active clients
+          broadcastRealtimeEvent([profileId, clean(profileId), authorId, '*'], 'wall_comment', sigRecord);
+
+          // Push real-time notification to the recipient if not signing own wall
+          if (clean(profileId) !== clean(authorId)) {
+            broadcastRealtimeEvent([profileId, clean(profileId)], 'notification', {
+              id: `notif-wall-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              tipo: 'tablon',
+              userId: profileId,
+              fromUserId: authorId,
+              fromUserName: authorName,
+              fromUserAvatar: authorAvatar,
+              mensaje: 'ha firmado en tu tablón.',
+              enlace: 'perfil',
+              targetId: sigId,
+              targetPreview: content.slice(0, 80),
+              fecha: 'Ahora mismo',
+              leido: false
+            });
+          }
         }
       }
-      return res.status(201).json(inMemorySignatures.slice(-items.length));
+
+      persistSignaturesMetadata();
+
+      // Attempt upstream Supabase if available
+      if (authKey && supabaseUrl && created.length > 0) {
+        try {
+          const upstreamRows = created.map(c => ({
+            id: c.id,
+            profile_id: c.profile_id,
+            author_id: c.author_id,
+            content: c.content
+          }));
+          await fetch(`${supabaseUrl}/rest/v1/profile_signatures`, {
+            method: 'POST',
+            headers: {
+              apikey: authKey,
+              Authorization: `Bearer ${bearer}`,
+              'Content-Type': 'application/json',
+              Prefer: 'return=minimal'
+            },
+            body: JSON.stringify(upstreamRows)
+          });
+        } catch {}
+      }
+
+      return res.status(201).json(created);
     }
 
-    const profileId = String(req.query.profile_id || '').replace(/^eq\./, '');
-    const authorId = String(req.query.author_id || '').replace(/^eq\./, '');
-    let filtered = inMemorySignatures;
-    if (profileId) filtered = filtered.filter(s => String(s.profile_id) === profileId);
-    if (authorId) filtered = filtered.filter(s => String(s.author_id) === authorId);
-    return res.status(200).json(filtered);
+    // Handle GET
+    const profileParam = String(req.query.profile_id || req.query.target_id || '').replace(/^eq\./, '').trim();
+    const authorParam = String(req.query.author_id || '').replace(/^eq\./, '').trim();
+
+    let results = inMemorySignatures;
+    if (profileParam) {
+      results = results.filter(s =>
+        norm(s.profile_id) === norm(profileParam) ||
+        clean(s.profile_id) === clean(profileParam)
+      );
+    }
+    if (authorParam) {
+      results = results.filter(s =>
+        norm(s.author_id) === norm(authorParam) ||
+        clean(s.author_id) === clean(authorParam)
+      );
+    }
+
+    return res.status(200).json(results);
   } catch (err: any) {
-    return res.status(200).json([]);
+    console.warn('Profile signatures route error:', err?.message);
+    return res.status(200).json(inMemorySignatures);
   }
 });
+
 
 app.post('/api/upload', (req: express.Request, res: express.Response) => {
   (upload.single('file') as any)(req, res, async (err: any) => {

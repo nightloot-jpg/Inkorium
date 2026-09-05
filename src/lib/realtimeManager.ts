@@ -13,6 +13,8 @@ export interface RealtimeManagerOptions {
   onChatNudge?: (data: any) => void;
   onChatRead?: (data: { readerId: string; senderId: string; messageIds: string[]; readAt: number; readDate: string }) => void;
   onNotification?: (notif: any) => void;
+  onWallComment?: (comment: any) => void;
+  onWallCommentDelete?: (data: { id: string; profile_id?: string }) => void;
   onStatusChange?: (status: RealtimeStatus, details?: { attempt: number; nextRetryMs?: number }) => void;
 }
 
@@ -30,6 +32,8 @@ export class RealtimeManager {
   private onChatNudge?: (data: any) => void;
   private onChatRead?: (data: { readerId: string; senderId: string; messageIds: string[]; readAt: number; readDate: string }) => void;
   private onNotification?: (notif: any) => void;
+  private onWallComment?: (comment: any) => void;
+  private onWallCommentDelete?: (data: { id: string; profile_id?: string }) => void;
   private onStatusChange?: (status: RealtimeStatus, details?: { attempt: number; nextRetryMs?: number }) => void;
 
   private eventSource: EventSource | null = null;
@@ -52,6 +56,8 @@ export class RealtimeManager {
     this.onChatNudge = options.onChatNudge;
     this.onChatRead = options.onChatRead;
     this.onNotification = options.onNotification;
+    this.onWallComment = options.onWallComment;
+    this.onWallCommentDelete = options.onWallCommentDelete;
     this.onStatusChange = options.onStatusChange;
   }
 
@@ -139,6 +145,26 @@ export class RealtimeManager {
           this.onNotification?.(data);
         } catch (err) {
           console.warn('Realtime notification parse error:', err);
+        }
+      });
+
+      es.addEventListener('wall_comment', (e) => {
+        this.retryCount = 0;
+        if (this.status !== 'connected') this.updateStatus('connected');
+        try {
+          const data = JSON.parse(e.data);
+          this.onWallComment?.(data);
+        } catch (err) {
+          console.warn('Realtime wall_comment parse error:', err);
+        }
+      });
+
+      es.addEventListener('wall_comment_delete', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          this.onWallCommentDelete?.(data);
+        } catch (err) {
+          console.warn('Realtime wall_comment_delete parse error:', err);
         }
       });
 

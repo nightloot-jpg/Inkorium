@@ -1,4 +1,4 @@
-import { ChatMessage } from '../types';
+import { ChatMessage, WallComment } from '../types';
 
 const CHAT_STORAGE_KEY = 'inkorium:chat_history_store';
 
@@ -27,6 +27,8 @@ export type InkoriumCrossTabEvent =
   | { type: 'PRIVATE_MESSAGE'; payload: { message: any; recipientId: string } }
   | { type: 'NOTIFICATION'; payload: { notification: any } }
   | { type: 'PROFILE_UPDATE'; payload: { userId: string; data: any } }
+  | { type: 'WALL_COMMENT'; payload: { comment: WallComment } }
+  | { type: 'WALL_COMMENT_DELETE'; payload: { commentId: string } }
   | { type: 'CHAT_BLOCK_UPDATE'; payload: { blockerId: string; blockedId: string; isBlocked: boolean } };
 
 export function broadcastCrossTabEvent(event: InkoriumCrossTabEvent): void {

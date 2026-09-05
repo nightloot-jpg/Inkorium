@@ -65,7 +65,8 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     recordProfileVisit,
     openComposeMessage,
     updateTopAmigos,
-    refreshProfiles
+    refreshProfiles,
+    refreshWallComments
   } = useInkorium();
 
   const [isRefreshingProfile, setIsRefreshingProfile] = useState(false);
@@ -76,7 +77,10 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     setIsRefreshingProfile(true);
     setRefreshFeedback(null);
     try {
-      await refreshProfiles();
+      await Promise.all([
+        refreshProfiles(),
+        refreshWallComments(profileUser.id)
+      ]);
       setRefreshFeedback('Perfil actualizado');
       setTimeout(() => setRefreshFeedback(null), 3000);
     } catch {
@@ -180,18 +184,48 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   // User's custom albums
   const userAlbums = albums.filter(a => a.userId === profileUser.id || a.propietarioId === profileUser.id);
 
-  // Wall comments for this user
+  // Automatically fetch profile signatures whenever viewing a profile
+  useEffect(() => {
+    if (profileUser.id) {
+      void refreshWallComments(profileUser.id);
+    }
+  }, [profileUser.id, refreshWallComments]);
+
+  // Wall comments for this user with robust normalization (case insensitive and prefix agnostic)
   const userWallComments = useMemo(() => {
+    const norm = (s?: string | null) => String(s || '').trim().toLowerCase();
+    const clean = (s?: string | null) => norm(s).replace(/^user-/, '');
+
+    const targetProfileId = profileUser.id;
+    const targetProfileUsername = profileUser.username;
+
     return wallComments.filter(w => {
-      const targetId = w.receptorId || w.propietarioId;
-      if (!targetId) return false;
-      return (
-        targetId === profileUser.id ||
-        (profileUser.username && targetId === profileUser.username) ||
-        (isOwnProfile && targetId === currentUser.id)
+      const commentTargetId = w.receptorId || w.propietarioId;
+      if (!commentTargetId) return false;
+
+      const normCommentTarget = norm(commentTargetId);
+      const cleanCommentTarget = clean(commentTargetId);
+
+      const matchesProfile =
+        normCommentTarget === norm(targetProfileId) ||
+        cleanCommentTarget === clean(targetProfileId) ||
+        (targetProfileUsername && (
+          normCommentTarget === norm(targetProfileUsername) || 
+          cleanCommentTarget === clean(targetProfileUsername)
+        ));
+
+      const matchesOwn = isOwnProfile && (
+        normCommentTarget === norm(currentUser.id) ||
+        cleanCommentTarget === clean(currentUser.id) ||
+        (currentUser.username && (
+          normCommentTarget === norm(currentUser.username) || 
+          cleanCommentTarget === clean(currentUser.username)
+        ))
       );
+
+      return matchesProfile || matchesOwn;
     });
-  }, [wallComments, profileUser.id, profileUser.username, isOwnProfile, currentUser.id]);
+  }, [wallComments, profileUser.id, profileUser.username, isOwnProfile, currentUser.id, currentUser.username]);
 
   // Synchronized age and location calculations for profile header and personal info card
   const userAge = useMemo(() => calculateAge(profileUser.fnac), [profileUser.fnac]);
