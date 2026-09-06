@@ -134,7 +134,8 @@ export const PhotoRetroViewer: React.FC = () => {
 
   const handleImageClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!taggingMode || pendingPoint) return;
-    const host = imageWrapRef.current;
+    const image = document.querySelector('#inkorium-retro-photo-image') as HTMLImageElement | null;
+    const host = image || imageWrapRef.current;
     if (!host) return;
     const rect = host.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
@@ -221,7 +222,7 @@ export const PhotoRetroViewer: React.FC = () => {
         </header>
 
         <main className="flex-1 min-h-0 flex flex-col lg:flex-row">
-          <section className="relative min-h-0 flex-1 bg-[#090b0f] flex items-center justify-center p-3 sm:p-6">
+          <section className="group relative min-h-0 flex-1 bg-[#090b0f] flex items-center justify-center p-3 sm:p-6">
             {taggingMode && !pendingPoint && (
               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-full bg-amber-400 text-black text-xs font-bold shadow-xl animate-bounce">
                 Haz clic sobre la persona para ubicar su etiqueta
@@ -231,7 +232,7 @@ export const PhotoRetroViewer: React.FC = () => {
             <button
               onClick={() => goTo(-1)}
               disabled={!previousAvailable}
-              className={`absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-30 rounded-full p-3 bg-black/55 border border-white/15 shadow-xl transition opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto disabled:opacity-0 ${previousAvailable ? 'hover:bg-[#3869A0]' : ''}`}
+              className={`absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-30 rounded-full p-3 bg-black/55 border border-white/15 shadow-xl transition opacity-100 pointer-events-auto lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto disabled:opacity-0 ${previousAvailable ? 'hover:bg-[#3869A0]' : ''}`}
               title="Foto anterior ←"
             >
               <ChevronLeft className="w-7 h-7" />
@@ -240,10 +241,10 @@ export const PhotoRetroViewer: React.FC = () => {
             <div
               ref={imageWrapRef}
               onClick={handleImageClick}
-              className={`relative max-w-full max-h-full inline-flex items-center justify-center ${taggingMode && !pendingPoint ? 'cursor-crosshair' : 'cursor-default'}`}
-              style={{ width: 'min(100%, 1200px)', height: 'min(100%, 82vh)' }}
+              className={`relative max-w-full max-h-[82vh] inline-flex items-center justify-center ${taggingMode && !pendingPoint ? 'cursor-crosshair' : 'cursor-default'}`}
             >
               <img
+                id="inkorium-retro-photo-image"
                 src={photo.archivo}
                 alt={photo.titulo || 'Fotografía'}
                 onLoad={() => setImageLoaded(true)}
@@ -319,7 +320,7 @@ export const PhotoRetroViewer: React.FC = () => {
             <button
               onClick={() => goTo(1)}
               disabled={!nextAvailable}
-              className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-30 rounded-full p-3 bg-black/55 border border-white/15 shadow-xl transition opacity-0 pointer-events-none hover:bg-[#3869A0] disabled:opacity-0 lg:group-hover:opacity-100"
+              className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-30 rounded-full p-3 bg-black/55 border border-white/15 shadow-xl transition opacity-100 pointer-events-auto hover:bg-[#3869A0] disabled:opacity-0 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto"
               title="Foto siguiente →"
             >
               <ChevronRight className="w-7 h-7" />
