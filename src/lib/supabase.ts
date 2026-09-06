@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import './networkConnectionMonitor';
 
 const SUPABASE_URL = 'https://zllwzmfsfzfedorljgtg.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_npJmIHQP_g2ApAu-7fqQAQ_d2p';
