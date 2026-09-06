@@ -34,11 +34,6 @@ export function purgeLegacyDemoData(): void {
 
   for (const [key, isDemo] of DEMO_ARRAY_FILTERS) {
     try {
-    const legacyKeys = ['inkorium:current_user_id', 'inkorium:currentUserId', 'inkorium:logged_user_id'];
-    for (const key of legacyKeys) {
-      const value = localStorage.getItem(key);
-      if (isMockRef(value)) localStorage.removeItem(key);
-    }
       const raw = localStorage.getItem(key);
       if (!raw) continue;
       const parsed = JSON.parse(raw);

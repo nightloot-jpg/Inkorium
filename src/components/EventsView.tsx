@@ -18,7 +18,13 @@ const CATEGORY_ICONS: Record<SocialEvent['categoria'], { label: string; icon: Re
   otro: { label: 'Evento', icon: <Calendar className="w-3.5 h-3.5" />, badgeBg: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' }
 };
 
-const PRESET_COVERS: Array<{ label: string; url: string }> = [];
+const PRESET_COVERS: Array<{ label: string; url: string }> = [
+  { label: 'Fiesta / Discoteca', url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&fit=crop' },
+  { label: 'Cumpleaños', url: 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=1200&fit=crop' },
+  { label: 'Concierto / Festival', url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&fit=crop' },
+  { label: 'Quedada en terraza', url: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=1200&fit=crop' },
+  { label: 'Deportes / Partido', url: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1200&fit=crop' }
+];
 
 const PARTY_PHOTO_SAMPLES: Array<{ label: string; url: string }> = [];
 

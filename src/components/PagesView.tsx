@@ -456,8 +456,28 @@ export const PagesView: React.FC = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredPages.map(page => {
+              {filteredPages.length === 0 ? (
+                <div className="bg-white dark:bg-[#142032] border border-[#ccd5df] dark:border-[#1d2b40] rounded p-10 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center mx-auto">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                    No hay páginas creadas todavía
+                  </h3>
+                  <p className="text-xs text-gray-500 max-w-md mx-auto">
+                    Crea la página oficial para tu discoteca, pub favorito, grupo de música o marca.
+                  </p>
+                  <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="px-4 py-1.5 bg-[#3869A0] hover:bg-[#2c5282] text-white rounded font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Crear la primera página</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredPages.map(page => {
                   const isFan = isUserFan(page);
                   return (
                     <div
@@ -532,6 +552,7 @@ export const PagesView: React.FC = () => {
                   );
                 })}
               </div>
+              )}
             </div>
           )}
         </div>

@@ -4,8 +4,8 @@ import {
   Home, User as UserIcon, Users, Image as ImageIcon, Mail, 
   Settings, Bell, Volume2, VolumeX, Search, LogOut, Check,
   UserPlus, MessageSquare, Sparkles, Moon, Sun, Palette,
-  Calendar, Building2, Gamepad2, Ticket, GraduationCap,
-  ChevronDown, Upload
+  Ticket, ChevronDown, Upload,
+  Calendar, Building2, GraduationCap, Gamepad2
 } from 'lucide-react';
 import { isSoundEnabled, toggleSound } from '../utils/sound';
 
@@ -403,54 +403,6 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
                     <span>Mi Perfil y Tablón</span>
                   </button>
 
-                  <div className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                    Accesos directos
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setActiveTab('eventos');
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-1.5 hover:bg-blue-50 flex items-center gap-2 cursor-pointer font-medium"
-                  >
-                    <Calendar className="w-4 h-4 text-purple-600" />
-                    <span>Eventos y Quedadas</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setActiveTab('paginas');
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-1.5 hover:bg-blue-50 flex items-center gap-2 cursor-pointer font-medium"
-                  >
-                    <Building2 className="w-4 h-4 text-orange-600" />
-                    <span>Páginas y Sitios</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setActiveTab('campus');
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-1.5 hover:bg-blue-50 flex items-center gap-2 cursor-pointer font-medium"
-                  >
-                    <GraduationCap className="w-4 h-4 text-emerald-600" />
-                    <span>Campus & Comunidades</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setActiveTab('juegos');
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center gap-2 cursor-pointer font-medium"
-                  >
-                    <Gamepad2 className="w-4 h-4 text-emerald-600" />
-                    <span>Juegos Flash Retro</span>
-                  </button>
-
                   <button
                     onClick={() => {
                       setIsInvitationsModalOpen(true);
@@ -488,7 +440,56 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
                     <Settings className="w-4 h-4 text-gray-600" />
                     <span>Ajustes de Cuenta</span>
                   </button>
+                </div>
 
+                {/* Accesos directos Tuenti retro */}
+                <div className="border-t border-gray-200 py-1">
+                  <div className="px-3 py-1 text-[10px] font-bold uppercase text-gray-400">
+                    Accesos directos
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveTab('eventos');
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-amber-50 flex items-center gap-2 cursor-pointer text-gray-700"
+                  >
+                    <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Eventos & Quedadas</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab('paginas');
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-orange-50 flex items-center gap-2 cursor-pointer text-gray-700"
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-orange-600" />
+                    <span>Páginas & Sitios</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab('campus');
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer text-gray-700"
+                  >
+                    <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Campus & Comunidades</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab('juegos');
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 flex items-center gap-2 cursor-pointer text-gray-700"
+                  >
+                    <Gamepad2 className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Juegos Flash Retro</span>
+                  </button>
+                </div>
+
+                <div className="border-t border-gray-200 py-1">
                   <button
                     onClick={() => {
                       toggleTheme();

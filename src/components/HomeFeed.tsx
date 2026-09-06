@@ -4,9 +4,9 @@ import { useInkorium } from '../context/InkoriumContext';
 import { 
   Send, Image as ImageIcon, Smile, MessageCircle, Heart, 
   UserPlus, Sparkles, Clock, CheckCircle2, ChevronRight,
-  Upload, Camera, Loader2, X, Edit2, Check, ChevronDown, Music, Disc, Globe, MapPin,
-  ShieldCheck, GraduationCap, Users, Shield, SlidersHorizontal, ToggleLeft, ToggleRight,
-  Calendar, Building2, Gamepad2
+  Upload, Camera, Loader2, X, Edit2, Check, ChevronDown, Globe, MapPin,
+  ShieldCheck, SlidersHorizontal, ToggleLeft, ToggleRight,
+  Calendar, Building2, GraduationCap, Gamepad2, Music, Disc
 } from 'lucide-react';
 import { FeedItem, UserPresence, formatFullLocation } from '../types';
 import { uploadMediaFile } from '../lib/storage';
@@ -45,6 +45,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
     musicPlaylist,
     currentTrack,
     isMusicPlaying,
+    setIsMusicPlayerOpen,
     canUserViewPhoto,
     isAntiAlgorithmMode,
     toggleAntiAlgorithmMode,
@@ -390,7 +391,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
             <button 
               onClick={() => setActiveTab('eventos')}
               className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
-              title="Eventos, quedadas, fiestas y cumpleaños de amigos"
+              title="Eventos, quedadas y fiestas"
             >
               <div className="flex items-center gap-2.5">
                 <div className="w-6 h-6 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -466,24 +467,14 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
               </span>
             </button>
 
-            {/* Subir fotos */}
-            <button 
-              onClick={onOpenUpload}
-              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#3869A0] dark:text-blue-400 flex items-center gap-2.5 cursor-pointer transition"
-            >
-              <div className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-950/80 text-[#3869A0] dark:text-blue-300 flex items-center justify-center shrink-0">
-                <Upload className="w-3.5 h-3.5" />
-              </div>
-              <div>
-                <span className="font-semibold block text-xs">Subir fotos</span>
-                <span className="text-[10px] text-gray-400 block -mt-0.5">Etiquetar amigos y filtro 2008</span>
-              </div>
-            </button>
-
             {/* Música */}
             <button 
-              onClick={() => setActiveTab('musica')}
+              onClick={() => {
+                setActiveTab('musica');
+                setIsMusicPlayerOpen(true);
+              }}
               className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
+              title="Reproductor y pistas de música"
             >
               <div className="flex items-center gap-2.5">
                 <div className="w-6 h-6 rounded bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
@@ -504,6 +495,20 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                   {musicPlaylist.length}
                 </span>
               )}
+            </button>
+
+            {/* Subir fotos */}
+            <button 
+              onClick={onOpenUpload}
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#3869A0] dark:text-blue-400 flex items-center gap-2.5 cursor-pointer transition"
+            >
+              <div className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-950/80 text-[#3869A0] dark:text-blue-300 flex items-center justify-center shrink-0">
+                <Upload className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <span className="font-semibold block text-xs">Subir fotos</span>
+                <span className="text-[10px] text-gray-400 block -mt-0.5">Etiquetar amigos y filtro 2008</span>
+              </div>
             </button>
 
             {/* Buscar gente */}
@@ -541,40 +546,51 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
           </div>
         </div>
 
-        {/* Campus & Comunidades Locales Mini Card */}
-        <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2">
-          <div className="flex items-center justify-between pb-1.5 border-b border-gray-200">
-            <span className="font-bold text-gray-800 flex items-center gap-1.5">
+        {/* Campus & Comunidades Locales Card */}
+        <div className="bg-white dark:bg-[#152238] rounded border border-[#ccd5df] dark:border-[#1d2b40] p-3 text-xs shadow-xs space-y-2">
+          <div className="flex items-center justify-between pb-1.5 border-b border-gray-200 dark:border-[#1d2b40]">
+            <span className="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
               <GraduationCap className="w-4 h-4 text-emerald-600" />
               <span>Campus & Barrios</span>
             </span>
             <button
               onClick={() => setActiveTab('campus')}
-              className="text-[10px] text-[#3869A0] font-bold hover:underline cursor-pointer"
+              className="text-[10px] text-[#3869A0] dark:text-blue-400 font-bold hover:underline cursor-pointer"
             >
-              Explorar ({campusCommunities.length})
+              {campusCommunities.length > 0 ? `Explorar (${campusCommunities.length})` : 'Entrar'}
             </button>
           </div>
-          <p className="text-[11px] text-gray-500 leading-tight">
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
             Comunidades de tu universidad, instituto o barrio para compartir apuntes, fiestas y quedadas.
           </p>
-          <div className="space-y-1 pt-1">
-            {campusCommunities.slice(0, 3).map(comm => (
-              <div
-                key={comm.id}
-                onClick={() => setActiveTab('campus')}
-                className="flex items-center justify-between p-1.5 rounded hover:bg-emerald-50/70 border border-gray-100 hover:border-emerald-200 cursor-pointer transition text-[11px]"
-              >
-                <div className="truncate">
-                  <span className="font-bold text-gray-800 block truncate">{comm.nombre}</span>
-                  <span className="text-[9px] text-gray-400 capitalize">{comm.tipo} • {comm.ciudad}</span>
+          {campusCommunities.length > 0 ? (
+            <div className="space-y-1 pt-1">
+              {campusCommunities.slice(0, 3).map(comm => (
+                <div
+                  key={comm.id}
+                  onClick={() => setActiveTab('campus')}
+                  className="flex items-center justify-between p-1.5 rounded hover:bg-emerald-50/70 dark:hover:bg-emerald-950/30 border border-gray-100 dark:border-gray-800 hover:border-emerald-200 cursor-pointer transition text-[11px]"
+                >
+                  <div className="truncate">
+                    <span className="font-bold text-gray-800 dark:text-gray-100 block truncate">{comm.nombre}</span>
+                    <span className="text-[9px] text-gray-400 capitalize">{comm.tipo} • {comm.ciudad}</span>
+                  </div>
+                  <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-bold px-1.5 py-0.5 rounded shrink-0">
+                    {comm.miembros.length}
+                  </span>
                 </div>
-                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded flex-shrink-0">
-                  {comm.miembros.length}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="pt-1">
+              <button
+                onClick={() => setActiveTab('campus')}
+                className="w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded font-semibold text-center block transition cursor-pointer"
+              >
+                + Explorar o crear comunidad
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Mini Chat Widget */}

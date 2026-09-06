@@ -519,8 +519,28 @@ export const CampusView: React.FC = () => {
           </div>
 
           {/* Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredCommunities.map(community => {
+          {filteredCommunities.length === 0 ? (
+            <div className="bg-white dark:bg-[#0e1726] rounded border border-[#ccd5df] dark:border-[#1d2b40] p-10 text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center mx-auto">
+                <GraduationCap className="w-6 h-6" />
+              </div>
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                No hay comunidades de campus creadas todavía
+              </h3>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                Crea el espacio para tu facultad universitaria, instituto o barrio local para compartir apuntes, dudas y quedadas.
+              </p>
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Crear la primera comunidad</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredCommunities.map(community => {
               const isMember = community.miembros.includes(currentUser.id);
               const badge = CATEGORY_BADGES[community.tipo];
 
@@ -595,6 +615,7 @@ export const CampusView: React.FC = () => {
               );
             })}
           </div>
+          )}
         </div>
       )}
 
