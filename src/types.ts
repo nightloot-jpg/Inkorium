@@ -21,6 +21,26 @@ export type UserPresence = 'conectado' | 'ausente' | 'ocupado' | 'invisible';
 
 export type RelationshipStatus = 'Soltero/a' | 'Con pareja' | 'En una relación' | 'Casado/a' | 'Es complicado' | 'De fiesta en fiesta';
 
+export type PrivacyAudience = 'amigos' | 'todos';
+
+export interface ProfilePrivacySettings {
+  fotos: PrivacyAudience;            // 'amigos': solo amigos; 'todos': público / todo el mundo
+  tablon: PrivacyAudience;           // 'amigos': solo amigos; 'todos': público / todo el mundo
+  amigos: PrivacyAudience;           // 'amigos': solo amigos; 'todos': público / todo el mundo
+  info: PrivacyAudience;             // 'amigos': solo amigos; 'todos': público / todo el mundo
+  comentarTablon: PrivacyAudience;   // 'amigos': solo amigos pueden firmar; 'todos': cualquier usuario registrado
+  permitirNoRegistrados: boolean;    // Si es true, usuarios no registrados pueden ver las partes marcadas como 'todos'
+}
+
+export const DEFAULT_PROFILE_PRIVACY: ProfilePrivacySettings = {
+  fotos: 'amigos',
+  tablon: 'amigos',
+  amigos: 'amigos',
+  info: 'todos',
+  comentarTablon: 'amigos',
+  permitirNoRegistrados: true,
+};
+
 export interface User {
   id: string;
   username?: string;
@@ -48,6 +68,7 @@ export interface User {
   ultimoAcceso: string;
   chatEstado: '1' | '0'; // '1' = activo, '0' = desactivado
   topAmigos?: string[]; // IDs de los 6-8 amigos destacados del perfil
+  privacidadPerfil?: ProfilePrivacySettings; // Configuración de privacidad del perfil
   invitacionesRestantes?: number;
   invitacionesDisponibles?: number;
   invitacionesEnviadas?: UserInvitation[];

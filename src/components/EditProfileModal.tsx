@@ -3,7 +3,7 @@ import { useInkorium } from '../context/InkoriumContext';
 import { supabase } from '../lib/supabase';
 import { 
   X, Check, Sparkles, MapPin, Heart, Briefcase, 
-  Music, User as UserIcon, Calendar, Camera, Info, Save
+  Music, User as UserIcon, Calendar, Camera, Info, Save, Shield
 } from 'lucide-react';
 import { 
   COUNTRIES_LIST, 
@@ -24,7 +24,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   onClose,
   onOpenAvatarModal
 }) => {
-  const { currentUser, updateUserData, refreshProfiles, pushNotification } = useInkorium();
+  const { currentUser, updateUserData, refreshProfiles, pushNotification, openSettingsSection } = useInkorium();
 
   const [nombre, setNombre] = useState(currentUser.nombre || '');
   const [apellidos, setApellidos] = useState(currentUser.apellidos || '');
@@ -471,22 +471,35 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           </div>
 
           {/* Footer Controls */}
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-200 dark:border-slate-800">
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-gray-200 dark:border-slate-800">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded text-xs transition cursor-pointer"
+              onClick={() => {
+                onClose();
+                openSettingsSection('privacidad');
+              }}
+              className="px-2.5 py-1.5 text-[#3869A0] hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
             >
-              Cancelar
+              <Shield className="w-3.5 h-3.5" />
+              <span>Privacidad del perfil</span>
             </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-5 py-2 bg-[#3869A0] hover:bg-[#2b5380] text-white font-bold rounded text-xs transition cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-50"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>{isSaving ? 'Guardando...' : 'Guardar cambios'}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded text-xs transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-5 py-2 bg-[#3869A0] hover:bg-[#2b5380] text-white font-bold rounded text-xs transition cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{isSaving ? 'Guardando...' : 'Guardar cambios'}</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>

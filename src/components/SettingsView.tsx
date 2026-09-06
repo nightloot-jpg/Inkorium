@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { AvatarModal } from './AvatarModal';
+import { ProfilePrivacySettingsSection } from './ProfilePrivacySettingsSection';
 import { 
   Settings, UserCheck, Shield, KeyRound, UserPlus, 
   Check, X, RefreshCw, Smartphone, Globe, Sparkles, Bell, Volume2, MessageSquare, Image as ImageIcon,
@@ -40,9 +41,18 @@ export const SettingsView: React.FC = () => {
     blockedUserIds,
     unblockUser,
     users,
+    activeSettingsSection,
+    setActiveSettingsSection,
   } = useInkorium();
 
-  const [section, setSection] = useState<'datos' | 'peticiones' | 'notificaciones' | 'ip' | 'seguridad' | 'apariencia' | 'bloqueados'>('datos');
+  const [section, setSection] = useState<'datos' | 'privacidad' | 'peticiones' | 'notificaciones' | 'ip' | 'seguridad' | 'apariencia' | 'bloqueados'>('datos');
+
+  useEffect(() => {
+    if (activeSettingsSection && ['datos', 'privacidad', 'peticiones', 'notificaciones', 'ip', 'seguridad', 'apariencia', 'bloqueados'].includes(activeSettingsSection)) {
+      setSection(activeSettingsSection as any);
+    }
+  }, [activeSettingsSection]);
+
   const [soundActive, setSoundActive] = useState(isSoundEnabled());
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [themeNotification, setThemeNotification] = useState<string | null>(null);
@@ -164,10 +174,25 @@ export const SettingsView: React.FC = () => {
               <button
                 onClick={() => setSection('datos')}
                 className={`w-full text-left px-3 py-2.5 transition cursor-pointer flex items-center justify-between ${
-                  section === 'datos' ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 text-gray-800'
+                  section === 'datos' ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 text-gray-800 dark:text-gray-200'
                 }`}
               >
                 <span>Datos de la cuenta</span>
+              </button>
+
+              <button
+                onClick={() => setSection('privacidad')}
+                className={`w-full text-left px-3 py-2.5 transition cursor-pointer flex items-center justify-between ${
+                  section === 'privacidad' ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 text-gray-800 dark:text-gray-200'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Privacidad del perfil</span>
+                </div>
+                <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-1.5 py-0.2 rounded text-[10px]">
+                  Nuevo
+                </span>
               </button>
 
               <button
@@ -270,6 +295,11 @@ export const SettingsView: React.FC = () => {
         {/* ================= MAIN SETTINGS SECTION ================= */}
         <div className="md:col-span-8 lg:col-span-9 space-y-4">
           <div className="bg-white dark:bg-[#0e1726] rounded border border-[#ccd5df] dark:border-[#1d2b40] p-4 shadow-xs min-h-[400px]">
+            {/* ================= PRIVACIDAD DEL PERFIL ================= */}
+            {section === 'privacidad' && (
+              <ProfilePrivacySettingsSection />
+            )}
+
             {/* ================= 1. DATOS DE LA CUENTA ================= */}
             {section === 'datos' && (
               <div className="space-y-4 text-xs text-gray-800 dark:text-gray-100">

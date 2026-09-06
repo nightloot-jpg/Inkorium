@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star } from 'lucide-react';
+import { Star, Lock } from 'lucide-react';
 import type { User } from '../../types';
 
 interface ProfileTopFriendsProps {
@@ -9,6 +9,7 @@ interface ProfileTopFriendsProps {
   friendsList: User[];
   viewUserProfile: (userId: string) => void;
   onEditTop: () => void;
+  canViewTopFriends?: boolean;
 }
 
 export const ProfileTopFriends: React.FC<ProfileTopFriendsProps> = ({
@@ -17,7 +18,8 @@ export const ProfileTopFriends: React.FC<ProfileTopFriendsProps> = ({
   topAmigosList,
   friendsList,
   viewUserProfile,
-  onEditTop
+  onEditTop,
+  canViewTopFriends = true
 }) => {
   const displayList = topAmigosList.length > 0 ? topAmigosList : friendsList.slice(0, 6);
   const count = topAmigosList.length > 0 ? topAmigosList.length : Math.min(friendsList.length, 6);
@@ -28,9 +30,11 @@ export const ProfileTopFriends: React.FC<ProfileTopFriendsProps> = ({
         <div className="flex items-center gap-1.5 text-gray-900">
           <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
           <span>Top Amigos</span>
-          <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded-full">
-            {count}/8
-          </span>
+          {canViewTopFriends && (
+            <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded-full">
+              {count}/8
+            </span>
+          )}
         </div>
         {isOwnProfile && (
           <button
@@ -43,7 +47,17 @@ export const ProfileTopFriends: React.FC<ProfileTopFriendsProps> = ({
         )}
       </div>
 
-      {topAmigosList.length === 0 && friendsList.length === 0 ? (
+      {!canViewTopFriends ? (
+        <div className="py-4 text-center space-y-1.5 bg-gray-50 rounded border border-gray-100">
+          <Lock className="w-5 h-5 text-gray-400 mx-auto" />
+          <p className="text-[11px] text-gray-600 font-medium">
+            Top Amigos privado
+          </p>
+          <p className="text-[10px] text-gray-400 px-2">
+            Solo visible para los amigos de {profileUser.nombre}.
+          </p>
+        </div>
+      ) : topAmigosList.length === 0 && friendsList.length === 0 ? (
         <p className="text-[11px] text-gray-400 py-2 text-center">
           Aún no hay amigos en el Top.
         </p>

@@ -6,14 +6,17 @@ import { EditProfileModal } from './EditProfileModal';
 import { RecentProfileVisits } from './RecentProfileVisits';
 import { ProfileWall } from './profile/ProfileWall';
 import { ProfileTopFriends } from './profile/ProfileTopFriends';
+import { ProfilePrivacyModal } from './ProfilePrivacyModal';
 import { 
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
   Trash2, Send, Check, Shield, UserCheck, Camera, Upload, ChevronDown, ChevronRight,
   Users, UserMinus, UserX, Clock, Search, X, ShieldAlert, CheckCheck, Globe, Ban,
-  Eye, Star, Award, RefreshCw, UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon
+  Eye, Star, Award, RefreshCw, UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon,
+  Lock
 } from 'lucide-react';
 import { UserPresence, User, formatFullLocation, calculateAge, formatBirthDate } from '../types';
 import { signatureEventBus } from '../lib/signatureEventBus';
+import { canViewProfileSection, canCommentOnWall, getProfilePrivacy } from '../utils/privacy';
 
 const normalizeUserId = (id?: string) => (id || '').toLowerCase().replace(/^user-/, '').trim();
 
@@ -172,17 +175,77 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const [showPresenceMenu, setShowPresenceMenu] = useState(false);
   const [mpSubject, setMpSubject] = useState('');
   const [mpBody, setMpBody] = useState('');
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [privacyPreviewRole, setPrivacyPreviewRole] = useState<'propietario' | 'amigo' | 'no_amigo' | 'no_registrado'>('propietario');
+
+  // Privacy evaluations and role simulation
+  const isViewingAsOwner = isOwnProfile && privacyPreviewRole === 'propietario';
+  const effectiveViewer: Partial<User> | null = useMemo(() => {
+    if (isOwnProfile) {
+      if (privacyPreviewRole === 'no_registrado') return null;
+      return currentUser;
+    }
+    return currentUser;
+  }, [isOwnProfile, privacyPreviewRole, currentUser]);
+
+  const isEffectiveFriend = useMemo(() => {
+    if (isOwnProfile) {
+      if (privacyPreviewRole === 'amigo') return true;
+      if (privacyPreviewRole === 'no_amigo' || privacyPreviewRole === 'no_registrado') return false;
+      return true; // Propietario
+    }
+    return alreadyFriend;
+  }, [isOwnProfile, privacyPreviewRole, alreadyFriend]);
+
+  const profilePrivacy = useMemo(() => {
+    return getProfilePrivacy(profileUser);
+  }, [profileUser]);
+
+  const canViewFotos = useMemo(() => {
+    return canViewProfileSection('fotos', profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner);
+  }, [profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner]);
+
+  const canViewTablon = useMemo(() => {
+    return canViewProfileSection('tablon', profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner);
+  }, [profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner]);
+
+  const canCommentTablon = useMemo(() => {
+    return canCommentOnWall(profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner);
+  }, [profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner]);
+
+  const canViewAmigos = useMemo(() => {
+    return canViewProfileSection('amigos', profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner);
+  }, [profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner]);
+
+  const canViewInfo = useMemo(() => {
+    return canViewProfileSection('info', profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner);
+  }, [profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner]);
 
   const userPresence: UserPresence = profileUser.presencia || (profileUser.online ? 'conectado' : 'invisible');
 
+  // Simulated viewer ID for photos filtering
+  const viewerIdForPhotos = isOwnProfile && privacyPreviewRole === 'no_registrado' 
+    ? undefined 
+    : isOwnProfile && privacyPreviewRole === 'no_amigo'
+    ? 'simulated-stranger'
+    : currentUser.id;
+
   // Photos of this user (filtered by privacy permissions)
-  const userPhotos = photos.filter(p => p.uploaderId === profileUser.id && canUserViewPhoto(p, currentUser.id));
+  const userPhotos = useMemo(() => {
+    if (!canViewFotos) return [];
+    return photos.filter(p => p.uploaderId === profileUser.id && canUserViewPhoto(p, viewerIdForPhotos));
+  }, [photos, profileUser.id, canViewFotos, viewerIdForPhotos, canUserViewPhoto]);
+
   // Tagged photos (filtered by privacy permissions)
-  const taggedPhotos = photos.filter(p => 
-    Array.isArray(p.etiquetas) && 
-    p.etiquetas.some(t => t.userId === profileUser.id || t.usuarioId === profileUser.id) &&
-    canUserViewPhoto(p, currentUser.id)
-  );
+  const taggedPhotos = useMemo(() => {
+    if (!canViewFotos) return [];
+    return photos.filter(p => 
+      Array.isArray(p.etiquetas) && 
+      p.etiquetas.some(t => t.userId === profileUser.id || t.usuarioId === profileUser.id) &&
+      canUserViewPhoto(p, viewerIdForPhotos)
+    );
+  }, [photos, profileUser.id, canViewFotos, viewerIdForPhotos, canUserViewPhoto]);
+
   // User's custom albums
   const userAlbums = albums.filter(a => a.userId === profileUser.id || a.propietarioId === profileUser.id);
 
@@ -528,6 +591,14 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                   <span>Editar mis datos</span>
                 </button>
                 <button
+                  onClick={() => setShowPrivacyModal(true)}
+                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#3869A0] border border-blue-200 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                  title="Configurar privacidad de fotos, tablón y amigos"
+                >
+                  <Shield className="w-3.5 h-3.5 text-[#3869A0]" />
+                  <span>Privacidad</span>
+                </button>
+                <button
                   onClick={onOpenUpload}
                   className="px-3 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                 >
@@ -556,6 +627,104 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
           </div>
         </div>
 
+        {/* ================= SIMULACIÓN DE PRIVACIDAD (SOLO PROPIETARIO) ================= */}
+        {isOwnProfile && (
+          <div className="bg-slate-50 border border-slate-200 rounded p-2.5 text-xs flex flex-wrap items-center justify-between gap-2.5 mt-4">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-[#3869A0]" />
+              <span className="font-bold text-gray-800">Simulación de privacidad:</span>
+              <span className="text-gray-500 text-[11px] hidden sm:inline">Comprueba cómo ven tu perfil los distintos tipos de usuarios</span>
+            </div>
+
+            <div className="flex items-center gap-1 bg-white border border-gray-200 rounded p-0.5">
+              <button
+                type="button"
+                onClick={() => setPrivacyPreviewRole('propietario')}
+                className={`px-2.5 py-1 rounded text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  privacyPreviewRole === 'propietario'
+                    ? 'bg-[#3869A0] text-white shadow-xs'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title="Vista como tú mismo (dueño del perfil)"
+              >
+                <span>👑 Tú</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPrivacyPreviewRole('amigo')}
+                className={`px-2.5 py-1 rounded text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  privacyPreviewRole === 'amigo'
+                    ? 'bg-[#3869A0] text-white shadow-xs'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title="Vista como un amigo tuyo"
+              >
+                <span>👥 Amigo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPrivacyPreviewRole('no_amigo')}
+                className={`px-2.5 py-1 rounded text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  privacyPreviewRole === 'no_amigo'
+                    ? 'bg-[#3869A0] text-white shadow-xs'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title="Vista como usuario registrado fuera de tu lista de amigos"
+              >
+                <span>🌐 No amigo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPrivacyPreviewRole('no_registrado')}
+                className={`px-2.5 py-1 rounded text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  privacyPreviewRole === 'no_registrado'
+                    ? 'bg-[#3869A0] text-white shadow-xs'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title="Vista como visitante no registrado en la web"
+              >
+                <span>👁️ Visitante</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Notice if owner is in simulation mode */}
+        {isOwnProfile && privacyPreviewRole !== 'propietario' && (
+          <div className="p-2.5 bg-amber-50 border border-amber-200 rounded text-xs text-amber-900 flex items-center justify-between gap-2 mt-2">
+            <div className="flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+              <span>
+                <strong>Modo vista previa activo:</strong> Estás previsualizando tu perfil como{' '}
+                <strong>
+                  {privacyPreviewRole === 'amigo' && 'amigo confirmado'}
+                  {privacyPreviewRole === 'no_amigo' && 'usuario fuera de amigos'}
+                  {privacyPreviewRole === 'no_registrado' && 'visitante anónimo / no registrado'}
+                </strong>.
+              </span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(true)}
+                className="underline hover:text-amber-800 font-bold cursor-pointer"
+              >
+                Ajustar privacidad
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrivacyPreviewRole('propietario')}
+                className="px-2 py-0.5 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded cursor-pointer transition"
+              >
+                Restablecer vista
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ================= PROFILE SUB-TABS NAVIGATION ================= */}
         <div className="flex items-center gap-2 border-t border-gray-200 mt-4 pt-3 text-xs font-bold">
           <button
@@ -580,11 +749,20 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
           >
             <Users className="w-3.5 h-3.5" />
             <span>Amigos</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
-              profileSubTab === 'amigos' ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'
-            }`}>
-              {friendsList.length}
-            </span>
+            {!canViewAmigos ? (
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold flex items-center gap-0.5 ${
+                profileSubTab === 'amigos' ? 'bg-white/25 text-white' : 'bg-amber-100 text-amber-800'
+              }`}>
+                <Lock className="w-2.5 h-2.5" />
+                <span>Privado</span>
+              </span>
+            ) : (
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
+                profileSubTab === 'amigos' ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'
+              }`}>
+                {friendsList.length}
+              </span>
+            )}
             {isOwnProfile && allMyPendingRequests.length > 0 && (
               <span className="bg-amber-500 text-white text-[10px] px-1.5 py-0.2 rounded-full animate-pulse">
                 {allMyPendingRequests.length}
@@ -602,17 +780,49 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
           >
             <ImageIcon className="w-3.5 h-3.5" />
             <span>Fotos & Álbumes</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
-              profileSubTab === 'fotos' ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'
-            }`}>
-              {userPhotos.length + taggedPhotos.length}
-            </span>
+            {!canViewFotos ? (
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold flex items-center gap-0.5 ${
+                profileSubTab === 'fotos' ? 'bg-white/25 text-white' : 'bg-amber-100 text-amber-800'
+              }`}>
+                <Lock className="w-2.5 h-2.5" />
+                <span>Privado</span>
+              </span>
+            ) : (
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
+                profileSubTab === 'fotos' ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'
+              }`}>
+                {userPhotos.length + taggedPhotos.length}
+              </span>
+            )}
           </button>
         </div>
       </div>
 
       {/* ================= TAB CONTENT: AMIGOS DEDICATED VIEW ================= */}
-      {profileSubTab === 'amigos' && (
+      {profileSubTab === 'amigos' && !canViewAmigos ? (
+        <div className="bg-white rounded border border-[#ccd5df] p-8 text-center space-y-3 shadow-xs">
+          <div className="w-14 h-14 mx-auto rounded-full bg-blue-50 flex items-center justify-center text-[#3869A0] border border-blue-200">
+            <Lock className="w-7 h-7" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-bold text-base text-gray-900">
+              Lista de amigos privada
+            </h3>
+            <p className="text-xs text-gray-500 max-w-md mx-auto">
+              La lista de amigos de {profileUser.nombre} solo es visible para las personas de su lista de amigos.
+            </p>
+          </div>
+          {!alreadyFriend && !pendingOutgoingReq && (
+            <button
+              onClick={() => sendFriendRequest(profileUser.id)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold text-xs rounded transition shadow-xs cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Añadir a mis amigos</span>
+            </button>
+          )}
+        </div>
+      ) : profileSubTab === 'amigos' && (
         <div className="space-y-4">
           {/* Top Bar for Friends Search & Filters */}
           <div className="bg-white rounded border border-[#ccd5df] p-3.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
@@ -888,7 +1098,30 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
       )}
 
       {/* ================= TAB CONTENT: FOTOS DEDICATED VIEW ================= */}
-      {profileSubTab === 'fotos' && (
+      {profileSubTab === 'fotos' && !canViewFotos ? (
+        <div className="bg-white rounded border border-[#ccd5df] p-8 text-center space-y-3 shadow-xs">
+          <div className="w-14 h-14 mx-auto rounded-full bg-blue-50 flex items-center justify-center text-[#3869A0] border border-blue-200">
+            <Lock className="w-7 h-7" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-bold text-base text-gray-900">
+              Fotos y Álbumes privados
+            </h3>
+            <p className="text-xs text-gray-500 max-w-md mx-auto">
+              Las fotos de {profileUser.nombre} solo son visibles para las personas que están en su lista de amigos.
+            </p>
+          </div>
+          {!alreadyFriend && !pendingOutgoingReq && (
+            <button
+              onClick={() => sendFriendRequest(profileUser.id)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold text-xs rounded transition shadow-xs cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Añadir a mis amigos</span>
+            </button>
+          )}
+        </div>
+      ) : profileSubTab === 'fotos' && (
         <div className="bg-white rounded border border-[#ccd5df] p-4 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-gray-200">
             <h2 className="font-bold text-sm text-gray-800 flex items-center gap-2">
@@ -984,7 +1217,26 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                 )}
               </div>
 
-              <div className="space-y-2 text-gray-700">
+              {!canViewInfo ? (
+                <div className="space-y-2 text-gray-700">
+                  <div className="flex items-start justify-between">
+                    <span className="text-gray-400 font-medium">Nombre:</span>
+                    <span className="font-semibold text-right">{profileUser.nombre} {profileUser.apellidos}</span>
+                  </div>
+                  <div className="flex items-start justify-between">
+                    <span className="text-gray-400 font-medium">Ubicación:</span>
+                    <span className="font-semibold text-right">{userLocation}</span>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded border border-gray-100 text-center space-y-1 mt-2">
+                    <Lock className="w-4 h-4 text-gray-400 mx-auto" />
+                    <p className="text-[11px] font-semibold text-gray-700">Información personal privada</p>
+                    <p className="text-[10px] text-gray-500">
+                      La información detallada de {profileUser.nombre} solo está visible para sus amigos.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2 text-gray-700">
                 <div className="flex items-start justify-between">
                   <span className="text-gray-400 font-medium">Nombre:</span>
                   <span className="font-semibold text-right">{profileUser.nombre} {profileUser.apellidos}</span>
@@ -1127,6 +1379,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                   Registrado en Inkorium el {profileUser.fechaReg}
                 </div>
               </div>
+              )}
             </div>
 
             {/* Top Amigos / Amigos Destacados (Classic Tuenti Sidebar Feature) */}
@@ -1136,6 +1389,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
               topAmigosList={topAmigosList}
               friendsList={friendsList}
               viewUserProfile={viewUserProfile}
+              canViewTopFriends={canViewAmigos}
               onEditTop={() => {
                 setSelectedTopIds(profileUser.topAmigos || friendsList.slice(0, 6).map(f => f.id));
                 setShowTopAmigosModal(true);
@@ -1153,6 +1407,10 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
               postWallComment={postWallComment}
               deleteWallComment={deleteWallComment}
               viewUserProfile={viewUserProfile}
+              canViewWall={canViewTablon}
+              canCommentWall={canCommentTablon}
+              onRequestFriend={() => sendFriendRequest(profileUser.id)}
+              isPendingFriend={pendingOutgoingReq}
             />
           </div>
 
@@ -1163,17 +1421,25 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
               <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <ImageIcon className="w-3.5 h-3.5 text-[#3869A0]" />
-                  <span>Fotos ({userPhotos.length + taggedPhotos.length})</span>
+                  <span>Fotos ({canViewFotos ? userPhotos.length + taggedPhotos.length : '—'})</span>
                 </span>
-                <button
-                  onClick={() => setProfileSubTab('fotos')}
-                  className="text-[11px] text-[#3869A0] hover:underline font-semibold cursor-pointer"
-                >
-                  Ver todas
-                </button>
+                {canViewFotos && (
+                  <button
+                    onClick={() => setProfileSubTab('fotos')}
+                    className="text-[11px] text-[#3869A0] hover:underline font-semibold cursor-pointer"
+                  >
+                    Ver todas
+                  </button>
+                )}
               </div>
 
-              {userPhotos.length === 0 && taggedPhotos.length === 0 ? (
+              {!canViewFotos ? (
+                <div className="py-4 text-center space-y-1.5 bg-gray-50 rounded border border-gray-100">
+                  <Lock className="w-4 h-4 text-gray-400 mx-auto" />
+                  <p className="text-[11px] text-gray-600 font-medium">Fotos privadas</p>
+                  <p className="text-[10px] text-gray-400">Solo visibles para amigos</p>
+                </div>
+              ) : userPhotos.length === 0 && taggedPhotos.length === 0 ? (
                 <div className="py-3 text-center text-gray-400 text-xs space-y-1">
                   <p>Aún no hay fotos subidas.</p>
                   {isOwnProfile && (
@@ -1251,17 +1517,25 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
               <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-[#3869A0]" />
-                  <span>Amigos de {profileUser.nombre} ({friendsList.length})</span>
+                  <span>Amigos de {profileUser.nombre} ({canViewAmigos ? friendsList.length : '—'})</span>
                 </span>
-                <button
-                  onClick={() => setProfileSubTab('amigos')}
-                  className="text-[11px] text-[#3869A0] hover:underline font-semibold cursor-pointer"
-                >
-                  Ver todos
-                </button>
+                {canViewAmigos && (
+                  <button
+                    onClick={() => setProfileSubTab('amigos')}
+                    className="text-[11px] text-[#3869A0] hover:underline font-semibold cursor-pointer"
+                  >
+                    Ver todos
+                  </button>
+                )}
               </div>
 
-              {friendsList.length === 0 ? (
+              {!canViewAmigos ? (
+                <div className="py-4 text-center space-y-1.5 bg-gray-50 rounded border border-gray-100">
+                  <Lock className="w-4 h-4 text-gray-400 mx-auto" />
+                  <p className="text-[11px] text-gray-600 font-medium">Lista de amigos privada</p>
+                  <p className="text-[10px] text-gray-400">Solo visible para amigos</p>
+                </div>
+              ) : friendsList.length === 0 ? (
                 <div className="py-4 text-center text-gray-400 text-xs space-y-1">
                   <p>Todavía no tiene amigos agregados.</p>
                   {isOwnProfile && (
@@ -1520,6 +1794,12 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
           </div>
         </div>
       )}
+
+      {/* ================= PROFILE PRIVACY MODAL ================= */}
+      <ProfilePrivacyModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
     </div>
   );
 };

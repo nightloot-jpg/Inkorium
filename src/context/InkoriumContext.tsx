@@ -166,6 +166,9 @@ interface InkoriumContextType {
   setIsMusicPlayerOpen: (open: boolean) => void; setIsMusicPlayerMinimized: (minimized: boolean) => void;
   openMusicPlayer: (track?: Track, openExpanded?: boolean) => void; addCustomTrack: (track: Omit<Track, 'id'>) => void;
   removeTrackFromPlaylist: (trackId: string) => void;
+  activeSettingsSection?: string;
+  setActiveSettingsSection?: (section: string) => void;
+  openSettingsSection: (section: string) => void;
   setActiveTab: (tab: InkoriumContextType['activeTab']) => void; viewUserProfile: (userId: string) => void;
   openComposeMessage: (recipientId?: string) => void;
   viewPhoto: (photoId: string | null) => void; viewAlbum: (albumId: string | null) => void; setCurrentUserById: (userId: string) => void;
@@ -423,6 +426,7 @@ const addDeletedMessageIds = (ids: string[]) => {
   const [activities, setActivities] = useState<UserActivity[]>(INITIAL_ACTIVITIES);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(storedLoggedIn);
   const [activeTab, setActiveTabState] = useState<InkoriumContextType['activeTab']>('inicio');
+  const [activeSettingsSection, setActiveSettingsSection] = useState<string>('datos');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [composeRecipientId, setComposeRecipientId] = useState<string | null>(null);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
@@ -2848,6 +2852,13 @@ const addDeletedMessageIds = (ids: string[]) => {
     if (tab !== 'mensajes') setComposeRecipientId(null);
     setActiveTabState(tab);
   }, []);
+  const openSettingsSection = useCallback((sec: string) => {
+    setActiveSettingsSection(sec);
+    setActiveTabState('ajustes');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, []);
   const viewUserProfile = useCallback((id: string) => { 
     setSelectedUserId(id); 
     setActiveTabState('perfil'); 
@@ -3070,6 +3081,16 @@ const addDeletedMessageIds = (ids: string[]) => {
     // El propio autor de la foto siempre tiene permiso de verla
     if (vId && photo.uploaderId === vId) return true;
 
+    // Respetar la privacidad global del perfil del propietario
+    const uploader = users.find(u => u.id === photo.uploaderId || (photo.uploaderId && normalizeUserId(u.id) === normalizeUserId(photo.uploaderId)));
+    if (uploader?.privacidadPerfil?.fotos === 'amigos') {
+      if (!vId) return false;
+      return isFriend(photo.uploaderId, vId);
+    }
+    if (!vId && uploader?.privacidadPerfil && uploader.privacidadPerfil.permitirNoRegistrados === false) {
+      return false;
+    }
+
     const priv: PhotoPrivacy = photo.privacidad || 'publica';
     if (priv === 'publica') return true;
 
@@ -3085,7 +3106,7 @@ const addDeletedMessageIds = (ids: string[]) => {
     }
 
     return true;
-  }, [currentUserId, isFriend]);
+  }, [currentUserId, isFriend, users]);
 
   const updatePhotoPrivacy = useCallback((photoId: string, privacidad: PhotoPrivacy, allowedUserIds: string[] = []) => {
     setPhotos(prev => {
@@ -3849,6 +3870,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       joinCampus, leaveCampus, postToCampus, replyToCampusPost, createCampus,
       createPage, toggleFollowPage, postPageComment,
       recordProfileVisit, updateTopAmigos,
+      activeSettingsSection, setActiveSettingsSection, openSettingsSection,
       setActiveTab, viewUserProfile, openComposeMessage, viewPhoto, viewAlbum, setCurrentUserById,
       login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence,
       likeFeedItem, commentFeedItem, postWallComment, deleteWallComment,
