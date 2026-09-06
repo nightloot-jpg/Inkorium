@@ -1,18 +1,22 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
-import { subscribeCrossTabEvents, broadcastCrossTabEvent, normalizeUserId } from '../lib/chatHistory';
+import { subscribeCrossTabEvents, broadcastCrossTabEvent } from '../lib/chatHistory';
 import { supabase } from '../lib/supabase';
-import type { WallComment, User } from '../types';
-
-const WALL_KEY = 'inkorium:wall_comments';
-
-const cleanId = (value?: string | null) =>
-  String(value ?? '').trim().toLowerCase().replace(/^user-/, '');
+import {
+  signatureEventBus,
+  SIGNATURES_STORAGE_KEY,
+  cleanId,
+  findUserByAnyIdentifier,
+  mapAndVerifySignatureToProfile,
+  isSignatureForProfile,
+  deduplicateAndSortSignatures
+} from '../lib/signatureEventBus';
+import type { WallComment } from '../types';
 
 function readWallCommentsFromStorage(): WallComment[] {
   if (typeof localStorage === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(WALL_KEY);
+    const raw = localStorage.getItem(SIGNATURES_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -24,53 +28,10 @@ function readWallCommentsFromStorage(): WallComment[] {
 function writeWallCommentsToStorage(comments: WallComment[]) {
   if (typeof localStorage === 'undefined') return;
   try {
-    localStorage.setItem(WALL_KEY, JSON.stringify(comments));
+    localStorage.setItem(SIGNATURES_STORAGE_KEY, JSON.stringify(comments));
   } catch (e) {
     console.warn('[ProfileSignatureCloudSync] Error saving wall comments to localStorage:', e);
   }
-}
-
-function rowToWallComment(row: any, users: User[]): WallComment {
-  const authorId = String(row.author_id || row.autorId || row.emisorId || '').trim();
-  const profileId = String(row.profile_id || row.propietarioId || row.receptorId || '').trim();
-  const content = String(row.content || row.texto || row.comentario || '').trim();
-
-  const author = users.find(u =>
-    u.id === authorId ||
-    cleanId(u.id) === cleanId(authorId) ||
-    (u.username && cleanId(u.username) === cleanId(authorId))
-  );
-
-  const authorName = String(
-    row.author_name ||
-    row.autorNombre ||
-    row.emisorNombre ||
-    (author ? (author.full_name || author.nombre) : 'Usuario')
-  ).trim();
-
-  const authorAvatar = String(
-    row.author_avatar ||
-    row.autorAvatar ||
-    row.emisorAvatar ||
-    author?.avatar ||
-    ''
-  ).trim();
-
-  return {
-    id: String(row.id),
-    propietarioId: profileId,
-    receptorId: profileId,
-    autorId: authorId,
-    emisorId: authorId,
-    autorNombre: authorName,
-    emisorNombre: authorName,
-    autorAvatar: authorAvatar,
-    emisorAvatar: authorAvatar,
-    texto: content,
-    comentario: content,
-    fecha: row.created_at ? new Date(row.created_at).toLocaleString('es-ES') : 'Ahora mismo',
-    likes: Array.isArray(row.likes) ? row.likes : []
-  };
 }
 
 export function ProfileSignatureCloudSync() {
@@ -97,49 +58,60 @@ export function ProfileSignatureCloudSync() {
   selectedUserIdRef.current = selectedUserId;
 
   /**
-   * Core Health-Check & Reconciliation Procedure
-   * Compares the local signature object with the cloud state, logs detailed diagnostics,
-   * and triggers corrections whenever any discrepancy is identified.
+   * Core Health-Check, Normalization & Reconciliation Procedure
+   * Compares the local signature state with cloud persistence,
+   * maps all signatures cleanly to the target user profile,
+   * and fires the signatureEventBus to immediately update UI components.
    */
-  const runSignatureHealthCheck = useCallback(async (source: string) => {
+  const runSignatureHealthCheck = useCallback(async (source: string, customTargetId?: string) => {
     if (isHealthCheckingRef.current) {
-      console.log(`[ProfileSignatureHealthCheck] [${source}] Skipped: check already in progress.`);
+      console.log(`[ProfileSignatureCloudSync] [${source}] Check already in progress, queuing bypass.`);
       return;
     }
     isHealthCheckingRef.current = true;
 
+    const user = currentUserRef.current;
+    const targetId = customTargetId || selectedUserIdRef.current || user.id;
+    const currentUsersList = usersRef.current;
+
+    signatureEventBus.notifyStatus(true, targetId);
+
     try {
-      const user = currentUserRef.current;
-      const targetId = selectedUserIdRef.current || user.id;
-      const currentUsersList = usersRef.current;
+      // 1. Resolve canonical target user
+      const targetUserObj = findUserByAnyIdentifier(targetId, currentUsersList);
+      const canonicalTargetId = targetUserObj?.id || targetId;
 
       console.log(
-        `%c[ProfileSignatureHealthCheck] [${source}] Starting health check...`,
+        `%c[ProfileSignatureCloudSync] [${source}] Syncing signatures...`,
         'color: #2563eb; font-weight: bold;',
         {
-          activeProfile: targetId,
-          activeUser: user.id ? `${user.nombre} (${user.id})` : 'Not logged in',
-          localMemoryCount: wallCommentsRef.current.length,
-          localStorageCount: readWallCommentsFromStorage().length
+          activeProfile: canonicalTargetId,
+          targetUser: targetUserObj ? `${targetUserObj.nombre} (@${targetUserObj.username})` : canonicalTargetId,
+          activeUser: user.id ? `${user.nombre} (${user.id})` : 'Anon',
+          localCount: wallCommentsRef.current.length
         }
       );
 
-      // 1. Gather all local signatures (deduplicated combination of React state + localStorage)
+      // 2. Gather all local signatures (deduplicated combination of React state + localStorage)
       const localMap = new Map<string, WallComment>();
       const storageComments = readWallCommentsFromStorage();
       for (const c of storageComments) {
-        if (c?.id) localMap.set(String(c.id), c);
+        if (c?.id) {
+          const verified = mapAndVerifySignatureToProfile(c, currentUsersList, targetUserObj);
+          localMap.set(verified.id, verified);
+        }
       }
       for (const c of wallCommentsRef.current) {
-        if (c?.id) localMap.set(String(c.id), c);
+        if (c?.id) {
+          const verified = mapAndVerifySignatureToProfile(c, currentUsersList, targetUserObj);
+          localMap.set(verified.id, verified);
+        }
       }
-      const localComments = Array.from(localMap.values());
 
-      // 2. Fetch Cloud State
-      // Primary: backend persistent store (/api/profile-signatures)
+      // 3. Fetch Cloud State
       let cloudRows: any[] = [];
       try {
-        const query = targetId ? `?profile_id=${encodeURIComponent(targetId)}` : '';
+        const query = canonicalTargetId ? `?profile_id=${encodeURIComponent(canonicalTargetId)}` : '';
         const res = await fetch(`/api/profile-signatures${query}`);
         if (res.ok) {
           const data = await res.json();
@@ -148,20 +120,20 @@ export function ProfileSignatureCloudSync() {
           }
         }
       } catch (err: any) {
-        console.warn('[ProfileSignatureHealthCheck] Failed to fetch /api/profile-signatures:', err?.message);
+        console.warn('[ProfileSignatureCloudSync] Error fetching /api/profile-signatures:', err?.message);
       }
 
-      // Secondary: Supabase profile_signatures table (if configured and reachable)
-      if (supabase && targetId) {
+      // 4. Secondary fetch from Supabase if configured
+      if (supabase && canonicalTargetId) {
         try {
+          const cleanTarget = cleanId(canonicalTargetId);
           const { data: supaRows, error: supaErr } = await supabase
             .from('profile_signatures')
             .select('id,profile_id,author_id,content,created_at')
-            .or(`profile_id.eq.${targetId},profile_id.eq.user-${cleanId(targetId)},profile_id.eq.${cleanId(targetId)}`)
+            .or(`profile_id.eq.${canonicalTargetId},profile_id.eq.user-${cleanTarget},profile_id.eq.${cleanTarget}`)
             .order('created_at', { ascending: false });
 
           if (!supaErr && Array.isArray(supaRows)) {
-            // Merge Supabase rows with backend cloud rows
             const cloudIdSet = new Set(cloudRows.map(r => String(r.id)));
             for (const sRow of supaRows) {
               if (sRow?.id && !cloudIdSet.has(String(sRow.id))) {
@@ -170,20 +142,19 @@ export function ProfileSignatureCloudSync() {
               }
             }
           }
-        } catch {
-          // Gracefully continue with backend cloud rows
+        } catch {}
+      }
+
+      // 5. Map and strictly verify every cloud row to the user profile
+      const cloudMap = new Map<string, WallComment>();
+      for (const r of cloudRows) {
+        if (r && (r.id || r.content || r.texto)) {
+          const verified = mapAndVerifySignatureToProfile(r, currentUsersList, targetUserObj);
+          cloudMap.set(verified.id, verified);
         }
       }
 
-      // Convert cloud rows into standardized WallComment objects
-      const cloudComments = cloudRows.map(r => rowToWallComment(r, currentUsersList));
-      const cloudMap = new Map<string, WallComment>();
-      for (const cc of cloudComments) {
-        if (cc.id) cloudMap.set(cc.id, cc);
-      }
-
-      // 3. Diagnose Discrepancies
-      // A) Signatures present in cloud but missing locally
+      // 6. Diagnose Discrepancies
       const missingInLocal: WallComment[] = [];
       for (const [id, cComment] of cloudMap.entries()) {
         if (!localMap.has(id)) {
@@ -191,17 +162,16 @@ export function ProfileSignatureCloudSync() {
         }
       }
 
-      // B) Signatures present locally for the active user/target that are missing in cloud
       const missingInCloud: WallComment[] = [];
       for (const [id, lComment] of localMap.entries()) {
-        const owner = lComment.receptorId || lComment.propietarioId;
-        const author = lComment.autorId || lComment.emisorId;
-        const content = lComment.texto || lComment.comentario;
+        const owner = lComment.receptorId || lComment.propietarioId || lComment.profile_id;
+        const author = lComment.autorId || lComment.emisorId || lComment.author_id;
+        const content = lComment.texto || lComment.comentario || lComment.content;
 
         if (content && owner && !cloudMap.has(id)) {
-          // If this signature belongs to the viewed profile or was authored by the current user
+          // If this signature belongs to the active profile or was authored by current user
           if (
-            cleanId(owner) === cleanId(targetId) ||
+            cleanId(owner) === cleanId(canonicalTargetId) ||
             cleanId(author) === cleanId(user.id) ||
             (user.username && cleanId(author) === cleanId(user.username))
           ) {
@@ -210,146 +180,46 @@ export function ProfileSignatureCloudSync() {
         }
       }
 
-      // C) Recipient/Target ID Normalization Verification
-      // This directly diagnoses why notifications trigger but signatures might fail to render:
-      // ProfileView filters signatures by:
-      // commentTargetId === targetProfileId || clean(targetProfileId) || username || nombre || full_name
-      // If a signature has a mismatched target format, we detect and correct it.
-      const targetUserObj = currentUsersList.find(u =>
-        u.id === targetId ||
-        cleanId(u.id) === cleanId(targetId) ||
-        (u.username && cleanId(u.username) === cleanId(targetId)) ||
-        (u.nombre && cleanId(u.nombre) === cleanId(targetId))
-      );
-
-      const targetCanonicalId = targetUserObj?.id || targetId;
-      const targetAliases = new Set<string>();
-      if (targetId) {
-        targetAliases.add(cleanId(targetId));
-        targetAliases.add(String(targetId).toLowerCase());
-      }
-      if (targetUserObj) {
-        if (targetUserObj.id) {
-          targetAliases.add(cleanId(targetUserObj.id));
-          targetAliases.add(String(targetUserObj.id).toLowerCase());
-        }
-        if (targetUserObj.username) {
-          targetAliases.add(cleanId(targetUserObj.username));
-          targetAliases.add(String(targetUserObj.username).toLowerCase());
-        }
-        if (targetUserObj.nombre) {
-          targetAliases.add(cleanId(targetUserObj.nombre));
-          targetAliases.add(String(targetUserObj.nombre).toLowerCase());
-        }
-      }
-
-      const normalizationCorrections: WallComment[] = [];
-      for (const [_, lComment] of localMap.entries()) {
-        const currentTarget = lComment.receptorId || lComment.propietarioId;
-        if (currentTarget) {
-          const normCurrentTarget = cleanId(currentTarget);
-          // If it matches one of the target aliases, ensure it holds canonical ID so ProfileView matches cleanly
-          if (targetAliases.has(normCurrentTarget) && currentTarget !== targetCanonicalId) {
-            normalizationCorrections.push({
-              ...lComment,
-              receptorId: targetCanonicalId,
-              propietarioId: targetCanonicalId
-            });
-          }
-        }
-      }
-
-      // 4. Log State Verification & Diagnostics
-      const hasDiscrepancy =
-        missingInLocal.length > 0 ||
-        missingInCloud.length > 0 ||
-        normalizationCorrections.length > 0;
-
-      if (!hasDiscrepancy) {
-        console.log(
-          `%c[ProfileSignatureHealthCheck] [${source}] State verified IN SYNC.`,
-          'color: #059669; font-weight: bold;',
-          {
-            targetProfile: targetId,
-            verifiedCount: cloudComments.length,
-            localCount: localComments.length
-          }
-        );
-        return;
-      }
-
-      console.warn(
-        `%c[ProfileSignatureHealthCheck] [${source}] DISCREPANCY DETECTED!`,
-        'color: #d97706; font-weight: bold;',
-        {
-          missingInLocal: missingInLocal.map(s => ({ id: s.id, from: s.autorNombre, to: s.receptorId, text: (s.texto || '').slice(0, 30) })),
-          missingInCloud: missingInCloud.map(s => ({ id: s.id, from: s.autorNombre, to: s.receptorId, text: (s.texto || '').slice(0, 30) })),
-          normalizationCorrections: normalizationCorrections.map(s => ({ id: s.id, correctedTo: s.receptorId }))
-        }
-      );
-
-      // 5. Apply Corrections
+      // 7. Apply updates to local state & storage
+      const consolidatedMap = new Map<string, WallComment>(localMap);
       let stateChanged = false;
-      const updatedMap = new Map<string, WallComment>(localMap);
 
-      // Correction 1: Incorporate missing cloud signatures into local state
+      // Ingest missing from cloud
       if (missingInLocal.length > 0) {
         for (const missing of missingInLocal) {
-          updatedMap.set(missing.id, missing);
+          consolidatedMap.set(missing.id, missing);
         }
         stateChanged = true;
-        console.log(
-          `[ProfileSignatureHealthCheck] Correction applied: Ingested ${missingInLocal.length} signatures from cloud into local store.`
-        );
       }
 
-      // Correction 2: Apply recipient normalization corrections
-      if (normalizationCorrections.length > 0) {
-        for (const corrected of normalizationCorrections) {
-          updatedMap.set(corrected.id, corrected);
-        }
-        stateChanged = true;
-        console.log(
-          `[ProfileSignatureHealthCheck] Correction applied: Normalized recipient IDs for ${normalizationCorrections.length} signatures.`
-        );
-      }
-
-      // If local state updated, commit to React state, localStorage, and notify
-      if (stateChanged) {
-        const finalComments = Array.from(updatedMap.values());
-        writeWallCommentsToStorage(finalComments);
-        setWallComments(finalComments);
-
-        // Dispatch update event for listeners
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent('inkorium:signature_update', {
-              detail: { type: 'HEALTH_CHECK_CORRECTION', count: missingInLocal.length }
-            })
-          );
-        }
-
-        // Broadcast cross-tab for each reconciled comment
-        for (const missing of missingInLocal) {
-          broadcastCrossTabEvent({
-            type: 'WALL_COMMENT',
-            payload: { comment: missing }
-          });
+      // Re-verify and update all existing entries with latest cloud details
+      for (const [id, cComment] of cloudMap.entries()) {
+        if (consolidatedMap.has(id)) {
+          const existing = consolidatedMap.get(id)!;
+          // If cloud has created_at and local doesn't, update it
+          if (cComment.created_at && (!existing.created_at || existing.created_at !== cComment.created_at)) {
+            consolidatedMap.set(id, { ...existing, created_at: cComment.created_at });
+            stateChanged = true;
+          }
         }
       }
 
-      // Correction 3: Upload missing local signatures to Cloud persistence
+      const allSignatures = deduplicateAndSortSignatures(Array.from(consolidatedMap.values()));
+
+      if (stateChanged || wallCommentsRef.current.length !== allSignatures.length) {
+        writeWallCommentsToStorage(allSignatures);
+        setWallComments(allSignatures);
+      }
+
+      // 8. Upload missing local signatures to Cloud backend
       if (missingInCloud.length > 0) {
-        console.log(
-          `[ProfileSignatureHealthCheck] Correction started: Uploading ${missingInCloud.length} local signatures to cloud persistence...`
-        );
-
+        console.log(`[ProfileSignatureCloudSync] Uploading ${missingInCloud.length} local signatures to cloud...`);
         for (const missingLocal of missingInCloud) {
-          const owner = missingLocal.receptorId || missingLocal.propietarioId || targetId;
+          const owner = missingLocal.receptorId || missingLocal.propietarioId || canonicalTargetId;
           const author = missingLocal.autorId || missingLocal.emisorId || user.id;
           const authorName = missingLocal.autorNombre || missingLocal.emisorNombre || user.nombre || 'Usuario';
           const authorAvatar = missingLocal.autorAvatar || missingLocal.emisorAvatar || user.avatar || '';
-          const content = missingLocal.texto || missingLocal.comentario || '';
+          const content = missingLocal.texto || missingLocal.comentario || missingLocal.content || '';
 
           const payload = {
             id: missingLocal.id,
@@ -362,22 +232,16 @@ export function ProfileSignatureCloudSync() {
             content,
             texto: content,
             comentario: content,
-            created_at: new Date().toISOString()
+            created_at: missingLocal.created_at || new Date().toISOString()
           };
 
           try {
-            // Upload to /api/profile-signatures
-            const postRes = await fetch('/api/profile-signatures', {
+            await fetch('/api/profile-signatures', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload)
             });
 
-            if (postRes.ok) {
-              console.log(`[ProfileSignatureHealthCheck] Successfully uploaded signature ${missingLocal.id} to cloud store.`);
-            }
-
-            // Also upsert to Supabase if available
             if (supabase) {
               try {
                 await supabase
@@ -391,26 +255,62 @@ export function ProfileSignatureCloudSync() {
               } catch {}
             }
           } catch (uploadErr: any) {
-            console.warn(`[ProfileSignatureHealthCheck] Failed uploading signature ${missingLocal.id}:`, uploadErr?.message);
+            console.warn(`[ProfileSignatureCloudSync] Failed uploading signature ${missingLocal.id}:`, uploadErr?.message);
           }
         }
       }
 
+      // 9. Filter signatures belonging specifically to this profile
+      const targetFilterObj = targetUserObj || { id: canonicalTargetId };
+      const profileSignatures = allSignatures.filter(s => isSignatureForProfile(s, targetFilterObj));
+
+      // 10. NOTIFY EVENT BUS - Triggers immediate reactive UI update without requiring a reload!
+      signatureEventBus.notifySignaturesSynced(
+        canonicalTargetId,
+        profileSignatures,
+        missingInLocal.length,
+        missingInCloud.length,
+        source
+      );
+
+      // Also dispatch backwards-compatible window event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('inkorium:signature_update', {
+            detail: {
+              type: 'SYNC_COMPLETED',
+              profileId: canonicalTargetId,
+              count: profileSignatures.length,
+              source
+            }
+          })
+        );
+      }
+
+      // Broadcast across tabs if new cloud items were ingested
+      for (const missing of missingInLocal) {
+        broadcastCrossTabEvent({
+          type: 'WALL_COMMENT',
+          payload: { comment: missing }
+        });
+      }
+
       console.log(
-        `%c[ProfileSignatureHealthCheck] [${source}] Health check complete. State is now reconciled.`,
+        `%c[ProfileSignatureCloudSync] [${source}] Sync SUCCESS: ${profileSignatures.length} signature(s) mapped to profile ${canonicalTargetId}.`,
         'color: #059669; font-weight: bold;'
       );
     } catch (error: any) {
-      console.warn(`[ProfileSignatureHealthCheck] [${source}] Error during health check execution:`, error?.message || error);
+      console.warn(`[ProfileSignatureCloudSync] [${source}] Error during sync execution:`, error?.message || error);
+      signatureEventBus.notifyStatus(false, targetId, error?.message || 'Error de sincronización');
     } finally {
       isHealthCheckingRef.current = false;
+      signatureEventBus.notifyStatus(false, targetId);
     }
   }, [setWallComments]);
 
-  // Periodic Health-Check Effect (runs every 15 seconds)
+  // Periodic Background Sync (every 15 seconds)
   useEffect(() => {
-    console.log('[ProfileSignatureCloudSync] Initializing background health-check scheduler (15s interval).');
-    // Immediate initial check
+    console.log('[ProfileSignatureCloudSync] Initializing background event-driven sync scheduler (15s).');
     void runSignatureHealthCheck('mount');
 
     const interval = window.setInterval(() => {
@@ -422,19 +322,19 @@ export function ProfileSignatureCloudSync() {
     };
   }, [runSignatureHealthCheck]);
 
-  // Health-check when selected profile or logged-in user changes
+  // Sync on selected profile change
   useEffect(() => {
     const target = selectedUserId || currentUser.id;
     if (target) {
       void refreshWallComments(target);
       const timer = setTimeout(() => {
-        void runSignatureHealthCheck('profile_target_change');
-      }, 200);
+        void runSignatureHealthCheck('profile_target_change', target);
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [selectedUserId, currentUser.id, refreshWallComments, runSignatureHealthCheck]);
 
-  // Health-check on tab focus / window visibility (resumes immediately when user returns to tab)
+  // Sync on window focus / tab visibility return
   useEffect(() => {
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible') {
@@ -451,26 +351,68 @@ export function ProfileSignatureCloudSync() {
     };
   }, [runSignatureHealthCheck]);
 
-  // Health-check triggered on real-time signature update event or cross-tab message
+  // Central Event Bus Subscriptions
   useEffect(() => {
-    const handleSignatureUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      // Skip running a full check if the event was dispatched by the health check itself
-      if (customEvent.detail?.type === 'HEALTH_CHECK_CORRECTION') return;
-      console.log('[ProfileSignatureCloudSync] Signature update event received, triggering health check.');
-      void runSignatureHealthCheck('realtime_signature_update');
-    };
+    // 1. Listen for explicit UI sync requests
+    const unsubscribeSyncRequest = signatureEventBus.on('SIGNATURE_REQUEST_SYNC', (data) => {
+      console.log('[ProfileSignatureCloudSync] EventBus: SIGNATURE_REQUEST_SYNC received from', data.source);
+      void runSignatureHealthCheck(`event_bus_${data.source}`, data.profileId);
+    });
 
+    // 2. Listen for newly posted signatures: immediately upload and verify
+    const unsubscribePosted = signatureEventBus.on('SIGNATURE_POSTED', async (data) => {
+      console.log('[ProfileSignatureCloudSync] EventBus: SIGNATURE_POSTED received for profile', data.profileId);
+      const sig = data.signature;
+      if (!sig) return;
+
+      try {
+        // Immediate backend cloud upload
+        await fetch('/api/profile-signatures', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: sig.id,
+            profile_id: sig.receptorId || sig.propietarioId || data.profileId,
+            author_id: sig.autorId || sig.emisorId,
+            author_name: sig.autorNombre || sig.emisorNombre,
+            author_avatar: sig.autorAvatar || sig.emisorAvatar,
+            content: sig.texto || sig.comentario || sig.content,
+            created_at: sig.created_at || new Date().toISOString()
+          })
+        });
+
+        // Trigger health check to ensure reconciliation
+        void runSignatureHealthCheck('signature_posted_event', data.profileId);
+      } catch (err) {
+        console.warn('[ProfileSignatureCloudSync] Error syncing posted signature:', err);
+      }
+    });
+
+    // 3. Listen for deleted signatures
+    const unsubscribeDeleted = signatureEventBus.on('SIGNATURE_DELETED', async (data) => {
+      console.log('[ProfileSignatureCloudSync] EventBus: SIGNATURE_DELETED received for id', data.signatureId);
+      try {
+        await fetch(`/api/profile-signatures?id=eq.${encodeURIComponent(data.signatureId)}`, {
+          method: 'DELETE'
+        });
+        void runSignatureHealthCheck('signature_deleted_event', data.profileId);
+      } catch (err) {
+        console.warn('[ProfileSignatureCloudSync] Error syncing deleted signature:', err);
+      }
+    });
+
+    // 4. Cross-tab event subscriptions
     const unsubscribeCrossTab = subscribeCrossTabEvents((event) => {
       if (event.type === 'WALL_COMMENT' || event.type === 'WALL_COMMENT_DELETE') {
-        console.log('[ProfileSignatureCloudSync] Cross-tab wall event received, triggering health check.');
+        console.log('[ProfileSignatureCloudSync] Cross-tab wall event received, triggering sync.');
         void runSignatureHealthCheck('crosstab_wall_event');
       }
     });
 
-    window.addEventListener('inkorium:signature_update', handleSignatureUpdate);
     return () => {
-      window.removeEventListener('inkorium:signature_update', handleSignatureUpdate);
+      unsubscribeSyncRequest();
+      unsubscribePosted();
+      unsubscribeDeleted();
       unsubscribeCrossTab();
     };
   }, [runSignatureHealthCheck]);

@@ -112,15 +112,21 @@ export interface WallComment {
   id: string;
   emisorId?: string;
   autorId?: string;
+  author_id?: string;
   emisorNombre?: string;
   autorNombre?: string;
+  author_name?: string;
   emisorAvatar?: string;
   autorAvatar?: string;
+  author_avatar?: string;
   receptorId?: string;
   propietarioId?: string;
+  profile_id?: string;
   comentario?: string;
   texto?: string;
+  content?: string;
   fecha: string;
+  created_at?: string;
   likes?: string[];
 }
 

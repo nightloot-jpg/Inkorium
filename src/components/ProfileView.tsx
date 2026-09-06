@@ -12,6 +12,13 @@ import {
   Eye, Star, Award, RefreshCw
 } from 'lucide-react';
 import { UserPresence, User, formatFullLocation, calculateAge, formatBirthDate } from '../types';
+import {
+  signatureEventBus,
+  isSignatureForProfile,
+  deduplicateAndSortSignatures,
+  cleanId,
+  normalizeId
+} from '../lib/signatureEventBus';
 
 const normalizeUserId = (id?: string) => (id || '').toLowerCase().replace(/^user-/, '').trim();
 
@@ -81,6 +88,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
         refreshProfiles(),
         refreshWallComments(profileUser.id)
       ]);
+      signatureEventBus.requestSync(profileUser.id, 'manual_profile_refresh');
       setRefreshFeedback('Perfil actualizado');
       setTimeout(() => setRefreshFeedback(null), 3000);
     } catch {
@@ -184,76 +192,82 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   // User's custom albums
   const userAlbums = albums.filter(a => a.userId === profileUser.id || a.propietarioId === profileUser.id);
 
-  // Automatically fetch profile signatures whenever viewing a profile
+  // Signature synchronization state & immediate reactive listener
+  const [signatureRevision, setSignatureRevision] = useState(0);
+  const [isSignatureSyncing, setIsSignatureSyncing] = useState(false);
+
   useEffect(() => {
+    // Automatically fetch profile signatures whenever viewing a profile
     if (profileUser.id) {
       void refreshWallComments(profileUser.id);
+      signatureEventBus.requestSync(profileUser.id, 'profile_view_mount');
     }
-  }, [profileUser.id, refreshWallComments]);
 
-  // Wall comments for this user with robust normalization (case insensitive, prefix agnostic, name/username/id resilient)
-  const userWallComments = useMemo(() => {
-    const norm = (s?: string | null) => String(s || '').trim().toLowerCase();
-    const clean = (s?: string | null) => norm(s).replace(/^user-/, '');
+    // Subscribe to Event Bus for immediate UI updates without reload
+    const unsubSync = signatureEventBus.on('SIGNATURES_SYNCED', (data) => {
+      const isCurrentProfile =
+        !data.profileId ||
+        data.profileId === '*' ||
+        cleanId(data.profileId) === cleanId(profileUser.id) ||
+        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
+        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
 
-    const targetProfileId = profileUser.id;
-    const targetProfileUsername = profileUser.username;
-    const targetProfileNombre = profileUser.nombre;
-    const targetProfileFullName = profileUser.full_name;
-
-    return wallComments.filter(w => {
-      const commentTargetId = w.receptorId || w.propietarioId;
-      if (!commentTargetId) return false;
-
-      const normCommentTarget = norm(commentTargetId);
-      const cleanCommentTarget = clean(commentTargetId);
-
-      const matchesProfile =
-        normCommentTarget === norm(targetProfileId) ||
-        cleanCommentTarget === clean(targetProfileId) ||
-        (targetProfileUsername && (
-          normCommentTarget === norm(targetProfileUsername) || 
-          cleanCommentTarget === clean(targetProfileUsername)
-        )) ||
-        (targetProfileNombre && (
-          normCommentTarget === norm(targetProfileNombre) ||
-          cleanCommentTarget === clean(targetProfileNombre)
-        )) ||
-        (targetProfileFullName && (
-          normCommentTarget === norm(targetProfileFullName) ||
-          cleanCommentTarget === clean(targetProfileFullName)
-        ));
-
-      const matchesOwn = isOwnProfile && (
-        normCommentTarget === norm(currentUser.id) ||
-        cleanCommentTarget === clean(currentUser.id) ||
-        (currentUser.username && (
-          normCommentTarget === norm(currentUser.username) || 
-          cleanCommentTarget === clean(currentUser.username)
-        )) ||
-        (currentUser.nombre && (
-          normCommentTarget === norm(currentUser.nombre) ||
-          cleanCommentTarget === clean(currentUser.nombre)
-        )) ||
-        (currentUser.full_name && (
-          normCommentTarget === norm(currentUser.full_name) ||
-          cleanCommentTarget === clean(currentUser.full_name)
-        ))
-      );
-
-      return matchesProfile || matchesOwn;
+      if (isCurrentProfile) {
+        setSignatureRevision(r => r + 1);
+      }
     });
+
+    const unsubPost = signatureEventBus.on('SIGNATURE_POSTED', (data) => {
+      const isCurrentProfile =
+        !data.profileId ||
+        cleanId(data.profileId) === cleanId(profileUser.id) ||
+        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
+        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
+
+      if (isCurrentProfile) {
+        setSignatureRevision(r => r + 1);
+      }
+    });
+
+    const unsubDelete = signatureEventBus.on('SIGNATURE_DELETED', (data) => {
+      const isCurrentProfile =
+        !data.profileId ||
+        cleanId(data.profileId) === cleanId(profileUser.id) ||
+        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
+        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
+
+      if (isCurrentProfile) {
+        setSignatureRevision(r => r + 1);
+      }
+    });
+
+    const unsubStatus = signatureEventBus.on('SIGNATURE_STATUS_CHANGE', (data) => {
+      if (!data.profileId || cleanId(data.profileId) === cleanId(profileUser.id)) {
+        setIsSignatureSyncing(data.isSyncing);
+      }
+    });
+
+    return () => {
+      unsubSync();
+      unsubPost();
+      unsubDelete();
+      unsubStatus();
+    };
+  }, [profileUser.id, profileUser.username, currentUser.id, currentUser.username, isOwnProfile, refreshWallComments]);
+
+  // Wall comments for this user with robust normalization & centralized mapping
+  const userWallComments = useMemo(() => {
+    const matched = wallComments.filter(w =>
+      isSignatureForProfile(w, profileUser) ||
+      (isOwnProfile && isSignatureForProfile(w, currentUser))
+    );
+    return deduplicateAndSortSignatures(matched);
   }, [
-    wallComments, 
-    profileUser.id, 
-    profileUser.username, 
-    profileUser.nombre, 
-    profileUser.full_name, 
-    isOwnProfile, 
-    currentUser.id, 
-    currentUser.username, 
-    currentUser.nombre, 
-    currentUser.full_name
+    wallComments,
+    signatureRevision,
+    profileUser,
+    isOwnProfile,
+    currentUser
   ]);
 
   // Synchronized age and location calculations for profile header and personal info card
@@ -278,8 +292,10 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const handleSendWall = (e: React.FormEvent) => {
     e.preventDefault();
     if (!wallInput.trim()) return;
-    postWallComment(profileUser.id, wallInput);
+    const text = wallInput.trim();
     setWallInput('');
+    postWallComment(profileUser.id, text);
+    signatureEventBus.requestSync(profileUser.id, 'user_send_wall');
   };
 
   const handleSaveStatus = () => {
@@ -1286,7 +1302,23 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                 <span className="flex items-center gap-1.5">
                   <MessageSquare className="w-3.5 h-3.5 text-[#3869A0]" />
                   <span>Tablón de firmas de {profileUser.nombre} ({userWallComments.length})</span>
+                  {isSignatureSyncing && (
+                    <span className="ml-1.5 text-[10px] text-[#3869A0] font-normal flex items-center gap-1 animate-pulse">
+                      <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                      sincronizando...
+                    </span>
+                  )}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => signatureEventBus.requestSync(profileUser.id, 'user_tablon_click')}
+                  disabled={isSignatureSyncing}
+                  className="text-[11px] text-[#3869A0] hover:underline font-normal flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  title="Sincronizar firmas con la nube"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isSignatureSyncing ? 'animate-spin' : ''}`} />
+                  <span>Actualizar</span>
+                </button>
               </div>
 
               {/* Input to write on wall */}
@@ -1350,7 +1382,10 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                               <span className="text-[10px] text-gray-400">{comment.fecha}</span>
                               {canDelete && (
                                 <button
-                                  onClick={() => deleteWallComment(comment.id)}
+                                  onClick={() => {
+                                    deleteWallComment(comment.id);
+                                    signatureEventBus.notifySignatureDeleted(comment.id, profileUser.id);
+                                  }}
                                   className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer"
                                   title="Borrar comentario del tablón"
                                 >
