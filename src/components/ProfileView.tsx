@@ -191,13 +191,15 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     }
   }, [profileUser.id, refreshWallComments]);
 
-  // Wall comments for this user with robust normalization (case insensitive and prefix agnostic)
+  // Wall comments for this user with robust normalization (case insensitive, prefix agnostic, name/username/id resilient)
   const userWallComments = useMemo(() => {
     const norm = (s?: string | null) => String(s || '').trim().toLowerCase();
     const clean = (s?: string | null) => norm(s).replace(/^user-/, '');
 
     const targetProfileId = profileUser.id;
     const targetProfileUsername = profileUser.username;
+    const targetProfileNombre = profileUser.nombre;
+    const targetProfileFullName = profileUser.full_name;
 
     return wallComments.filter(w => {
       const commentTargetId = w.receptorId || w.propietarioId;
@@ -212,6 +214,14 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
         (targetProfileUsername && (
           normCommentTarget === norm(targetProfileUsername) || 
           cleanCommentTarget === clean(targetProfileUsername)
+        )) ||
+        (targetProfileNombre && (
+          normCommentTarget === norm(targetProfileNombre) ||
+          cleanCommentTarget === clean(targetProfileNombre)
+        )) ||
+        (targetProfileFullName && (
+          normCommentTarget === norm(targetProfileFullName) ||
+          cleanCommentTarget === clean(targetProfileFullName)
         ));
 
       const matchesOwn = isOwnProfile && (
@@ -220,12 +230,31 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
         (currentUser.username && (
           normCommentTarget === norm(currentUser.username) || 
           cleanCommentTarget === clean(currentUser.username)
+        )) ||
+        (currentUser.nombre && (
+          normCommentTarget === norm(currentUser.nombre) ||
+          cleanCommentTarget === clean(currentUser.nombre)
+        )) ||
+        (currentUser.full_name && (
+          normCommentTarget === norm(currentUser.full_name) ||
+          cleanCommentTarget === clean(currentUser.full_name)
         ))
       );
 
       return matchesProfile || matchesOwn;
     });
-  }, [wallComments, profileUser.id, profileUser.username, isOwnProfile, currentUser.id, currentUser.username]);
+  }, [
+    wallComments, 
+    profileUser.id, 
+    profileUser.username, 
+    profileUser.nombre, 
+    profileUser.full_name, 
+    isOwnProfile, 
+    currentUser.id, 
+    currentUser.username, 
+    currentUser.nombre, 
+    currentUser.full_name
+  ]);
 
   // Synchronized age and location calculations for profile header and personal info card
   const userAge = useMemo(() => calculateAge(profileUser.fnac), [profileUser.fnac]);

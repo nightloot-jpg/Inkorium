@@ -193,6 +193,7 @@ interface InkoriumContextType {
   updateUserData: (data: Partial<User>) => void; resetToDefaultData: () => void; registerNewUser: (nombre: string, apellidos: string, email: string, sexo: 'h' | 'm', provincia: string, fnac: string, pais?: string, ciudad?: string) => void;
   refreshProfiles: () => Promise<void>;
   refreshWallComments: (targetProfileId?: string) => Promise<void>;
+  setWallComments: React.Dispatch<React.SetStateAction<WallComment[]>>;
 }
 
 const InkoriumContext = createContext<InkoriumContextType | undefined>(undefined);
@@ -223,7 +224,6 @@ const isMockId = (id: string | undefined | null): boolean => {
     s === 'user-5' || s === 'user-6' || s === 'user-7' || s === 'user-8' ||
     s === 'user-9' || s === 'user-10' || s === 'user-11' || s === 'user-12' ||
     s === '1' || s === '2' || s === '3' ||
-    s === 'user-nightloot' || s === 'nightloot' ||
     s === 'user-elena' || s === 'user-carlos' || s === 'user-laura'
   );
 };
@@ -1727,35 +1727,17 @@ const addDeletedMessageIds = (ids: string[]) => {
           }));
         }
 
-        // Add to feed
-        const feedId = `feed-wall-${newComment.id}`;
-        setFeed(prev => {
-          if (prev.some(f => f.id === feedId || (f.tipo === 'tablon' && f.datos === content && f.visitanteId === authorId))) return prev;
-          const targetUser = usersRef.current.find(u => u.id === profileId || u.username === profileId);
-          const newFeedItem: FeedItem = {
-            id: feedId,
-            tipo: 'tablon',
-            propietarioId: profileId,
-            propietarioNombre: targetUser ? (targetUser.full_name || targetUser.nombre) : 'Usuario',
-            propietarioAvatar: targetUser?.avatar || '',
-            visitanteId: authorId,
-            visitanteNombre: authorName,
-            visitanteAvatar: authorAvatar,
-            datos: content,
-            fecha: 'Ahora mismo',
-            likes: [],
-            comentarios: []
-          };
-          return [newFeedItem, ...prev];
-        });
-
-        // Check if recipient is current user
+        // Check if recipient is current user ("el usuario en cuestión")
         const normCur = normalizeUserId(currentUserId);
         const normRec = normalizeUserId(profileId);
         const stripUserPrefix = (s: string) => s.replace(/^user-/, '');
-        const isRecipient = normRec === normCur || stripUserPrefix(normRec) === stripUserPrefix(normCur) || (currentUser.username && stripUserPrefix(normRec) === stripUserPrefix(normalizeUserId(currentUser.username)));
+        const isRecipient = normRec === normCur || 
+          stripUserPrefix(normRec) === stripUserPrefix(normCur) || 
+          (currentUser.username && stripUserPrefix(normRec) === stripUserPrefix(normalizeUserId(currentUser.username))) ||
+          (currentUser.nombre && stripUserPrefix(normRec) === stripUserPrefix(normalizeUserId(currentUser.nombre)));
         const isAuthor = normalizeUserId(authorId) === normCur || stripUserPrefix(normalizeUserId(authorId)) === stripUserPrefix(normCur);
 
+        // Las firmas de tablón se gestionan exclusivamente en el tablón del perfil y en Avisos (notificaciones)
         if (isRecipient && !isAuthor) {
           console.log('[InkoriumContext] onWallComment: Signature target is CURRENT USER! Displaying notification and chime.');
           try {
@@ -3397,29 +3379,13 @@ const addDeletedMessageIds = (ids: string[]) => {
     })
     .catch(err => console.warn('[InkoriumContext] Error saving wall comment to cloud:', err));
 
-    // Añadir al feed de novedades como evento de tablón
-    const newFeedItem: FeedItem = {
-      id: `feed-wall-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      tipo: 'tablon',
-      propietarioId: resolvedPropietarioId,
-      propietarioNombre: resolvedPropietarioName,
-      propietarioAvatar: resolvedPropietarioAvatar,
-      visitanteId: currentUserId,
-      visitanteNombre: authorName,
-      visitanteAvatar: authorAvatar,
-      datos: cleanText,
-      fecha: 'Ahora mismo',
-      likes: [],
-      comentarios: []
-    };
-    setFeed(prev => [newFeedItem, ...prev]);
-
     // Notificación en tiempo real si se firma en el tablón de otra persona
     const isSelf = 
       resolvedPropietarioId === currentUserId ||
       resolvedPropietarioId === currentUser.id ||
       (currentUser.username && resolvedPropietarioId === currentUser.username);
 
+    // Las firmas en tablón se muestran en el perfil y generan avisos/notificaciones, no en el feed
     if (!isSelf) {
       pushNotification({
         id: `notif-wall-${Date.now()}`,
@@ -3864,7 +3830,8 @@ const addDeletedMessageIds = (ids: string[]) => {
       pushNotification, dismissToast, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification,
       updateUserData, resetToDefaultData, registerNewUser,
       refreshProfiles: fetchProfiles,
-      refreshWallComments: fetchAndMapWallComments
+      refreshWallComments: fetchAndMapWallComments,
+      setWallComments
     }}>
       {children}
     </InkoriumContext.Provider>

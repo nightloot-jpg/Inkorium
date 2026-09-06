@@ -59,7 +59,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
   const [showPhotoInput, setShowPhotoInput] = useState(false);
   const [showEmoticonPicker, setShowEmoticonPicker] = useState(false);
   const statusTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const [activeFilter, setActiveFilter] = useState<'todos' | 'estados' | 'fotos' | 'tablon'>('todos');
+  const [activeFilter, setActiveFilter] = useState<'todos' | 'estados' | 'fotos'>('todos');
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
 
@@ -128,6 +128,11 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
 
   // Filter feed items
   const filteredFeed = feed.filter(item => {
+    // Las firmas en tablón se gestionan exclusivamente en el perfil y en Avisos (notificaciones), nunca en el feed
+    if (item.tipo === 'tablon') {
+      return false;
+    }
+
     // If it is a photo feed item or has an associated photoId, check privacy
     if (item.fotoId) {
       const associatedPhoto = photos.find(p => p.id === item.fotoId);
@@ -147,7 +152,6 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
 
     if (activeFilter === 'estados') return item.tipo === 'estado';
     if (activeFilter === 'fotos') return item.tipo === 'foto' || item.tipo === 'album';
-    if (activeFilter === 'tablon') return item.tipo === 'tablon';
     return true;
   });
 
@@ -790,14 +794,6 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
               >
                 Fotos
               </button>
-              <button
-                onClick={() => setActiveFilter('tablon')}
-                className={`px-2.5 py-1 rounded transition cursor-pointer ${
-                  activeFilter === 'tablon' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
-                }`}
-              >
-                Tablón
-              </button>
             </div>
 
             {/* Anti-Algorithm Toggle Switch */}
@@ -884,18 +880,6 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                               {item.visitanteNombre}
                             </span>
                             {' '}ahora son amigos en Inkorium.
-                          </span>
-                        )}
-
-                        {item.tipo === 'tablon' && item.visitanteNombre && (
-                          <span className="text-gray-600 font-normal">
-                            {' '}ha recibido una firma en su tablón de{' '}
-                            <span 
-                              onClick={() => item.visitanteId && viewUserProfile(item.visitanteId)}
-                              className="text-[#3869A0] font-bold hover:underline cursor-pointer"
-                            >
-                              {item.visitanteNombre}
-                            </span>
                           </span>
                         )}
 

@@ -1951,10 +1951,34 @@ app.all(['/api/profile-signatures', '/api/profile_signatures'], async (req, res)
 
     let results = inMemorySignatures;
     if (profileParam) {
-      results = results.filter(s =>
-        norm(s.profile_id) === norm(profileParam) ||
-        clean(s.profile_id) === clean(profileParam)
-      );
+      const aliasSet = new Set<string>();
+      aliasSet.add(norm(profileParam));
+      aliasSet.add(clean(profileParam));
+
+      // Check if inMemoryProfiles has a matching user to expand aliases (username, nombre, id)
+      for (const [key, prof] of inMemoryProfiles.entries()) {
+        const profId = norm(prof.id || key);
+        const cleanId = clean(prof.id || key);
+        const uname = norm(prof.username);
+        const name = norm(prof.nombre);
+        if (
+          aliasSet.has(profId) || 
+          aliasSet.has(cleanId) || 
+          (uname && aliasSet.has(uname)) || 
+          (name && aliasSet.has(name))
+        ) {
+          if (profId) aliasSet.add(profId);
+          if (cleanId) aliasSet.add(cleanId);
+          if (uname) aliasSet.add(uname);
+          if (name) aliasSet.add(name);
+        }
+      }
+
+      results = results.filter(s => {
+        const pId = norm(s.profile_id || s.receptorId || s.propietarioId);
+        const cId = clean(s.profile_id || s.receptorId || s.propietarioId);
+        return aliasSet.has(pId) || aliasSet.has(cId);
+      });
     }
     if (authorParam) {
       results = results.filter(s =>
