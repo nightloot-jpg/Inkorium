@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { purgeLegacyDemoData } from './lib/demoDataCleanup';
+
+// Remove legacy demo records before InkoriumContext initializes from localStorage.
+purgeLegacyDemoData();
 import { InkoriumProvider, useInkorium } from './context/InkoriumContext';
 import { Navbar } from './components/Navbar';
 import { HomeFeed } from './components/HomeFeed';

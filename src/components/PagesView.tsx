@@ -10,7 +10,7 @@ import { TuentiPage } from '../types';
 const CATEGORY_NAMES: Record<TuentiPage['categoria'], { label: string; icon: React.ReactNode; color: string }> = {
   discoteca: { label: 'Discoteca / Fiesta', icon: <Flame className="w-3.5 h-3.5" />, color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' },
   musica: { label: 'Grupo de Música / Artista', icon: <Music className="w-3.5 h-3.5" />, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
-  humor: { label: 'Humor & Frases Tuenti', icon: <Sparkles className="w-3.5 h-3.5" />, color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
+  humor: { label: 'Humor & Frases dosmileras', icon: <Sparkles className="w-3.5 h-3.5" />, color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
   universidad: { label: 'Universidad / Campus', icon: <Building2 className="w-3.5 h-3.5" />, color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
   comunidad: { label: 'Comunidad / Club', icon: <Users className="w-3.5 h-3.5" />, color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300' },
   ocio: { label: 'Ocio & Planes', icon: <Sparkles className="w-3.5 h-3.5" />, color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300' },
@@ -48,7 +48,7 @@ export const PagesView: React.FC = () => {
   const [newCategory, setNewCategory] = useState<TuentiPage['categoria']>('humor');
   const [newUbicacion, setNewUbicacion] = useState(currentUser.provincia || '');
   const [newAvatar, setNewAvatar] = useState('');
-  const [newPortada, setNewPortada] = useState('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&auto=format&fit=crop&q=80');
+  const [newPortada, setNewPortada] = useState('');
 
   React.useEffect(() => {
     if (selectedPageId) {
@@ -142,13 +142,13 @@ export const PagesView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <Building2 className="w-6 h-6 text-yellow-300" />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Páginas y Sitios de Tuenti</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Páginas y Sitios</h1>
             <span className="bg-yellow-400 text-gray-900 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
               Comunidades
             </span>
           </div>
           <p className="text-xs sm:text-sm text-blue-100 mt-1 max-w-2xl">
-            Hazte fan de tus discotecas favoritas, bandas míticas (El Canto del Loco, Pignoise), comunidades de frases célebres y campus universitarios.
+            Descubre páginas creadas por la comunidad: música, ocio, humor, lugares, universidades y aficiones.
           </p>
         </div>
 
@@ -261,10 +261,10 @@ export const PagesView: React.FC = () => {
           <div className="bg-[#f0f4f9] dark:bg-[#142032] border border-[#d2dce6] dark:border-[#1d2b40] rounded p-3 text-xs text-gray-600 dark:text-gray-300">
             <div className="flex items-center gap-1.5 font-bold text-[#3869A0] dark:text-blue-400 mb-1">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Nostalgia Tuenti</span>
+              <span>Nostalgia dosmilera</span>
             </div>
             <p className="leading-relaxed text-[11px]">
-              En 2008, todos nos uníamos a páginas con nombres larguísimos tipo <em>"Yo también miraba la nada mientras escuchaba a Pignoise"</em> solo para que saliera en nuestro perfil.
+              Recupera el espíritu de las comunidades dosmileras: páginas, grupos y aficiones que forman parte de tu perfil.
             </p>
           </div>
         </div>

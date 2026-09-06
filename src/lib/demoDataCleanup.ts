@@ -7,8 +7,8 @@ const MOCK_USER_IDS = new Set([
 const isMockRef = (value: unknown): boolean => MOCK_USER_IDS.has(String(value ?? '').toLowerCase());
 
 const DEMO_ARRAY_FILTERS: Array<[string, (item: any) => boolean]> = [
-  ['inkorium:events', item => /^evt-[123]$/.test(String(item?.id || ''))],
-  ['inkorium:pages', item => /^pag-[1-4]$/.test(String(item?.id || ''))],
+  ['inkorium:events', item => /^evt-[0-9]+$/.test(String(item?.id || '')) || isMockRef(item?.creadorId)],
+  ['inkorium:pages', item => /^pag-[0-9]+$/.test(String(item?.id || '')) || isMockRef(item?.creadorId) || String(item?.creadorId || '').toLowerCase() === 'admin'],
   ['inkorium:campus', item => new Set([
     'campus_ucm', 'campus_upc', 'campus_uam', 'campus_us',
     'campus_ies_beatriz', 'barrio_malasana', 'barrio_gracia'
