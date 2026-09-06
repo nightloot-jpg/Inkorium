@@ -1,0 +1,45 @@
+name: refine-retro-photo-viewer
+on:
+  push:
+    paths:
+      - 'src/components/PhotoRetroViewer.tsx'
+      - '.github/workflows/fix-retro-viewer.yml'
+permissions:
+  contents: write
+jobs:
+  refine:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Refine viewer
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/PhotoRetroViewer.tsx')
+          s = p.read_text()
+          s = s.replace("    const host = imageWrapRef.current;\n    if (!host) return;\n    const rect = host.getBoundingClientRect();", "    const image = document.querySelector('#inkorium-retro-photo-image') as HTMLImageElement | null;\n    const host = image || imageWrapRef.current;\n    if (!host) return;\n    const rect = host.getBoundingClientRect();")
+          s = s.replace('className="relative min-h-0 flex-1 bg-[#090b0f] flex items-center justify-center p-3 sm:p-6">', 'className="group relative min-h-0 flex-1 bg-[#090b0f] flex items-center justify-center p-3 sm:p-6">')
+          s = s.replace('className={`relative max-w-full max-h-full inline-flex items-center justify-center ${taggingMode && !pendingPoint ? \'cursor-crosshair\' : \'cursor-default\'}`}\n              style={{ width: \'min(100%, 1200px)\', height: \'min(100%, 82vh)\' }}', 'className={`relative max-w-full max-h-[82vh] inline-flex items-center justify-center ${taggingMode && !pendingPoint ? \'cursor-crosshair\' : \'cursor-default\'}`}')
+          s = s.replace('                src={photo.archivo}\n                alt={photo.titulo || \'Fotografía\'}', '                id="inkorium-retro-photo-image"\n                src={photo.archivo}\n                alt={photo.titulo || \'Fotografía\'}')
+          old = 'className={`absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-30 rounded-full p-3 bg-black/55 border border-white/15 shadow-xl transition opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto disabled:opacity-0 ${previousAvailable ? \'hover:bg-[#3869A0]\' : \'\'}`}';
+          new = 'className={`absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-30 rounded-full p-3 bg-black/55 border border-white/15 shadow-xl transition opacity-100 pointer-events-auto lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto disabled:opacity-0 ${previousAvailable ? \'hover:bg-[#3869A0]\' : \'\'}`}';
+          s = s.replace(old, new)
+          old2 = 'className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-30 rounded-full p-3 bg-black/55 border border-white/15 shadow-xl transition opacity-0 pointer-events-none hover:bg-[#3869A0] disabled:opacity-0 lg:group-hover:opacity-100"';
+          new2 = 'className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-30 rounded-full p-3 bg-black/55 border border-white/15 shadow-xl transition opacity-100 pointer-events-auto hover:bg-[#3869A0] disabled:opacity-0 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto"';
+          s = s.replace(old2, new2)
+          p.write_text(s)
+          PY
+      - name: Commit and remove workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/PhotoRetroViewer.tsx
+          git commit -m 'fix: align retro photo tags and navigation' || true
+          git rm .github/workflows/fix-retro-viewer.yml
+          git commit -m 'chore: remove temporary retro viewer workflow'
+          git push origin main
