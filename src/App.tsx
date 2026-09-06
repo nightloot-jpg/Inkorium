@@ -26,6 +26,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { PublicProfileSync } from './components/PublicProfileSync';
 import { ProfileSignatureCloudSync } from './components/ProfileSignatureCloudSync';
 import { ProfileRealtimeSync } from './components/ProfileRealtimeSync';
+import { RealtimeConnectionIndicator } from './components/RealtimeConnectionIndicator';
 
 
 const InkoriumAppContent: React.FC = () => {
@@ -47,6 +48,7 @@ const InkoriumAppContent: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#e8eef4] dark:bg-[#0b111e] text-[#1c1e21] dark:text-[#f1f5f9] font-sans antialiased selection:bg-[#3869A0] selection:text-white transition-colors duration-150">
       <OfflineIndicator />
+      <RealtimeConnectionIndicator />
       <Navbar 
         onOpenUpload={() => setIsUploadOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
