@@ -79,13 +79,6 @@ export const installRealtimeWebSocketInterceptor = (): void => {
   });
 
   window.WebSocket = MonitoredWebSocket;
-
-  // Re-emit a recovery signal after a normal browser-level online event.
-  window.addEventListener('online', () => {
-    if (failedConnections > 0) {
-      emitConnectionEvent(EVENT_CONNECTED, { reason: 'browser_online' });
-    }
-  });
 };
 
 export const isRealtimeReconnectEvent = (event: Event): boolean => event.type === EVENT_RECONNECTING;
