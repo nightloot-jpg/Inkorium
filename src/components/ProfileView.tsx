@@ -4,21 +4,16 @@ import { ActivityLog } from './ActivityLog';
 import { AvatarModal } from './AvatarModal';
 import { EditProfileModal } from './EditProfileModal';
 import { RecentProfileVisits } from './RecentProfileVisits';
+import { ProfileWall } from './profile/ProfileWall';
+import { ProfileTopFriends } from './profile/ProfileTopFriends';
 import { 
-  UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon, 
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
   Trash2, Send, Check, Shield, UserCheck, Camera, Upload, ChevronDown, ChevronRight,
   Users, UserMinus, UserX, Clock, Search, X, ShieldAlert, CheckCheck, Globe, Ban,
-  Eye, Star, Award, RefreshCw
+  Eye, Star, Award, RefreshCw, UserPlus, Mail, MessageSquare, Edit3, Image as ImageIcon
 } from 'lucide-react';
 import { UserPresence, User, formatFullLocation, calculateAge, formatBirthDate } from '../types';
-import {
-  signatureEventBus,
-  isSignatureForProfile,
-  deduplicateAndSortSignatures,
-  cleanId,
-  normalizeId
-} from '../lib/signatureEventBus';
+import { signatureEventBus } from '../lib/signatureEventBus';
 
 const normalizeUserId = (id?: string) => (id || '').toLowerCase().replace(/^user-/, '').trim();
 
@@ -163,7 +158,6 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const [friendFilter, setFriendFilter] = useState<'todos' | 'online' | 'solicitudes'>('todos');
   const [confirmRemoveFriendId, setConfirmRemoveFriendId] = useState<string | null>(null);
 
-  const [wallInput, setWallInput] = useState('');
   const [editingStatus, setEditingStatus] = useState(false);
   const [newStatusText, setNewStatusText] = useState(profileUser.estado || '');
 
@@ -192,84 +186,6 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   // User's custom albums
   const userAlbums = albums.filter(a => a.userId === profileUser.id || a.propietarioId === profileUser.id);
 
-  // Signature synchronization state & immediate reactive listener
-  const [signatureRevision, setSignatureRevision] = useState(0);
-  const [isSignatureSyncing, setIsSignatureSyncing] = useState(false);
-
-  useEffect(() => {
-    // Automatically fetch profile signatures whenever viewing a profile
-    if (profileUser.id) {
-      void refreshWallComments(profileUser.id);
-      signatureEventBus.requestSync(profileUser.id, 'profile_view_mount');
-    }
-
-    // Subscribe to Event Bus for immediate UI updates without reload
-    const unsubSync = signatureEventBus.on('SIGNATURES_SYNCED', (data) => {
-      const isCurrentProfile =
-        !data.profileId ||
-        data.profileId === '*' ||
-        cleanId(data.profileId) === cleanId(profileUser.id) ||
-        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
-        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
-
-      if (isCurrentProfile) {
-        setSignatureRevision(r => r + 1);
-      }
-    });
-
-    const unsubPost = signatureEventBus.on('SIGNATURE_POSTED', (data) => {
-      const isCurrentProfile =
-        !data.profileId ||
-        cleanId(data.profileId) === cleanId(profileUser.id) ||
-        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
-        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
-
-      if (isCurrentProfile) {
-        setSignatureRevision(r => r + 1);
-      }
-    });
-
-    const unsubDelete = signatureEventBus.on('SIGNATURE_DELETED', (data) => {
-      const isCurrentProfile =
-        !data.profileId ||
-        cleanId(data.profileId) === cleanId(profileUser.id) ||
-        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
-        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
-
-      if (isCurrentProfile) {
-        setSignatureRevision(r => r + 1);
-      }
-    });
-
-    const unsubStatus = signatureEventBus.on('SIGNATURE_STATUS_CHANGE', (data) => {
-      if (!data.profileId || cleanId(data.profileId) === cleanId(profileUser.id)) {
-        setIsSignatureSyncing(data.isSyncing);
-      }
-    });
-
-    return () => {
-      unsubSync();
-      unsubPost();
-      unsubDelete();
-      unsubStatus();
-    };
-  }, [profileUser.id, profileUser.username, currentUser.id, currentUser.username, isOwnProfile, refreshWallComments]);
-
-  // Wall comments for this user with robust normalization & centralized mapping
-  const userWallComments = useMemo(() => {
-    const matched = wallComments.filter(w =>
-      isSignatureForProfile(w, profileUser) ||
-      (isOwnProfile && isSignatureForProfile(w, currentUser))
-    );
-    return deduplicateAndSortSignatures(matched);
-  }, [
-    wallComments,
-    signatureRevision,
-    profileUser,
-    isOwnProfile,
-    currentUser
-  ]);
-
   // Synchronized age and location calculations for profile header and personal info card
   const userAge = useMemo(() => calculateAge(profileUser.fnac), [profileUser.fnac]);
   const userLocation = useMemo(() => formatFullLocation(profileUser), [profileUser.pais, profileUser.provincia, profileUser.ciudad]);
@@ -288,15 +204,6 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
       return true;
     });
   }, [friendsList, friendFilter, friendSearchQuery]);
-
-  const handleSendWall = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!wallInput.trim()) return;
-    const text = wallInput.trim();
-    setWallInput('');
-    postWallComment(profileUser.id, text);
-    signatureEventBus.requestSync(profileUser.id, 'user_send_wall');
-  };
 
   const handleSaveStatus = () => {
     if (newStatusText.trim()) {
@@ -1223,187 +1130,30 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
             </div>
 
             {/* Top Amigos / Amigos Destacados (Classic Tuenti Sidebar Feature) */}
-            <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2.5">
-              <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-gray-900">
-                  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
-                  <span>Top Amigos</span>
-                  <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded-full">
-                    {topAmigosList.length > 0 ? topAmigosList.length : Math.min(friendsList.length, 6)}/8
-                  </span>
-                </div>
-                {isOwnProfile && (
-                  <button
-                    onClick={() => {
-                      setSelectedTopIds(profileUser.topAmigos || []);
-                      setShowTopAmigosModal(true);
-                    }}
-                    className="text-[#3869A0] hover:underline font-bold text-[11px] cursor-pointer"
-                  >
-                    Editar Top
-                  </button>
-                )}
-              </div>
-
-              {topAmigosList.length === 0 && friendsList.length === 0 ? (
-                <p className="text-[11px] text-gray-400 py-2 text-center">
-                  Aún no hay amigos en el Top.
-                </p>
-              ) : (
-                <div className="grid grid-cols-3 gap-2">
-                  {(topAmigosList.length > 0 ? topAmigosList : friendsList.slice(0, 6)).map((friend) => (
-                    <div
-                      key={friend.id}
-                      onClick={() => viewUserProfile(friend.id)}
-                      className="cursor-pointer group text-center space-y-1 relative"
-                    >
-                      <div className="relative">
-                        <img
-                          src={friend.avatar}
-                          alt={friend.nombre}
-                          className="w-full aspect-square object-cover rounded border border-gray-200 group-hover:border-[#3869A0] transition"
-                        />
-                        <span
-                          className={`absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full ring-1 ring-white ${
-                            friend.online || friend.presencia === 'conectado' ? 'bg-emerald-500' : 'bg-gray-400'
-                          }`}
-                        />
-                        <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-400 absolute top-0.5 left-0.5 drop-shadow-xs" />
-                      </div>
-                      <p className="text-[10px] font-semibold text-[#3869A0] group-hover:underline truncate">
-                        {friend.nombre}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {isOwnProfile && topAmigosList.length === 0 && friendsList.length > 0 && (
-                <div className="pt-2 border-t border-gray-100 text-center">
-                  <button
-                    onClick={() => {
-                      setSelectedTopIds(friendsList.slice(0, 6).map(f => f.id));
-                      setShowTopAmigosModal(true);
-                    }}
-                    className="text-[11px] text-[#3869A0] font-bold hover:underline cursor-pointer"
-                  >
-                    ★ Personalizar mis 6-8 amigos del Top
-                  </button>
-                </div>
-              )}
-            </div>
+            <ProfileTopFriends
+              profileUser={profileUser}
+              isOwnProfile={isOwnProfile}
+              topAmigosList={topAmigosList}
+              friendsList={friendsList}
+              viewUserProfile={viewUserProfile}
+              onEditTop={() => {
+                setSelectedTopIds(profileUser.topAmigos || friendsList.slice(0, 6).map(f => f.id));
+                setShowTopAmigosModal(true);
+              }}
+            />
           </div>
 
           {/* ================= CENTER COLUMN: TABLÓN DE FIRMAS (WALL ONLY) ================= */}
           <div className="lg:col-span-6 space-y-4">
-            {/* ================= TABLÓN DE COMENTARIOS / FIRMAS ================= */}
-            <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-3">
-              <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-[#3869A0]" />
-                  <span>Tablón de firmas de {profileUser.nombre} ({userWallComments.length})</span>
-                  {isSignatureSyncing && (
-                    <span className="ml-1.5 text-[10px] text-[#3869A0] font-normal flex items-center gap-1 animate-pulse">
-                      <RefreshCw className="w-2.5 h-2.5 animate-spin" />
-                      sincronizando...
-                    </span>
-                  )}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => signatureEventBus.requestSync(profileUser.id, 'user_tablon_click')}
-                  disabled={isSignatureSyncing}
-                  className="text-[11px] text-[#3869A0] hover:underline font-normal flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                  title="Sincronizar firmas con la nube"
-                >
-                  <RefreshCw className={`w-3 h-3 ${isSignatureSyncing ? 'animate-spin' : ''}`} />
-                  <span>Actualizar</span>
-                </button>
-              </div>
-
-              {/* Input to write on wall */}
-              <form onSubmit={handleSendWall} className="space-y-2">
-                <textarea
-                  value={wallInput}
-                  onChange={e => setWallInput(e.target.value)}
-                  placeholder={`Escribe algo en el tablón de ${isOwnProfile ? 'tu perfil' : profileUser.nombre}...`}
-                  rows={2}
-                  className="w-full p-2.5 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3869A0] focus:border-[#3869A0] resize-none"
-                />
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-gray-400">
-                    ¡Déjale una firma o saludo nostálgico! :)
-                  </span>
-                  <button
-                    type="submit"
-                    disabled={!wallInput.trim()}
-                    className="px-3.5 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] disabled:bg-gray-300 text-white font-bold text-xs rounded transition flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed shadow-xs"
-                  >
-                    <Send className="w-3 h-3" />
-                    <span>Firmar tablón</span>
-                  </button>
-                </div>
-              </form>
-
-              {/* Wall Comments Stream */}
-              <div className="divide-y divide-gray-100 pt-2 space-y-3">
-                {userWallComments.length === 0 ? (
-                  <div className="py-8 text-center text-gray-400 text-xs">
-                    Todavía no hay comentarios en este tablón. ¡Sé el primero en firmar!
-                  </div>
-                ) : (
-                  userWallComments.map(comment => {
-                    const authorId = comment.autorId || comment.emisorId || '';
-                    const authorName = comment.autorNombre || comment.emisorNombre || 'Usuario';
-                    const authorAvatar = comment.autorAvatar || comment.emisorAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80';
-                    const commentText = comment.texto || comment.comentario || '';
-                    const canDelete = isOwnProfile || authorId === currentUser.id;
-
-                    return (
-                      <div key={comment.id} className="pt-3 first:pt-0 flex items-start gap-3 group">
-                        <img
-                          src={authorAvatar}
-                          alt={authorName}
-                          className="w-10 h-10 rounded object-cover border border-gray-300 cursor-pointer hover:opacity-90 flex-shrink-0"
-                          onClick={() => authorId && viewUserProfile(authorId)}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80';
-                          }}
-                        />
-                        <div className="flex-1 bg-[#f9fafb] p-2.5 rounded border border-gray-200 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span
-                              onClick={() => authorId && viewUserProfile(authorId)}
-                              className="font-bold text-[#3869A0] hover:underline cursor-pointer text-xs"
-                            >
-                              {authorName}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-gray-400">{comment.fecha}</span>
-                              {canDelete && (
-                                <button
-                                  onClick={() => {
-                                    deleteWallComment(comment.id);
-                                    signatureEventBus.notifySignatureDeleted(comment.id, profileUser.id);
-                                  }}
-                                  className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer"
-                                  title="Borrar comentario del tablón"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-gray-800 text-xs whitespace-pre-line leading-relaxed">
-                            {commentText}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+            <ProfileWall
+              profileUser={profileUser}
+              isOwnProfile={isOwnProfile}
+              currentUser={currentUser}
+              wallComments={wallComments}
+              postWallComment={postWallComment}
+              deleteWallComment={deleteWallComment}
+              viewUserProfile={viewUserProfile}
+            />
           </div>
 
           {/* ================= RIGHT COLUMN: PHOTOS, FRIENDS & ACTIVITY LOG WIDGET ================= */}

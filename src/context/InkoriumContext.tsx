@@ -674,6 +674,8 @@ const addDeletedMessageIds = (ids: string[]) => {
   shuffleRef.current = isMusicShuffled;
   const repeatRef = useRef(musicRepeatMode);
   repeatRef.current = musicRepeatMode;
+  const musicPositionRef = useRef(musicPosition);
+  musicPositionRef.current = musicPosition;
 
   const nextTrackInternal = useCallback(() => {
     const list = playlistRef.current;
@@ -769,7 +771,7 @@ const addDeletedMessageIds = (ids: string[]) => {
   }, [nextTrackInternal]);
 
   const prevTrack = useCallback(() => {
-    if (musicPosition > 3 && currentTrack) {
+    if (musicPositionRef.current > 3 && currentTrackRef.current) {
       musicAudioEngine.seek(0);
       setMusicPosition(0);
       return;
@@ -788,7 +790,7 @@ const addDeletedMessageIds = (ids: string[]) => {
     setMusicPosition(0);
     setMusicDuration(prevTrk.duration);
     musicAudioEngine.play(prevTrk, 0);
-  }, [musicPosition, currentTrack]);
+  }, []);
 
   const seekMusic = useCallback((seconds: number) => {
     setMusicPosition(seconds);

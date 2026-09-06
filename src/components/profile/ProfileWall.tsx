@@ -1,0 +1,223 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { MessageSquare, Send, Trash2, RefreshCw } from 'lucide-react';
+import type { User, WallComment } from '../../types';
+import {
+  signatureEventBus,
+  isSignatureForProfile,
+  deduplicateAndSortSignatures,
+  cleanId,
+  normalizeId
+} from '../../lib/signatureEventBus';
+
+interface ProfileWallProps {
+  profileUser: User;
+  isOwnProfile: boolean;
+  currentUser: User;
+  wallComments: WallComment[];
+  postWallComment: (receptorId: string, text: string) => void;
+  deleteWallComment: (commentId: string) => void;
+  viewUserProfile: (userId: string) => void;
+}
+
+export const ProfileWall: React.FC<ProfileWallProps> = ({
+  profileUser,
+  isOwnProfile,
+  currentUser,
+  wallComments,
+  postWallComment,
+  deleteWallComment,
+  viewUserProfile
+}) => {
+  const [wallInput, setWallInput] = useState('');
+  const [signatureRevision, setSignatureRevision] = useState(0);
+  const [isSignatureSyncing, setIsSignatureSyncing] = useState(false);
+
+  // Subscribe to central event bus for immediate reactive update
+  useEffect(() => {
+    const unsubSync = signatureEventBus.on('SIGNATURES_SYNCED', (data) => {
+      const isCurrent =
+        !data.profileId ||
+        data.profileId === '*' ||
+        cleanId(data.profileId) === cleanId(profileUser.id) ||
+        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
+        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
+
+      if (isCurrent) {
+        setSignatureRevision(r => r + 1);
+      }
+    });
+
+    const unsubPost = signatureEventBus.on('SIGNATURE_POSTED', (data) => {
+      const isCurrent =
+        !data.profileId ||
+        cleanId(data.profileId) === cleanId(profileUser.id) ||
+        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
+        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
+
+      if (isCurrent) {
+        setSignatureRevision(r => r + 1);
+      }
+    });
+
+    const unsubDelete = signatureEventBus.on('SIGNATURE_DELETED', (data) => {
+      const isCurrent =
+        !data.profileId ||
+        cleanId(data.profileId) === cleanId(profileUser.id) ||
+        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
+        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
+
+      if (isCurrent) {
+        setSignatureRevision(r => r + 1);
+      }
+    });
+
+    const unsubStatus = signatureEventBus.on('SIGNATURE_STATUS_CHANGE', (data) => {
+      if (!data.profileId || cleanId(data.profileId) === cleanId(profileUser.id)) {
+        setIsSignatureSyncing(data.isSyncing);
+      }
+    });
+
+    return () => {
+      unsubSync();
+      unsubPost();
+      unsubDelete();
+      unsubStatus();
+    };
+  }, [profileUser.id, profileUser.username, currentUser.id, currentUser.username, isOwnProfile]);
+
+  // Normalized and deduplicated signatures for this profile
+  const userWallComments = useMemo(() => {
+    const matched = wallComments.filter(w =>
+      isSignatureForProfile(w, profileUser) ||
+      (isOwnProfile && isSignatureForProfile(w, currentUser))
+    );
+    return deduplicateAndSortSignatures(matched);
+  }, [
+    wallComments,
+    signatureRevision,
+    profileUser,
+    isOwnProfile,
+    currentUser
+  ]);
+
+  const handleSendWall = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanText = wallInput.trim();
+    if (!cleanText) return;
+    setWallInput('');
+    postWallComment(profileUser.id, cleanText);
+    signatureEventBus.requestSync(profileUser.id, 'user_send_wall');
+  };
+
+  return (
+    <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-3">
+      {/* Header */}
+      <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
+        <span className="flex items-center gap-1.5">
+          <MessageSquare className="w-3.5 h-3.5 text-[#3869A0]" />
+          <span>Tablón de firmas de {profileUser.nombre} ({userWallComments.length})</span>
+          {isSignatureSyncing && (
+            <span className="ml-1.5 text-[10px] text-[#3869A0] font-normal flex items-center gap-1 animate-pulse">
+              <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+              sincronizando...
+            </span>
+          )}
+        </span>
+        <button
+          type="button"
+          onClick={() => signatureEventBus.requestSync(profileUser.id, 'user_tablon_click')}
+          disabled={isSignatureSyncing}
+          className="text-[11px] text-[#3869A0] hover:underline font-normal flex items-center gap-1 cursor-pointer disabled:opacity-50"
+          title="Sincronizar firmas con la nube"
+        >
+          <RefreshCw className={`w-3 h-3 ${isSignatureSyncing ? 'animate-spin' : ''}`} />
+          <span>Actualizar</span>
+        </button>
+      </div>
+
+      {/* Input to write on wall */}
+      <form onSubmit={handleSendWall} className="space-y-2">
+        <textarea
+          value={wallInput}
+          onChange={e => setWallInput(e.target.value)}
+          placeholder={`Escribe algo en el tablón de ${isOwnProfile ? 'tu perfil' : profileUser.nombre}...`}
+          rows={2}
+          className="w-full p-2.5 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3869A0] focus:border-[#3869A0] resize-none"
+        />
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] text-gray-400">
+            ¡Déjale una firma o saludo nostálgico! :)
+          </span>
+          <button
+            type="submit"
+            disabled={!wallInput.trim()}
+            className="px-3.5 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] disabled:bg-gray-300 text-white font-bold text-xs rounded transition flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed shadow-xs"
+          >
+            <Send className="w-3 h-3" />
+            <span>Firmar tablón</span>
+          </button>
+        </div>
+      </form>
+
+      {/* Wall Comments Stream */}
+      <div className="divide-y divide-gray-100 pt-2 space-y-3">
+        {userWallComments.length === 0 ? (
+          <div className="py-8 text-center text-gray-400 text-xs">
+            Todavía no hay comentarios en este tablón. ¡Sé el primero en firmar!
+          </div>
+        ) : (
+          userWallComments.map(comment => {
+            const authorId = comment.autorId || comment.emisorId || '';
+            const authorName = comment.autorNombre || comment.emisorNombre || 'Usuario';
+            const authorAvatar = comment.autorAvatar || comment.emisorAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80';
+            const commentText = comment.texto || comment.comentario || '';
+            const canDelete = isOwnProfile || authorId === currentUser.id;
+
+            return (
+              <div key={comment.id} className="pt-3 first:pt-0 flex items-start gap-3 group">
+                <img
+                  src={authorAvatar}
+                  alt={authorName}
+                  className="w-10 h-10 rounded object-cover border border-gray-300 cursor-pointer hover:opacity-90 flex-shrink-0"
+                  onClick={() => authorId && viewUserProfile(authorId)}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80';
+                  }}
+                />
+                <div className="flex-1 bg-[#f9fafb] p-2.5 rounded border border-gray-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span
+                      onClick={() => authorId && viewUserProfile(authorId)}
+                      className="font-bold text-[#3869A0] hover:underline cursor-pointer text-xs"
+                    >
+                      {authorName}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-400">{comment.fecha}</span>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            deleteWallComment(comment.id);
+                            signatureEventBus.notifySignatureDeleted(comment.id, profileUser.id);
+                          }}
+                          className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                          title="Borrar comentario del tablón"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-gray-800 text-xs whitespace-pre-line leading-relaxed">
+                    {commentText}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
