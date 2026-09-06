@@ -217,7 +217,7 @@ const EMPTY_USER: User = {
   estado: '', 
   estadoFecha: '', 
   situacionSentimental: 'Soltero/a', 
-  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80', 
+  avatar: '', 
   fechaReg: '', 
   online: false, 
   ultimoAcceso: '', 

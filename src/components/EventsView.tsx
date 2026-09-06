@@ -18,20 +18,9 @@ const CATEGORY_ICONS: Record<SocialEvent['categoria'], { label: string; icon: Re
   otro: { label: 'Evento', icon: <Calendar className="w-3.5 h-3.5" />, badgeBg: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' }
 };
 
-const PRESET_COVERS = [
-  { label: 'Fiesta / Luces', url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&auto=format&fit=crop&q=80' },
-  { label: 'Festival / Concierto', url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1200&auto=format&fit=crop&q=80' },
-  { label: 'Cumpleaños', url: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=1200&auto=format&fit=crop&q=80' },
-  { label: 'Noche / Discoteca', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&auto=format&fit=crop&q=80' },
-  { label: 'Parque / Retiro', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop&q=80' }
-];
+const PRESET_COVERS: Array<{ label: string; url: string }> = [];
 
-const PARTY_PHOTO_SAMPLES = [
-  { label: 'Brindis con amigos', url: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=800&auto=format&fit=crop&q=80' },
-  { label: 'Foto de grupo', url: 'https://images.unsplash.com/photo-1543807535-eceef0bc6599?w=800&auto=format&fit=crop&q=80' },
-  { label: 'En la pista', url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&auto=format&fit=crop&q=80' },
-  { label: 'Risas en el botellón', url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&auto=format&fit=crop&q=80' }
-];
+const PARTY_PHOTO_SAMPLES: Array<{ label: string; url: string }> = [];
 
 export const EventsView: React.FC = () => {
   const { 
@@ -78,7 +67,7 @@ export const EventsView: React.FC = () => {
   const [newCiudad, setNewCiudad] = useState(currentUser.provincia || 'Madrid');
   const [newFechaTexto, setNewFechaTexto] = useState('');
   const [newCategoria, setNewCategoria] = useState<SocialEvent['categoria']>('fiesta');
-  const [newPortada, setNewPortada] = useState(PRESET_COVERS[0].url);
+  const [newPortada, setNewPortada] = useState('');
   const [commentInput, setCommentInput] = useState('');
 
   // Synchronize when selectedEventId changes from external context
