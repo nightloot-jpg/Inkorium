@@ -1,0 +1,80 @@
+name: Clean remaining demo fallbacks
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Remove demo login and seed-like defaults
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/components/AuthPage.tsx')
+          s = p.read_text()
+          s = s.replace("  const { login, registerNewUser, loginAsUser, users } = useInkorium();", "  const { login, registerNewUser, users } = useInkorium();")
+          s = s.replace("  const [regFnac, setRegFnac] = useState('2001-06-15');", "  const [regFnac, setRegFnac] = useState('');")
+          s = s.replace("  const [regPais, setRegPais] = useState('España');", "  const [regPais, setRegPais] = useState('');")
+          s = s.replace("  const [regProvincia, setRegProvincia] = useState('Madrid');", "  const [regProvincia, setRegProvincia] = useState('');")
+          s = s.replace("  const [regTos, setRegTos] = useState(true);", "  const [regTos, setRegTos] = useState(false);")
+          old = """  const [regInviteCode, setRegInviteCode] = useState(() => {\n    if (typeof window !== 'undefined') {\n      const params = new URLSearchParams(window.location.search);\n      return params.get('invitacion') || params.get('codigo') || 'TUENTI-2008';\n    }\n    return 'TUENTI-2008';\n  });"""
+          new = """  const [regInviteCode, setRegInviteCode] = useState(() => {\n    if (typeof window !== 'undefined') {\n      const params = new URLSearchParams(window.location.search);\n      return params.get('invitacion') || params.get('codigo') || '';\n    }\n    return '';\n  });"""
+          s = s.replace(old, new)
+          s = s.replace("      // Fallback to local / demo user login\n      const result = login(loginEmail, loginPassword);", "      // Local context fallback is only used when the remote auth service is unavailable.\n      const result = login(loginEmail, loginPassword);")
+          s = s.replace("      // Direct context login fallback\n      const result = login(loginEmail, loginPassword);", "      // Local context fallback is only used when the remote auth service is unavailable.\n      const result = login(loginEmail, loginPassword);")
+          p.write_text(s)
+
+          p = Path('src/components/PagesView.tsx')
+          s = p.read_text()
+          s = s.replace("useState(currentUser.provincia || 'Madrid')", "useState(currentUser.provincia || '')")
+          s = s.replace("useState('https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&auto=format&fit=crop&q=80')", "useState('')")
+          p.write_text(s)
+
+          p = Path('src/components/EventsView.tsx')
+          s = p.read_text()
+          s = s.replace("useState(currentUser.provincia || 'Madrid')", "useState(currentUser.provincia || '')")
+          p.write_text(s)
+          PY
+
+      - name: Remove legacy demo records from local storage
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/lib/demoDataCleanup.ts')
+          s = p.read_text()
+          marker = "const DEMO_ARRAY_FILTERS: Array<[string, (item: any) => boolean]> = ["
+          insert = """const MOCK_USER_IDS = new Set([\n  'user-1','user-2','user-3','user-4','user-5','user-6','user-7','user-8',\n  'user-9','user-10','user-11','user-12','1','2','3',\n  'user-elena','user-carlos','user-laura'\n]);\n\nconst isMockRef = (value: unknown): boolean => MOCK_USER_IDS.has(String(value ?? '').toLowerCase());\n\n"""
+          if 'const MOCK_USER_IDS' not in s:
+              s = s.replace(marker, insert + marker)
+          old = """  ['inkorium:music_playlist', item => /^track-[1-8]$/.test(String(item?.id || ''))]\n];"""
+          new = """  ['inkorium:music_playlist', item => /^track-[1-8]$/.test(String(item?.id || ''))],\n  ['inkorium:users', item => isMockRef(item?.id)],\n  ['inkorium:profiles', item => isMockRef(item?.id)],\n  ['inkorium:photos', item => isMockRef(item?.usuarioId) || isMockRef(item?.owner_id) || /^photo-[1-9]\\d*$/.test(String(item?.id || ''))],\n  ['inkorium:albums', item => isMockRef(item?.usuarioId) || isMockRef(item?.owner_id) || /^album-[1-9]\\d*$/.test(String(item?.id || ''))],\n  ['inkorium:feed', item => isMockRef(item?.usuarioId) || isMockRef(item?.autorId) || isMockRef(item?.user_id) || /^post-[1-9]\\d*$/.test(String(item?.id || ''))],\n  ['inkorium:wall_comments', item => isMockRef(item?.emisorId) || isMockRef(item?.receptorId) || isMockRef(item?.autorId)],\n  ['inkorium:friendships', item => isMockRef(item?.usuario1Id) || isMockRef(item?.usuario2Id) || isMockRef(item?.user_id)],\n  ['inkorium:friend_requests', item => isMockRef(item?.emisorId) || isMockRef(item?.receptorId) || isMockRef(item?.from_id) || isMockRef(item?.to_id)],\n  ['inkorium:private_messages', item => isMockRef(item?.emisorId) || isMockRef(item?.receptorId) || isMockRef(item?.sender_id) || isMockRef(item?.recipient_id)],\n  ['inkorium:notifications', item => isMockRef(item?.userId) || isMockRef(item?.emisorId) || isMockRef(item?.receptorId)],\n  ['inkorium:activities', item => isMockRef(item?.userId) || isMockRef(item?.actorId)],\n  ['inkorium:access_logs', item => isMockRef(item?.userId) || isMockRef(item?.actorId)]\n];"""
+          s = s.replace(old, new)
+          # Remove legacy current-user references to deleted demo IDs.
+          if "inkorium:current_user_id" not in s:
+              s = s.replace("  try {", "  try {\n    const legacyKeys = ['inkorium:current_user_id', 'inkorium:currentUserId', 'inkorium:logged_user_id'];\n    for (const key of legacyKeys) {\n      const value = localStorage.getItem(key);\n      if (isMockRef(value)) localStorage.removeItem(key);\n    }", 1)
+          p.write_text(s)
+          PY
+
+      - name: Commit and remove cleanup workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/clean-remaining-mocks.yml
+          git add src/components/AuthPage.tsx src/components/PagesView.tsx src/components/EventsView.tsx src/lib/demoDataCleanup.ts .github/workflows/clean-remaining-mocks.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'fix: purge remaining demo data and defaults'
+          git push
