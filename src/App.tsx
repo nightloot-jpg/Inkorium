@@ -15,7 +15,7 @@ import { GamesView } from './components/GamesView';
 import { CampusView } from './components/CampusView';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { InvitationsModal } from './components/InvitationsModal';
-import { PhotoLightbox } from './components/PhotoLightbox';
+import { PhotoRetroViewer } from './components/PhotoRetroViewer';
 import { UploadModal } from './components/UploadModal';
 import { AuthModal } from './components/AuthModal';
 import { AuthPage } from './components/AuthPage';
@@ -28,12 +28,11 @@ import { ProfileSignatureCloudSync } from './components/ProfileSignatureCloudSyn
 import { ProfileRealtimeSync } from './components/ProfileRealtimeSync';
 import { RealtimeConnectionIndicator } from './components/RealtimeConnectionIndicator';
 
-
 const InkoriumAppContent: React.FC = () => {
-  const { 
-    activeTab, 
-    setActiveTab, 
-    isLoggedIn, 
+  const {
+    activeTab,
+    setActiveTab,
+    isLoggedIn,
     logout,
     isInvitationsModalOpen,
     setIsInvitationsModalOpen
@@ -49,7 +48,7 @@ const InkoriumAppContent: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-[#e8eef4] dark:bg-[#0b111e] text-[#1c1e21] dark:text-[#f1f5f9] font-sans antialiased selection:bg-[#3869A0] selection:text-white transition-colors duration-150">
       <OfflineIndicator />
       <RealtimeConnectionIndicator />
-      <Navbar 
+      <Navbar
         onOpenUpload={() => setIsUploadOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
       />
@@ -98,7 +97,7 @@ const InkoriumAppContent: React.FC = () => {
       </footer>
 
       <NotificationToasts />
-      <PhotoLightbox />
+      <PhotoRetroViewer />
       <FloatingMusicPlayer />
       <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
