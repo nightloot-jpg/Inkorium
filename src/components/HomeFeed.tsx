@@ -133,10 +133,9 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
       return false;
     }
 
-    // Excluir explícitamente cualquier interacción/publicación/evento relacionado con "firma recibida".
-    // Se inspeccionan todos los campos textuales disponibles del FeedItem para evitar que una variante
-    // de tipo evento o publicación termine apareciendo en el feed principal.
-    const normalizedFirmaText = [
+    // Excluir explícitamente cualquier publicación o evento relacionado con "firma recibida".
+    // Se normaliza el texto para cubrir mayúsculas, acentos y variantes habituales.
+    const normalizedFeedText = [
       item.tipo,
       item.datos,
       item.propietarioNombre,
@@ -148,12 +147,24 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase();
 
-    if (\n      normalizedFirmaText.includes('firma recibida') ||\n      normalizedFirmaText.includes('firma_recibida') ||\n      normalizedFirmaText.includes('firmarecibida') ||\n      normalizedFirmaText.includes('firma recibio') ||\n      normalizedFirmaText.includes('recibiste una firma')\n    ) {
+    const isReceivedSignature =
+      normalizedFeedText.includes('firma recibida') ||
+      normalizedFeedText.includes('firma_recibida') ||
+      normalizedFeedText.includes('firmarecibida') ||
+      normalizedFeedText.includes('firma recibio') ||
+      normalizedFeedText.includes('recibiste una firma');
+
+    if (isReceivedSignature) {
       return false;
     }
 
-    // The home feed is reserved for content interactions, not generic relationship/event records.
-    if (item.tipo === 'amistad' || item.tipo === 'evento' && normalizedFirmaText.includes('firma')) {
+    // Las interacciones de amistad no son contenido para el feed principal.
+    if (item.tipo === 'amistad') {
+      return false;
+    }
+
+    // Los eventos relacionados con firmas tampoco son contenido del feed principal.
+    if (item.tipo === 'evento' && normalizedFeedText.includes('firma')) {
       return false;
     }
 
@@ -178,3 +189,1026 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
     if (activeFilter === 'fotos') return item.tipo === 'foto' || item.tipo === 'album';
     return true;
   });
+
+  // Recommended users (not friends yet)
+  const nonFriends = users.filter(u => u.id !== currentUser.id && !isFriend(currentUser.id, u.id));
+
+  return (
+    <div className="w-full max-w-[1720px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-6 lg:px-8 py-4 grid grid-cols-1 md:grid-cols-12 gap-4">
+      {/* ================= LEFT SIDEBAR (barra_izq) ================= */}
+      <div className="md:col-span-3 space-y-3">
+        {/* User Mini Profile Card */}
+        <div className="bg-white rounded border border-[#ccd5df] p-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <img 
+              src={currentUser.avatar} 
+              alt={currentUser.nombre} 
+              className="w-14 h-14 rounded object-cover border border-gray-300 shadow-xs cursor-pointer hover:opacity-90"
+              onClick={() => viewUserProfile(currentUser.id)}
+            />
+            <div className="overflow-hidden">
+              <h3 
+                onClick={() => viewUserProfile(currentUser.id)}
+                className="font-bold text-sm text-[#3869A0] hover:underline cursor-pointer truncate"
+              >
+                {currentUser.nombre} {currentUser.apellidos}
+              </h3>
+              <p className="text-[11px] text-gray-500 truncate">{currentUser.provincia}</p>
+              <button 
+                onClick={() => viewUserProfile(currentUser.id)}
+                className="text-[10px] text-gray-600 hover:text-[#3869A0] underline mt-0.5 block"
+              >
+                Ver mi perfil
+              </button>
+            </div>
+          </div>
+
+          {/* Current Status snippet & Presence */}
+          <div className="mt-2.5 p-2 bg-[#f4f7fa] rounded border border-gray-200 text-xs text-gray-700 relative shadow-2xs">
+            {/* Presence selector row */}
+            <div className="flex items-center justify-between gap-1 mb-1.5 pb-1 border-b border-gray-200/90">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowPresenceMenu(prev => !prev)}
+                  className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-white hover:bg-gray-100 border border-gray-200/70 transition cursor-pointer text-[11px] font-semibold"
+                  title="Cambiar estado de conexión (conectado, ausente, ocupado, invisible)"
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full ${PRESENCE_MAP[currentPresence].dot} shadow-2xs`} />
+                  <span className={PRESENCE_MAP[currentPresence].text}>{PRESENCE_MAP[currentPresence].label}</span>
+                  <ChevronDown className="w-3 h-3 text-gray-400" />
+                </button>
+
+                {/* Dropdown for presence states */}
+                {showPresenceMenu && (
+                  <div className="absolute left-0 top-full mt-1 z-30 w-40 bg-white rounded shadow-xl border border-gray-300 py-1 text-xs divide-y divide-gray-100">
+                    {(Object.keys(PRESENCE_MAP) as UserPresence[]).map((key) => {
+                      const cfg = PRESENCE_MAP[key];
+                      const isSelected = currentPresence === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => {
+                            updateUserPresence(key);
+                            setShowPresenceMenu(false);
+                          }}
+                          className={`w-full px-2.5 py-1.5 text-left flex items-center justify-between hover:bg-blue-50 transition cursor-pointer ${
+                            isSelected ? 'bg-blue-50 font-bold' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+                            <span className="text-gray-800 text-[11px]">{cfg.label}</span>
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-[#3869A0]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {!isEditingStatus && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingStatusText(currentUser.estado || '');
+                    setIsEditingStatus(true);
+                  }}
+                  className="text-[10px] text-[#3869A0] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                  title="Editar estado"
+                >
+                  <Edit2 className="w-2.5 h-2.5" />
+                  <span>Editar</span>
+                </button>
+              )}
+            </div>
+
+            {/* Editable Status Message */}
+            {isEditingStatus ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  updateStatusText(editingStatusText);
+                  setIsEditingStatus(false);
+                }}
+                className="space-y-1.5 pt-0.5"
+              >
+                <input
+                  type="text"
+                  value={editingStatusText}
+                  onChange={(e) => setEditingStatusText(e.target.value)}
+                  placeholder="¿Qué estás haciendo?..."
+                  autoFocus
+                  maxLength={140}
+                  className="w-full p-1.5 bg-white border border-[#3869A0] rounded text-xs text-gray-800 focus:outline-none shadow-inner"
+                />
+                <div className="flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingStatus(false)}
+                    className="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded text-[10px] font-semibold transition cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-2 py-0.5 bg-[#3869A0] hover:bg-[#2b517d] text-white rounded text-[10px] font-semibold transition cursor-pointer shadow-2xs flex items-center gap-1"
+                  >
+                    <Check className="w-3 h-3" />
+                    <span>Guardar</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div
+                onClick={() => {
+                  setEditingStatusText(currentUser.estado || '');
+                  setIsEditingStatus(true);
+                }}
+                className="cursor-pointer group italic hover:bg-white/80 p-1 rounded transition"
+                title="Haz clic para editar tu estado"
+              >
+                <span className="text-[#3869A0] font-serif font-bold text-base leading-none">“</span>
+                <span className="text-[11px] text-gray-700 group-hover:text-[#3869A0]">
+                  {currentUser.estado || 'Escribe tu estado aquí...'}
+                </span>
+                <span className="text-[#3869A0] font-serif font-bold text-base leading-none">”</span>
+                <span className="block text-[9px] text-gray-400 text-right mt-0.5 not-italic">
+                  {currentUser.estadoFecha || 'Hoy'}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Notifications Alert Box (if any) */}
+        {(pendingRequestsCount > 0 || unreadMessagesCount > 0 || unreadNotificationsCount > 0) && (
+          <div className="bg-[#fff9e6] border border-[#f0d48b] rounded p-3 text-xs space-y-1.5 shadow-xs">
+            <p className="font-bold text-[#8a6d3b] text-xs uppercase tracking-wider flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> Notificaciones pendientes
+            </p>
+            {pendingRequestsCount > 0 && (
+              <p 
+                onClick={() => setActiveTab('ajustes')}
+                className="text-[#3869A0] hover:underline cursor-pointer font-semibold flex items-center justify-between"
+              >
+                <span>• Tienes {pendingRequestsCount} petición(es) de amistad</span>
+                <ChevronRight className="w-3 h-3" />
+              </p>
+            )}
+            {unreadMessagesCount > 0 && (
+              <p 
+                onClick={() => setActiveTab('mensajes')}
+                className="text-[#3869A0] hover:underline cursor-pointer font-semibold flex items-center justify-between"
+              >
+                <span>• Tienes {unreadMessagesCount} mensaje(s) privado(s)</span>
+                <ChevronRight className="w-3 h-3" />
+              </p>
+            )}
+            {unreadNotificationsCount > 0 && (
+              <p 
+                onClick={() => setActiveTab('perfil')}
+                className="text-[#3869A0] hover:underline cursor-pointer font-semibold flex items-center justify-between"
+              >
+                <span>• Tienes nuevas novedades en tu perfil</span>
+                <ChevronRight className="w-3 h-3" />
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Quick Menu / Navigation Links - Accesos directos */}
+        <div className="bg-white dark:bg-[#152238] rounded border border-[#ccd5df] dark:border-[#1d2b40] overflow-hidden text-xs shadow-xs">
+          <div className="bg-[#f0f4f8] dark:bg-[#101927] px-3 py-2 border-b border-[#ccd5df] dark:border-[#1d2b40] font-bold text-gray-700 dark:text-gray-200 flex items-center justify-between">
+            <span>Accesos directos</span>
+            <span className="text-[10px] text-gray-500 font-normal">Navegación</span>
+          </div>
+          <div className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
+            {/* Eventos */}
+            <button 
+              onClick={() => setActiveTab('eventos')}
+              className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
+              title="Eventos, quedadas, fiestas y cumpleaños de amigos"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Calendar className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100 block text-xs">Eventos</span>
+                  <span className="text-[10px] text-gray-400 block -mt-0.5">Quedadas, fiestas y álbumes</span>
+                </div>
+              </div>
+              <span className="text-[10px] bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 px-1.5 py-0.5 rounded-full font-bold">
+                {events?.length ?? 0}
+              </span>
+            </button>
+
+            {/* Páginas */}
+            <button 
+              onClick={() => setActiveTab('paginas')}
+              className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
+              title="Páginas oficiales de discotecas, marcas y sitios"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded bg-orange-100 dark:bg-orange-950/80 text-orange-700 dark:text-orange-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Building2 className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100 block text-xs">Páginas</span>
+                  <span className="text-[10px] text-gray-400 block -mt-0.5">Discotecas, sitios y marcas</span>
+                </div>
+              </div>
+              <span className="text-[10px] bg-orange-100 dark:bg-orange-900/60 text-orange-800 dark:text-orange-200 px-1.5 py-0.5 rounded-full font-bold">
+                {pages?.length ?? 0}
+              </span>
+            </button>
+
+            {/* Campus */}
+            <button 
+              onClick={() => setActiveTab('campus')}
+              className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
+              title="Comunidades locales de institutos, universidades y barrios"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <GraduationCap className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100 block text-xs">Campus</span>
+                  <span className="text-[10px] text-gray-400 block -mt-0.5">Universidad, instituto y barrios</span>
+                </div>
+              </div>
+              <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 px-1.5 py-0.5 rounded-full font-bold">
+                {campusCommunities?.length ?? 0}
+              </span>
+            </button>
+
+            {/* Juegos */}
+            <button 
+              onClick={() => setActiveTab('juegos')}
+              className="w-full text-left px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
+              title="Juegos Flash retro: Trivia y Stacker"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Gamepad2 className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100 block text-xs">Juegos</span>
+                  <span className="text-[10px] text-gray-400 block -mt-0.5">Flash Retro: Trivia & Stacker</span>
+                </div>
+              </div>
+              <span className="text-[9px] bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 px-1.5 py-0.5 rounded font-bold">
+                FLASH
+              </span>
+            </button>
+
+            {/* Subir fotos */}
+            <button 
+              onClick={onOpenUpload}
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[#3869A0] dark:text-blue-400 flex items-center gap-2.5 cursor-pointer transition"
+            >
+              <div className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-950/80 text-[#3869A0] dark:text-blue-300 flex items-center justify-center shrink-0">
+                <Upload className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <span className="font-semibold block text-xs">Subir fotos</span>
+                <span className="text-[10px] text-gray-400 block -mt-0.5">Etiquetar amigos y filtro 2008</span>
+              </div>
+            </button>
+
+            {/* Música */}
+            <button 
+              onClick={() => setActiveTab('musica')}
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center justify-between group cursor-pointer transition"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+                  <Music className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-800 dark:text-gray-100 block text-xs">Música</span>
+                  <span className="text-[10px] text-gray-400 block -mt-0.5">Reproductor y pistas retro</span>
+                </div>
+              </div>
+              {isMusicPlaying ? (
+                <div className="flex items-center gap-1">
+                  <Disc className="w-3 h-3 text-[#3869A0] animate-spin" style={{ animationDuration: '3s' }} />
+                  <span className="text-[10px] text-[#3869A0] font-bold">Sonando</span>
+                </div>
+              ) : (
+                <span className="text-[10px] bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200 px-1.5 py-0.5 rounded-full font-bold">
+                  {musicPlaylist.length}
+                </span>
+              )}
+            </button>
+
+            {/* Buscar gente */}
+            <button 
+              onClick={() => setActiveTab('gente')}
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center gap-2.5 cursor-pointer transition"
+            >
+              <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center shrink-0">
+                <UserPlus className="w-3.5 h-3.5" />
+              </div>
+              <span>Buscar amigos / gente</span>
+            </button>
+
+            {/* Redactar mensaje privado */}
+            <button 
+              onClick={() => openComposeMessage()}
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center gap-2.5 cursor-pointer transition"
+            >
+              <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center shrink-0">
+                <MessageCircle className="w-3.5 h-3.5" />
+              </div>
+              <span>Redactar mensaje privado</span>
+            </button>
+
+            {/* Ajustes de mi cuenta */}
+            <button 
+              onClick={() => setActiveTab('ajustes')}
+              className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-gray-700 dark:text-gray-200 flex items-center gap-2.5 cursor-pointer transition"
+            >
+              <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center justify-center shrink-0">
+                <span className="text-xs">⚙️</span>
+              </div>
+              <span>Ajustes de mi cuenta</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Campus & Comunidades Locales Mini Card */}
+        <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2">
+          <div className="flex items-center justify-between pb-1.5 border-b border-gray-200">
+            <span className="font-bold text-gray-800 flex items-center gap-1.5">
+              <GraduationCap className="w-4 h-4 text-emerald-600" />
+              <span>Campus & Barrios</span>
+            </span>
+            <button
+              onClick={() => setActiveTab('campus')}
+              className="text-[10px] text-[#3869A0] font-bold hover:underline cursor-pointer"
+            >
+              Explorar ({campusCommunities.length})
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-500 leading-tight">
+            Comunidades de tu universidad, instituto o barrio para compartir apuntes, fiestas y quedadas.
+          </p>
+          <div className="space-y-1 pt-1">
+            {campusCommunities.slice(0, 3).map(comm => (
+              <div
+                key={comm.id}
+                onClick={() => setActiveTab('campus')}
+                className="flex items-center justify-between p-1.5 rounded hover:bg-emerald-50/70 border border-gray-100 hover:border-emerald-200 cursor-pointer transition text-[11px]"
+              >
+                <div className="truncate">
+                  <span className="font-bold text-gray-800 block truncate">{comm.nombre}</span>
+                  <span className="text-[9px] text-gray-400 capitalize">{comm.tipo} • {comm.ciudad}</span>
+                </div>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded flex-shrink-0">
+                  {comm.miembros.length}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Mini Chat Widget */}
+        <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-200 mb-2">
+            <span className="font-bold text-gray-800 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Chat de Inkorium
+            </span>
+            <button 
+              onClick={() => setChatEstado(currentUser.chatEstado === '1' ? '0' : '1')}
+              className="text-[10px] text-[#3869A0] hover:underline cursor-pointer font-medium"
+            >
+              {currentUser.chatEstado === '1' ? 'Desactivar' : 'Activar'}
+            </button>
+          </div>
+
+          {currentUser.chatEstado === '1' ? (
+            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              {users.filter(u => u.id !== currentUser.id).map(user => (
+                <div 
+                  key={user.id}
+                  onClick={() => openChatWith(user.id)}
+                  className="flex items-center justify-between p-1 rounded hover:bg-blue-50 cursor-pointer transition"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <div className="relative">
+                      <img src={user.avatar} alt="" className="w-5 h-5 rounded object-cover" />
+                      <span className={`absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${user.online ? 'bg-emerald-500' : 'bg-gray-400'}`}></span>
+                    </div>
+                    <span className="text-xs text-gray-800 truncate">{user.nombre} {user.apellidos}</span>
+                  </div>
+                  <span className="text-[10px] text-gray-400">{user.online ? 'Conectado' : 'Ausente'}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-3 text-gray-400">
+              <p>El chat está desconectado</p>
+              <button 
+                onClick={() => setChatEstado('1')}
+                className="mt-1 px-3 py-1 bg-[#3869A0] text-white rounded text-[11px] font-bold hover:bg-[#2e5785] cursor-pointer"
+              >
+                Conectar al chat
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ================= CENTER FEED (barra_centro) ================= */}
+      <div className="md:col-span-6 space-y-4">
+        {/* Status Publisher Form ("¿Qué estás haciendo?") */}
+        <div className="bg-white rounded border border-[#ccd5df] p-3 shadow-xs">
+          <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+            <span className="font-bold text-xs text-gray-800">¿Qué estás pensando o haciendo?</span>
+          </div>
+
+          <form onSubmit={handlePublish} className="mt-2 space-y-2">
+            <textarea
+              ref={statusTextareaRef}
+              value={statusText}
+              onChange={e => setStatusText(e.target.value)}
+              placeholder="Escribe tu estado para que lo vean todos tus amigos..."
+              rows={2}
+              className="w-full text-xs p-2.5 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3869A0] focus:border-[#3869A0] resize-none"
+            />
+
+            {showPhotoInput && (
+              <div className="p-2.5 bg-blue-50/80 rounded border border-blue-200 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-gray-800 block text-[11px]">Adjuntar foto a tu estado:</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPhotoInput(false);
+                      setAttachedPhotoUrl('');
+                      setFeedFileError(null);
+                      setFeedFileValidation(null);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 text-xs font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {feedFileError && (
+                  <div className="p-2 bg-red-50 border border-red-200 rounded text-red-700 text-[11px] flex items-center gap-1.5">
+                    <X className="w-3.5 h-3.5 flex-shrink-0 text-red-600" />
+                    <span>{feedFileError}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <input
+                    ref={feedFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={e => e.target.files?.[0] && handleFeedFileSelect(e.target.files[0])}
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => feedFileInputRef.current?.click()}
+                    disabled={isUploadingPhoto}
+                    className="w-full sm:w-auto px-3 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white rounded font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
+                  >
+                    {isUploadingPhoto ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Validando y subiendo...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Subir desde tu equipo</span>
+                      </>
+                    )}
+                  </button>
+
+                  <span className="text-[10px] text-gray-400 font-semibold">o escribe enlace:</span>
+
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={attachedPhotoUrl.startsWith('data:') ? 'Foto local validada' : attachedPhotoUrl}
+                    onChange={e => {
+                      setAttachedPhotoUrl(e.target.value);
+                      setFeedFileError(null);
+                    }}
+                    disabled={attachedPhotoUrl.startsWith('data:')}
+                    className="flex-1 w-full p-1.5 text-xs bg-white rounded border border-gray-300 focus:outline-none"
+                  />
+                </div>
+
+                {attachedPhotoUrl && (
+                  <div className="mt-1 flex items-center gap-2 p-1.5 bg-white rounded border border-gray-200">
+                    <img src={attachedPhotoUrl} alt="Preview" className="w-14 h-14 object-cover rounded border border-gray-300 shadow-2xs" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Foto verificada y lista para publicar
+                      </span>
+                      {feedFileName && (
+                        <p className="text-[10px] text-gray-500 truncate mt-0.5">
+                          {feedFileName}
+                        </p>
+                      )}
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setAttachedPhotoUrl('');
+                          setFeedFileValidation(null);
+                          setFeedFileName('');
+                        }}
+                        className="text-red-500 text-[10px] hover:underline font-semibold cursor-pointer mt-0.5 block"
+                      >
+                        Quitar foto
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-2 text-gray-500 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowPhotoInput(!showPhotoInput)}
+                  className="flex items-center gap-1 hover:text-[#3869A0] px-2 py-1 rounded hover:bg-gray-100 transition cursor-pointer"
+                  title="Adjuntar foto al estado"
+                >
+                  <Camera className="w-3.5 h-3.5 text-gray-600" />
+                  <span className="text-[11px]">Foto</span>
+                </button>
+
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmoticonPicker(prev => !prev)}
+                    className="flex items-center gap-1 hover:text-[#3869A0] px-2 py-1 rounded hover:bg-gray-100 transition cursor-pointer"
+                    title="Añadir emoticono"
+                  >
+                    <Smile className="w-3.5 h-3.5 text-gray-600" />
+                    <span className="text-[11px]">Emoticono</span>
+                  </button>
+
+                  {showEmoticonPicker && (
+                    <EmoticonPicker
+                      onClose={() => setShowEmoticonPicker(false)}
+                      onSelect={(value) => {
+                        const field = statusTextareaRef.current;
+                        if (field) {
+                          const start = field.selectionStart ?? statusText.length;
+                          const end = field.selectionEnd ?? statusText.length;
+                          const next = statusText.slice(0, start) + value + statusText.slice(end);
+                          setStatusText(next);
+                          requestAnimationFrame(() => {
+                            field.focus();
+                            const caret = start + value.length;
+                            field.setSelectionRange(caret, caret);
+                          });
+                        } else {
+                          setStatusText(prev => `${prev}${value}`);
+                        }
+                        setShowEmoticonPicker(false);
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={!statusText.trim() && !attachedPhotoUrl}
+                className="px-4 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] disabled:bg-gray-300 text-white font-bold text-xs rounded transition shadow-xs flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+              >
+                <Send className="w-3 h-3" />
+                <span>Publicar</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Novedades Filter Tabs & Anti-Algoritmo Switch */}
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ccd5df] dark:border-[#1d2b40] pb-1 px-1 text-xs">
+            <div className="flex items-center gap-1 sm:gap-2 font-semibold">
+              <span className="font-bold text-gray-800 dark:text-gray-100 mr-1 text-sm">Novedades</span>
+              <button
+                onClick={() => setActiveFilter('todos')}
+                className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                  activeFilter === 'todos' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
+                }`}
+              >
+                Todas
+              </button>
+              <button
+                onClick={() => setActiveFilter('estados')}
+                className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                  activeFilter === 'estados' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
+                }`}
+              >
+                Estados
+              </button>
+              <button
+                onClick={() => setActiveFilter('fotos')}
+                className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                  activeFilter === 'fotos' ? 'bg-[#3869A0] text-white shadow-xs' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-800'
+                }`}
+              >
+                Fotos
+              </button>
+            </div>
+
+            {/* Anti-Algorithm Toggle Switch */}
+            <button
+              onClick={toggleAntiAlgorithmMode}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition shadow-xs cursor-pointer ${
+                isAntiAlgorithmMode
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
+              }`}
+              title={isAntiAlgorithmMode ? 'Desactivar modo Anti-Algoritmo (ver todas las publicaciones)' : 'Activar Anti-Algoritmo: solo amigos reales, 100% cronológico'}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Anti-Algoritmo:</span>
+              <span className={`uppercase text-[10px] px-1.5 py-0.2 rounded font-extrabold ${
+                isAntiAlgorithmMode ? 'bg-emerald-800 text-white' : 'bg-gray-300 dark:bg-slate-700 text-gray-600 dark:text-gray-300'
+              }`}>
+                {isAntiAlgorithmMode ? 'ACTIVO' : 'OFF'}
+              </span>
+            </button>
+          </div>
+
+          {/* Anti-Algoritmo Explanatory Banner */}
+          {isAntiAlgorithmMode && (
+            <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 rounded p-2.5 text-xs text-emerald-900 dark:text-emerald-200 flex items-start justify-between gap-2 shadow-2xs animate-fade-in">
+              <div className="flex items-start gap-2">
+                <div className="w-6 h-6 rounded-full bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-emerald-900 dark:text-emerald-100 text-[12px] flex items-center gap-1.5">
+                    <span>🌿 El internet de amigos de verdad (Modo Anti-Algoritmo)</span>
+                    <span className="bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-100 text-[10px] px-1.5 py-0.2 rounded font-semibold">100% Cronológico</span>
+                  </h4>
+                  <p className="text-[11px] text-emerald-800 dark:text-emerald-300 mt-0.5 leading-relaxed">
+                    Estás en un refugio íntimo: solo ves publicaciones de tus <strong>amigos agregados</strong> en orden cronológico real, sin influencers, marcas, algoritmos adictivos ni métricas públicas de vanidad.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={toggleAntiAlgorithmMode}
+                className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 text-[11px] underline shrink-0 font-medium cursor-pointer"
+              >
+                Ver todo
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Feed Items List */}
+        <div className="space-y-3">
+          {filteredFeed.length === 0 ? (
+            <div className="bg-white rounded border border-[#ccd5df] p-8 text-center text-gray-500 text-xs">
+              No hay novedades para este filtro. ¡Sé el primero en compartir algo!
+            </div>
+          ) : (
+            filteredFeed.map(item => (
+              <div key={item.id} className="bg-white rounded border border-[#ccd5df] p-3 shadow-xs space-y-2.5 text-xs">
+                {/* Header: Propietario / Event info */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src={item.propietarioAvatar}
+                      alt={item.propietarioNombre}
+                      className="w-9 h-9 rounded object-cover border border-gray-300 cursor-pointer hover:opacity-90"
+                      onClick={() => viewUserProfile(item.propietarioId)}
+                    />
+                    <div>
+                      <div className="font-bold text-gray-900 leading-tight">
+                        <span 
+                          onClick={() => viewUserProfile(item.propietarioId)}
+                          className="text-[#3869A0] hover:underline cursor-pointer"
+                        >
+                          {item.propietarioNombre}
+                        </span>
+
+                        {item.tipo === 'amistad' && item.visitanteNombre && (
+                          <span className="text-gray-600 font-normal">
+                            {' '}y{' '}
+                            <span 
+                              onClick={() => item.visitanteId && viewUserProfile(item.visitanteId)}
+                              className="text-[#3869A0] font-bold hover:underline cursor-pointer"
+                            >
+                              {item.visitanteNombre}
+                            </span>
+                            {' '}ahora son amigos en Inkorium.
+                          </span>
+                        )}
+
+                        {item.tipo === 'foto' && (
+                          <span className="text-gray-600 font-normal"> ha subido una nueva foto</span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                        <Clock className="w-3 h-3" />
+                        <span>{item.fecha}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content body */}
+                {item.datos && (
+                  <p className="text-gray-800 text-xs whitespace-pre-line leading-relaxed pl-1">
+                    {item.datos}
+                  </p>
+                )}
+
+                {/* Attached Photo */}
+                {item.fotoUrl && (
+                  <div 
+                    onClick={() => viewPhoto(item.fotoId || null)}
+                    className="rounded overflow-hidden border border-gray-200 cursor-pointer max-h-80 bg-black/5 flex items-center justify-center group relative"
+                  >
+                    <img 
+                      src={item.fotoUrl} 
+                      alt="" 
+                      className="w-full max-h-80 object-cover group-hover:scale-[1.01] transition duration-200"
+                    />
+                    <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-semibold text-xs">
+                      <span className="bg-black/60 px-3 py-1.5 rounded-full backdrop-blur-xs">
+                        Ver foto completa
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bottom Actions: Likes & Comment toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-[11px] text-gray-500">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => likeFeedItem(item.id)}
+                      className={`flex items-center gap-1 font-semibold transition cursor-pointer ${
+                        item.likes.includes(currentUser.id) ? 'text-red-500' : 'hover:text-[#3869A0]'
+                      }`}
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${item.likes.includes(currentUser.id) ? 'fill-current' : ''}`} />
+                      <span>
+                        {isAntiAlgorithmMode ? (
+                          item.likes.includes(currentUser.id) ? (
+                            item.likes.length > 1 ? `Te gusta a ti y a otros amigos` : 'Te gusta'
+                          ) : (
+                            item.likes.length > 0 ? `Les gusta a amigos` : 'Me gusta'
+                          )
+                        ) : (
+                          item.likes.length > 0 ? `${item.likes.length} Me gusta` : 'Me gusta'
+                        )}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setOpenComments(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                      className="flex items-center gap-1 hover:text-[#3869A0] font-semibold transition cursor-pointer"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>{item.comentarios.length > 0 ? `${item.comentarios.length} comentarios` : 'Comentar'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Comments Section */}
+                {(openComments[item.id] || item.comentarios.length > 0) && (
+                  <div className="bg-[#f7f9fb] p-2.5 rounded border border-gray-200 space-y-2 mt-2">
+                    {/* Comments list */}
+                    {item.comentarios.map(c => (
+                      <div key={c.id} className="flex items-start gap-2 text-xs">
+                        <img src={c.avatar} alt="" className="w-6 h-6 rounded object-cover border border-gray-300 mt-0.5" />
+                        <div className="flex-1 bg-white p-2 rounded border border-gray-200">
+                          <div className="flex justify-between items-center mb-0.5">
+                            <span 
+                              onClick={() => viewUserProfile(c.userId)}
+                              className="font-bold text-[#3869A0] hover:underline cursor-pointer"
+                            >
+                              {c.nombre}
+                            </span>
+                            <span className="text-[9px] text-gray-400">{c.fecha}</span>
+                          </div>
+                          <p className="text-gray-700 leading-snug">{c.texto}</p>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* New comment input */}
+                    <div className="flex items-center gap-2 pt-1">
+                      <img src={currentUser.avatar} alt="" className="w-6 h-6 rounded object-cover" />
+                      <input
+                        type="text"
+                        placeholder="Escribe un comentario..."
+                        value={commentInputs[item.id] || ''}
+                        onChange={e => setCommentInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') handleAddComment(item.id);
+                        }}
+                        className="flex-1 bg-white px-2.5 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:border-[#3869A0]"
+                      />
+                      <button
+                        onClick={() => handleAddComment(item.id)}
+                        disabled={!commentInputs[item.id]?.trim()}
+                        className="px-2.5 py-1 bg-[#3869A0] hover:bg-[#2d5583] disabled:bg-gray-300 text-white font-bold text-[11px] rounded transition cursor-pointer"
+                      >
+                        Enviar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* ================= RIGHT SIDEBAR ================= */}
+      <div className="md:col-span-3 space-y-3">
+        {/* Últimas Fotos Widget */}
+        <div className="bg-white rounded border border-[#ccd5df] p-3 shadow-xs">
+          <div className="font-bold text-xs text-gray-800 pb-2 border-b border-gray-200 mb-2.5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Camera className="w-3.5 h-3.5 text-[#3869A0]" />
+              <span>Últimas fotos</span>
+            </span>
+            <button 
+              onClick={() => setActiveTab('fotos')}
+              className="text-[10px] text-[#3869A0] hover:underline font-normal cursor-pointer"
+            >
+              Ver todas ({photos.length})
+            </button>
+          </div>
+
+          {photos.length === 0 ? (
+            <div className="text-center py-4 text-gray-400 text-xs">
+              <p>Aún no hay fotos subidas.</p>
+              <button
+                onClick={onOpenUpload}
+                className="mt-2 text-[11px] font-bold text-[#3869A0] hover:underline cursor-pointer"
+              >
+                + Subir primera foto
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {photos.slice(0, 6).map(photo => {
+                  const uploader = users.find(u => u.id === photo.uploaderId);
+                  return (
+                    <div
+                      key={photo.id}
+                      onClick={() => viewPhoto(photo.id)}
+                      className="group relative aspect-square rounded overflow-hidden border border-gray-200 bg-gray-100 cursor-pointer shadow-2xs hover:border-[#3869A0] transition"
+                      title={`${photo.titulo || 'Foto'} - ${uploader ? uploader.nombre : ''}`}
+                    >
+                      <img
+                        src={photo.archivo}
+                        alt={photo.titulo || 'Foto'}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-150"
+                      />
+                      <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition flex items-end p-1 text-[9px] text-white font-medium">
+                        <span className="truncate drop-shadow-xs">{uploader?.nombre || 'Foto'}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between text-[11px]">
+                <button
+                  onClick={onOpenUpload}
+                  className="text-[#3869A0] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Upload className="w-3 h-3" />
+                  <span>Subir foto</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('fotos')}
+                  className="text-gray-500 hover:text-gray-800 hover:underline cursor-pointer flex items-center gap-0.5"
+                >
+                  <span>Álbumes</span>
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* People You May Know */}
+        <div className="bg-white rounded border border-[#ccd5df] p-3 shadow-xs">
+          <div className="font-bold text-xs text-gray-800 pb-2 border-b border-gray-200 mb-2 flex items-center justify-between">
+            <span>Gente que quizá conozcas</span>
+            <button 
+              onClick={() => setActiveTab('gente')}
+              className="text-[10px] text-[#3869A0] hover:underline font-normal"
+            >
+              Ver más
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {nonFriends.slice(0, 4).map(user => {
+              const pending = hasPendingRequest(currentUser.id, user.id);
+              return (
+                <div key={user.id} className="flex items-start gap-2.5">
+                  <img
+                    src={user.avatar}
+                    alt={user.nombre}
+                    className="w-10 h-10 rounded object-cover border border-gray-300 cursor-pointer hover:opacity-90 flex-shrink-0"
+                    onClick={() => viewUserProfile(user.id)}
+                  />
+                  <div className="flex-1 overflow-hidden">
+                    <h4 
+                      onClick={() => viewUserProfile(user.id)}
+                      className="font-bold text-xs text-[#3869A0] hover:underline cursor-pointer truncate"
+                    >
+                      {user.nombre} {user.apellidos}
+                    </h4>
+                    <p className="text-[10px] text-gray-500 truncate flex items-center gap-0.5">
+                      <MapPin className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
+                      <span>{formatFullLocation(user)}</span>
+                    </p>
+                    
+                    {pending ? (
+                      <span className="inline-block mt-1 text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded font-medium">
+                        Petición enviada
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => sendFriendRequest(user.id)}
+                        className="mt-1 px-2 py-0.5 bg-[#e8f0fe] hover:bg-[#d2e3fc] text-[#3869A0] text-[10px] font-bold rounded flex items-center gap-1 transition cursor-pointer"
+                      >
+                        <UserPlus className="w-2.5 h-2.5" />
+                        <span>Añadir amigo</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Nostalgic Tuenti Banner Widget */}
+        <div className="bg-gradient-to-br from-[#3869A0] to-[#254b77] text-white rounded p-3 text-xs shadow-xs space-y-2">
+          <div className="flex items-center gap-1.5 font-bold text-sm">
+            <span>🎉</span>
+            <span>Inkorium 2009 Vibes</span>
+          </div>
+          <p className="text-blue-100 text-[11px] leading-relaxed">
+            Revive la época dorada de las redes sociales: tablón de firmas, fotos etiquetadas, chat en directo y tus amigos de siempre.
+          </p>
+          <div className="bg-white/10 p-2 rounded border border-white/20 text-[10px] text-blue-100 space-y-1">
+            <p>🎧 <b>Hit de la semana:</b> <i>El Canto del Loco - Zapatillas</i></p>
+            <p>📸 <b>Tip:</b> ¡Haz clic en las fotos para etiquetar a tus amigos!</p>
+          </div>
+        </div>
+
+        {/* Explorar por país o zona */}
+        <div className="bg-white rounded border border-[#ccd5df] p-3 text-xs shadow-xs space-y-2">
+          <div className="font-bold text-gray-800 pb-1.5 border-b border-gray-200 flex items-center justify-between">
+            <span className="flex items-center gap-1">
+              <Globe className="w-3.5 h-3.5 text-[#3869A0]" />
+              <span>Explora por ubicación</span>
+            </span>
+            <button 
+              onClick={() => setActiveTab('gente')}
+              className="text-[10px] text-[#3869A0] hover:underline font-normal cursor-pointer"
+            >
+              Ver mapa
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {['🇪🇸 España', '🇲🇽 México', '🇦🇷 Argentina', '🇨🇴 Colombia', '🇨🇱 Chile', 'Madrid', 'Barcelona', 'Buenos Aires', 'CDMX', 'Valencia'].map(loc => (
+              <button
+                key={loc}
+                onClick={() => setActiveTab('gente')}
+                className="px-2 py-0.5 bg-gray-100 hover:bg-blue-50 hover:text-[#3869A0] text-gray-700 rounded text-[10px] font-medium transition cursor-pointer"
+              >
+                {loc}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
