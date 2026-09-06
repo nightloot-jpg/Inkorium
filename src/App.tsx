@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { purgeLegacyDemoData } from './lib/demoDataCleanup';
 import { InkoriumProvider, useInkorium } from './context/InkoriumContext';
 import { Navbar } from './components/Navbar';
 import { HomeFeed } from './components/HomeFeed';
@@ -27,6 +28,8 @@ import { PublicProfileSync } from './components/PublicProfileSync';
 import { ProfileSignatureCloudSync } from './components/ProfileSignatureCloudSync';
 import { ProfileRealtimeSync } from './components/ProfileRealtimeSync';
 import { RealtimeConnectionIndicator } from './components/RealtimeConnectionIndicator';
+
+purgeLegacyDemoData();
 
 const InkoriumAppContent: React.FC = () => {
   const {
