@@ -1,0 +1,40 @@
+name: Fix signature sync loop
+
+on:
+  push:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove post-signature health-check feedback loop
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('src/components/ProfileSignatureCloudSync.tsx')
+          text = path.read_text(encoding='utf-8')
+          old = "        // Trigger health check to ensure reconciliation\n        void runSignatureHealthCheck('signature_posted_event', data.profileId);\n"
+          new = "        // Reconciliation is handled by the periodic/background sync.\n        // Do not trigger another health check from SIGNATURE_POSTED, because the\n        // resulting SSE wall_comment event can re-emit SIGNATURE_POSTED recursively.\n"
+          if old not in text:
+              raise SystemExit('Expected signature feedback-loop block not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+      - name: Commit and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/components/ProfileSignatureCloudSync.tsx .github/workflows/fix-signature-loop.yml
+          git commit -m 'fix: stop signature event feedback loop'
+          rm .github/workflows/fix-signature-loop.yml
+          git add .github/workflows/fix-signature-loop.yml
+          git commit --amend --no-edit
+          git push
