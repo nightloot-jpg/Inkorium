@@ -1,4 +1,5 @@
 import express from 'express';
+import { extractToken, getSupabaseConfig, verifySupabaseJwt } from './server/auth';
 
 const WINDOW_MS = 60_000;
 const MAX_MUTATIONS_PER_WINDOW = 60;
@@ -23,26 +24,17 @@ function hitRateLimit(store: Map<string, { count: number; resetAt: number }>, ke
 }
 
 async function resolveUser(req: express.Request): Promise<string | null> {
-  const header = String(req.headers.authorization || '').trim();
-  const token = header.replace(/^Bearer\s+/i, '').trim() || String((req.body as any)?.access_token || '').trim();
+  const token = extractToken(req);
   if (!token) return null;
 
-  const supabaseUrl = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
-  const supabaseKey = String(process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
-  if (!supabaseUrl || !supabaseKey) return null;
+  const { supabaseUrl, jwtSecret } = getSupabaseConfig();
 
   try {
-    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: {
-        apikey: supabaseKey,
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json'
-      }
-    });
-    if (!response.ok) return null;
-    const user = await response.json();
-    const id = String(user?.id || '').trim();
-    return id || null;
+    // Use the same backend verifier as the API routes. This supports the
+    // current Supabase JWT signing modes (HS256/RS256/ES256) and avoids
+    // depending on /auth/v1/user + the publishable key for every mutation.
+    const userId = await verifySupabaseJwt(token, supabaseUrl, jwtSecret);
+    return userId || null;
   } catch {
     return null;
   }
