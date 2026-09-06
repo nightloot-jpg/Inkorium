@@ -1936,18 +1936,54 @@ const addDeletedMessageIds = (ids: string[]) => {
         if (userId && data) {
           const normTarget = normalizeUserId(userId);
           setUsers(prev => {
-            const updated = prev.map(u => {
-              const match = u.id === userId || 
-                            normalizeUserId(u.id) === normTarget || 
-                            (u.username && normalizeUserId(u.username) === normTarget);
-              if (!match) return u;
-              return { 
-                ...u, 
-                ...data, 
-                id: u.id, 
-                updated_at: data.updated_at || new Date().toISOString() 
+            const matchIndex = prev.findIndex(u => 
+              u.id === userId || 
+              normalizeUserId(u.id) === normTarget || 
+              (u.username && normalizeUserId(u.username) === normTarget)
+            );
+            let updated: User[];
+            if (matchIndex >= 0) {
+              updated = prev.map((u, idx) => {
+                if (idx !== matchIndex) return u;
+                return { 
+                  ...u, 
+                  ...data, 
+                  id: u.id, 
+                  updated_at: data.updated_at || new Date().toISOString() 
+                };
+              });
+            } else {
+              const newUser: User = {
+                nombre: data.nombre || data.full_name || 'Usuario',
+                apellidos: data.apellidos || '',
+                username: data.username || undefined,
+                full_name: data.full_name || undefined,
+                email: data.email || `${normTarget || userId}@tuenti.es`,
+                avatar: data.avatar || toProfileAvatarUrl('', data.nombre || 'Usuario'),
+                avatar_url: data.avatar_url || undefined,
+                sexo: data.sexo || 'otro',
+                fnac: data.fnac || '1992-05-15',
+                provincia: data.provincia || 'Madrid',
+                ciudad: data.ciudad || undefined,
+                pais: data.pais || 'España',
+                estado: data.estado || '',
+                estadoFecha: data.estadoFecha || '',
+                presencia: data.presencia || 'conectado',
+                situacionSentimental: data.situacionSentimental || 'Soltero/a',
+                ocupacion: data.ocupacion || '',
+                intereses: data.intereses || '',
+                musica: data.musica || '',
+                fechaReg: data.fechaReg || '2008-01-01',
+                online: data.presencia === 'invisible' ? false : (data.online !== undefined ? Boolean(data.online) : true),
+                ultimoAcceso: data.ultimoAcceso || 'Recientemente',
+                chatEstado: data.presencia === 'invisible' ? '0' : (data.chatEstado || '1'),
+                topAmigos: Array.isArray(data.topAmigos) ? data.topAmigos : [],
+                ...data,
+                id: userId,
+                updated_at: data.updated_at || new Date().toISOString()
               };
-            });
+              updated = [...prev, newUser];
+            }
             try {
               localStorage.setItem('inkorium:users', JSON.stringify(updated));
               const currentUpdated = updated.find(u => 

@@ -931,14 +931,88 @@ app.get('/api/profiles', async (req, res) => {
       };
     });
 
+    if (req.query.id) {
+      const rawFilter = String(req.query.id).replace(/^eq\./, '').trim();
+      const normFilter = rawFilter.toLowerCase().replace(/^user-/, '');
+      profilesList = profilesList.filter(p => {
+        const pId = String(p.id || '').trim().toLowerCase();
+        const pNorm = pId.replace(/^user-/, '');
+        const pUser = String(p.username || '').trim().toLowerCase();
+        return pId === rawFilter.toLowerCase() || pNorm === normFilter || pUser === normFilter || pUser === rawFilter.toLowerCase();
+      });
+    }
+
     return res.status(200).json(profilesList);
   } catch (err: any) { 
     console.warn('Supabase profiles proxy fallback to inMemory:', err?.message); 
-    const fallbackList = Array.from(inMemoryProfiles.values()).map(p => {
+    let fallbackList = Array.from(inMemoryProfiles.values()).map(p => {
       const av = p.avatar_url || p.avatar || '';
       return { ...p, avatar_url: av, avatar: av };
     });
+    if (req.query.id) {
+      const rawFilter = String(req.query.id).replace(/^eq\./, '').trim();
+      const normFilter = rawFilter.toLowerCase().replace(/^user-/, '');
+      fallbackList = fallbackList.filter(p => {
+        const pId = String(p.id || '').trim().toLowerCase();
+        const pNorm = pId.replace(/^user-/, '');
+        const pUser = String(p.username || '').trim().toLowerCase();
+        return pId === rawFilter.toLowerCase() || pNorm === normFilter || pUser === normFilter || pUser === rawFilter.toLowerCase();
+      });
+    }
     return res.status(200).json(fallbackList); 
+  }
+});
+
+// Single user profile lookup
+app.get('/api/profiles/:id', async (req, res) => {
+  try {
+    const rawTargetId = String(req.params.id || '').trim();
+    if (!rawTargetId) {
+      return res.status(400).json({ error: 'Missing profile id' });
+    }
+    const normTarget = rawTargetId.toLowerCase().replace(/^user-/, '');
+
+    // Check in-memory profiles first
+    for (const [id, prof] of inMemoryProfiles.entries()) {
+      const pId = String(id || '').trim().toLowerCase();
+      const pNorm = pId.replace(/^user-/, '');
+      const pUser = String(prof.username || '').trim().toLowerCase();
+      if (pId === rawTargetId.toLowerCase() || pNorm === normTarget || pUser === normTarget) {
+        let av = String(prof.avatar_url || prof.avatar || '').trim();
+        const displayName = prof.full_name || prof.username || 'Usuario';
+        if (av && !av.startsWith('data:') && !av.startsWith('blob:') && !av.startsWith('/api/profile-avatar')) {
+          av = `/api/profile-avatar?userId=${encodeURIComponent(id)}&name=${encodeURIComponent(displayName)}`;
+        }
+        return res.status(200).json({ ...prof, id, avatar_url: av, avatar: av });
+      }
+    }
+
+    // Try Supabase upstream
+    const { supabaseUrl, supabaseKey, serviceRoleKey } = getSupabaseConfig();
+    const authKey = serviceRoleKey || supabaseKey;
+    if (authKey) {
+      const upstream = await fetch(
+        `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(rawTargetId)}&select=*`,
+        { headers: { apikey: authKey, Authorization: `Bearer ${authKey}`, Accept: 'application/json' } }
+      );
+      if (upstream.ok) {
+        const rows = await upstream.json();
+        if (Array.isArray(rows) && rows.length > 0) {
+          const prof = rows[0];
+          let av = String(prof.avatar_url || prof.avatar || '').trim();
+          const displayName = prof.full_name || prof.username || 'Usuario';
+          if (av && !av.startsWith('data:') && !av.startsWith('blob:') && !av.startsWith('/api/profile-avatar')) {
+            av = `/api/profile-avatar?userId=${encodeURIComponent(prof.id)}&name=${encodeURIComponent(displayName)}`;
+          }
+          return res.status(200).json({ ...prof, avatar_url: av, avatar: av });
+        }
+      }
+    }
+
+    return res.status(404).json({ error: 'Profile not found' });
+  } catch (err: any) {
+    console.warn('GET /api/profiles/:id error:', err?.message);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
