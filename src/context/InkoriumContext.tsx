@@ -392,28 +392,10 @@ const addDeletedMessageIds = (ids: string[]) => {
     return INITIAL_FRIENDSHIPS;
   });
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
-    // Keep the UI instant from the existing localStorage conversation cache.
-    if (typeof localStorage === 'undefined') return [];
-    try {
-      const keys = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i) || '';
-        if (key.startsWith('inkorium:chat_history_store:')) keys.push(key);
-      }
-      const unique = new Map<string, ChatMessage>();
-      for (const key of keys) {
-        try {
-          const parsed = JSON.parse(localStorage.getItem(key) || '[]');
-          if (Array.isArray(parsed)) for (const msg of parsed) if (msg?.id) unique.set(String(msg.id), msg);
-        } catch {}
-      }
-      return Array.from(unique.values()).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-    } catch { return []; }
-  });
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   // Hydrate the logged-in user's chat from IndexedDB without blocking the initial render.
   useEffect(() => {
-    const ownerId = currentUserIdRef.current || currentUserId;
+    const ownerId = currentUserId;
     if (!ownerId) return;
     let cancelled = false;
     void loadChatHistory(ownerId).then(cached => {
