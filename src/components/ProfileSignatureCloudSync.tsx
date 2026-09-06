@@ -381,8 +381,9 @@ export function ProfileSignatureCloudSync() {
           })
         });
 
-        // Trigger health check to ensure reconciliation
-        void runSignatureHealthCheck('signature_posted_event', data.profileId);
+        // Reconciliation is handled by the periodic/background sync.
+        // Do not trigger another health check from SIGNATURE_POSTED, because the
+        // resulting SSE wall_comment event can re-emit SIGNATURE_POSTED recursively.
       } catch (err) {
         console.warn('[ProfileSignatureCloudSync] Error syncing posted signature:', err);
       }
