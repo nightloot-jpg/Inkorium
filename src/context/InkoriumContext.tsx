@@ -9,6 +9,7 @@ import { INITIAL_CAMPUS_COMMUNITIES } from '../data/mockCampus';
 import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
 import { musicAudioEngine } from '../utils/audioEngine';
 import { appendMessageToConversation, updateMessageInConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents, markConversationAsRead, applyReadReceiptsToConversation, getStoredBlockedUserIds, saveStoredBlockedUserIds } from '../lib/chatHistory';
+import { loadChatHistory, persistChatMessages, deletePersistedChatMessages, mergeChatHistory } from '../lib/chatIndexedDb';
 import { playMessageSound, playNotificationChime, playNudgeSound } from '../utils/sound';
 import { RealtimeManager } from '../lib/realtimeManager';
 import {
@@ -391,7 +392,37 @@ const addDeletedMessageIds = (ids: string[]) => {
     return INITIAL_FRIENDSHIPS;
   });
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    // Keep the UI instant from the existing localStorage conversation cache.
+    if (typeof localStorage === 'undefined') return [];
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i) || '';
+        if (key.startsWith('inkorium:chat_history_store:')) keys.push(key);
+      }
+      const unique = new Map<string, ChatMessage>();
+      for (const key of keys) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+          if (Array.isArray(parsed)) for (const msg of parsed) if (msg?.id) unique.set(String(msg.id), msg);
+        } catch {}
+      }
+      return Array.from(unique.values()).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    } catch { return []; }
+  });
+  // Hydrate the logged-in user's chat from IndexedDB without blocking the initial render.
+  useEffect(() => {
+    const ownerId = currentUserIdRef.current || currentUserId;
+    if (!ownerId) return;
+    let cancelled = false;
+    void loadChatHistory(ownerId).then(cached => {
+      if (cancelled || cached.length === 0) return;
+      setChatMessages(prev => mergeChatHistory(cached, prev));
+    });
+    return () => { cancelled = true; };
+  }, [currentUserId]);
+
   const [notifications, setNotifications] = useState<InkoriumNotification[]>(() => {
     if (typeof localStorage !== 'undefined') {
       const saved = localStorage.getItem('inkorium:notifications');
@@ -872,6 +903,16 @@ const addDeletedMessageIds = (ids: string[]) => {
     safeSetLocalStorage('inkorium:private_messages', JSON.stringify(messages));
   }, [messages]);
 
+  // Persist the active user's chat asynchronously in IndexedDB. localStorage remains a fallback.
+  useEffect(() => {
+    const ownerId = currentUserId;
+    if (!ownerId || chatMessages.length === 0) return;
+    const timer = window.setTimeout(() => {
+      void persistChatMessages(ownerId, chatMessages);
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [currentUserId, chatMessages]);
+
   // Sync wall comments to localStorage
   useEffect(() => {
     safeSetLocalStorage('inkorium:wall_comments', JSON.stringify(wallComments));
@@ -1196,17 +1237,7 @@ const addDeletedMessageIds = (ids: string[]) => {
         let data: any = null;
         try { data = JSON.parse(text); } catch { return; }
         if (Array.isArray(data) && data.length > 0) {
-          setChatMessages(prev => {
-            const existingIds = new Set(prev.map(m => m.id));
-            const newMsgs = data.filter((m: any) => !existingIds.has(m.id));
-            if (newMsgs.length === 0) return prev;
-            newMsgs.forEach((msg: any) => {
-              const partnerId = normalizeUserId(msg.emisorId) === normalizeUserId(curId) ? msg.receptorId : msg.emisorId;
-              appendMessageToConversation(curId, partnerId, msg);
-            });
-            return [...prev, ...newMsgs];
-          });
-        }
+          setChatMessages(prev => mergeChatHistory(prev, data as ChatMessage[]));        }
       }
     } catch (e) {
       console.warn('Failed to sync chat messages from server:', e);
@@ -3204,6 +3235,7 @@ const addDeletedMessageIds = (ids: string[]) => {
   const deleteMessage = useCallback((messageId: string) => {
     if (!messageId) return;
     addDeletedMessageIds([messageId]);
+    if (currentUserIdRef.current) void deletePersistedChatMessages(currentUserIdRef.current, [messageId]);
     setMessages(prev => {
       const updated = prev.filter(m => m.id !== messageId);
       if (typeof localStorage !== 'undefined') {
