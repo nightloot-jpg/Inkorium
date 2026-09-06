@@ -4,6 +4,15 @@ const EVENT_RECONNECTING = 'inkorium:realtime-reconnecting';
 const EVENT_CONNECTED = 'inkorium:realtime-connected';
 const INSTALL_GUARD = '__inkoriumRealtimeWebSocketInterceptorInstalled';
 
+const emitConnectionEvent = (type: string, detail: { url?: string; reason?: string }) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new CustomEvent(type, { detail }));
+  } catch {
+    // Best-effort UI signal only.
+  }
+};
+
 const isSupabaseRealtimeWebSocket = (url: string): boolean => {
   try {
     const parsed = new URL(url, typeof window !== 'undefined' ? window.location.origin : undefined);
@@ -13,13 +22,12 @@ const isSupabaseRealtimeWebSocket = (url: string): boolean => {
   }
 };
 
-const emitConnectionEvent = (type: string, detail: { url?: string; reason?: string }) => {
-  if (typeof window === 'undefined') return;
-  try {
-    window.dispatchEvent(new CustomEvent(type, { detail }));
-  } catch {
-    // Best-effort UI signal only.
-  }
+export const notifyRealtimeReconnect = (reason = 'channel_error') => {
+  emitConnectionEvent(EVENT_RECONNECTING, { reason });
+};
+
+export const notifyRealtimeConnected = (reason = 'channel_subscribed') => {
+  emitConnectionEvent(EVENT_CONNECTED, { reason });
 };
 
 export const installRealtimeWebSocketInterceptor = (): void => {
@@ -54,19 +62,13 @@ export const installRealtimeWebSocketInterceptor = (): void => {
 
       this.addEventListener('error', () => {
         failedConnections += 1;
-        emitConnectionEvent(EVENT_RECONNECTING, {
-          url: this.monitoredUrl,
-          reason: 'websocket_error'
-        });
+        notifyRealtimeReconnect('websocket_error');
       });
 
       this.addEventListener('close', (event) => {
         if (event.wasClean && this.opened) return;
         failedConnections += 1;
-        emitConnectionEvent(EVENT_RECONNECTING, {
-          url: this.monitoredUrl,
-          reason: event.reason || `close_${event.code || 'unknown'}`
-        });
+        notifyRealtimeReconnect(event.reason || `close_${event.code || 'unknown'}`);
       });
     }
   }
