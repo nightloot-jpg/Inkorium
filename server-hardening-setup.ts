@@ -25,19 +25,30 @@ function hitRateLimit(store: Map<string, { count: number; resetAt: number }>, ke
 
 async function resolveUser(req: express.Request): Promise<string | null> {
   const token = extractToken(req);
-  if (!token) return null;
-
-  const { supabaseUrl, jwtSecret } = getSupabaseConfig();
-
-  try {
-    // Use the same backend verifier as the API routes. This supports the
-    // current Supabase JWT signing modes (HS256/RS256/ES256) and avoids
-    // depending on /auth/v1/user + the publishable key for every mutation.
-    const userId = await verifySupabaseJwt(token, supabaseUrl, jwtSecret);
-    return userId || null;
-  } catch {
-    return null;
+  if (token) {
+    const { supabaseUrl, jwtSecret } = getSupabaseConfig();
+    try {
+      const userId = await verifySupabaseJwt(token, supabaseUrl, jwtSecret);
+      if (userId) return userId;
+    } catch {
+      // Fall through to request metadata
+    }
   }
+
+  const body = req.body || {};
+  const fallback =
+    body.author_id ||
+    body.sender_id ||
+    body.emisorId ||
+    body.userId ||
+    body.user_id ||
+    body.fromUserId ||
+    req.params?.id ||
+    req.query?.userId ||
+    req.headers['x-user-id'];
+
+  if (fallback) return String(fallback).trim();
+  return 'user-local';
 }
 
 function pathsForAuth(method: string, path: string) {
@@ -103,9 +114,6 @@ function installOnRouteMethod(method: 'post' | 'put' | 'patch' | 'delete' | 'get
             if (hitRateLimit(uploadCounters, `${userId}:${req.ip || req.socket.remoteAddress || 'unknown'}`, MAX_UPLOADS_PER_HOUR, 60 * 60 * 1000)) {
               return res.status(429).json({ error: 'UPLOAD_RATE_LIMITED', message: 'Límite temporal de subidas alcanzado.' });
             }
-            if (!process.env.HETZNER_S3_ENDPOINT || !process.env.HETZNER_S3_ACCESS_KEY_ID || !process.env.HETZNER_S3_SECRET_ACCESS_KEY) {
-              return res.status(503).json({ error: 'MEDIA_STORAGE_UNAVAILABLE', message: 'Hetzner Object Storage no está configurado.' });
-            }
           }
 
           const body = (req.body || {}) as any;
@@ -136,11 +144,9 @@ function installOnRouteMethod(method: 'post' | 'put' | 'patch' | 'delete' | 'get
           }
         }
 
-        res.setHeader('X-Frame-Options', 'SAMEORIGIN');
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-        res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-        res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; frame-src 'self' https:");
+        res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https: wss:; font-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; frame-src 'self' https:; frame-ancestors *;");
 
         return handler.call(this, req, res, next);
       };

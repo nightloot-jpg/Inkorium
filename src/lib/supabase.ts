@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import './networkConnectionMonitor';
+import { getMonitoredWebSocket } from './networkConnectionMonitor';
 
 const SUPABASE_URL = 'https://zllwzmfsfzfedorljgtg.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_npJmIHQP_g2ApAu-7fqQAQ_d2p';
@@ -167,7 +167,10 @@ const profileAwareFetch: typeof fetch = async (input, init) => {
 
 supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: true, autoRefreshToken: true },
-  global: { fetch: profileAwareFetch }
+  global: { fetch: profileAwareFetch },
+  realtime: {
+    transport: getMonitoredWebSocket()
+  }
 }) : null;
 
 export { supabase };

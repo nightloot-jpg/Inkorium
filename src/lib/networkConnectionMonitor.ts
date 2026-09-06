@@ -30,6 +30,16 @@ export const notifyRealtimeConnected = (reason = 'channel_subscribed') => {
   emitConnectionEvent(EVENT_CONNECTED, { reason });
 };
 
+let customMonitoredWebSocket: any = null;
+
+export const getMonitoredWebSocket = () => {
+  if (customMonitoredWebSocket) return customMonitoredWebSocket;
+  if (typeof window !== 'undefined' && typeof window.WebSocket !== 'undefined') {
+    return window.WebSocket;
+  }
+  return undefined;
+};
+
 export const installRealtimeWebSocketInterceptor = (): void => {
   if (typeof window === 'undefined' || typeof window.WebSocket !== 'function') return;
 
@@ -80,7 +90,23 @@ export const installRealtimeWebSocketInterceptor = (): void => {
     CLOSED: { value: NativeWebSocket.CLOSED }
   });
 
-  window.WebSocket = MonitoredWebSocket;
+  customMonitoredWebSocket = MonitoredWebSocket;
+
+  // Attempt to safely assign to window.WebSocket without throwing if getter-only
+  try {
+    Object.defineProperty(window, 'WebSocket', {
+      value: MonitoredWebSocket,
+      writable: true,
+      configurable: true,
+    });
+  } catch {
+    try {
+      (window as any).WebSocket = MonitoredWebSocket;
+    } catch {
+      // In strict sandboxed frames where WebSocket has only a getter on Window,
+      // fail gracefully. Supabase receives MonitoredWebSocket via getMonitoredWebSocket().
+    }
+  }
 };
 
 export const isRealtimeReconnectEvent = (event: Event): boolean => event.type === EVENT_RECONNECTING;

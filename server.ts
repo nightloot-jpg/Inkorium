@@ -12,7 +12,8 @@ import {
   verifySupabaseJwt,
   formatFeedDate,
   normalizePostDates,
-  resolveProfileIdInSupabase
+  resolveProfileIdInSupabase,
+  parseJwt
 } from './server/auth';
 import {
   upload,
