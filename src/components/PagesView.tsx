@@ -46,8 +46,8 @@ export const PagesView: React.FC = () => {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newCategory, setNewCategory] = useState<TuentiPage['categoria']>('humor');
-  const [newUbicacion, setNewUbicacion] = useState(currentUser.provincia || 'Madrid');
-  const [newAvatar, setNewAvatar] = useState('https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&auto=format&fit=crop&q=80');
+  const [newUbicacion, setNewUbicacion] = useState(currentUser.provincia || '');
+  const [newAvatar, setNewAvatar] = useState('');
   const [newPortada, setNewPortada] = useState('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&auto=format&fit=crop&q=80');
 
   React.useEffect(() => {

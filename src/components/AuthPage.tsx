@@ -18,7 +18,7 @@ import {
 } from '../utils/validation';
 
 export const AuthPage: React.FC = () => {
-  const { login, registerNewUser, loginAsUser, users } = useInkorium();
+  const { login, registerNewUser, users } = useInkorium();
 
   const [mode, setMode] = useState<'login' | 'registro'>('login');
   const [loading, setLoading] = useState(false);
@@ -35,18 +35,18 @@ export const AuthPage: React.FC = () => {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regPasswordConfirm, setRegPasswordConfirm] = useState('');
-  const [regFnac, setRegFnac] = useState('2001-06-15');
-  const [regPais, setRegPais] = useState('España');
-  const [regProvincia, setRegProvincia] = useState('Madrid');
+  const [regFnac, setRegFnac] = useState('');
+  const [regPais, setRegPais] = useState('');
+  const [regProvincia, setRegProvincia] = useState('');
   const [regCiudad, setRegCiudad] = useState('');
   const [regSexo, setRegSexo] = useState<'h' | 'm'>('h');
-  const [regTos, setRegTos] = useState(true);
+  const [regTos, setRegTos] = useState(false);
   const [regInviteCode, setRegInviteCode] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      return params.get('invitacion') || params.get('codigo') || 'TUENTI-2008';
+      return params.get('invitacion') || params.get('codigo') || '';
     }
-    return 'TUENTI-2008';
+    return '';
   });
   const [regError, setRegError] = useState('');
   const [regTouched, setRegTouched] = useState<Record<string, boolean>>({});
@@ -117,13 +117,13 @@ export const AuthPage: React.FC = () => {
         }
       }
 
-      // Fallback to local / demo user login
+      // Local context fallback is only used when the remote auth service is unavailable.
       const result = login(loginEmail, loginPassword);
       if (!result.success) {
         setLoginError('No se ha podido iniciar sesión con ese correo.');
       }
     } catch (err: any) {
-      // Direct context login fallback
+      // Local context fallback is only used when the remote auth service is unavailable.
       const result = login(loginEmail, loginPassword);
       if (!result.success) {
         setLoginError(err?.message || 'Error al iniciar sesión.');

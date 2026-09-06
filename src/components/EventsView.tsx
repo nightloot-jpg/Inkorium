@@ -64,7 +64,7 @@ export const EventsView: React.FC = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newLugar, setNewLugar] = useState('');
-  const [newCiudad, setNewCiudad] = useState(currentUser.provincia || 'Madrid');
+  const [newCiudad, setNewCiudad] = useState(currentUser.provincia || '');
   const [newFechaTexto, setNewFechaTexto] = useState('');
   const [newCategoria, setNewCategoria] = useState<SocialEvent['categoria']>('fiesta');
   const [newPortada, setNewPortada] = useState('');
