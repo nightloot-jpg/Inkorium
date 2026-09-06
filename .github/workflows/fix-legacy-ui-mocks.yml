@@ -1,0 +1,64 @@
+name: Clear legacy page and event mocks
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply legacy mock fixes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # Purge must run before React context state initializers hydrate localStorage.
+          p = Path('src/App.tsx')
+          s = p.read_text()
+          old = "import React, { useEffect, useMemo, useState } from 'react';\nimport { purgeLegacyDemoData } from './lib/demoDataCleanup';"
+          new = "import React, { useEffect, useMemo, useState } from 'react';\nimport { purgeLegacyDemoData } from './lib/demoDataCleanup';\n\n// Remove legacy demo records before InkoriumContext initializes from localStorage.\npurgeLegacyDemoData();"
+          s = s.replace(old, new, 1)
+          s = s.replace("\n  useEffect(() => {\n    purgeLegacyDemoData();\n  }, []);\n", "\n", 1)
+          p.write_text(s)
+
+          p = Path('src/components/PagesView.tsx')
+          s = p.read_text()
+          replacements = {
+            'Páginas y Sitios de Tuenti': 'Páginas y Sitios',
+            'Humor & Frases Tuenti': 'Humor & Frases dosmileras',
+            'Hazte fan de tus discotecas favoritas, bandas míticas (El Canto del Loco, Pignoise), comunidades de frases célebres y campus universitarios.': 'Descubre páginas creadas por la comunidad: música, ocio, humor, lugares, universidades y aficiones.',
+            '  const [newPortada, setNewPortada] = useState(\'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&auto=format&fit=crop&q=80\');': '  const [newPortada, setNewPortada] = useState(\'\');',
+            '            <span>Nostalgia Tuenti</span>': '            <span>Nostalgia dosmilera</span>',
+            '              En 2008, todos nos uníamos a páginas con nombres larguísimos tipo <em>"Yo también miraba la nada mientras escuchaba a Pignoise"</em> solo para que saliera en nuestro perfil.': '              Recupera el espíritu de las comunidades dosmileras: páginas, grupos y aficiones que forman parte de tu perfil.',
+            '              <span>Crear una página</span>': '              <span>Crear una página</span>'
+          }
+          for a, b in replacements.items():
+              s = s.replace(a, b)
+          p.write_text(s)
+
+          # Make legacy cleanup detect every known mock page/event id and legacy seeded page owner.
+          p = Path('src/lib/demoDataCleanup.ts')
+          s = p.read_text()
+          s = s.replace("['inkorium:events', item => /^evt-[123]$/.test(String(item?.id || ''))],", "['inkorium:events', item => /^evt-[0-9]+$/.test(String(item?.id || '')) || isMockRef(item?.creadorId)],")
+          s = s.replace("['inkorium:pages', item => /^pag-[1-4]$/.test(String(item?.id || ''))],", "['inkorium:pages', item => /^pag-[0-9]+$/.test(String(item?.id || '')) || isMockRef(item?.creadorId) || String(item?.creadorId || '').toLowerCase() === 'admin'],")
+          p.write_text(s)
+
+          # Ensure cleanup workflow does not remain in the repository.
+          wf = Path('.github/workflows/fix-legacy-ui-mocks.yml')
+          import subprocess
+          subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'], check=True)
+          subprocess.run(['git', 'config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'], check=True)
+          subprocess.run(['git', 'rm', '-f', str(wf)], check=True)
+          subprocess.run(['git', 'add', 'src/App.tsx', 'src/components/PagesView.tsx', 'src/lib/demoDataCleanup.ts'], check=True)
+          if subprocess.run(['git', 'diff', '--cached', '--quiet']).returncode != 0:
+              subprocess.run(['git', 'commit', '-m', 'fix: purge legacy page and event mocks before hydration'], check=True)
+              subprocess.run(['git', 'push'], check=True)
+          PY
