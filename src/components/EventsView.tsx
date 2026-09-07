@@ -190,19 +190,11 @@ export const EventsView: React.FC = () => {
 
   return (
     <div className="w-full max-w-[1720px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-6 lg:px-8 py-4">
-      {/* Top Banner Nostálgico */}
-      <div className="bg-gradient-to-r from-[#2c5282] via-[#3869A0] to-[#2b4c7e] text-white rounded-t border border-[#2b4c7e] p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Calendar className="w-6 h-6 text-yellow-300" />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Eventos & Quedadas</h1>
-            <span className="bg-yellow-400 text-gray-900 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-              Tuenti Clásico
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-blue-100 mt-1 max-w-2xl">
-            El motor de la vida real de Tuenti: organiza las fiestas del finde, botellones, cumpleaños y conciertos. Confirma quién asiste y comenta en el tablón del evento.
-          </p>
+      {/* Top Banner */}
+      <div className="bg-gradient-to-r from-[#2c5282] via-[#3869A0] to-[#2b4c7e] text-white rounded-t border border-[#2b4c7e] p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-2.5">
+          <Calendar className="w-6 h-6 text-yellow-300 flex-shrink-0" />
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Eventos & Quedadas</h1>
         </div>
 
         <button
@@ -278,17 +270,6 @@ export const EventsView: React.FC = () => {
                 />
               </div>
             </div>
-          </div>
-
-          {/* Tips Nostálgicos */}
-          <div className="bg-[#f0f4f9] dark:bg-[#142032] border border-[#d2dce6] dark:border-[#1d2b40] rounded p-3 text-xs text-gray-600 dark:text-gray-300">
-            <div className="flex items-center gap-1.5 font-bold text-[#3869A0] dark:text-blue-400 mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>¿Sabías que...?</span>
-            </div>
-            <p className="leading-relaxed text-[11px]">
-              En el Tuenti de 2008, si no confirmabas tu asistencia en el evento antes del viernes por la tarde, ¡te quedabas fuera de las listas de entrada reducida en las discotecas!
-            </p>
           </div>
         </div>
 

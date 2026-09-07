@@ -13,6 +13,15 @@
           }
           originalError.apply(console, arguments);
         };
+        var originalWarn = console.warn;
+        console.warn = function() {
+          var firstArg = arguments[0];
+          if (typeof firstArg === 'string' && firstArg.indexOf('[vite]') !== -1) {
+            console.debug.apply(console, arguments);
+            return;
+          }
+          originalWarn.apply(console, arguments);
+        };
       })();
     </script>
     <meta charset="UTF-8" />

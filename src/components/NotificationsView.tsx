@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { 
-  Bell, UserPlus, Image as ImageIcon, MessageSquare, Tag, 
+  Bell, BellRing, UserPlus, Image as ImageIcon, MessageSquare, Tag, 
   Heart, Mail, Check, CheckCheck, Trash2, Search, Filter, 
   ExternalLink, ShieldAlert, ArrowRight, UserCheck, 
   Clock, X, MessageCircle
@@ -70,7 +70,8 @@ export const NotificationsView: React.FC = () => {
     viewPhoto,
     setActiveTab,
     unreadNotificationsCount,
-    pendingRequestsCount
+    pendingRequestsCount,
+    setActiveSettingsSection,
   } = useInkorium();
 
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>('todas');
@@ -212,10 +213,22 @@ export const NotificationsView: React.FC = () => {
             )}
 
             <button
+              onClick={() => {
+                setActiveSettingsSection('push');
+                setActiveTab('ajustes');
+              }}
+              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+              title="Configurar Notificaciones Push y Service Worker"
+            >
+              <BellRing className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Notificaciones Push PWA</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('ajustes')}
               className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-300 rounded text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
             >
-              <span>Ajustes de avisos</span>
+              <span>Ajustes</span>
             </button>
           </div>
         </div>

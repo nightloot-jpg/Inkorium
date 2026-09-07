@@ -466,5 +466,41 @@ export interface CampusCommunity {
   posts: CampusPost[];
 }
 
+export interface PushNotificationPreferences {
+  enabled: boolean;
+  mensajes: boolean; // Avisos de nuevos mensajes privados
+  comentarios_tablon: boolean; // Avisos de nuevas firmas y comentarios en el tablón
+  amigos: boolean; // Peticiones de amistad y nuevos amigos
+  etiquetas: boolean; // Etiquetas en fotos y álbumes
+  eventos: boolean; // Invitaciones a eventos y quedadas
+  sonido: boolean; // Tono de notificación retro
+}
+
+export interface ServiceWorkerStatusInfo {
+  isSupported: boolean;
+  isRegistered: boolean;
+  registrationScope?: string;
+  scriptUrl?: string;
+  state?: 'installing' | 'installed' | 'activating' | 'activated' | 'redundant' | 'not-registered';
+  permission: NotificationPermission;
+  isSubscribed: boolean;
+  endpoint?: string;
+  lastUpdated?: string;
+}
+
+export interface PushSubscriptionRecord {
+  id: string;
+  userId: string;
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+  userAgent?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+
 
 

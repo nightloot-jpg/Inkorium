@@ -3,6 +3,7 @@ import express from 'express';
 import http from 'node:http';
 import path from 'path';
 import multer from 'multer';
+import webpush from 'web-push';
 import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { createServer as createViteServer } from 'vite';
 import fs from 'node:fs';
@@ -200,6 +201,146 @@ function enrichPhotoWithMetadata(photo: any) {
 }
 
 // ==========================================
+// WEB PUSH NOTIFICATION ENGINE (SERVICE WORKER)
+// ==========================================
+const PUSH_SUBSCRIPTIONS_FILE = path.join(process.cwd(), 'push_subscriptions.json');
+
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'UUxI2smDMGj1bQ9wFf3qQ9QeC8C5tZ7wU0lF9v6w7oE';
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:soporte@inkorium.es';
+
+try {
+  webpush.setVapidDetails(
+    VAPID_SUBJECT,
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY
+  );
+  console.log('[Web Push Server] VAPID details configured successfully.');
+} catch (e: any) {
+  console.warn('[Web Push Server] VAPID initialization note:', e?.message || e);
+}
+
+interface StoredPushSubscription {
+  id: string;
+  userId: string;
+  subscription: {
+    endpoint: string;
+    keys: {
+      p256dh: string;
+      auth: string;
+    };
+  };
+  preferences: {
+    enabled: boolean;
+    mensajes: boolean;
+    comentarios_tablon: boolean;
+    amigos: boolean;
+    etiquetas: boolean;
+    eventos: boolean;
+    sonido: boolean;
+  };
+  userAgent?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const inMemoryPushSubscriptions: StoredPushSubscription[] = [];
+
+function loadPushSubscriptions() {
+  try {
+    if (fs.existsSync(PUSH_SUBSCRIPTIONS_FILE)) {
+      const raw = fs.readFileSync(PUSH_SUBSCRIPTIONS_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        inMemoryPushSubscriptions.length = 0;
+        inMemoryPushSubscriptions.push(...parsed);
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read push_subscriptions.json:', err);
+  }
+}
+
+function persistPushSubscriptions() {
+  try {
+    const tempPath = `${PUSH_SUBSCRIPTIONS_FILE}.tmp`;
+    fs.writeFileSync(tempPath, JSON.stringify(inMemoryPushSubscriptions, null, 2), 'utf-8');
+    fs.renameSync(tempPath, PUSH_SUBSCRIPTIONS_FILE);
+  } catch (err) {
+    console.warn('Could not persist push_subscriptions.json:', err);
+  }
+}
+
+loadPushSubscriptions();
+
+async function sendPushNotificationToUser(
+  targetUserId: string,
+  payload: {
+    title: string;
+    body: string;
+    icon?: string;
+    badge?: string;
+    tag?: string;
+    data?: any;
+    actions?: Array<{ action: string; title: string }>;
+  },
+  category: 'mensajes' | 'comentarios_tablon' | 'amigos' | 'etiquetas' | 'eventos' | 'sistema' = 'sistema'
+) {
+  if (!targetUserId) return;
+  const normTarget = String(targetUserId).toLowerCase().trim();
+  const cleanTarget = normTarget.replace(/^user-/, '');
+
+  const userSubs = inMemoryPushSubscriptions.filter(s => {
+    const sNorm = String(s.userId).toLowerCase().trim();
+    const sClean = sNorm.replace(/^user-/, '');
+    return sNorm === normTarget || sClean === cleanTarget;
+  });
+
+  if (userSubs.length === 0) return;
+
+  const payloadString = JSON.stringify({
+    title: payload.title || 'Inkorium',
+    body: payload.body || '',
+    icon: payload.icon || '/pwa-192x192.png',
+    badge: payload.badge || '/pwa-192x192.png',
+    tag: payload.tag || `inkorium-${Date.now()}`,
+    data: payload.data || {},
+    actions: payload.actions || [
+      { action: 'view', title: '👀 Ver ahora' },
+      { action: 'dismiss', title: 'Cerrar' }
+    ]
+  });
+
+  const deadEndpoints: string[] = [];
+
+  for (const sub of userSubs) {
+    if (sub.preferences && sub.preferences.enabled === false) {
+      continue;
+    }
+    if (category !== 'sistema' && sub.preferences && (sub.preferences as any)[category] === false) {
+      continue;
+    }
+
+    try {
+      await webpush.sendNotification(sub.subscription as any, payloadString);
+    } catch (err: any) {
+      console.warn(`[Web Push] Delivery response code: ${err?.statusCode || err?.message}`);
+      if (err?.statusCode === 410 || err?.statusCode === 404 || err?.statusCode === 400) {
+        deadEndpoints.push(sub.subscription.endpoint);
+      }
+    }
+  }
+
+  if (deadEndpoints.length > 0) {
+    for (const ep of deadEndpoints) {
+      const idx = inMemoryPushSubscriptions.findIndex(s => s.subscription?.endpoint === ep);
+      if (idx !== -1) inMemoryPushSubscriptions.splice(idx, 1);
+    }
+    persistPushSubscriptions();
+  }
+}
+
+// ==========================================
 // REAL-TIME SERVER-SENT EVENTS (SSE) ENGINE
 // ==========================================
 const sseClients = new Map<string, Set<express.Response>>();
@@ -349,6 +490,188 @@ app.post('/api/chat-typing', (req, res) => {
     return res.status(200).json({ success: true });
   } catch (err: any) {
     return res.status(200).json({ success: true });
+  }
+});
+
+// ==========================================
+// PUSH NOTIFICATION API ENDPOINTS
+// ==========================================
+
+// GET VAPID Public Key
+app.get('/api/push/vapid-public-key', (_req, res) => {
+  res.status(200).json({ publicKey: VAPID_PUBLIC_KEY });
+});
+
+// POST Subscribe to Push
+app.post('/api/push/subscribe', (req, res) => {
+  try {
+    const { userId, subscription, preferences, userAgent } = req.body || {};
+    if (!userId || !subscription || !subscription.endpoint) {
+      return res.status(400).json({ error: 'INVALID_PUSH_SUBSCRIPTION_PAYLOAD' });
+    }
+
+    const defaultPrefs = {
+      enabled: true,
+      mensajes: true,
+      comentarios_tablon: true,
+      amigos: true,
+      etiquetas: true,
+      eventos: true,
+      sonido: true
+    };
+
+    const finalPrefs = { ...defaultPrefs, ...(preferences || {}) };
+
+    const existingIdx = inMemoryPushSubscriptions.findIndex(
+      s => s.subscription?.endpoint === subscription.endpoint
+    );
+
+    const record: StoredPushSubscription = {
+      id: existingIdx !== -1 ? inMemoryPushSubscriptions[existingIdx].id : `sub-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      userId: String(userId),
+      subscription,
+      preferences: finalPrefs,
+      userAgent: userAgent || '',
+      createdAt: existingIdx !== -1 ? inMemoryPushSubscriptions[existingIdx].createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (existingIdx !== -1) {
+      inMemoryPushSubscriptions[existingIdx] = record;
+    } else {
+      inMemoryPushSubscriptions.push(record);
+    }
+
+    persistPushSubscriptions();
+    console.log(`[Push Server] Registered push subscription for userId="${userId}". Total active subscriptions: ${inMemoryPushSubscriptions.length}`);
+    return res.status(200).json({ success: true, id: record.id });
+  } catch (err: any) {
+    console.error('[Push Server] Subscribe error:', err);
+    return res.status(500).json({ error: 'FAILED_TO_SUBSCRIBE', details: err?.message });
+  }
+});
+
+// POST Unsubscribe from Push
+app.post('/api/push/unsubscribe', (req, res) => {
+  try {
+    const { userId, endpoint } = req.body || {};
+    if (!endpoint && !userId) {
+      return res.status(400).json({ error: 'ENDPOINT_OR_USERID_REQUIRED' });
+    }
+
+    let removed = 0;
+    for (let i = inMemoryPushSubscriptions.length - 1; i >= 0; i--) {
+      const sub = inMemoryPushSubscriptions[i];
+      if ((endpoint && sub.subscription?.endpoint === endpoint) || (!endpoint && sub.userId === userId)) {
+        inMemoryPushSubscriptions.splice(i, 1);
+        removed++;
+      }
+    }
+
+    if (removed > 0) {
+      persistPushSubscriptions();
+    }
+
+    return res.status(200).json({ success: true, removedCount: removed });
+  } catch (err: any) {
+    return res.status(500).json({ error: 'FAILED_TO_UNSUBSCRIBE' });
+  }
+});
+
+// GET Push Preferences
+app.get('/api/push/preferences/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const normTarget = String(userId).toLowerCase().trim();
+  const cleanTarget = normTarget.replace(/^user-/, '');
+
+  const userSubs = inMemoryPushSubscriptions.filter(s => {
+    const sNorm = String(s.userId).toLowerCase().trim();
+    const sClean = sNorm.replace(/^user-/, '');
+    return sNorm === normTarget || sClean === cleanTarget;
+  });
+
+  const latestSub = userSubs[userSubs.length - 1];
+  
+  const defaultPrefs = {
+    enabled: true,
+    mensajes: true,
+    comentarios_tablon: true,
+    amigos: true,
+    etiquetas: true,
+    eventos: true,
+    sonido: true
+  };
+
+  return res.status(200).json({
+    preferences: latestSub ? latestSub.preferences : defaultPrefs,
+    activeDeviceCount: userSubs.length,
+    isSubscribed: userSubs.length > 0
+  });
+});
+
+// PUT Push Preferences
+app.put('/api/push/preferences/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const newPrefs = req.body || {};
+  const normTarget = String(userId).toLowerCase().trim();
+  const cleanTarget = normTarget.replace(/^user-/, '');
+
+  let updated = 0;
+  for (const sub of inMemoryPushSubscriptions) {
+    const sNorm = String(sub.userId).toLowerCase().trim();
+    const sClean = sNorm.replace(/^user-/, '');
+    if (sNorm === normTarget || sClean === cleanTarget) {
+      sub.preferences = { ...sub.preferences, ...newPrefs };
+      sub.updatedAt = new Date().toISOString();
+      updated++;
+    }
+  }
+
+  if (updated > 0) {
+    persistPushSubscriptions();
+  }
+
+  return res.status(200).json({ success: true, updatedCount: updated });
+});
+
+// POST Send Test Push Notification
+app.post('/api/push/test', async (req, res) => {
+  try {
+    const { userId, type = 'tablon' } = req.body || {};
+    if (!userId) {
+      return res.status(400).json({ error: 'USER_ID_REQUIRED' });
+    }
+
+    let title = 'Inkorium - Notificación de prueba';
+    let body = '¡El Service Worker y el sistema Push están activos en Inkorium!';
+    let targetTab = 'perfil';
+
+    if (type === 'mensaje') {
+      title = '💬 Sara Gómez te ha enviado un mensaje';
+      body = '¡Ey! ¿Vienes este sábado a la quedada? Confírmame!';
+      targetTab = 'mensajes';
+    } else if (type === 'tablon') {
+      title = '📝 Alejandro Ramos ha firmado en tu tablón';
+      body = '¡Qué pasa crack! Pásate por mi perfil a ver las fotos.';
+      targetTab = 'perfil';
+    } else if (type === 'amigo') {
+      title = '👥 Lucía Navarro te ha añadido a sus amigos';
+      body = 'Ahora sois amigos en Inkorium.';
+      targetTab = 'notificaciones';
+    }
+
+    await sendPushNotificationToUser(userId, {
+      title,
+      body,
+      icon: '/pwa-192x192.png',
+      badge: '/pwa-192x192.png',
+      tag: `test-push-${Date.now()}`,
+      data: { url: '/', tab: targetTab, type }
+    }, 'sistema');
+
+    return res.status(200).json({ success: true, message: 'Notificación push de prueba emitida correctamente.' });
+  } catch (err: any) {
+    return res.status(500).json({ error: 'TEST_PUSH_FAILED', details: err?.message });
   }
 });
 
@@ -512,6 +835,18 @@ app.post('/api/private-messages', async (req, res) => {
           inMemoryMessages.unshift(row);
           if (inMemoryMessages.length > 500) inMemoryMessages.length = 500;
           broadcastRealtimeEvent([payloadToInsert.recipient_id, payloadToInsert.sender_id], 'private_message', row);
+          sendPushNotificationToUser(
+            payloadToInsert.recipient_id,
+            {
+              title: `💬 Mensaje privado: ${payloadToInsert.subject || 'Nuevo mensaje'}`,
+              body: payloadToInsert.body || 'Has recibido un nuevo mensaje privado en Inkorium.',
+              icon: '/pwa-192x192.png',
+              badge: '/pwa-192x192.png',
+              tag: `msg-${row.id || Date.now()}`,
+              data: { url: '/', tab: 'mensajes', senderId: payloadToInsert.sender_id }
+            },
+            'mensajes'
+          );
           return res.status(200).json(row);
         }
       } catch {
@@ -519,10 +854,34 @@ app.post('/api/private-messages', async (req, res) => {
       }
       const fb = createFallbackMessage(payloadToInsert);
       broadcastRealtimeEvent([payloadToInsert.recipient_id, payloadToInsert.sender_id], 'private_message', fb);
+      sendPushNotificationToUser(
+        payloadToInsert.recipient_id,
+        {
+          title: `💬 Mensaje privado: ${payloadToInsert.subject || 'Nuevo mensaje'}`,
+          body: payloadToInsert.body || 'Has recibido un nuevo mensaje privado en Inkorium.',
+          icon: '/pwa-192x192.png',
+          badge: '/pwa-192x192.png',
+          tag: `msg-${fb.id || Date.now()}`,
+          data: { url: '/', tab: 'mensajes', senderId: payloadToInsert.sender_id }
+        },
+        'mensajes'
+      );
       return res.status(200).json(fb);
     } catch {
       const fb = createFallbackMessage(payloadToInsert);
       broadcastRealtimeEvent([payloadToInsert.recipient_id, payloadToInsert.sender_id], 'private_message', fb);
+      sendPushNotificationToUser(
+        payloadToInsert.recipient_id,
+        {
+          title: `💬 Mensaje privado: ${payloadToInsert.subject || 'Nuevo mensaje'}`,
+          body: payloadToInsert.body || 'Has recibido un nuevo mensaje privado en Inkorium.',
+          icon: '/pwa-192x192.png',
+          badge: '/pwa-192x192.png',
+          tag: `msg-${fb.id || Date.now()}`,
+          data: { url: '/', tab: 'mensajes', senderId: payloadToInsert.sender_id }
+        },
+        'mensajes'
+      );
       return res.status(200).json(fb);
     }
   } catch (err: any) {
@@ -540,6 +899,18 @@ app.post('/api/private-messages', async (req, res) => {
     inMemoryMessages.unshift(fallback);
     if (inMemoryMessages.length > 500) inMemoryMessages.length = 500;
     broadcastRealtimeEvent([fallback.recipient_id, fallback.sender_id], 'private_message', fallback);
+    sendPushNotificationToUser(
+      fallback.recipient_id,
+      {
+        title: `💬 Mensaje privado: ${fallback.subject || 'Nuevo mensaje'}`,
+        body: fallback.body || 'Has recibido un nuevo mensaje privado en Inkorium.',
+        icon: '/pwa-192x192.png',
+        badge: '/pwa-192x192.png',
+        tag: `msg-${fallback.id || Date.now()}`,
+        data: { url: '/', tab: 'mensajes', senderId: fallback.sender_id }
+      },
+      'mensajes'
+    );
     return res.status(200).json(fallback);
   }
 });
@@ -1850,6 +2221,19 @@ app.all(['/api/profile-signatures', '/api/profile_signatures'], async (req, res)
               fecha: 'Ahora mismo',
               leido: false
             });
+
+            sendPushNotificationToUser(
+              profileId,
+              {
+                title: `📝 ${authorName} ha firmado en tu tablón`,
+                body: content ? `"${content.slice(0, 90)}"` : 'Tienes un nuevo comentario en tu tablón.',
+                icon: authorAvatar || '/pwa-192x192.png',
+                badge: '/pwa-192x192.png',
+                tag: `wall-${sigId}`,
+                data: { url: '/', tab: 'perfil', profileId, authorId }
+              },
+              'comentarios_tablon'
+            );
           }
         }
       }

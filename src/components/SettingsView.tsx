@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
 import { AvatarModal } from './AvatarModal';
 import { ProfilePrivacySettingsSection } from './ProfilePrivacySettingsSection';
+import { PushNotificationSettingsSection } from './PushNotificationSettingsSection';
 import { 
   Settings, UserCheck, Shield, KeyRound, UserPlus, 
-  Check, X, RefreshCw, Smartphone, Globe, Sparkles, Bell, Volume2, MessageSquare, Image as ImageIcon,
+  Check, X, RefreshCw, Smartphone, Globe, Sparkles, Bell, BellRing, Volume2, MessageSquare, Image as ImageIcon,
   Camera, Upload, Moon, Sun, Monitor, Palette, Ban
 } from 'lucide-react';
 import { 
@@ -45,10 +46,10 @@ export const SettingsView: React.FC = () => {
     setActiveSettingsSection,
   } = useInkorium();
 
-  const [section, setSection] = useState<'datos' | 'privacidad' | 'peticiones' | 'notificaciones' | 'ip' | 'seguridad' | 'apariencia' | 'bloqueados'>('datos');
+  const [section, setSection] = useState<'datos' | 'privacidad' | 'peticiones' | 'notificaciones' | 'push' | 'ip' | 'seguridad' | 'apariencia' | 'bloqueados'>('datos');
 
   useEffect(() => {
-    if (activeSettingsSection && ['datos', 'privacidad', 'peticiones', 'notificaciones', 'ip', 'seguridad', 'apariencia', 'bloqueados'].includes(activeSettingsSection)) {
+    if (activeSettingsSection && ['datos', 'privacidad', 'peticiones', 'notificaciones', 'push', 'ip', 'seguridad', 'apariencia', 'bloqueados'].includes(activeSettingsSection)) {
       setSection(activeSettingsSection as any);
     }
   }, [activeSettingsSection]);
@@ -216,10 +217,26 @@ export const SettingsView: React.FC = () => {
                 }`}
               >
                 <div className="flex items-center gap-1.5">
+                  <Bell className="w-3.5 h-3.5 text-[#3869A0]" />
                   <span>Notificaciones y Avisos</span>
                 </div>
                 <span className="bg-blue-100 text-[#3869A0] font-bold px-1.5 py-0.2 rounded text-[10px]">
                   En vivo
+                </span>
+              </button>
+
+              <button
+                onClick={() => setSection('push')}
+                className={`w-full text-left px-3 py-2.5 transition cursor-pointer flex items-center justify-between ${
+                  section === 'push' ? 'bg-[#3869A0] text-white font-bold' : 'hover:bg-blue-50 text-gray-800'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <BellRing className="w-3.5 h-3.5 text-[#3869A0]" />
+                  <span>Notificaciones Push PWA</span>
+                </div>
+                <span className="bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded text-[10px]">
+                  Web Push
                 </span>
               </button>
 
@@ -681,6 +698,20 @@ export const SettingsView: React.FC = () => {
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* ================= NOTIFICACIONES PUSH (PWA & SERVICE WORKER) ================= */}
+            {section === 'push' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                  <h2 className="font-bold text-sm text-gray-900 flex items-center gap-1.5">
+                    <BellRing className="w-4 h-4 text-[#3869A0]" />
+                    <span>Preferencias de Notificaciones Push & Service Worker</span>
+                  </h2>
+                  <span className="text-[11px] text-gray-500 font-mono">Inkorium Web Push v2.0</span>
+                </div>
+                <PushNotificationSettingsSection />
               </div>
             )}
 
