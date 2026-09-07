@@ -8,6 +8,7 @@ import {
   Calendar, Building2, GraduationCap, Gamepad2
 } from 'lucide-react';
 import { isSoundEnabled, toggleSound } from '../utils/sound';
+import { QuickNavbarSearch } from './QuickNavbarSearch';
 
 export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => void }> = ({ onOpenAuth, onOpenUpload }) => {
   const { 
@@ -36,13 +37,9 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<typeof users>([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
 
   const notifRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -52,33 +49,10 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowSearchResults(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const q = e.target.value;
-    setSearchQuery(q);
-    if (q.trim().length > 0) {
-      const lower = q.toLowerCase();
-      const results = users.filter(u => 
-        `${u.nombre} ${u.apellidos}`.toLowerCase().includes(lower) ||
-        (u.full_name && u.full_name.toLowerCase().includes(lower)) ||
-        (u.username && u.username.toLowerCase().includes(lower)) ||
-        (u.ciudad && u.ciudad.toLowerCase().includes(lower)) ||
-        (u.provincia && u.provincia.toLowerCase().includes(lower))
-      );
-      setSearchResults(results);
-      setShowSearchResults(true);
-    } else {
-      setSearchResults([]);
-      setShowSearchResults(false);
-    }
-  };
 
   const handleToggleSound = () => {
     const newState = toggleSound();
@@ -178,42 +152,8 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
           </nav>
         </div>
 
-        <div className="relative flex-1 max-w-[240px] lg:max-w-[280px] mx-2 hidden sm:block" ref={searchRef}>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar en Inkorium..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onFocus={() => searchQuery.trim() && setShowSearchResults(true)}
-              className="w-full bg-[#274d77] placeholder-blue-200 text-white text-xs px-3 py-1.5 pl-8 rounded border border-[#1f3f63] focus:outline-none focus:ring-1 focus:ring-white focus:bg-[#1e3c60]"
-            />
-            <Search className="w-3.5 h-3.5 text-blue-200 absolute left-2.5 top-2 pointer-events-none" />
-          </div>
-
-          {showSearchResults && searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white text-gray-800 rounded shadow-xl border border-gray-200 py-1 z-50 max-h-[300px] overflow-y-auto">
-              <div className="text-[11px] font-semibold text-gray-400 px-3 py-1 uppercase tracking-wider">Gente</div>
-              {searchResults.map(user => (
-                <div
-                  key={user.id}
-                  onClick={() => {
-                    viewUserProfile(user.id);
-                    setShowSearchResults(false);
-                    setSearchQuery('');
-                  }}
-                  className="flex items-center gap-2.5 px-3 py-2 hover:bg-blue-50 cursor-pointer transition border-b border-gray-50 last:border-0"
-                >
-                  <img src={user.avatar} alt={user.nombre} className="w-7 h-7 rounded object-cover border border-gray-300" />
-                  <div className="overflow-hidden">
-                    <p className="text-xs font-semibold text-[#3869A0] truncate">{user.nombre} {user.apellidos}</p>
-                    <p className="text-[10px] text-gray-500 truncate">{user.provincia} • {user.online ? '🟢 Conectado' : 'Desconectado'}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Campo de Búsqueda Rápida en la Barra de Navegación */}
+        <QuickNavbarSearch />
 
         <div className="flex items-center space-x-1 sm:space-x-2 text-xs">
           {/* Invitaciones VIP Tuenti */}
