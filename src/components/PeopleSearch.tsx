@@ -11,6 +11,7 @@ export const PeopleSearch: React.FC = () => {
     sendFriendRequest,
     isFriend,
     hasPendingRequest,
+    isUserBlocked,
     openChatWith,
     openComposeMessage,
     refreshProfiles
@@ -39,10 +40,10 @@ export const PeopleSearch: React.FC = () => {
     return getZonesForCountry(pais);
   }, [pais]);
 
-  // Other users in database (excluding current user)
+  // Other users in database (excluding current user and blocked users)
   const otherUsersInDb = useMemo(() => {
-    return users.filter(u => !currentUser?.id || u.id !== currentUser.id);
-  }, [users, currentUser?.id]);
+    return users.filter(u => (!currentUser?.id || u.id !== currentUser.id) && !isUserBlocked(u.id));
+  }, [users, currentUser?.id, isUserBlocked]);
 
   // Filtered list
   const filteredUsers = useMemo(() => {

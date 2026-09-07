@@ -210,8 +210,9 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   }, [profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner]);
 
   const canCommentTablon = useMemo(() => {
+    if (isUserBlocked(profileUser.id)) return false;
     return canCommentOnWall(profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner);
-  }, [profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner]);
+  }, [profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner, isUserBlocked]);
 
   const canViewAmigos = useMemo(() => {
     return canViewProfileSection('amigos', profileUser, effectiveViewer, isEffectiveFriend, isViewingAsOwner);
@@ -533,42 +534,61 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                   <button
                     onClick={() => unblockUser(profileUser.id)}
                     className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
-                    title="Desbloquear este usuario en el chat"
+                    title="Desbloquear este usuario"
                   >
                     <Ban className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Desbloquear en chat</span>
+                    <span>Desbloquear</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => {
-                      if (window.confirm(`¿Seguro que deseas bloquear a ${profileUser.nombre} en el chat? Dejarán de aparecer sus mensajes y no se podrán abrir conversaciones.`)) {
+                      if (window.confirm(`¿Seguro que deseas bloquear a ${profileUser.nombre}? Se cancelarán las solicitudes y amistades, y no podrá interactuar contigo ni enviarte mensajes.`)) {
                         blockUser(profileUser.id);
                       }
                     }}
                     className="px-2.5 py-1.5 bg-white hover:bg-rose-50 text-gray-500 hover:text-rose-700 border border-gray-300 hover:border-rose-300 rounded text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
-                    title="Bloquear este usuario en el chat"
+                    title="Bloquear este usuario"
                   >
                     <Ban className="w-3.5 h-3.5" />
-                    <span>Bloquear chat</span>
+                    <span>Bloquear</span>
                   </button>
                 )}
 
                 <button
-                  onClick={() => setShowDirectMessageModal(true)}
-                  className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                  onClick={() => {
+                    if (isUserBlocked(profileUser.id)) {
+                      alert('Este usuario está bloqueado. Desbloquéalo primero para poder enviarle mensajes privados.');
+                      return;
+                    }
+                    setShowDirectMessageModal(true);
+                  }}
+                  disabled={isUserBlocked(profileUser.id)}
+                  className={`px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer ${
+                    isUserBlocked(profileUser.id)
+                      ? 'bg-gray-100 text-gray-400 border border-gray-300 cursor-not-allowed opacity-60'
+                      : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300'
+                  }`}
+                  title={isUserBlocked(profileUser.id) ? 'Desbloquea para enviar mensajes' : 'Enviar mensaje privado'}
                 >
                   <Mail className="w-3.5 h-3.5 text-[#3869A0]" />
                   <span>Mensaje</span>
                 </button>
 
                 <button
-                  onClick={() => openChatWith(profileUser.id)}
+                  onClick={() => {
+                    if (isUserBlocked(profileUser.id)) {
+                      alert('Este usuario está bloqueado. Desbloquéalo primero para poder chatear en vivo.');
+                      return;
+                    }
+                    openChatWith(profileUser.id);
+                  }}
+                  disabled={isUserBlocked(profileUser.id)}
                   className={`px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer ${
                     isUserBlocked(profileUser.id)
-                      ? 'bg-gray-100 hover:bg-gray-200 text-gray-400 border border-gray-300'
+                      ? 'bg-gray-100 hover:bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-60'
                       : 'bg-[#e8f0fe] hover:bg-[#d2e3fc] text-[#3869A0] border border-[#bcd0ee]'
                   }`}
-                  title={isUserBlocked(profileUser.id) ? 'Usuario bloqueado en el chat' : 'Abrir chat en vivo'}
+                  title={isUserBlocked(profileUser.id) ? 'Usuario bloqueado' : 'Abrir chat en vivo'}
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
                   <span>Chat en vivo</span>
@@ -626,6 +646,28 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
             )}
           </div>
         </div>
+
+        {/* ================= BLOQUEO NOTIFICACIÓN ================= */}
+        {!isOwnProfile && isUserBlocked(profileUser.id) && (
+          <div className="bg-rose-50 border border-rose-300 rounded p-3 text-xs text-rose-950 flex flex-wrap items-center justify-between gap-3 shadow-2xs mt-3 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <Ban className="w-4 h-4 text-rose-600 shrink-0" />
+              <div>
+                <p className="font-bold text-rose-900">Usuario bloqueado</p>
+                <p className="text-[11px] text-rose-700">
+                  Sus publicaciones, fotos y comentarios en tu tablón y feed están completamente ocultos. No puede enviarte mensajes ni solicitudes.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => unblockUser(profileUser.id)}
+              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded text-xs transition cursor-pointer shrink-0 shadow-xs flex items-center gap-1.5"
+            >
+              <Ban className="w-3.5 h-3.5" />
+              <span>Desbloquear usuario</span>
+            </button>
+          </div>
+        )}
 
         {/* ================= SIMULACIÓN DE PRIVACIDAD (SOLO PROPIETARIO) ================= */}
         {isOwnProfile && (

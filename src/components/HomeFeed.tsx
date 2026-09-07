@@ -40,6 +40,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
     sendFriendRequest,
     isFriend,
     hasPendingRequest,
+    isUserBlocked,
     openChatWith,
     setChatEstado,
     musicPlaylist,
@@ -177,6 +178,14 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
       }
     }
 
+    // Excluir publicaciones de usuarios bloqueados o dirigidas/relacionadas con usuarios bloqueados
+    if (item.propietarioId && isUserBlocked(item.propietarioId)) {
+      return false;
+    }
+    if (item.visitanteId && isUserBlocked(item.visitanteId)) {
+      return false;
+    }
+
     // Anti-Algorithm Filter: Feed 100% cronológico exclusivo de amigos reales
     if (isAntiAlgorithmMode) {
       const isMine = item.propietarioId === currentUser.id;
@@ -191,8 +200,8 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
     return true;
   });
 
-  // Recommended users (not friends yet)
-  const nonFriends = users.filter(u => u.id !== currentUser.id && !isFriend(currentUser.id, u.id));
+  // Recommended users (not friends yet, excluding blocked users)
+  const nonFriends = users.filter(u => u.id !== currentUser.id && !isFriend(currentUser.id, u.id) && !isUserBlocked(u.id));
 
   return (
     <div className="w-full max-w-[1720px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-6 lg:px-8 py-4 grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -901,7 +910,9 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
               No hay novedades para este filtro. ¡Sé el primero en compartir algo!
             </div>
           ) : (
-            filteredFeed.map(item => (
+            filteredFeed.map(item => {
+              const visibleComments = item.comentarios.filter(c => !isUserBlocked((c as any).userId || (c as any).autorId || ''));
+              return (
               <div key={item.id} className="bg-white rounded border border-[#ccd5df] p-3 shadow-xs space-y-2.5 text-xs">
                 {/* Header: Propietario / Event info */}
                 <div className="flex items-start justify-between">
@@ -1000,25 +1011,25 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                       className="flex items-center gap-1 hover:text-[#3869A0] font-semibold transition cursor-pointer"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
-                      <span>{item.comentarios.length > 0 ? `${item.comentarios.length} comentarios` : 'Comentar'}</span>
+                      <span>{visibleComments.length > 0 ? `${visibleComments.length} comentarios` : 'Comentar'}</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Comments Section */}
-                {(openComments[item.id] || item.comentarios.length > 0) && (
+                {(openComments[item.id] || visibleComments.length > 0) && (
                   <div className="bg-[#f7f9fb] p-2.5 rounded border border-gray-200 space-y-2 mt-2">
                     {/* Comments list */}
-                    {item.comentarios.map(c => (
+                    {visibleComments.map(c => (
                       <div key={c.id} className="flex items-start gap-2 text-xs">
-                        <img src={c.avatar} alt="" className="w-6 h-6 rounded object-cover border border-gray-300 mt-0.5" />
+                        <img src={c.avatar || (c as any).autorAvatar} alt="" className="w-6 h-6 rounded object-cover border border-gray-300 mt-0.5" />
                         <div className="flex-1 bg-white p-2 rounded border border-gray-200">
                           <div className="flex justify-between items-center mb-0.5">
                             <span 
-                              onClick={() => viewUserProfile(c.userId)}
+                              onClick={() => ((c as any).userId || (c as any).autorId) && viewUserProfile((c as any).userId || (c as any).autorId)}
                               className="font-bold text-[#3869A0] hover:underline cursor-pointer"
                             >
-                              {c.nombre}
+                              {c.nombre || (c as any).autorNombre}
                             </span>
                             <span className="text-[9px] text-gray-400">{c.fecha}</span>
                           </div>
@@ -1051,7 +1062,8 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                   </div>
                 )}
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -1086,7 +1098,7 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
           ) : (
             <div>
               <div className="grid grid-cols-3 gap-1.5">
-                {photos.slice(0, 6).map(photo => {
+                {photos.filter(p => !isUserBlocked(p.uploaderId)).slice(0, 6).map(photo => {
                   const uploader = users.find(u => u.id === photo.uploaderId);
                   return (
                     <div

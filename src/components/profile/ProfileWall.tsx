@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { MessageSquare, Send, Trash2, RefreshCw, Lock, UserPlus, Info } from 'lucide-react';
+import { MessageSquare, Send, Trash2, RefreshCw, Lock, UserPlus, Info, Ban } from 'lucide-react';
 import type { User, WallComment } from '../../types';
+import { useInkorium } from '../../context/InkoriumContext';
 import {
   signatureEventBus,
   isSignatureForProfile,
@@ -39,6 +40,7 @@ export const ProfileWall: React.FC<ProfileWallProps> = ({
   const [wallInput, setWallInput] = useState('');
   const [signatureRevision, setSignatureRevision] = useState(0);
   const [isSignatureSyncing, setIsSignatureSyncing] = useState(false);
+  const { isUserBlocked } = useInkorium();
 
   const bumpRevision = useCallback(() => {
     setSignatureRevision(r => r + 1);
@@ -125,19 +127,22 @@ export const ProfileWall: React.FC<ProfileWallProps> = ({
     };
   }, [profileUser.id, profileUser.username, currentUser.id, currentUser.username, isOwnProfile, bumpRevision]);
 
-  // Normalized and deduplicated signatures for this profile
+  // Normalized and deduplicated signatures for this profile (excluding blocked users)
   const userWallComments = useMemo(() => {
-    const matched = wallComments.filter(w =>
-      isSignatureForProfile(w, profileUser) ||
-      (isOwnProfile && isSignatureForProfile(w, currentUser))
-    );
+    const matched = wallComments.filter(w => {
+      const authorId = w.autorId || w.emisorId || '';
+      if (authorId && isUserBlocked(authorId)) return false;
+      return isSignatureForProfile(w, profileUser) ||
+        (isOwnProfile && isSignatureForProfile(w, currentUser));
+    });
     return deduplicateAndSortSignatures(matched);
   }, [
     wallComments,
     signatureRevision,
     profileUser,
     isOwnProfile,
-    currentUser
+    currentUser,
+    isUserBlocked
   ]);
 
   const handleSendWall = (e: React.FormEvent) => {
@@ -149,6 +154,24 @@ export const ProfileWall: React.FC<ProfileWallProps> = ({
     signatureEventBus.requestSync(profileUser.id, 'user_send_wall');
     bumpRevision();
   };
+
+  if (!isOwnProfile && isUserBlocked(profileUser.id)) {
+    return (
+      <div className="bg-white rounded border border-[#ccd5df] p-6 text-center space-y-3 shadow-xs">
+        <div className="w-12 h-12 mx-auto rounded-full bg-rose-50 flex items-center justify-center text-rose-600 border border-rose-200">
+          <Ban className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <h4 className="font-bold text-sm text-gray-900">
+            Usuario bloqueado
+          </h4>
+          <p className="text-xs text-gray-500 max-w-sm mx-auto">
+            Tienes bloqueado a este usuario. Sus firmas e interacciones en el tablón están ocultas y no podéis interactuar.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!canViewWall) {
     return (

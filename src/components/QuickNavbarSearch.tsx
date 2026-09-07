@@ -20,6 +20,7 @@ export const QuickNavbarSearch: React.FC = () => {
     isFriend, 
     hasPendingRequest, 
     sendFriendRequest, 
+    isUserBlocked,
     openChatWith, 
     openComposeMessage, 
     viewUserProfile,
@@ -97,7 +98,7 @@ export const QuickNavbarSearch: React.FC = () => {
     if (!query.trim()) return [];
     const q = query.toLowerCase().trim();
     return users.filter(u => {
-      if (u.id === currentUser.id) return false;
+      if (u.id === currentUser.id || isUserBlocked(u.id)) return false;
       const isUserFriend = isFriend(currentUser.id, u.id);
       if (friendsOnlyFilter && !isUserFriend) return false;
 
@@ -117,7 +118,7 @@ export const QuickNavbarSearch: React.FC = () => {
         intereses.includes(q)
       );
     });
-  }, [users, query, currentUser.id, isFriend, friendsOnlyFilter]);
+  }, [users, query, currentUser.id, isUserBlocked, isFriend, friendsOnlyFilter]);
 
   // Filtered pages / groups
   const filteredPages = useMemo(() => {

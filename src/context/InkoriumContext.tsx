@@ -2237,13 +2237,24 @@ const addDeletedMessageIds = (ids: string[]) => {
 
   const blockUser = useCallback((targetUserId: string) => {
     if (!currentUserId || !targetUserId || normalizeUserId(targetUserId) === normalizeUserId(currentUserId)) return;
+    const normTarget = normalizeUserId(targetUserId);
+
     setBlockedUserIds(prev => {
-      const normTarget = normalizeUserId(targetUserId);
       if (prev.some(id => normalizeUserId(id) === normTarget)) return prev;
       const updated = [...prev, targetUserId];
       saveStoredBlockedUserIds(currentUserId, updated);
       return updated;
     });
+
+    // Automatically remove friendship and any pending friend requests with this user upon blocking
+    setFriendships(prev => prev.filter(f => 
+      !((normalizeUserId(f.user1) === normalizeUserId(currentUserId) && normalizeUserId(f.user2) === normTarget) || 
+        (normalizeUserId(f.user1) === normTarget && normalizeUserId(f.user2) === normalizeUserId(currentUserId)))
+    ));
+    setFriendRequests(prev => prev.filter(r => 
+      !((normalizeUserId(r.emisorId) === normalizeUserId(currentUserId) && normalizeUserId(r.receptorId) === normTarget) || 
+        (normalizeUserId(r.emisorId) === normTarget && normalizeUserId(r.receptorId) === normalizeUserId(currentUserId)))
+    ));
 
     // Close any active chat window with this user
     setActiveChatWindows(prev => prev.filter(w => normalizeUserId(w.targetUserId) !== normalizeUserId(targetUserId)));
@@ -3020,7 +3031,20 @@ const addDeletedMessageIds = (ids: string[]) => {
   }, [currentUserId]);
 
   const sendFriendRequest = useCallback((targetUserId: string) => {
-    if (!currentUserId || targetUserId === currentUserId) return;
+    if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
+    if (isUserBlocked(targetUserId)) {
+      pushNotification({
+        id: `block-notif-${Date.now()}`,
+        tipo: 'sistema',
+        userId: currentUserId,
+        fromUserId: currentUserId,
+        fromUserName: 'Inkorium',
+        mensaje: 'No puedes enviar solicitudes de amistad a un usuario que tienes bloqueado.',
+        fecha: 'Ahora mismo',
+        leido: false
+      });
+      return;
+    }
     const newReq: FriendRequest = {
       id: `req-${Date.now()}`,
       emisorId: currentUserId,
@@ -3046,7 +3070,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       fecha: 'Ahora mismo',
       leido: false
     });
-  }, [currentUserId, currentUser, pushNotification]);
+  }, [currentUserId, currentUser, isUserBlocked, pushNotification]);
 
   const isFriend = useCallback((userId1: string, userId2: string) => {
     return friendships.some(f => 
@@ -3135,6 +3159,20 @@ const addDeletedMessageIds = (ids: string[]) => {
       (u.email && u.email.toLowerCase() === receptorId.toLowerCase())
     );
     const resolvedReceptorId = targetUser?.id || receptorId;
+
+    if (isUserBlocked(resolvedReceptorId) || isUserBlocked(receptorId)) {
+      pushNotification({
+        id: `block-notif-${Date.now()}`,
+        tipo: 'sistema',
+        userId: currentUserId,
+        fromUserId: currentUserId,
+        fromUserName: 'Inkorium',
+        mensaje: 'No puedes enviar mensajes a un usuario que tienes bloqueado.',
+        fecha: 'Ahora mismo',
+        leido: false
+      });
+      return;
+    }
 
     // Protección anti auto-envío: evitar que el receptor sea el usuario actual
     if (
@@ -3234,7 +3272,7 @@ const addDeletedMessageIds = (ids: string[]) => {
         console.warn('Silent private message backend sync error:', err);
       }
     })();
-  }, [currentUserId, currentUser, users, pushNotification]);
+  }, [currentUserId, currentUser, users, isUserBlocked, pushNotification]);
 
   const markMessageAsRead = useCallback((messageId: string) => {
     setMessages(prev => {
@@ -3351,6 +3389,21 @@ const addDeletedMessageIds = (ids: string[]) => {
     // Resolver usuario destinatario por id, username o alias
     const targetUser = findUserByAnyIdentifier(propietarioId, users);
     const resolvedPropietarioId = targetUser?.id || propietarioId;
+
+    if (isUserBlocked(resolvedPropietarioId) || isUserBlocked(propietarioId)) {
+      pushNotification({
+        id: `block-notif-${Date.now()}`,
+        tipo: 'sistema',
+        userId: currentUserId,
+        fromUserId: currentUserId,
+        fromUserName: 'Inkorium',
+        mensaje: 'No puedes firmar en el tablón de un usuario que tienes bloqueado.',
+        fecha: 'Ahora mismo',
+        leido: false
+      });
+      return;
+    }
+
     const resolvedPropietarioName = targetUser 
       ? (targetUser.full_name || `${targetUser.nombre} ${targetUser.apellidos}`.trim() || targetUser.nombre)
       : 'Usuario';
@@ -3460,7 +3513,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       },
       ...prev.slice(0, 3)
     ]);
-  }, [currentUserId, currentUser, users, pushNotification]);
+  }, [currentUserId, currentUser, users, isUserBlocked, pushNotification]);
 
   const deleteWallComment = useCallback((commentId: string) => {
     let targetProfileId = '';

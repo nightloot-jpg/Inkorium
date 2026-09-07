@@ -266,7 +266,7 @@ export const SettingsView: React.FC = () => {
               >
                 <div className="flex items-center gap-1.5">
                   <Ban className="w-3.5 h-3.5 text-rose-500" />
-                  <span>Usuarios bloqueados (chat)</span>
+                  <span>Usuarios bloqueados</span>
                 </div>
                 {blockedUserIds.length > 0 && (
                   <span className="bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-bold px-1.5 py-0.2 rounded-full text-[10px]">
@@ -1069,13 +1069,13 @@ export const SettingsView: React.FC = () => {
               </div>
             )}
 
-            {/* ================= 7. USUARIOS BLOQUEADOS (CHAT) ================= */}
+            {/* ================= 7. USUARIOS BLOQUEADOS ================= */}
             {section === 'bloqueados' && (
               <div className="space-y-4 text-xs text-gray-800 dark:text-gray-100">
                 <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <Ban className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                    <h2 className="font-bold text-sm text-gray-900 dark:text-white">Usuarios bloqueados en el chat</h2>
+                    <h2 className="font-bold text-sm text-gray-900 dark:text-white">Usuarios bloqueados</h2>
                   </div>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">
                     {blockedUserIds.length} {blockedUserIds.length === 1 ? 'bloqueado' : 'bloqueados'}
@@ -1085,15 +1085,17 @@ export const SettingsView: React.FC = () => {
                 <div className="p-3 bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-lg text-[11.5px] text-rose-900 dark:text-rose-200 leading-relaxed">
                   <p className="font-semibold mb-1 flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                    Protección y privacidad de conversaciones
+                    Protección, feed, tablón y privacidad de usuario
                   </p>
                   <p>
-                    Al bloquear a un usuario en el chat:
+                    Al bloquear a un usuario:
                   </p>
                   <ul className="list-disc list-inside mt-1 space-y-0.5 text-rose-800 dark:text-rose-300">
-                    <li>Se ocultan inmediatamente todos sus mensajes en las ventanas de chat.</li>
-                    <li>No se le permite enviarte mensajes directos en vivo ni zumbidos.</li>
-                    <li>Se impide el inicio de nuevas conversaciones con esta persona.</li>
+                    <li>Se eliminan automáticamente sus publicaciones, comentarios y fotos de tu feed principal.</li>
+                    <li>Se ocultan sus firmas y se le impide escribir o comentar en tu tablón de firmas.</li>
+                    <li>Se cancelan de forma inmediata las amistades y peticiones de amistad pendientes.</li>
+                    <li>Se bloquea el chat en vivo, el envío de zumbidos y los mensajes privados.</li>
+                    <li>El usuario no aparecerá en tus búsquedas de personas ni en las recomendaciones.</li>
                   </ul>
                 </div>
 
