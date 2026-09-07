@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { MessageSquare, Send, Trash2, RefreshCw, Lock, UserPlus } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { MessageSquare, Send, Trash2, RefreshCw, Lock, UserPlus, Info } from 'lucide-react';
 import type { User, WallComment } from '../../types';
 import {
   signatureEventBus,
@@ -40,58 +40,90 @@ export const ProfileWall: React.FC<ProfileWallProps> = ({
   const [signatureRevision, setSignatureRevision] = useState(0);
   const [isSignatureSyncing, setIsSignatureSyncing] = useState(false);
 
-  // Subscribe to central event bus for immediate reactive update
-  useEffect(() => {
-    const unsubSync = signatureEventBus.on('SIGNATURES_SYNCED', (data) => {
-      const isCurrent =
-        !data.profileId ||
-        data.profileId === '*' ||
-        cleanId(data.profileId) === cleanId(profileUser.id) ||
-        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
-        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
+  const bumpRevision = useCallback(() => {
+    setSignatureRevision(r => r + 1);
+  }, []);
 
-      if (isCurrent) {
-        setSignatureRevision(r => r + 1);
+  // Request latest signatures for this profile on mount or target switch
+  useEffect(() => {
+    const targetId = profileUser?.id || currentUser?.id;
+    if (targetId) {
+      signatureEventBus.requestSync(targetId, 'profile_wall_mount');
+    }
+  }, [profileUser?.id, currentUser?.id]);
+
+  // Subscribe to central event bus and window custom events for immediate reactive update
+  useEffect(() => {
+    const isEventForCurrentProfile = (targetProfileId?: string) => {
+      if (!targetProfileId || targetProfileId === '*') return true;
+      const tClean = cleanId(targetProfileId);
+      const tNorm = normalizeId(targetProfileId);
+      const pClean = cleanId(profileUser.id);
+      const pNorm = normalizeId(profileUser.id);
+      const pUnameClean = cleanId(profileUser.username);
+      const pUnameNorm = normalizeId(profileUser.username);
+      const cClean = cleanId(currentUser.id);
+      const cNorm = normalizeId(currentUser.id);
+      const cUnameClean = cleanId(currentUser.username);
+      const cUnameNorm = normalizeId(currentUser.username);
+
+      return (
+        tClean === pClean ||
+        tNorm === pNorm ||
+        (pUnameNorm && (tNorm === pUnameNorm || tClean === pUnameClean)) ||
+        (isOwnProfile && (
+          tClean === cClean ||
+          tNorm === cNorm ||
+          (cUnameNorm && (tNorm === cUnameNorm || tClean === cUnameClean))
+        ))
+      );
+    };
+
+    const unsubSync = signatureEventBus.on('SIGNATURES_SYNCED', (data) => {
+      if (isEventForCurrentProfile(data.profileId)) {
+        bumpRevision();
       }
     });
 
     const unsubPost = signatureEventBus.on('SIGNATURE_POSTED', (data) => {
-      const isCurrent =
-        !data.profileId ||
-        cleanId(data.profileId) === cleanId(profileUser.id) ||
-        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
-        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
-
-      if (isCurrent) {
-        setSignatureRevision(r => r + 1);
+      if (isEventForCurrentProfile(data.profileId)) {
+        bumpRevision();
       }
     });
 
     const unsubDelete = signatureEventBus.on('SIGNATURE_DELETED', (data) => {
-      const isCurrent =
-        !data.profileId ||
-        cleanId(data.profileId) === cleanId(profileUser.id) ||
-        normalizeId(data.profileId) === normalizeId(profileUser.username) ||
-        (isOwnProfile && (cleanId(data.profileId) === cleanId(currentUser.id) || normalizeId(data.profileId) === normalizeId(currentUser.username)));
-
-      if (isCurrent) {
-        setSignatureRevision(r => r + 1);
+      if (isEventForCurrentProfile(data.profileId)) {
+        bumpRevision();
       }
     });
 
     const unsubStatus = signatureEventBus.on('SIGNATURE_STATUS_CHANGE', (data) => {
-      if (!data.profileId || cleanId(data.profileId) === cleanId(profileUser.id)) {
+      if (isEventForCurrentProfile(data.profileId)) {
         setIsSignatureSyncing(data.isSyncing);
       }
     });
+
+    // Window events fallback for cross-component or SSE dispatches
+    const handleWindowSigUpdate = (e: Event) => {
+      const customEvt = e as CustomEvent;
+      const profId = customEvt.detail?.profileId || customEvt.detail?.comment?.receptorId || customEvt.detail?.comment?.propietarioId;
+      if (isEventForCurrentProfile(profId)) {
+        bumpRevision();
+      }
+    };
+
+    window.addEventListener('inkorium:signature_update', handleWindowSigUpdate);
+    window.addEventListener('inkorium:signature_bus_event', handleWindowSigUpdate);
 
     return () => {
       unsubSync();
       unsubPost();
       unsubDelete();
       unsubStatus();
+      window.removeEventListener('inkorium:signature_update', handleWindowSigUpdate);
+      window.removeEventListener('inkorium:signature_bus_event', handleWindowSigUpdate);
     };
-  }, [profileUser.id, profileUser.username, currentUser.id, currentUser.username, isOwnProfile]);
+  }, [profileUser.id, profileUser.username, currentUser.id, currentUser.username, isOwnProfile, bumpRevision]);
 
   // Normalized and deduplicated signatures for this profile
   const userWallComments = useMemo(() => {
@@ -115,6 +147,7 @@ export const ProfileWall: React.FC<ProfileWallProps> = ({
     setWallInput('');
     postWallComment(profileUser.id, cleanText);
     signatureEventBus.requestSync(profileUser.id, 'user_send_wall');
+    bumpRevision();
   };
 
   if (!canViewWall) {
@@ -151,7 +184,9 @@ export const ProfileWall: React.FC<ProfileWallProps> = ({
       <div className="font-bold text-gray-800 pb-2 border-b border-gray-200 flex items-center justify-between">
         <span className="flex items-center gap-1.5">
           <MessageSquare className="w-3.5 h-3.5 text-[#3869A0]" />
-          <span>Tablón de firmas de {profileUser.nombre} ({userWallComments.length})</span>
+          <span>
+            {isOwnProfile ? 'Tablón de firmas de tu perfil' : `Tablón de firmas de ${profileUser.nombre}`} ({userWallComments.length})
+          </span>
           {isSignatureSyncing && (
             <span className="ml-1.5 text-[10px] text-[#3869A0] font-normal flex items-center gap-1 animate-pulse">
               <RefreshCw className="w-2.5 h-2.5 animate-spin" />
@@ -161,7 +196,10 @@ export const ProfileWall: React.FC<ProfileWallProps> = ({
         </span>
         <button
           type="button"
-          onClick={() => signatureEventBus.requestSync(profileUser.id, 'user_tablon_click')}
+          onClick={() => {
+            signatureEventBus.requestSync(profileUser.id, 'user_tablon_click');
+            bumpRevision();
+          }}
           disabled={isSignatureSyncing}
           className="text-[11px] text-[#3869A0] hover:underline font-normal flex items-center gap-1 cursor-pointer disabled:opacity-50"
           title="Sincronizar firmas con la nube"
@@ -171,19 +209,29 @@ export const ProfileWall: React.FC<ProfileWallProps> = ({
         </button>
       </div>
 
+      {/* Info notice for own profile */}
+      {isOwnProfile && (
+        <div className="p-2.5 bg-[#f0f4f8] rounded border border-[#d6e2ee] flex items-center gap-2 text-[11px] text-gray-600">
+          <Info className="w-3.5 h-3.5 text-[#3869A0] flex-shrink-0" />
+          <span>
+            Este es tu tablón personal. Los usuarios y amigos que visiten tu perfil podrán leer y escribir firmas aquí.
+          </span>
+        </div>
+      )}
+
       {/* Input to write on wall or privacy notice */}
       {canCommentWall ? (
         <form onSubmit={handleSendWall} className="space-y-2">
           <textarea
             value={wallInput}
             onChange={e => setWallInput(e.target.value)}
-            placeholder={`Escribe algo en el tablón de ${isOwnProfile ? 'tu perfil' : profileUser.nombre}...`}
+            placeholder={isOwnProfile ? 'Escribe una dedicatoria o nota en tu propio tablón...' : `Escribe algo en el tablón de ${profileUser.nombre}...`}
             rows={2}
             className="w-full p-2.5 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#3869A0] focus:border-[#3869A0] resize-none"
           />
           <div className="flex justify-between items-center">
             <span className="text-[10px] text-gray-400">
-              ¡Déjale una firma o saludo nostálgico! :)
+              {isOwnProfile ? 'Firma visible para quienes visitan tu perfil' : '¡Déjale una firma o saludo nostálgico! :)'}
             </span>
             <button
               type="submit"
@@ -206,7 +254,9 @@ export const ProfileWall: React.FC<ProfileWallProps> = ({
       <div className="divide-y divide-gray-100 pt-2 space-y-3">
         {userWallComments.length === 0 ? (
           <div className="py-8 text-center text-gray-400 text-xs">
-            Todavía no hay comentarios en este tablón. ¡Sé el primero en firmar!
+            {isOwnProfile
+              ? 'Todavía no tienes firmas en tu tablón. Tus amigos podrán firmarte al visitar tu perfil.'
+              : 'Todavía no hay comentarios en este tablón. ¡Sé el primero en firmar!'}
           </div>
         ) : (
           userWallComments.map(comment => {
@@ -243,6 +293,7 @@ export const ProfileWall: React.FC<ProfileWallProps> = ({
                           onClick={() => {
                             deleteWallComment(comment.id);
                             signatureEventBus.notifySignatureDeleted(comment.id, profileUser.id);
+                            bumpRevision();
                           }}
                           className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer"
                           title="Borrar comentario del tablón"

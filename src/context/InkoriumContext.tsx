@@ -227,16 +227,8 @@ const EMPTY_USER: User = {
   chatEstado: '0' 
 };
 
-const isMockId = (id: string | undefined | null): boolean => {
-  if (!id) return false;
-  const s = String(id).toLowerCase();
-  return (
-    s === 'user-1' || s === 'user-2' || s === 'user-3' || s === 'user-4' ||
-    s === 'user-5' || s === 'user-6' || s === 'user-7' || s === 'user-8' ||
-    s === 'user-9' || s === 'user-10' || s === 'user-11' || s === 'user-12' ||
-    s === '1' || s === '2' || s === '3' ||
-    s === 'user-elena' || s === 'user-carlos' || s === 'user-laura'
-  );
+const isMockId = (_id: string | undefined | null): boolean => {
+  return false;
 };
 
 export const InkoriumProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
