@@ -106,6 +106,7 @@ export interface Photo {
   id: string;
   uploaderId: string;
   uploaderName: string;
+  uploaderAvatar?: string;
   albumId?: string | null; // null for general uploads
   albumName?: string;
   archivo: string;
@@ -122,11 +123,21 @@ export interface Album {
   id: string;
   userId?: string;
   propietarioId?: string;
+  propietarioNombre?: string;
+  propietarioAvatar?: string;
   nombre: string;
   descripcion?: string;
   portada?: string;
   numFotos?: number;
   fecha: string;
+  isCollaborative?: boolean;
+  colaboradoresIds?: string[]; // IDs de amigos autorizados para subir fotos
+  allowAllFriends?: boolean; // Permite a todos los amigos del propietario subir fotos
+  eventId?: string; // ID del evento social vinculado (fiesta, quedada, cumpleaños)
+  eventName?: string;
+  categoria?: string;
+  photoOrder?: string[]; // IDs de las fotos ordenadas cronológicamente para el evento
+  timelineNotes?: Record<string, string>; // Notas/hitos cronológicos asociados a fotos específicas (ej: "Llegada al evento", "Brindis", "Fin de fiesta")
 }
 
 export interface WallComment {

@@ -261,7 +261,8 @@ export const NotificationToasts: React.FC = () => {
     viewUserProfile, 
     currentUser,
     viewPhoto,
-    openChatWith
+    openChatWith,
+    isUserBlocked
   } = useInkorium();
 
   const handleAction = (toast: InkoriumNotification) => {
@@ -290,10 +291,12 @@ export const NotificationToasts: React.FC = () => {
     }
   };
 
+  const visibleToasts = toasts.filter(t => !t.fromUserId || !isUserBlocked(t.fromUserId));
+
   return (
     <div className="fixed bottom-14 right-3 sm:right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-[95vw]">
       <AnimatePresence mode="popLayout">
-        {toasts.map(toast => (
+        {visibleToasts.map(toast => (
           <ToastItem
             key={toast.id}
             toast={toast}

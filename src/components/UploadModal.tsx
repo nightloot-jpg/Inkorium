@@ -12,7 +12,7 @@ import { validateImageFile, formatFileSize, FileValidationResult } from '../util
 import { PhotoPrivacy } from '../types';
 
 export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { albums, photos, currentUser, users, uploadPhoto, createAlbum, getFriendsOf } = useInkorium();
+  const { albums, photos, currentUser, users, uploadPhoto, createAlbum, getFriendsOf, canUserUploadToAlbum } = useInkorium();
 
   const [title, setTitle] = useState('');
   const [albumId, setAlbumId] = useState<string>('');
@@ -109,10 +109,10 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
     }
   };
 
-  // User's own albums or general albums
+  // User's own albums or collaborative albums with upload permission
   const myAlbums = useMemo(() => {
-    return albums.filter(a => !a.userId || a.userId === currentUser.id || a.propietarioId === currentUser.id);
-  }, [albums, currentUser.id]);
+    return albums.filter(a => canUserUploadToAlbum(a, currentUser.id));
+  }, [albums, canUserUploadToAlbum, currentUser.id]);
 
   // Photo counts and preview covers for each album
   const albumDetailsMap = useMemo(() => {
@@ -666,13 +666,23 @@ export const UploadModal: React.FC<{ isOpen: boolean; onClose: () => void }> = (
                                     <Folder className={`w-4 h-4 ${isSelected ? 'text-[#3869A0]' : 'text-amber-600'}`} />
                                   )}
                                 </div>
-                                <div className="min-w-0">
-                                  <span className="block truncate text-xs font-bold text-gray-900">
-                                    {a.nombre}
-                                  </span>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <span className="font-bold text-gray-900 text-xs truncate">
+                                      {a.nombre}
+                                    </span>
+                                    {a.isCollaborative && (
+                                      <span className="bg-blue-100 dark:bg-blue-900/60 text-[#3869A0] dark:text-blue-300 text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0">
+                                        👥 Colab
+                                      </span>
+                                    )}
+                                  </div>
                                   <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-normal">
                                     <span>{photoCount} {photoCount === 1 ? 'foto' : 'fotos'}</span>
-                                    {a.fecha && <span>• {a.fecha}</span>}
+                                    {a.propietarioNombre && a.userId !== currentUser.id && (
+                                      <span>• De: {a.propietarioNombre}</span>
+                                    )}
+                                    {a.eventName && <span>• {a.eventName}</span>}
                                   </div>
                                 </div>
                               </div>

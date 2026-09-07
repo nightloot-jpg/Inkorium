@@ -14,7 +14,8 @@ export const MessagesViewV2: React.FC = () => {
     deleteMessage,
     deleteConversation,
     viewUserProfile,
-    composeRecipientId
+    composeRecipientId,
+    isUserBlocked
   } = useInkorium();
 
   const currentUserId = currentUser?.id || '';
@@ -69,13 +70,14 @@ export const MessagesViewV2: React.FC = () => {
     );
   };
 
-  const received = messages.filter(isCurrentRecipient);
-  const sent = messages.filter(isCurrentSender);
+  const received = messages.filter(m => isCurrentRecipient(m) && !isUserBlocked(m.emisorId));
+  const sent = messages.filter(m => isCurrentSender(m) && !isUserBlocked(m.receptorId));
   const others = users
     .filter(u => 
       u.id !== currentUser.id && 
       u.username !== currentUser.username &&
-      u.id !== currentUserId
+      u.id !== currentUserId &&
+      !isUserBlocked(u.id)
     )
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 

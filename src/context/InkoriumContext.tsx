@@ -181,7 +181,22 @@ interface InkoriumContextType {
   canUserViewPhoto: (photo: Photo, viewerUserId?: string) => boolean;
   addPhotoTag: (photoId: string, targetUserId: string, x: number, y: number) => void;
   removePhotoTag: (photoId: string, tagId: string) => void; addPhotoComment: (photoId: string, comentario: string) => void; likePhoto: (photoId: string) => void;
-  setPhotoAsAvatar: (photoId: string) => void; deletePhoto: (photoId: string) => void; createAlbum: (nombre: string, descripcion?: string) => string | undefined;
+  setPhotoAsAvatar: (photoId: string) => void; deletePhoto: (photoId: string) => void; 
+  createAlbum: (
+    nombre: string, 
+    descripcion?: string, 
+    isCollaborative?: boolean, 
+    colaboradoresIds?: string[], 
+    eventId?: string, 
+    allowAllFriends?: boolean, 
+    eventName?: string
+  ) => string | undefined;
+  updateAlbum: (albumId: string, data: Partial<Album>) => void;
+  addCollaboratorsToAlbum: (albumId: string, userIds: string[]) => void;
+  removeCollaboratorFromAlbum: (albumId: string, userId: string) => void;
+  canUserUploadToAlbum: (album: Album | null | undefined, userId?: string) => boolean;
+  uploadMultiplePhotos: (photosList: Array<{ titulo: string; archivoUrl: string; privacidad?: PhotoPrivacy; allowedUserIds?: string[] }>, albumId: string) => void;
+  reorderAlbumPhotos: (albumId: string, orderedPhotoIds: string[], timelineNotes?: Record<string, string>) => void;
   renameAlbum: (albumId: string, nuevoNombre: string) => void; deleteAlbum: (albumId: string) => void;
   sendFriendRequest: (targetUserId: string) => void; acceptFriendRequest: (requestId: string) => void; ignoreFriendRequest: (requestId: string) => void;
   removeFriendship: (targetUserId: string) => void; cancelFriendRequest: (targetUserId: string) => void;
@@ -2062,10 +2077,13 @@ const addDeletedMessageIds = (ids: string[]) => {
   ) => {
     if (!currentUserId || !archivoUrl) return;
     const optimisticId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const myAvatar = currentUser.avatar || '';
     const optimistic: Photo = {
       id: optimisticId,
       uploaderId: currentUserId,
-      uploaderName: `${currentUser.nombre} ${currentUser.apellidos}`.trim() || 'Usuario',
+      uploaderName: myName,
+      uploaderAvatar: myAvatar,
       albumId,
       archivo: archivoUrl,
       titulo: titulo || 'Sin título',
@@ -2077,6 +2095,20 @@ const addDeletedMessageIds = (ids: string[]) => {
       allowedUserIds: privacidad === 'eleccion' ? allowedUserIds : []
     };
     setPhotos(prev => [optimistic, ...prev]);
+
+    // Update album cover and photo count
+    if (albumId) {
+      setAlbums(prev => prev.map(a => {
+        if (a.id === albumId) {
+          return {
+            ...a,
+            portada: a.portada || archivoUrl,
+            numFotos: (a.numFotos || 0) + 1
+          };
+        }
+        return a;
+      }));
+    }
 
     const apiVisibility = privacidad === 'publica' ? 'public' : privacidad === 'eleccion' ? 'private' : 'friends';
     void insertPhoto({ 
@@ -3090,12 +3122,41 @@ const addDeletedMessageIds = (ids: string[]) => {
     return users.filter(u => friendIds.includes(u.id));
   }, [friendships, users]);
 
+  const canUserUploadToAlbum = useCallback((album: Album | null | undefined, userId?: string): boolean => {
+    if (!album) return false;
+    const uid = userId || currentUserId;
+    if (!uid) return false;
+    const ownerId = album.userId || album.propietarioId;
+    if (ownerId === uid) return true;
+    if (album.isCollaborative) {
+      if (album.allowAllFriends && ownerId && isFriend(ownerId, uid)) return true;
+      if (Array.isArray(album.colaboradoresIds) && album.colaboradoresIds.includes(uid)) return true;
+      if (album.eventId) {
+        const ev = events.find(e => e.id === album.eventId);
+        if (ev && ev.asistentes.some(a => a.userId === uid && (a.estado === 'asistire' || a.estado === 'quizas'))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }, [currentUserId, isFriend, events]);
+
   const canUserViewPhoto = useCallback((photo: Photo, viewerUserId?: string): boolean => {
     if (!photo) return false;
     const vId = viewerUserId || currentUserId;
 
     // El propio autor de la foto siempre tiene permiso de verla
     if (vId && photo.uploaderId === vId) return true;
+
+    // Si la foto pertenece a un álbum colaborativo, verificar pertenencia
+    if (photo.albumId) {
+      const album = albums.find(a => a.id === photo.albumId);
+      if (album?.isCollaborative) {
+        const ownerId = album.userId || album.propietarioId;
+        if (vId && (ownerId === vId || album.colaboradoresIds?.includes(vId))) return true;
+        if (vId && album.allowAllFriends && ownerId && isFriend(ownerId, vId)) return true;
+      }
+    }
 
     // Respetar la privacidad global del perfil del propietario
     const uploader = users.find(u => u.id === photo.uploaderId || (photo.uploaderId && normalizeUserId(u.id) === normalizeUserId(photo.uploaderId)));
@@ -3122,7 +3183,7 @@ const addDeletedMessageIds = (ids: string[]) => {
     }
 
     return true;
-  }, [currentUserId, isFriend, users]);
+  }, [currentUserId, isFriend, users, albums]);
 
   const updatePhotoPrivacy = useCallback((photoId: string, privacidad: PhotoPrivacy, allowedUserIds: string[] = []) => {
     setPhotos(prev => {
@@ -3670,22 +3731,229 @@ const addDeletedMessageIds = (ids: string[]) => {
     setPhotos(prev => prev.filter(p => p.id !== photoId));
   }, []);
 
-  const createAlbum = useCallback((nombre: string, descripcion?: string): string | undefined => {
+  const logUserActivity = useCallback((_activity: Omit<UserActivity, 'id' | 'timestamp'>) => {}, []);
+  const deleteUserActivity = useCallback((_activityId: string) => {}, []);
+  const getUserActivities = useCallback((_userId: string) => activities, [activities]);
+
+  const createAlbum = useCallback((
+    nombre: string, 
+    descripcion?: string,
+    isCollaborative: boolean = false,
+    colaboradoresIds: string[] = [],
+    eventId?: string,
+    allowAllFriends: boolean = false,
+    eventName?: string
+  ): string | undefined => {
     if (!currentUserId || !nombre.trim()) return undefined;
-    const albumId = `alb-${Date.now()}`;
+    const albumId = `alb-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const myAvatar = currentUser.avatar || '';
+
+    let linkedEventName = eventName;
+    if (eventId && !linkedEventName) {
+      const ev = events.find(e => e.id === eventId);
+      if (ev) linkedEventName = ev.titulo;
+    }
+
     const newAlbum: Album = {
       id: albumId,
       userId: currentUserId,
       propietarioId: currentUserId,
+      propietarioNombre: myName,
+      propietarioAvatar: myAvatar,
       nombre: nombre.trim(),
       descripcion: descripcion?.trim() || '',
       portada: '',
       numFotos: 0,
-      fecha: new Date().toLocaleDateString('es-ES')
+      fecha: new Date().toLocaleDateString('es-ES'),
+      isCollaborative,
+      colaboradoresIds: isCollaborative ? colaboradoresIds : [],
+      allowAllFriends: isCollaborative ? allowAllFriends : false,
+      eventId: isCollaborative ? eventId : undefined,
+      eventName: isCollaborative ? linkedEventName : undefined
     };
+
     setAlbums(prev => [...prev, newAlbum]);
+
+    // Send invitations/notifications to collaborators
+    if (isCollaborative && colaboradoresIds.length > 0) {
+      colaboradoresIds.forEach(collabId => {
+        if (collabId !== currentUserId) {
+          pushNotification({
+            id: `notif-album-invite-${Date.now()}-${collabId}`,
+            userId: collabId,
+            fromUserId: currentUserId,
+            fromUserName: myName,
+            fromUserAvatar: myAvatar,
+            tipo: 'foto',
+            mensaje: `${myName} te ha añadido como colaborador al álbum "${newAlbum.nombre}". ¡Ya puedes subir tus fotos!`,
+            enlace: 'fotos',
+            targetId: albumId,
+            fecha: 'Ahora mismo',
+            leido: false
+          });
+        }
+      });
+    }
+
+    logUserActivity({
+      userId: currentUserId,
+      userName: myName,
+      userAvatar: myAvatar,
+      type: 'album_created',
+      title: isCollaborative 
+        ? `ha creado el álbum colaborativo "${newAlbum.nombre}"` 
+        : `ha creado un nuevo álbum: "${newAlbum.nombre}"`,
+      detail: newAlbum.descripcion || undefined,
+      targetAlbumId: albumId,
+      targetAlbumName: newAlbum.nombre,
+      date: 'Ahora mismo'
+    });
+
     return albumId;
-  }, [currentUserId]);
+  }, [currentUserId, currentUser, events, pushNotification, logUserActivity]);
+
+  const updateAlbum = useCallback((albumId: string, data: Partial<Album>) => {
+    setAlbums(prev => prev.map(a => a.id === albumId ? { ...a, ...data } : a));
+  }, []);
+
+  const addCollaboratorsToAlbum = useCallback((albumId: string, userIds: string[]) => {
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const myAvatar = currentUser.avatar || '';
+
+    setAlbums(prev => prev.map(a => {
+      if (a.id === albumId) {
+        const currentCollabs = Array.isArray(a.colaboradoresIds) ? a.colaboradoresIds : [];
+        const nextCollabs = Array.from(new Set([...currentCollabs, ...userIds]));
+        return {
+          ...a,
+          isCollaborative: true,
+          colaboradoresIds: nextCollabs
+        };
+      }
+      return a;
+    }));
+
+    userIds.forEach(uid => {
+      if (uid !== currentUserId) {
+        pushNotification({
+          id: `notif-album-add-collab-${Date.now()}-${uid}`,
+          userId: uid,
+          fromUserId: currentUserId,
+          fromUserName: myName,
+          fromUserAvatar: myAvatar,
+          tipo: 'foto',
+          mensaje: `${myName} te ha invitado a colaborar en un álbum de fotos.`,
+          enlace: 'fotos',
+          targetId: albumId,
+          fecha: 'Ahora mismo',
+          leido: false
+        });
+      }
+    });
+  }, [currentUser, currentUserId, pushNotification]);
+
+  const removeCollaboratorFromAlbum = useCallback((albumId: string, userId: string) => {
+    setAlbums(prev => prev.map(a => {
+      if (a.id === albumId && Array.isArray(a.colaboradoresIds)) {
+        return {
+          ...a,
+          colaboradoresIds: a.colaboradoresIds.filter(id => id !== userId)
+        };
+      }
+      return a;
+    }));
+  }, []);
+
+  const uploadMultiplePhotos = useCallback((
+    photosList: Array<{ titulo: string; archivoUrl: string; privacidad?: PhotoPrivacy; allowedUserIds?: string[] }>,
+    albumId: string
+  ) => {
+    if (!currentUserId || !photosList.length) return;
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const myAvatar = currentUser.avatar || '';
+
+    const newPhotos: Photo[] = photosList.map((item, idx) => ({
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `photo-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+      uploaderId: currentUserId,
+      uploaderName: myName,
+      uploaderAvatar: myAvatar,
+      albumId,
+      archivo: item.archivoUrl,
+      titulo: item.titulo || `Foto ${idx + 1}`,
+      fecha: new Date().toLocaleString('es-ES'),
+      etiquetas: [],
+      comentarios: [],
+      likes: [],
+      privacidad: item.privacidad || 'amigos',
+      allowedUserIds: item.allowedUserIds || []
+    }));
+
+    setPhotos(prev => [...newPhotos, ...prev]);
+
+    const targetAlbum = albums.find(a => a.id === albumId);
+    if (targetAlbum) {
+      setAlbums(prev => prev.map(a => a.id === albumId ? { 
+        ...a, 
+        portada: a.portada || newPhotos[0].archivo, 
+        numFotos: (a.numFotos || 0) + newPhotos.length 
+      } : a));
+    }
+
+    if (targetAlbum && targetAlbum.isCollaborative && targetAlbum.userId && targetAlbum.userId !== currentUserId) {
+      pushNotification({
+        id: `notif-album-photos-added-${Date.now()}`,
+        userId: targetAlbum.userId,
+        fromUserId: currentUserId,
+        fromUserName: myName,
+        fromUserAvatar: myAvatar,
+        tipo: 'foto',
+        mensaje: `${myName} ha subido ${newPhotos.length} fotos a tu álbum colaborativo "${targetAlbum.nombre}".`,
+        enlace: 'fotos',
+        targetId: albumId,
+        photoThumbnail: newPhotos[0].archivo,
+        fecha: 'Ahora mismo',
+        leido: false
+      });
+    }
+  }, [currentUserId, currentUser, albums, pushNotification]);
+
+  const reorderAlbumPhotos = useCallback((albumId: string, orderedPhotoIds: string[], timelineNotes?: Record<string, string>) => {
+    setAlbums(prev => prev.map(a => {
+      if (a.id === albumId) {
+        return {
+          ...a,
+          photoOrder: orderedPhotoIds,
+          timelineNotes: timelineNotes !== undefined ? timelineNotes : a.timelineNotes
+        };
+      }
+      return a;
+    }));
+
+    const album = albums.find(a => a.id === albumId);
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const myAvatar = currentUser.avatar || '';
+
+    if (album && album.isCollaborative && album.colaboradoresIds && album.colaboradoresIds.length > 0) {
+      album.colaboradoresIds.forEach(collabId => {
+        if (collabId !== currentUserId) {
+          pushNotification({
+            id: `notif-album-reorder-${Date.now()}-${collabId}`,
+            userId: collabId,
+            fromUserId: currentUserId,
+            fromUserName: myName,
+            fromUserAvatar: myAvatar,
+            tipo: 'foto',
+            mensaje: `${myName} ha reordenado la cronología del evento en "${album.nombre}".`,
+            enlace: 'fotos',
+            targetId: albumId,
+            fecha: 'Ahora mismo',
+            leido: false
+          });
+        }
+      });
+    }
+  }, [albums, currentUser, currentUserId, pushNotification]);
 
   const renameAlbum = useCallback((albumId: string, nuevoNombre: string) => {
     setAlbums(prev => prev.map(a => a.id === albumId ? { ...a, nombre: nuevoNombre.trim() } : a));
@@ -3837,10 +4105,6 @@ const addDeletedMessageIds = (ids: string[]) => {
     updateUserData({ chatEstado: estado });
   }, [updateUserData]);
 
-  const logUserActivity = useCallback((_activity: Omit<UserActivity, 'id' | 'timestamp'>) => {}, []);
-  const deleteUserActivity = useCallback((_activityId: string) => {}, []);
-  const getUserActivities = useCallback((_userId: string) => activities, [activities]);
-
   const resetToDefaultData = useCallback(() => {
     if (typeof localStorage !== 'undefined') {
       try {
@@ -3920,7 +4184,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence,
       likeFeedItem, commentFeedItem, postWallComment, deleteWallComment,
       uploadPhoto, updatePhotoPrivacy, canUserViewPhoto, addPhotoTag, removePhotoTag, addPhotoComment, likePhoto,
-      setPhotoAsAvatar, deletePhoto, createAlbum, renameAlbum, deleteAlbum,
+      setPhotoAsAvatar, deletePhoto, createAlbum, updateAlbum, addCollaboratorsToAlbum, removeCollaboratorFromAlbum, canUserUploadToAlbum, uploadMultiplePhotos, reorderAlbumPhotos, renameAlbum, deleteAlbum,
       sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, removeFriendship, cancelFriendRequest, isFriend, hasPendingRequest, getFriendsOf,
       sendPrivateMessage, markMessageAsRead, deleteMessage, deleteConversation,
       sendChatMessage, sendChatNudge, reactToChatMessage, sendChatTyping, sendChatReadReceipt, openChatWith, closeChat, toggleMinimizeChat, setChatEstado,

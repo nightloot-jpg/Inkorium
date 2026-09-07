@@ -102,6 +102,18 @@ function broadcastProfileUpdate(profileId: string, data: any) {
   }
 }
 
+function broadcastBlockUpdate(blockerId: string, blockedId: string, isBlocked: boolean) {
+  const payload = JSON.stringify({ type: 'CHAT_BLOCK_UPDATE', blockerId, blockedId, isBlocked, timestamp: Date.now() });
+  const message = `data: ${payload}\n\n`;
+  for (const client of profileSseClients) {
+    try {
+      client.write(message);
+    } catch {
+      profileSseClients.delete(client);
+    }
+  }
+}
+
 // Persistent photo metadata store (tags, comments, likes, custom privacy)
 const PHOTO_METADATA_FILE = path.join(process.cwd(), 'photo_metadata.json');
 interface PhotoMetadataStoreItem {
@@ -1107,6 +1119,7 @@ app.post('/api/chat-blocks', (req, res) => {
     const blockedId = String(req.body?.blockedId || '').trim();
     if (blockerId && blockedId) {
       inMemoryChatBlocks.add(`${blockerId}:${blockedId}`);
+      broadcastBlockUpdate(blockerId, blockedId, true);
     }
     return res.status(200).json({ success: true });
   } catch {
@@ -1120,6 +1133,7 @@ app.delete('/api/chat-blocks', (req, res) => {
     const blockedId = String(req.body?.blockedId || req.query?.blockedId || '').trim();
     if (blockerId && blockedId) {
       inMemoryChatBlocks.delete(`${blockerId}:${blockedId}`);
+      broadcastBlockUpdate(blockerId, blockedId, false);
     }
     return res.status(200).json({ success: true });
   } catch {

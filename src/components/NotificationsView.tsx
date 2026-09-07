@@ -72,6 +72,7 @@ export const NotificationsView: React.FC = () => {
     unreadNotificationsCount,
     pendingRequestsCount,
     setActiveSettingsSection,
+    isUserBlocked
   } = useInkorium();
 
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>('todas');
@@ -83,12 +84,12 @@ export const NotificationsView: React.FC = () => {
     setTimeout(() => setFeedbackMessage(null), 3000);
   };
 
-  // Filter notifications for current user
+  // Filter notifications for current user (excluding blocked users)
   const userNotifications = useMemo(() => {
     return notifications.filter(
-      n => n.userId === currentUser.id || !n.userId
+      n => (n.userId === currentUser.id || !n.userId) && (!n.fromUserId || !isUserBlocked(n.fromUserId))
     );
-  }, [notifications, currentUser.id]);
+  }, [notifications, currentUser.id, isUserBlocked]);
 
   // Filtered by category and search
   const filteredNotifications = useMemo(() => {

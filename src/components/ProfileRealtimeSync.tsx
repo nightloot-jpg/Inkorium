@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { broadcastCrossTabEvent, normalizeUserId } from '../lib/chatHistory';
+import { broadcastCrossTabEvent, subscribeCrossTabEvents, normalizeUserId } from '../lib/chatHistory';
+import { signatureEventBus } from '../lib/signatureEventBus';
 import { toProfileAvatarUrl, useInkorium } from '../context/InkoriumContext';
 import { UserPresence } from '../types';
 
@@ -49,10 +50,71 @@ export const mapRealtimeProfile = (profile: any) => {
 };
 
 export const ProfileRealtimeSync: React.FC = () => {
-  const { refreshProfiles } = useInkorium();
+  const { 
+    currentUser, 
+    blockedUserIds, 
+    blockUser, 
+    unblockUser, 
+    isUserBlocked, 
+    closeChat, 
+    refreshProfiles,
+    refreshWallComments 
+  } = useInkorium();
 
-  // 1. Listen to Server-Sent Events from /api/profiles/events
-  // This captures profile_metadata.json updates and server-side profile updates instantly
+  const currentUserId = currentUser?.id || '';
+  const currentUserIdRef = useRef(currentUserId);
+  currentUserIdRef.current = currentUserId;
+
+  const isUserBlockedRef = useRef(isUserBlocked);
+  isUserBlockedRef.current = isUserBlocked;
+
+  // 1. Reactive handler for instantaneous session block propagation
+  const handleBlockStateSync = React.useCallback((blockerId: string, blockedId: string, isBlocked: boolean) => {
+    const curId = currentUserIdRef.current;
+    const normCur = normalizeUserId(curId);
+    const normBlocker = normalizeUserId(blockerId);
+    const normBlocked = normalizeUserId(blockedId);
+
+    // If current session user is the blocker
+    if (normBlocker === normCur) {
+      if (isBlocked) {
+        closeChat(blockedId);
+        if (!isUserBlockedRef.current(blockedId)) {
+          blockUser(blockedId);
+        }
+      } else {
+        if (isUserBlockedRef.current(blockedId)) {
+          unblockUser(blockedId);
+        }
+      }
+    } else if (normBlocked === normCur) {
+      // If current session user is the one who got blocked, close any active chat with blocker
+      closeChat(blockerId);
+    }
+
+    // Instantly notify Signature Event Bus so wall comments in view are dynamically re-filtered
+    signatureEventBus.requestSync('*', 'block_realtime_sync');
+    void refreshWallComments('*').catch(() => null);
+
+    // Dispatch DOM event for any independent listeners in the active session
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('inkorium:block_state_changed', {
+        detail: { blockerId, blockedId, isBlocked }
+      }));
+    }
+  }, [blockUser, unblockUser, closeChat, refreshWallComments]);
+
+  // 2. Watch blockedUserIds state to ensure open chats targeting blocked users are closed immediately
+  useEffect(() => {
+    if (!blockedUserIds || blockedUserIds.length === 0) return;
+    for (const id of blockedUserIds) {
+      closeChat(id);
+    }
+    // Trigger signature bus sync whenever blocked user list changes
+    signatureEventBus.requestSync('*', 'blocked_list_updated');
+  }, [blockedUserIds, closeChat]);
+
+  // 3. Listen to Server-Sent Events from /api/profiles/events (Profiles & Real-time Blocks)
   useEffect(() => {
     let sse: EventSource | null = null;
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -67,6 +129,7 @@ export const ProfileRealtimeSync: React.FC = () => {
           try {
             if (!event.data) return;
             const parsed = JSON.parse(event.data);
+
             if (parsed?.type === 'PROFILE_UPDATE' && parsed.profileId && parsed.data) {
               const mappedData = mapRealtimeProfile(parsed.data);
               broadcastCrossTabEvent({
@@ -77,6 +140,21 @@ export const ProfileRealtimeSync: React.FC = () => {
                 }
               });
               void refreshProfiles();
+            } else if (parsed?.type === 'CHAT_BLOCK_UPDATE') {
+              const blockerId = String(parsed.blockerId || parsed.payload?.blockerId || '').trim();
+              const blockedId = String(parsed.blockedId || parsed.payload?.blockedId || '').trim();
+              const isBlocked = parsed.isBlocked !== undefined 
+                ? Boolean(parsed.isBlocked) 
+                : Boolean(parsed.payload?.isBlocked);
+
+              if (blockerId && blockedId) {
+                // Propagate cross-tab
+                broadcastCrossTabEvent({
+                  type: 'CHAT_BLOCK_UPDATE',
+                  payload: { blockerId, blockedId, isBlocked }
+                });
+                handleBlockStateSync(blockerId, blockedId, isBlocked);
+              }
             }
           } catch (err) {
             console.warn('[ProfileRealtimeSync] SSE message parse error:', err);
@@ -109,9 +187,44 @@ export const ProfileRealtimeSync: React.FC = () => {
         try { sse.close(); } catch {}
       }
     };
-  }, [refreshProfiles]);
+  }, [refreshProfiles, handleBlockStateSync]);
 
-  // 2. Listen to Supabase Realtime postgres_changes if configured
+  // 4. Listen to Cross-Tab BroadcastChannel and Local Storage Events
+  useEffect(() => {
+    const unsub = subscribeCrossTabEvents((event) => {
+      if (event.type === 'CHAT_BLOCK_UPDATE') {
+        const { blockerId, blockedId, isBlocked } = event.payload;
+        handleBlockStateSync(blockerId, blockedId, isBlocked);
+      }
+    });
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key && e.key.startsWith('inkorium:blocked_users_')) {
+        const curId = currentUserIdRef.current;
+        if (e.key === `inkorium:blocked_users_${normalizeUserId(curId)}`) {
+          try {
+            const parsed = e.newValue ? JSON.parse(e.newValue) : [];
+            if (Array.isArray(parsed)) {
+              for (const blockedId of parsed) {
+                closeChat(blockedId);
+              }
+              signatureEventBus.requestSync('*', 'storage_block_sync');
+              void refreshWallComments('*').catch(() => null);
+            }
+          } catch {}
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      unsub();
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [handleBlockStateSync, closeChat, refreshWallComments]);
+
+  // 5. Listen to Supabase Realtime postgres_changes if configured
   useEffect(() => {
     if (!supabase || !isSupabaseConfigured) return;
 
@@ -132,6 +245,18 @@ export const ProfileRealtimeSync: React.FC = () => {
           void refreshProfiles();
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chat_blocks' },
+        (payload) => {
+          const blockerId = String((payload.new as any)?.blocker_id || (payload.old as any)?.blocker_id || '').trim();
+          const blockedId = String((payload.new as any)?.blocked_id || (payload.old as any)?.blocked_id || '').trim();
+          const isBlocked = payload.eventType !== 'DELETE';
+          if (blockerId && blockedId) {
+            handleBlockStateSync(blockerId, blockedId, isBlocked);
+          }
+        }
+      )
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR') {
           console.warn('[Inkorium] Profile realtime channel error');
@@ -141,7 +266,8 @@ export const ProfileRealtimeSync: React.FC = () => {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [refreshProfiles]);
+  }, [refreshProfiles, handleBlockStateSync]);
 
   return null;
 };
+

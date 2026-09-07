@@ -7,6 +7,7 @@ import { RecentProfileVisits } from './RecentProfileVisits';
 import { ProfileWall } from './profile/ProfileWall';
 import { ProfileTopFriends } from './profile/ProfileTopFriends';
 import { ProfilePrivacyModal } from './ProfilePrivacyModal';
+import { BlockUserConfirmModal } from './BlockUserConfirmModal';
 import { 
   Heart, Calendar, MapPin, Briefcase, Music, Sparkles, 
   Trash2, Send, Check, Shield, UserCheck, Camera, Upload, ChevronDown, ChevronRight,
@@ -176,6 +177,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   const [mpSubject, setMpSubject] = useState('');
   const [mpBody, setMpBody] = useState('');
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showBlockConfirmModal, setShowBlockConfirmModal] = useState(false);
   const [privacyPreviewRole, setPrivacyPreviewRole] = useState<'propietario' | 'amigo' | 'no_amigo' | 'no_registrado'>('propietario');
 
   // Privacy evaluations and role simulation
@@ -541,11 +543,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                   </button>
                 ) : (
                   <button
-                    onClick={() => {
-                      if (window.confirm(`¿Seguro que deseas bloquear a ${profileUser.nombre}? Se cancelarán las solicitudes y amistades, y no podrá interactuar contigo ni enviarte mensajes.`)) {
-                        blockUser(profileUser.id);
-                      }
-                    }}
+                    onClick={() => setShowBlockConfirmModal(true)}
                     className="px-2.5 py-1.5 bg-white hover:bg-rose-50 text-gray-500 hover:text-rose-700 border border-gray-300 hover:border-rose-300 rounded text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                     title="Bloquear este usuario"
                   >
@@ -1841,6 +1839,14 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
       <ProfilePrivacyModal
         isOpen={showPrivacyModal}
         onClose={() => setShowPrivacyModal(false)}
+      />
+
+      {/* ================= BLOCK USER CONFIRMATION MODAL ================= */}
+      <BlockUserConfirmModal
+        isOpen={showBlockConfirmModal}
+        targetUser={profileUser}
+        onClose={() => setShowBlockConfirmModal(false)}
+        onConfirm={() => blockUser(profileUser.id)}
       />
     </div>
   );

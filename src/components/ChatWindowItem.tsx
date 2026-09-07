@@ -8,6 +8,7 @@ import { User, ChatWindow, ChatMessage, UserPresence } from '../types';
 import { getFullConversation, formatChatDateDivider, normalizeUserId, subscribeCrossTabEvents } from '../lib/chatHistory';
 import EmoticonPicker from './EmoticonPicker';
 import { SharedMediaView } from './SharedMediaView';
+import { BlockUserConfirmModal } from './BlockUserConfirmModal';
 import { useInkorium } from '../context/InkoriumContext';
 import { playMessageSound, playNudgeSound } from '../utils/sound';
 import { uploadMediaFile } from '../lib/storage';
@@ -67,6 +68,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
   const [activeTab, setActiveTab] = useState<'chat' | 'media'>('chat');
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [attachedFile, setAttachedFile] = useState<{ url: string; name: string; size?: number; type?: string } | null>(null);
+  const [showBlockModal, setShowBlockModal] = useState(false);
 
   // Derived media lists
   const mediaMessages = useMemo(() => {
@@ -895,9 +897,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
               if (isBlocked) {
                 unblockUser(targetUser.id);
               } else {
-                if (window.confirm(`¿Bloquear a ${targetUser.nombre} en el chat? No podrás enviar ni recibir mensajes de este usuario.`)) {
-                  blockUser(targetUser.id);
-                }
+                setShowBlockModal(true);
               }
             }}
             className={`p-1 rounded cursor-pointer transition ${
@@ -905,7 +905,7 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
                 ? 'text-rose-300 bg-rose-900/60 hover:bg-rose-900/80 hover:text-white' 
                 : 'text-white/75 hover:text-rose-200 hover:bg-black/20'
             }`}
-            title={isBlocked ? 'Desbloquear en el chat' : 'Bloquear en el chat'}
+            title={isBlocked ? 'Desbloquear usuario' : 'Bloquear usuario'}
           >
             <Ban className="w-3.5 h-3.5" />
           </button>
@@ -1401,6 +1401,14 @@ export const ChatWindowItem: React.FC<ChatWindowItemProps> = ({
           </div>
         </div>
       )}
+
+      {/* Block Confirmation Modal */}
+      <BlockUserConfirmModal
+        isOpen={showBlockModal}
+        targetUser={targetUser}
+        onClose={() => setShowBlockModal(false)}
+        onConfirm={() => blockUser(targetUser.id)}
+      />
     </div>
   );
 };
