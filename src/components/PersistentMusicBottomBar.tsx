@@ -4,7 +4,7 @@ import {
   Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Repeat1, 
   Volume2, Volume1, VolumeX, Heart, Check, ExternalLink, 
   Disc, ListMusic, ChevronUp, ChevronDown, Music, X, Tv, 
-  Minimize2, Maximize2, Sparkles, Radio, GripVertical, RotateCcw
+  Minimize2, Maximize2, Sparkles, Radio, GripVertical, RotateCcw, Share2
 } from 'lucide-react';
 
 interface Position {
@@ -34,11 +34,14 @@ export const PersistentMusicBottomBar: React.FC = () => {
     toggleMusicRepeat,
     updateUserData,
     setActiveTab,
-    activeTab
+    activeTab,
+    isMusicPlayerOpen,
+    shareTrackToFeed
   } = useInkorium();
 
   const [isExpandedQueue, setIsExpandedQueue] = useState(false);
   const [isProfileSaved, setIsProfileSaved] = useState(false);
+  const [isSharedToWall, setIsSharedToWall] = useState(false);
   const [showVideoPopup, setShowVideoPopup] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [isMinimizedPill, setIsMinimizedPill] = useState(false);
@@ -193,8 +196,8 @@ export const PersistentMusicBottomBar: React.FC = () => {
     }
   };
 
-  // If no track is loaded, do not render
-  if (!currentTrack) {
+  // If no track is loaded or full FloatingMusicPlayer is open, do not render
+  if (!currentTrack || isMusicPlayerOpen) {
     return null;
   }
 
@@ -563,6 +566,25 @@ export const PersistentMusicBottomBar: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Share to Wall */}
+                {currentTrack && (
+                  <button
+                    onClick={() => {
+                      shareTrackToFeed(currentTrack);
+                      setIsSharedToWall(true);
+                      setTimeout(() => setIsSharedToWall(false), 3000);
+                    }}
+                    className={`p-1 rounded-md transition cursor-pointer ${
+                      isSharedToWall
+                        ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40'
+                        : 'text-gray-400 hover:text-[#3869A0] hover:bg-blue-50 dark:hover:bg-blue-950/30'
+                    }`}
+                    title="Compartir lo que escucho en mi muro con mini reproductor"
+                  >
+                    {isSharedToWall ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5" />}
+                  </button>
+                )}
 
                 {/* Set Profile Song */}
                 <button

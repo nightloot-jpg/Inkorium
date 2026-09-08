@@ -4,13 +4,14 @@ import {
   Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Repeat1, 
   Volume2, Volume1, VolumeX, ListMusic, Music, X, Minimize2, 
   Maximize2, Plus, Trash2, Search, Sparkles, Disc, Radio, ExternalLink,
-  ChevronUp, ChevronDown
+  ChevronUp, ChevronDown, Share2, Heart, Check
 } from 'lucide-react';
 import { Track } from '../types';
 import { musicAudioEngine } from '../utils/audioEngine';
 
 export const FloatingMusicPlayer: React.FC = () => {
   const {
+    currentUser,
     currentTrack,
     isMusicPlaying,
     musicPosition,
@@ -34,13 +35,17 @@ export const FloatingMusicPlayer: React.FC = () => {
     setIsMusicPlayerOpen,
     setIsMusicPlayerMinimized,
     addCustomTrack,
-    removeTrackFromPlaylist
+    removeTrackFromPlaylist,
+    shareTrackToFeed,
+    updateUserData
   } = useInkorium();
 
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<string>('todos');
   const [showAddTrackModal, setShowAddTrackModal] = useState(false);
+  const [isSharedToWall, setIsSharedToWall] = useState(false);
+  const [isProfileSaved, setIsProfileSaved] = useState(false);
 
   // Form states for adding custom track
   const [newTitle, setNewTitle] = useState('');
@@ -60,6 +65,113 @@ export const FloatingMusicPlayer: React.FC = () => {
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
+
+  // Derive the active track: currently loaded track, user profile song, or first track in playlist
+  const activeTrack = currentTrack || (currentUser?.musica ? musicPlaylist.find(t => `${t.title} - ${t.artist}` === currentUser.musica || currentUser.musica?.toLowerCase().includes(t.title.toLowerCase())) : null) || musicPlaylist[0];
+
+  // Interactive Progress Bar Ref & States
+  const progressBarRef = useRef<HTMLDivElement | null>(null);
+  const miniProgressBarRef = useRef<HTMLDivElement | null>(null);
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const [scrubTime, setScrubTime] = useState<number | null>(null);
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hoverPercent, setHoverPercent] = useState<number | null>(null);
+
+  // Calculate seek time from MouseEvent or TouchEvent coordinates
+  const calculateTimeFromEvent = (clientX: number, targetRect: DOMRect, duration: number) => {
+    const offsetX = Math.max(0, Math.min(clientX - targetRect.left, targetRect.width));
+    const percent = targetRect.width > 0 ? offsetX / targetRect.width : 0;
+    const targetSeconds = percent * duration;
+    return { targetSeconds, percent: percent * 100 };
+  };
+
+  const handleSeekStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current) return;
+    const duration = musicDuration || activeTrack?.duration || 180;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const { targetSeconds, percent } = calculateTimeFromEvent(clientX, rect, duration);
+    
+    setIsScrubbing(true);
+    setScrubTime(targetSeconds);
+    setHoverPercent(percent);
+    setHoverTime(targetSeconds);
+    seekMusic(targetSeconds);
+  };
+
+  const handleMouseMoveBar = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current) return;
+    const duration = musicDuration || activeTrack?.duration || 180;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const { targetSeconds, percent } = calculateTimeFromEvent(e.clientX, rect, duration);
+    setHoverTime(targetSeconds);
+    setHoverPercent(percent);
+
+    if (isScrubbing) {
+      setScrubTime(targetSeconds);
+      seekMusic(targetSeconds);
+    }
+  };
+
+  const handleMouseLeaveBar = () => {
+    if (!isScrubbing) {
+      setHoverTime(null);
+      setHoverPercent(null);
+    }
+  };
+
+  // Mini-player progress bar click
+  const handleMiniSeekClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (!miniProgressBarRef.current) return;
+    const duration = musicDuration || activeTrack?.duration || 180;
+    const rect = miniProgressBarRef.current.getBoundingClientRect();
+    const { targetSeconds } = calculateTimeFromEvent(e.clientX, rect, duration);
+    seekMusic(targetSeconds);
+  };
+
+  // Global listeners for mouseup / touchend when scrubbing
+  useEffect(() => {
+    if (!isScrubbing) return;
+
+    const handleGlobalMove = (e: MouseEvent | TouchEvent) => {
+      if (!progressBarRef.current) return;
+      const duration = musicDuration || activeTrack?.duration || 180;
+      const rect = progressBarRef.current.getBoundingClientRect();
+      const clientX = 'touches' in e ? (e as TouchEvent).touches[0].clientX : (e as MouseEvent).clientX;
+      const { targetSeconds, percent } = calculateTimeFromEvent(clientX, rect, duration);
+      setScrubTime(targetSeconds);
+      setHoverTime(targetSeconds);
+      setHoverPercent(percent);
+      seekMusic(targetSeconds);
+    };
+
+    const handleGlobalEnd = () => {
+      setIsScrubbing(false);
+      setScrubTime(null);
+      setHoverTime(null);
+      setHoverPercent(null);
+    };
+
+    window.addEventListener('mousemove', handleGlobalMove);
+    window.addEventListener('mouseup', handleGlobalEnd);
+    window.addEventListener('touchmove', handleGlobalMove);
+    window.addEventListener('touchend', handleGlobalEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMove);
+      window.removeEventListener('mouseup', handleGlobalEnd);
+      window.removeEventListener('touchmove', handleGlobalMove);
+      window.removeEventListener('touchend', handleGlobalEnd);
+    };
+  }, [isScrubbing, musicDuration, activeTrack?.duration, seekMusic]);
+
+  // Auto-sync current track if opened without an active track
+  useEffect(() => {
+    if (isMusicPlayerOpen && !currentTrack && activeTrack) {
+      playTrack(activeTrack, !isMusicPlayerMinimized);
+    }
+  }, [isMusicPlayerOpen, currentTrack, activeTrack, playTrack, isMusicPlayerMinimized]);
 
   // Real-time Canvas Equalizer Visualizer
   useEffect(() => {
@@ -117,6 +229,8 @@ export const FloatingMusicPlayer: React.FC = () => {
 
   if (!isMusicPlayerOpen) return null;
 
+  const isYouTubeTrack = !!activeTrack?.youtubeId;
+
   // Filtered playlist
   const filteredPlaylist = musicPlaylist.filter(track => {
     const matchesSearch = track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -148,19 +262,37 @@ export const FloatingMusicPlayer: React.FC = () => {
     setShowAddTrackModal(false);
   };
 
+  const handleTogglePlay = () => {
+    if (!currentTrack && activeTrack) {
+      playTrack(activeTrack, true);
+    } else {
+      togglePlayMusic();
+    }
+  };
+
   // ==============================================================
   // MINIMIZED FLOATING PILL / MINI-PLAYER
   // ==============================================================
   if (isMusicPlayerMinimized) {
-    const progressPercent = musicDuration > 0 ? (musicPosition / musicDuration) * 100 : 0;
+    const activeTrack = currentTrack || musicPlaylist[0];
+    const effectiveDuration = musicDuration || activeTrack?.duration || 180;
+    const currentSeconds = isScrubbing && scrubTime !== null ? scrubTime : musicPosition;
+    const progressPercent = effectiveDuration > 0 ? (currentSeconds / effectiveDuration) * 100 : 0;
 
     return (
-      <div className="fixed bottom-12 left-4 z-40 flex items-center gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[#ccd5df] dark:border-slate-700 shadow-xl rounded-full px-3 py-1.5 transition-all duration-300 animate-in fade-in slide-in-from-bottom-3 hover:shadow-2xl select-none group overflow-hidden">
-        {/* Subtle Bottom Progress Track */}
+      <div className="fixed bottom-12 left-4 z-50 flex items-center gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[#ccd5df] dark:border-slate-700 shadow-xl rounded-full px-3 py-1.5 transition-all duration-300 animate-in fade-in slide-in-from-bottom-3 hover:shadow-2xl select-none group overflow-hidden">
+        {/* Interactive Bottom Progress Track */}
         <div 
-          className="absolute bottom-0 left-0 h-[2px] bg-[#3869A0] dark:bg-blue-400 transition-all duration-200"
-          style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
-        />
+          ref={miniProgressBarRef}
+          onClick={handleMiniSeekClick}
+          className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200/60 dark:bg-slate-800/80 cursor-pointer hover:h-2 transition-all group/minibar"
+          title="Clic para saltar en la canción"
+        >
+          <div 
+            className="h-full bg-[#3869A0] dark:bg-blue-400 transition-all duration-150 group-hover/minibar:bg-blue-500"
+            style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
+          />
+        </div>
 
         {/* Spinning Vinyl Cover */}
         <div 
@@ -169,8 +301,8 @@ export const FloatingMusicPlayer: React.FC = () => {
           title="Clic para expandir reproductor completo"
         >
           <img 
-            src={currentTrack?.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&auto=format&fit=crop&q=80'} 
-            alt={currentTrack?.title} 
+            src={activeTrack?.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&auto=format&fit=crop&q=80'} 
+            alt={activeTrack?.title} 
             className={`w-full h-full object-cover ${isMusicPlaying ? 'animate-spin' : ''}`}
             style={{ animationDuration: '6s' }}
           />
@@ -185,10 +317,10 @@ export const FloatingMusicPlayer: React.FC = () => {
         >
           <p className="text-xs font-bold text-gray-900 dark:text-white truncate leading-tight flex items-center gap-1">
             <Music className="w-3 h-3 text-[#3869A0] dark:text-blue-400 flex-shrink-0" />
-            <span>{currentTrack?.title || 'Reproductor Inkorium'}</span>
+            <span>{activeTrack?.title || 'Reproductor Inkorium'}</span>
           </p>
           <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
-            {currentTrack?.artist || 'Música retro'} {isMusicPlaying ? `• ${formatTime(musicPosition)}` : ''}
+            {activeTrack?.artist || 'Música retro'} {isMusicPlaying ? `• ${formatTime(currentSeconds)}` : ''}
           </p>
         </div>
 
@@ -234,7 +366,7 @@ export const FloatingMusicPlayer: React.FC = () => {
   // EXPANDED HIGH-FIDELITY FLOATING MUSIC PLAYER
   // ==============================================================
   return (
-    <div className="fixed bottom-12 left-4 z-40 w-[320px] sm:w-[350px] bg-white dark:bg-slate-900 border border-[#ccd5df] dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 select-none">
+    <div className="fixed bottom-12 left-4 z-50 w-[320px] sm:w-[350px] bg-white dark:bg-slate-900 border border-[#ccd5df] dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 select-none">
       {/* Retro Header Bar */}
       <div className="bg-[#3869A0] text-white px-3 py-2 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-2">
@@ -362,8 +494,20 @@ export const FloatingMusicPlayer: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0 text-[11px] text-gray-400 font-mono">
+                    <div className="flex items-center gap-1.5 flex-shrink-0 text-[11px] text-gray-400 font-mono">
                       <span>{formatTime(track.duration)}</span>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          shareTrackToFeed(track);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-[#3869A0] transition cursor-pointer"
+                        title="Compartir en mi muro"
+                      >
+                        <Share2 className="w-3 h-3" />
+                      </button>
+
                       {musicPlaylist.length > 1 && (
                         <button
                           onClick={(e) => {
@@ -420,16 +564,16 @@ export const FloatingMusicPlayer: React.FC = () => {
             {/* Front Cover Artwork Card */}
             <div className="relative z-10 w-44 h-44 rounded-lg overflow-hidden border-2 border-white/20 shadow-2xl group flex-shrink-0">
               <img 
-                src={currentTrack?.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80'} 
-                alt={currentTrack?.title} 
+                src={activeTrack?.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80'} 
+                alt={activeTrack?.title} 
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
               />
               <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
-                {currentTrack?.genre || 'Indie'}
+                {activeTrack?.genre || 'Indie'}
               </div>
-              {currentTrack?.year && (
+              {activeTrack?.year && (
                 <div className="absolute bottom-2 right-2 bg-[#3869A0]/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded font-mono">
-                  {currentTrack.year}
+                  {activeTrack.year}
                 </div>
               )}
             </div>
@@ -445,38 +589,150 @@ export const FloatingMusicPlayer: React.FC = () => {
             />
           </div>
 
-          {/* Track Meta (Title, Artist, Album) */}
-          <div className="text-center space-y-0.5">
-            <h3 className="font-bold text-sm text-gray-900 dark:text-white truncate">
-              {currentTrack?.title || 'Sin canción seleccionada'}
-            </h3>
-            <p className="text-xs text-[#3869A0] dark:text-blue-400 font-medium truncate">
-              {currentTrack?.artist || 'Artista desconocido'}
-            </p>
-            {currentTrack?.album && (
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
-                {currentTrack.album}
+          {/* Track Meta (Title, Artist, Album) & Social Actions */}
+          <div className="text-center space-y-1">
+            <div>
+              <h3 className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                {activeTrack?.title || 'Sin canción seleccionada'}
+              </h3>
+              <p className="text-xs text-[#3869A0] dark:text-blue-400 font-medium truncate">
+                {activeTrack?.artist || 'Artista desconocido'}
               </p>
+              {activeTrack?.album && (
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                  {activeTrack.album}
+                </p>
+              )}
+            </div>
+
+            {/* Quick Social Actions (Compartir en mi muro & Poner en perfil) */}
+            {activeTrack && (
+              <div className="flex items-center justify-center gap-2 pt-0.5">
+                <button
+                  onClick={() => {
+                    shareTrackToFeed(activeTrack);
+                    setIsSharedToWall(true);
+                    setTimeout(() => setIsSharedToWall(false), 3000);
+                  }}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1.5 transition shadow-xs cursor-pointer ${
+                    isSharedToWall
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-[#3869A0]/10 hover:bg-[#3869A0]/20 text-[#3869A0] dark:text-blue-300 dark:bg-blue-900/30'
+                  }`}
+                  title="Compartir lo que estoy escuchando en mi muro con un mini reproductor"
+                >
+                  {isSharedToWall ? (
+                    <>
+                      <Check className="w-3 h-3 text-white" />
+                      <span>¡En mi muro!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3 h-3" />
+                      <span>Compartir en mi muro</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    updateUserData({ musica: `${activeTrack.title} - ${activeTrack.artist}` });
+                    setIsProfileSaved(true);
+                    setTimeout(() => setIsProfileSaved(false), 2500);
+                  }}
+                  className={`p-1.5 rounded-full transition cursor-pointer ${
+                    isProfileSaved
+                      ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-gray-100 hover:bg-rose-50 text-gray-500 hover:text-rose-500 dark:bg-slate-800 dark:text-gray-400'
+                  }`}
+                  title="Poner en mi perfil de usuario"
+                >
+                  <Heart className={`w-3.5 h-3.5 ${isProfileSaved ? 'fill-emerald-500 text-emerald-500' : ''}`} />
+                </button>
+
+                {activeTrack.youtubeUrl && (
+                  <a
+                    href={activeTrack.youtubeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-full bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 dark:bg-slate-800 dark:text-gray-400 transition"
+                    title="Ver en YouTube"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Time Progress Bar with Scrubbing */}
-          <div className="space-y-1">
-            <div className="relative flex items-center">
-              <input
-                type="range"
-                min={0}
-                max={musicDuration || 180}
-                value={musicPosition}
-                onChange={e => seekMusic(parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#3869A0] dark:accent-blue-400"
-              />
-            </div>
-            <div className="flex justify-between text-[10px] text-gray-400 font-mono">
-              <span>{formatTime(musicPosition)}</span>
-              <span>{formatTime(musicDuration)}</span>
-            </div>
-          </div>
+          {/* Interactive Progress Bar with Click/Drag Scrubbing & Hover Tooltip */}
+          {(() => {
+            const effectiveDuration = musicDuration || activeTrack?.duration || 180;
+            const currentSeconds = isScrubbing && scrubTime !== null ? scrubTime : musicPosition;
+            const progressPercent = effectiveDuration > 0 ? (currentSeconds / effectiveDuration) * 100 : 0;
+
+            return (
+              <div className="space-y-1.5 pt-1">
+                {/* Clickable and Draggable Bar Area */}
+                <div
+                  ref={progressBarRef}
+                  onMouseDown={handleSeekStart}
+                  onTouchStart={handleSeekStart}
+                  onMouseMove={handleMouseMoveBar}
+                  onMouseLeave={handleMouseLeaveBar}
+                  className="relative py-2.5 -my-2 cursor-pointer group select-none touch-none"
+                  title="Haz clic o arrastra para saltar a cualquier punto de la canción"
+                >
+                  {/* Floating Hover Timestamp Tooltip */}
+                  {hoverPercent !== null && hoverTime !== null && (
+                    <div 
+                      className="absolute -top-5.5 transform -translate-x-1/2 bg-gray-900/95 dark:bg-slate-800 text-white text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shadow-lg pointer-events-none z-30 border border-white/20 whitespace-nowrap animate-in fade-in zoom-in-95 duration-100"
+                      style={{ left: `${Math.max(8, Math.min(92, hoverPercent))}%` }}
+                    >
+                      {formatTime(hoverTime)}
+                    </div>
+                  )}
+
+                  {/* Track Background */}
+                  <div className="h-1.5 group-hover:h-2.5 bg-gray-200 dark:bg-slate-700/80 rounded-full relative overflow-hidden transition-all duration-150">
+                    {/* Hover ghost highlight track */}
+                    {hoverPercent !== null && (
+                      <div 
+                        className="absolute top-0 bottom-0 left-0 bg-[#3869A0]/25 dark:bg-blue-400/25 rounded-full pointer-events-none transition-all duration-75"
+                        style={{ width: `${Math.max(0, Math.min(100, hoverPercent))}%` }}
+                      />
+                    )}
+
+                    {/* Active Progress Fill */}
+                    <div 
+                      className="h-full bg-gradient-to-r from-[#3869A0] via-[#4678b0] to-blue-400 rounded-full transition-all duration-75 group-hover:brightness-110 shadow-xs"
+                      style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
+                    />
+                  </div>
+
+                  {/* Glowing Scrubber Thumb Knob */}
+                  <div 
+                    className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white border-2 border-[#3869A0] dark:border-blue-400 shadow-md transition-transform duration-100 pointer-events-none ${
+                      isScrubbing 
+                        ? 'scale-125 ring-4 ring-[#3869A0]/30 shadow-lg' 
+                        : 'scale-0 group-hover:scale-100'
+                    }`}
+                    style={{ left: `${Math.min(100, Math.max(0, progressPercent))}%` }}
+                  />
+                </div>
+
+                {/* Real-time Time Labels */}
+                <div className="flex justify-between items-center text-[10px] text-gray-500 dark:text-gray-400 font-mono select-none">
+                  <span className={isScrubbing ? 'font-bold text-[#3869A0] dark:text-blue-400' : ''}>
+                    {formatTime(currentSeconds)}
+                  </span>
+                  <span className="text-gray-400 dark:text-gray-500">
+                    {formatTime(effectiveDuration)}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Main Controls (Shuffle, Prev, Big Play, Next, Repeat) */}
           <div className="flex items-center justify-between pt-1">
@@ -500,7 +756,7 @@ export const FloatingMusicPlayer: React.FC = () => {
 
             {/* Big Play Button */}
             <button
-              onClick={togglePlayMusic}
+              onClick={handleTogglePlay}
               className="w-11 h-11 rounded-full bg-[#3869A0] hover:bg-[#2c537f] text-white flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer"
               title={isMusicPlaying ? 'Pausar' : 'Reproducir'}
             >
@@ -529,6 +785,19 @@ export const FloatingMusicPlayer: React.FC = () => {
               {musicRepeatMode === 'one' ? <Repeat1 className="w-3.5 h-3.5" /> : <Repeat className="w-3.5 h-3.5" />}
             </button>
           </div>
+
+          {/* YouTube Hidden Audio Node if active track has youtubeId */}
+          {isYouTubeTrack && isMusicPlaying && activeTrack.youtubeId && (
+            <div className="hidden" aria-hidden="true">
+              <iframe
+                key={activeTrack.youtubeId + '-floating-bg'}
+                src={`https://www.youtube-nocookie.com/embed/${activeTrack.youtubeId}?autoplay=1&enablejsapi=1&rel=0`}
+                title={activeTrack.title}
+                allow="autoplay"
+                className="w-0 h-0 border-0 pointer-events-none"
+              />
+            </div>
+          )}
 
           {/* Volume Control Bar */}
           <div className="pt-2 border-t border-gray-100 dark:border-slate-800/80 flex items-center gap-2">

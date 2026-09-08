@@ -20,6 +20,7 @@ import { CampusView } from './components/CampusView';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { InvitationsModal } from './components/InvitationsModal';
 import { PersistentMusicBottomBar } from './components/PersistentMusicBottomBar';
+import { FloatingMusicPlayer } from './components/FloatingMusicPlayer';
 import { PhotoRetroViewer } from './components/PhotoRetroViewer';
 import { UploadModal } from './components/UploadModal';
 import { AuthModal } from './components/AuthModal';
@@ -105,6 +106,7 @@ const InkoriumAppContent: React.FC = () => {
       <NotificationToasts />
       <PhotoRetroViewer />
       <PersistentMusicBottomBar />
+      <FloatingMusicPlayer />
       <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       <InvitationsModal isOpen={isInvitationsModalOpen} onClose={() => setIsInvitationsModalOpen(false)} />

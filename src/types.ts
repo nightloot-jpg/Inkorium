@@ -172,7 +172,12 @@ export interface SocialPlaylist {
   category: 'populares' | 'nuevas' | 'amigos' | 'tuenti_classic' | 'verano' | 'indie' | 'reggaeton';
   likes?: string[];
   isCommunity?: boolean;
+  isCustom?: boolean;
+  isCollaborative?: boolean;
+  collaborators?: string[];
+  isPrivate?: boolean;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CommunityListeningActivity {
@@ -211,7 +216,7 @@ export interface WallComment {
 
 export interface FeedItem {
   id: string;
-  tipo: 'estado' | 'foto' | 'tablon' | 'amistad' | 'album' | 'evento' | 'pagina';
+  tipo: 'estado' | 'foto' | 'tablon' | 'amistad' | 'album' | 'evento' | 'pagina' | 'musica' | 'playlist';
   propietarioId: string;
   propietarioNombre: string;
   propietarioAvatar: string;
@@ -222,6 +227,8 @@ export interface FeedItem {
   fotoUrl?: string;
   fotoId?: string;
   albumId?: string;
+  track?: Track;
+  playlist?: SocialPlaylist;
   fecha: string;
   likes: string[]; // userIds
   comentarios: {

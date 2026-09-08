@@ -4,7 +4,7 @@ import {
   Play, Pause, Music, Search, Plus, ListMusic, Sparkles, 
   Disc, Radio, Heart, Filter, LayoutGrid, List, Flame, 
   Headset, Clock, User, X, Check, Share2, Youtube, ExternalLink,
-  ChevronRight, RefreshCw, Layers, Loader2, Eye
+  ChevronRight, RefreshCw, Layers, Loader2, Eye, UploadCloud, FolderUp
 } from 'lucide-react';
 import { Track, SocialPlaylist, CommunityListeningActivity, YouTubeVideoResult } from '../types';
 import { INITIAL_TRACKS_CATALOG, INITIAL_COMMUNITY_PLAYLISTS, INITIAL_COMMUNITY_LISTENING } from '../data/musicData';
@@ -25,7 +25,13 @@ export const MusicView: React.FC = () => {
     playTrack,
     togglePlayMusic,
     musicPlaylist,
-    addCustomTrack
+    addCustomTrack,
+    playlists,
+    userPlaylists,
+    createPlaylist,
+    addTrackToPlaylist,
+    playPlaylist,
+    toggleLikePlaylist
   } = useInkorium();
 
   // Search & Category State
@@ -40,16 +46,15 @@ export const MusicView: React.FC = () => {
   const [isSearchingYouTube, setIsSearchingYouTube] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  // Playlists State
-  const [playlists, setPlaylists] = useState<SocialPlaylist[]>(INITIAL_COMMUNITY_PLAYLISTS);
-  const [selectedPlaylistForDetail, setSelectedPlaylistForDetail] = useState<SocialPlaylist | null>(null);
+  // Selected Playlist for Detail Modal
+  const [selectedPlaylistIdForDetail, setSelectedPlaylistIdForDetail] = useState<string | null>(null);
 
   // Community Listening Activity
   const [listeningActivities, setListeningActivities] = useState<CommunityListeningActivity[]>(INITIAL_COMMUNITY_LISTENING);
   const [communityTab, setCommunityTab] = useState<'populares' | 'nuevas' | 'amigos' | 'tuenti_classic'>('populares');
 
   // Modals
-  const [composerMode, setComposerMode] = useState<'add_song' | 'create_playlist' | 'add_to_playlist' | null>(null);
+  const [composerMode, setComposerMode] = useState<'add_song' | 'create_playlist' | 'add_to_playlist' | 'upload_pc' | null>(null);
   const [selectedTrackForComposer, setSelectedTrackForComposer] = useState<Track | null>(null);
 
   // Trigger YouTube Search function
@@ -162,36 +167,24 @@ export const MusicView: React.FC = () => {
   }, [allAvailableTracks]);
 
   // Handlers for Playlist creation and modification
-  const handleCreatePlaylist = (newPlData: Omit<SocialPlaylist, 'id' | 'createdAt'>) => {
-    const newPl: SocialPlaylist = {
-      ...newPlData,
-      id: `pl-custom-${Date.now()}`,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    setPlaylists(prev => [newPl, ...prev]);
+  const handleCreatePlaylist = (newPlData: any) => {
+    createPlaylist({
+      name: newPlData.name,
+      description: newPlData.description,
+      coverUrl: newPlData.coverUrl,
+      category: newPlData.category,
+      isCollaborative: newPlData.isCollaborative,
+      isPrivate: newPlData.isPrivate,
+      initialTracks: newPlData.tracks || []
+    });
   };
 
   const handleAddSongToPlaylist = (track: Track, playlistId: string) => {
-    setPlaylists(prev => prev.map(p => {
-      if (p.id === playlistId) {
-        const alreadyHas = p.tracks.some(t => t.id === track.id || (t.youtubeId && track.youtubeId && t.youtubeId === track.youtubeId));
-        const updatedTracks = alreadyHas ? p.tracks : [...p.tracks, track];
-        return {
-          ...p,
-          tracks: updatedTracks,
-          songsCount: updatedTracks.length,
-          duration: updatedTracks.reduce((acc, cur) => acc + (cur.duration || 180), 0),
-          durationFormatted: `${Math.round(updatedTracks.reduce((acc, cur) => acc + (cur.duration || 180), 0) / 60)} min`
-        };
-      }
-      return p;
-    }));
+    addTrackToPlaylist(playlistId, track);
   };
 
   const handlePlayPlaylist = (pl: SocialPlaylist) => {
-    if (pl.tracks && pl.tracks.length > 0) {
-      playTrack(pl.tracks[0]);
-    }
+    playPlaylist(pl, 0);
   };
 
   const handlePlayYouTubeVideo = (video: YouTubeVideoResult) => {
@@ -199,9 +192,7 @@ export const MusicView: React.FC = () => {
     playTrack(track);
   };
 
-  const myPlaylists = useMemo(() => {
-    return playlists.filter(p => p.creatorId === currentUser.id);
-  }, [playlists, currentUser.id]);
+  const myPlaylists = userPlaylists;
 
   const communityFilteredPlaylists = useMemo(() => {
     if (communityTab === 'populares') {
@@ -215,6 +206,11 @@ export const MusicView: React.FC = () => {
     }
     return playlists.filter(p => p.category === 'amigos' || p.creatorId !== currentUser.id);
   }, [playlists, communityTab, currentUser.id]);
+
+  const selectedPlaylistForDetail = useMemo(() => {
+    if (!selectedPlaylistIdForDetail) return null;
+    return playlists.find(p => p.id === selectedPlaylistIdForDetail) || null;
+  }, [playlists, selectedPlaylistIdForDetail]);
 
   return (
     <div className="w-full max-w-[1720px] 2xl:max-w-[1850px] mx-auto px-3 sm:px-6 lg:px-8 py-4 space-y-5 pb-24">
@@ -526,7 +522,7 @@ export const MusicView: React.FC = () => {
                       <PlaylistCard
                         key={pl.id}
                         playlist={pl}
-                        onSelectPlaylist={setSelectedPlaylistForDetail}
+                        onSelectPlaylist={(p) => setSelectedPlaylistIdForDetail(p.id)}
                         onPlayPlaylist={handlePlayPlaylist}
                       />
                     ))}
@@ -586,6 +582,30 @@ export const MusicView: React.FC = () => {
             /* DEFAULT DISCOVERY VIEW (Rich, Social, Engaging) */
             <div className="space-y-7">
               
+              {/* PC UPLOAD CALLOUT BANNER */}
+              <div className="bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-transparent dark:from-emerald-950/30 dark:via-blue-950/30 p-3.5 sm:p-4 rounded-lg border border-emerald-500/20 dark:border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <UploadCloud className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
+                      ¿Tienes canciones en tu PC? (MP3, WAV, OGG, M4A)
+                    </h3>
+                    <p className="text-[11px] sm:text-xs text-gray-600 dark:text-gray-300">
+                      Sube tus temas favoritos desde tu ordenador, reprodúcelos al instante y añádelos a tus playlists.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setComposerMode('upload_pc')}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer flex-shrink-0"
+                >
+                  <FolderUp className="w-4 h-4" />
+                  <span>Subir archivo desde PC</span>
+                </button>
+              </div>
+
               {/* 4.1 SECCIÓN DESTACADA: TEMAZOS DE INKORIUM */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between pb-1.5 border-b border-gray-200 dark:border-slate-800">
@@ -639,7 +659,7 @@ export const MusicView: React.FC = () => {
                     <PlaylistCard
                       key={pl.id}
                       playlist={pl}
-                      onSelectPlaylist={setSelectedPlaylistForDetail}
+                      onSelectPlaylist={(p) => setSelectedPlaylistIdForDetail(p.id)}
                       onPlayPlaylist={handlePlayPlaylist}
                     />
                   ))}
@@ -832,7 +852,7 @@ export const MusicView: React.FC = () => {
               {communityFilteredPlaylists.map(pl => (
                 <div
                   key={pl.id}
-                  onClick={() => setSelectedPlaylistForDetail(pl)}
+                  onClick={() => setSelectedPlaylistIdForDetail(pl.id)}
                   className="pt-2 first:pt-0 flex items-center justify-between gap-2.5 group cursor-pointer"
                 >
                   <img src={pl.coverUrl} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0 border border-gray-200 dark:border-slate-700" />
@@ -879,7 +899,7 @@ export const MusicView: React.FC = () => {
                 {myPlaylists.map(pl => (
                   <div
                     key={pl.id}
-                    onClick={() => setSelectedPlaylistForDetail(pl)}
+                    onClick={() => setSelectedPlaylistIdForDetail(pl.id)}
                     className="p-2 rounded bg-gray-50 dark:bg-slate-800/60 hover:bg-blue-50/60 dark:hover:bg-blue-950/40 border border-gray-200 dark:border-slate-700 flex items-center justify-between gap-2 cursor-pointer transition"
                   >
                     <div className="flex items-center gap-2 min-w-0">
@@ -916,7 +936,7 @@ export const MusicView: React.FC = () => {
       <PlaylistDetailModal
         playlist={selectedPlaylistForDetail}
         isOpen={!!selectedPlaylistForDetail}
-        onClose={() => setSelectedPlaylistForDetail(null)}
+        onClose={() => setSelectedPlaylistIdForDetail(null)}
         onOpenAddModal={(t) => {
           setSelectedTrackForComposer(t);
           setComposerMode('add_to_playlist');

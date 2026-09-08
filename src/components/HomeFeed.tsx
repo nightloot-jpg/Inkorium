@@ -11,6 +11,7 @@ import {
 import { FeedItem, UserPresence, formatFullLocation } from '../types';
 import { uploadMediaFile } from '../lib/storage';
 import { validateImageFile, formatFileSize, FileValidationResult } from '../utils/validation';
+import { FeedTrackMiniPlayer, FeedPlaylistPlayer } from './FeedMusicPlayer';
 
 export const PRESENCE_MAP: Record<UserPresence, { label: string; dot: string; text: string; bg: string }> = {
   conectado: { label: 'Conectado', dot: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' },
@@ -948,6 +949,14 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                         {item.tipo === 'foto' && (
                           <span className="text-gray-600 font-normal"> ha subido una nueva foto</span>
                         )}
+
+                        {item.tipo === 'musica' && (
+                          <span className="text-gray-600 font-normal"> está escuchando música</span>
+                        )}
+
+                        {item.tipo === 'playlist' && (
+                          <span className="text-gray-600 font-normal"> ha compartido una playlist</span>
+                        )}
                       </div>
                       <div className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
                         <Clock className="w-3 h-3" />
@@ -962,6 +971,16 @@ export const HomeFeed: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUpload 
                   <p className="text-gray-800 text-xs whitespace-pre-line leading-relaxed pl-1">
                     {item.datos}
                   </p>
+                )}
+
+                {/* Single Music Track Mini-Player */}
+                {item.tipo === 'musica' && item.track && (
+                  <FeedTrackMiniPlayer track={item.track} />
+                )}
+
+                {/* Playlist In-Feed Player (Up to 4 first songs) */}
+                {item.tipo === 'playlist' && item.playlist && (
+                  <FeedPlaylistPlayer playlist={item.playlist} />
                 )}
 
                 {/* Attached Photo */}

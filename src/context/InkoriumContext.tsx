@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag, PhotoPrivacy, SocialEvent, EventAttendanceStatus, EventAttendee, EventComment, EventPhoto, ProfileVisit, TuentiPage, PagePost, UserInvitation, GameScore, CampusCommunity, CampusPost, CampusReply, getCountryByZone } from '../types';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { User, Photo, Album, FeedItem, WallComment, PrivateMessage, FriendRequest, Friendship, ChatMessage, ChatWindow, InkoriumNotification, AccessLog, UserActivity, UserPresence, ThemeMode, Track, RepeatMode, PhotoComment, PhotoTag, PhotoPrivacy, SocialEvent, EventAttendanceStatus, EventAttendee, EventComment, EventPhoto, ProfileVisit, TuentiPage, PagePost, UserInvitation, GameScore, CampusCommunity, CampusPost, CampusReply, getCountryByZone, SocialPlaylist } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchPosts, createPost } from '../lib/postsApi';
 import { fetchPhotos, insertPhoto, addPhotoTagApi, removePhotoTagApi, updatePhotoPrivacyApi, addPhotoCommentApi, likePhotoApi } from '../lib/photosApi';
@@ -7,6 +7,7 @@ import { INITIAL_USERS, INITIAL_ALBUMS, INITIAL_PHOTOS, INITIAL_FEED, INITIAL_WA
 import { INITIAL_EVENTS, INITIAL_PAGES, INITIAL_GAME_SCORES } from '../data/mockEventsAndPages';
 import { INITIAL_CAMPUS_COMMUNITIES } from '../data/mockCampus';
 import { INITIAL_MUSIC_TRACKS } from '../data/musicTracks';
+import { INITIAL_COMMUNITY_PLAYLISTS } from '../data/musicData';
 import { musicAudioEngine } from '../utils/audioEngine';
 import { appendMessageToConversation, updateMessageInConversation, normalizeUserId, broadcastCrossTabEvent, subscribeCrossTabEvents, markConversationAsRead, applyReadReceiptsToConversation, getStoredBlockedUserIds, saveStoredBlockedUserIds } from '../lib/chatHistory';
 import { loadChatHistory, persistChatMessages, deletePersistedChatMessages, mergeChatHistory } from '../lib/chatIndexedDb';
@@ -166,6 +167,26 @@ interface InkoriumContextType {
   setIsMusicPlayerOpen: (open: boolean) => void; setIsMusicPlayerMinimized: (minimized: boolean) => void;
   openMusicPlayer: (track?: Track, openExpanded?: boolean) => void; addCustomTrack: (track: Omit<Track, 'id'>) => void;
   removeTrackFromPlaylist: (trackId: string) => void;
+  // Social & Personal Playlists System
+  playlists: SocialPlaylist[];
+  userPlaylists: SocialPlaylist[];
+  createPlaylist: (playlistData: {
+    name: string;
+    description?: string;
+    coverUrl?: string;
+    category?: SocialPlaylist['category'];
+    isCollaborative?: boolean;
+    isPrivate?: boolean;
+    initialTracks?: Track[];
+  }) => SocialPlaylist;
+  updatePlaylist: (playlistId: string, updates: Partial<SocialPlaylist>) => void;
+  deletePlaylist: (playlistId: string) => void;
+  addTrackToPlaylist: (playlistId: string, track: Track) => { success: boolean; isDuplicate: boolean; playlistName: string };
+  removeTrackFromPlaylistById: (playlistId: string, trackId: string) => void;
+  reorderPlaylistTracks: (playlistId: string, fromIndex: number, toIndex: number) => void;
+  playPlaylist: (playlist: SocialPlaylist, startTrackIndex?: number) => void;
+  toggleLikePlaylist: (playlistId: string) => void;
+  duplicatePlaylist: (playlistId: string) => SocialPlaylist | null;
   activeSettingsSection?: string;
   setActiveSettingsSection?: (section: string) => void;
   openSettingsSection: (section: string) => void;
@@ -174,6 +195,8 @@ interface InkoriumContextType {
   viewPhoto: (photoId: string | null) => void; viewAlbum: (albumId: string | null) => void; setCurrentUserById: (userId: string) => void;
   login: (email: string, password?: string) => { success: boolean; error?: string }; loginAsUser: (userId: string) => void; logout: () => void;
   publishStatus: (statusText: string, attachedPhotoUrl?: string) => void; updateStatusText: (statusText: string) => void;
+  shareTrackToFeed: (track: Track, comment?: string) => void;
+  sharePlaylistToFeed: (playlist: SocialPlaylist, comment?: string) => void;
   updateUserPresence: (presencia: UserPresence) => void; likeFeedItem: (feedId: string) => void; commentFeedItem: (feedId: string, text: string) => void;
   postWallComment: (receptorId: string, text: string) => void; deleteWallComment: (commentId: string) => void;
   uploadPhoto: (titulo: string, albumId: string | null, archivoUrl: string, privacidad?: PhotoPrivacy, allowedUserIds?: string[]) => void;
@@ -666,6 +689,27 @@ const addDeletedMessageIds = (ids: string[]) => {
   const [musicRepeatMode, setMusicRepeatMode] = useState<RepeatMode>('all');
   const [isMusicPlayerOpen, setIsMusicPlayerOpen] = useState(false);
   const [isMusicPlayerMinimized, setIsMusicPlayerMinimized] = useState(true);
+
+  // Social & Community Playlists State
+  const [playlists, setPlaylists] = useState<SocialPlaylist[]>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('inkorium:playlists');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return INITIAL_COMMUNITY_PLAYLISTS;
+  });
+
+  // Sync playlists to localStorage
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      safeSetLocalStorage('inkorium:playlists', JSON.stringify(playlists));
+    }
+  }, [playlists]);
 
   // Sync playlist to storage
   useEffect(() => {
@@ -1443,6 +1487,273 @@ const addDeletedMessageIds = (ids: string[]) => {
     setNotifications(prev => prev.filter(n => n.id !== notifId));
   }, []);
 
+  // ==========================================
+  // PLAYLISTS MANAGEMENT SYSTEM
+  // ==========================================
+  const formatPlaylistDuration = (secs: number) => {
+    const mins = Math.round(secs / 60);
+    if (mins < 60) return `${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    return `${hrs} h ${remMins} min`;
+  };
+
+  const userPlaylists = useMemo(() => {
+    const normCurId = normalizeUserId(currentUserId);
+    const normCurUserId = normalizeUserId(currentUser.id);
+    return playlists.filter(pl => {
+      const normCreator = normalizeUserId(pl.creatorId);
+      const isCreator = normCreator === normCurId || normCreator === normCurUserId;
+      const isCollab = Array.isArray(pl.collaborators) && pl.collaborators.some(c => normalizeUserId(c) === normCurId || normalizeUserId(c) === normCurUserId);
+      return isCreator || isCollab || Boolean(pl.isCustom);
+    });
+  }, [playlists, currentUserId, currentUser.id]);
+
+  const createPlaylist = useCallback((playlistData: {
+    name: string;
+    description?: string;
+    coverUrl?: string;
+    category?: SocialPlaylist['category'];
+    isCollaborative?: boolean;
+    isPrivate?: boolean;
+    initialTracks?: Track[];
+  }): SocialPlaylist => {
+    const newId = `pl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const tracks = playlistData.initialTracks || [];
+    const totalDuration = tracks.reduce((acc, t) => acc + (t.duration || 0), 0);
+    const nowISO = new Date().toISOString();
+
+    const newPlaylist: SocialPlaylist = {
+      id: newId,
+      name: playlistData.name.trim(),
+      title: playlistData.name.trim(),
+      description: playlistData.description?.trim() || '',
+      creatorId: currentUserId || currentUser.id || 'u-me',
+      creatorName: myName,
+      creatorAvatar: currentUser.avatar,
+      coverUrl: playlistData.coverUrl?.trim() || tracks[0]?.coverUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
+      category: playlistData.category || 'tuenti_classic',
+      tracks,
+      songsCount: tracks.length,
+      duration: totalDuration,
+      durationFormatted: formatPlaylistDuration(totalDuration),
+      likes: [currentUserId || currentUser.id],
+      isCommunity: !playlistData.isPrivate,
+      isCustom: true,
+      isCollaborative: Boolean(playlistData.isCollaborative),
+      collaborators: playlistData.isCollaborative ? [currentUserId || currentUser.id] : [],
+      isPrivate: Boolean(playlistData.isPrivate),
+      createdAt: nowISO,
+      updatedAt: nowISO
+    };
+
+    setPlaylists(prev => [newPlaylist, ...prev]);
+
+    pushNotification({
+      id: `notif-pl-created-${Date.now()}`,
+      tipo: 'sistema',
+      userId: currentUserId || currentUser.id,
+      fromUserId: currentUserId || currentUser.id,
+      fromUserName: 'Inkorium Música',
+      mensaje: `Has creado la playlist "${newPlaylist.name}" con éxito.`,
+      enlace: 'musica',
+      targetId: newPlaylist.id,
+      fecha: 'Ahora mismo',
+      leido: false
+    });
+
+    return newPlaylist;
+  }, [currentUserId, currentUser, pushNotification]);
+
+  const updatePlaylist = useCallback((playlistId: string, updates: Partial<SocialPlaylist>) => {
+    setPlaylists(prev => prev.map(pl => {
+      if (pl.id === playlistId) {
+        const nextTracks = updates.tracks !== undefined ? updates.tracks : pl.tracks;
+        const totalDuration = nextTracks.reduce((acc, t) => acc + (t.duration || 0), 0);
+        return {
+          ...pl,
+          ...updates,
+          tracks: nextTracks,
+          songsCount: nextTracks.length,
+          duration: totalDuration,
+          durationFormatted: formatPlaylistDuration(totalDuration),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return pl;
+    }));
+  }, []);
+
+  const deletePlaylist = useCallback((playlistId: string) => {
+    setPlaylists(prev => prev.filter(pl => pl.id !== playlistId));
+  }, []);
+
+  const addTrackToPlaylist = useCallback((playlistId: string, track: Track) => {
+    let targetName = '';
+    let alreadyExists = false;
+
+    setPlaylists(prev => prev.map(pl => {
+      if (pl.id === playlistId) {
+        targetName = pl.name;
+        const exists = pl.tracks.some(t => t.id === track.id || (t.title.toLowerCase() === track.title.toLowerCase() && t.artist.toLowerCase() === track.artist.toLowerCase()));
+        if (exists) {
+          alreadyExists = true;
+          return pl;
+        }
+        const nextTracks = [...pl.tracks, track];
+        const totalDuration = nextTracks.reduce((acc, t) => acc + (t.duration || 0), 0);
+        return {
+          ...pl,
+          tracks: nextTracks,
+          songsCount: nextTracks.length,
+          duration: totalDuration,
+          durationFormatted: formatPlaylistDuration(totalDuration),
+          coverUrl: pl.coverUrl || track.coverUrl,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return pl;
+    }));
+
+    if (!alreadyExists && targetName) {
+      setToasts(prev => [
+        {
+          id: `toast-add-pl-${Date.now()}`,
+          tipo: 'sistema',
+          userId: currentUserId,
+          fromUserId: currentUserId,
+          fromUserName: 'Inkorium Música',
+          mensaje: `Añadida "${track.title}" a "${targetName}"`,
+          enlace: 'musica',
+          targetId: playlistId,
+          fecha: 'Ahora mismo',
+          leido: true
+        },
+        ...prev.slice(0, 3)
+      ]);
+    }
+
+    return {
+      success: !alreadyExists,
+      isDuplicate: alreadyExists,
+      playlistName: targetName
+    };
+  }, [currentUserId]);
+
+  const removeTrackFromPlaylistById = useCallback((playlistId: string, trackId: string) => {
+    setPlaylists(prev => prev.map(pl => {
+      if (pl.id === playlistId) {
+        const nextTracks = pl.tracks.filter(t => t.id !== trackId);
+        const totalDuration = nextTracks.reduce((acc, t) => acc + (t.duration || 0), 0);
+        return {
+          ...pl,
+          tracks: nextTracks,
+          songsCount: nextTracks.length,
+          duration: totalDuration,
+          durationFormatted: formatPlaylistDuration(totalDuration),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return pl;
+    }));
+  }, []);
+
+  const reorderPlaylistTracks = useCallback((playlistId: string, fromIndex: number, toIndex: number) => {
+    setPlaylists(prev => prev.map(pl => {
+      if (pl.id === playlistId) {
+        const nextTracks = [...pl.tracks];
+        if (fromIndex < 0 || fromIndex >= nextTracks.length || toIndex < 0 || toIndex >= nextTracks.length) {
+          return pl;
+        }
+        const [moved] = nextTracks.splice(fromIndex, 1);
+        nextTracks.splice(toIndex, 0, moved);
+        return {
+          ...pl,
+          tracks: nextTracks,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return pl;
+    }));
+  }, []);
+
+  const playPlaylist = useCallback((playlist: SocialPlaylist, startTrackIndex: number = 0) => {
+    if (!playlist.tracks || playlist.tracks.length === 0) return;
+    const startIndex = Math.max(0, Math.min(startTrackIndex, playlist.tracks.length - 1));
+    const startTrack = playlist.tracks[startIndex] || playlist.tracks[0];
+
+    setMusicPlaylist(playlist.tracks);
+    setCurrentTrack(startTrack);
+    setMusicPosition(0);
+    setMusicDuration(startTrack.duration || 180);
+    setIsMusicPlayerOpen(true);
+    setIsMusicPlayerMinimized(false);
+    musicAudioEngine.play(startTrack, 0);
+  }, []);
+
+  const toggleLikePlaylist = useCallback((playlistId: string) => {
+    const uid = currentUserId || currentUser.id;
+    if (!uid) return;
+
+    setPlaylists(prev => prev.map(pl => {
+      if (pl.id === playlistId) {
+        const currentLikes = Array.isArray(pl.likes) ? pl.likes : [];
+        const hasLiked = currentLikes.includes(uid);
+        const nextLikes = hasLiked
+          ? currentLikes.filter(id => id !== uid)
+          : [...currentLikes, uid];
+        return {
+          ...pl,
+          likes: nextLikes
+        };
+      }
+      return pl;
+    }));
+  }, [currentUserId, currentUser.id]);
+
+  const duplicatePlaylist = useCallback((playlistId: string): SocialPlaylist | null => {
+    const target = playlists.find(pl => pl.id === playlistId);
+    if (!target) return null;
+
+    const myName = currentUser.full_name || `${currentUser.nombre} ${currentUser.apellidos}`.trim() || currentUser.nombre || 'Usuario';
+    const newId = `pl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const clonedPlaylist: SocialPlaylist = {
+      ...target,
+      id: newId,
+      name: `Copia de ${target.name}`,
+      title: `Copia de ${target.name}`,
+      creatorId: currentUserId || currentUser.id || 'u-me',
+      creatorName: myName,
+      creatorAvatar: currentUser.avatar,
+      isCustom: true,
+      isCommunity: true,
+      likes: [currentUserId || currentUser.id],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setPlaylists(prev => [clonedPlaylist, ...prev]);
+
+    setToasts(prev => [
+      {
+        id: `toast-clone-pl-${Date.now()}`,
+        tipo: 'sistema',
+        userId: currentUserId,
+        fromUserId: currentUserId,
+        fromUserName: 'Inkorium Música',
+        mensaje: `Has duplicado la playlist "${target.name}" como "${clonedPlaylist.name}".`,
+        enlace: 'musica',
+        targetId: clonedPlaylist.id,
+        fecha: 'Ahora mismo',
+        leido: true
+      },
+      ...prev.slice(0, 3)
+    ]);
+
+    return clonedPlaylist;
+  }, [playlists, currentUserId, currentUser]);
+
   const fetchAndMapWallComments = useCallback(async (targetProfileId?: string) => {
     try {
       const query = targetProfileId ? `?profile_id=${encodeURIComponent(targetProfileId)}` : '';
@@ -2070,6 +2381,69 @@ const addDeletedMessageIds = (ids: string[]) => {
       setFeed(prev => [item, ...prev]);
     });
   }, [currentUser, users, currentUserId]);
+
+  const shareTrackToFeed = useCallback((track: Track, comment?: string) => {
+    const author = currentUser;
+    const authorName = `${author.nombre} ${author.apellidos}`.trim() || author.nombre || 'Usuario';
+    const customText = comment?.trim() || `🎧 Escuchando: "${track.title}" de ${track.artist}`;
+    
+    const item: FeedItem = {
+      id: `feed-music-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      tipo: 'musica',
+      propietarioId: author.id,
+      propietarioNombre: authorName,
+      propietarioAvatar: author.avatar,
+      datos: customText,
+      track: track,
+      fecha: 'Ahora mismo',
+      likes: [],
+      comentarios: []
+    };
+    
+    setFeed(prev => [item, ...prev]);
+    pushNotification({
+      id: `notif-share-${Date.now()}`,
+      userId: author.id,
+      fromUserId: 'system',
+      fromUserName: 'Inkorium Música',
+      tipo: 'sistema',
+      mensaje: `"${track.title}" se ha publicado en tu muro con reproductor interactivo.`,
+      fecha: 'Ahora mismo',
+      leido: false
+    });
+  }, [currentUser, pushNotification]);
+
+  const sharePlaylistToFeed = useCallback((playlist: SocialPlaylist, comment?: string) => {
+    const author = currentUser;
+    const authorName = `${author.nombre} ${author.apellidos}`.trim() || author.nombre || 'Usuario';
+    const trackCount = playlist.tracks?.length || playlist.songsCount || 0;
+    const customText = comment?.trim() || `🎵 Compartiendo la playlist "${playlist.name}" (${trackCount} canciones)`;
+    
+    const item: FeedItem = {
+      id: `feed-playlist-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      tipo: 'playlist',
+      propietarioId: author.id,
+      propietarioNombre: authorName,
+      propietarioAvatar: author.avatar,
+      datos: customText,
+      playlist: playlist,
+      fecha: 'Ahora mismo',
+      likes: [],
+      comentarios: []
+    };
+    
+    setFeed(prev => [item, ...prev]);
+    pushNotification({
+      id: `notif-share-pl-${Date.now()}`,
+      userId: author.id,
+      fromUserId: 'system',
+      fromUserName: 'Inkorium Música',
+      tipo: 'sistema',
+      mensaje: `"${playlist.name}" se ha compartido en tu muro con las primeras 4 canciones.`,
+      fecha: 'Ahora mismo',
+      leido: false
+    });
+  }, [currentUser, pushNotification]);
 
   const uploadPhoto = useCallback((
     titulo: string, 
@@ -4169,6 +4543,10 @@ const addDeletedMessageIds = (ids: string[]) => {
       setIsMusicPlayerOpen, setIsMusicPlayerMinimized,
       openMusicPlayer, addCustomTrack,
       removeTrackFromPlaylist,
+      // Playlists System
+      playlists, userPlaylists, createPlaylist, updatePlaylist, deletePlaylist,
+      addTrackToPlaylist, removeTrackFromPlaylistById, reorderPlaylistTracks,
+      playPlaylist, toggleLikePlaylist, duplicatePlaylist,
       // Anti-Algoritmo Mode
       isAntiAlgorithmMode, toggleAntiAlgorithmMode,
       // Retro Tuenti Features
@@ -4185,6 +4563,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       activeSettingsSection, setActiveSettingsSection, openSettingsSection,
       setActiveTab, viewUserProfile, openComposeMessage, viewPhoto, viewAlbum, setCurrentUserById,
       login, loginAsUser, logout, publishStatus, updateStatusText, updateUserPresence,
+      shareTrackToFeed, sharePlaylistToFeed,
       likeFeedItem, commentFeedItem, postWallComment, deleteWallComment,
       uploadPhoto, updatePhotoPrivacy, canUserViewPhoto, addPhotoTag, removePhotoTag, addPhotoComment, likePhoto,
       setPhotoAsAvatar, deletePhoto, createAlbum, updateAlbum, addCollaboratorsToAlbum, removeCollaboratorFromAlbum, canUserUploadToAlbum, uploadMultiplePhotos, reorderAlbumPhotos, renameAlbum, deleteAlbum,

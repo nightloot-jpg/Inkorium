@@ -4,7 +4,7 @@ import {
   Home, User as UserIcon, Users, Image as ImageIcon, Mail, 
   Settings, Bell, Volume2, VolumeX, Search, LogOut, Check,
   UserPlus, MessageSquare, Sparkles, Moon, Sun, Palette,
-  Ticket, ChevronDown, Upload,
+  Ticket, ChevronDown, Upload, Music,
   Calendar, Building2, GraduationCap, Gamepad2
 } from 'lucide-react';
 import { isSoundEnabled, toggleSound } from '../utils/sound';
@@ -15,7 +15,7 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
     currentUser, 
     users, 
     activeTab, 
-    selectedUserId,
+    selectedUserId, 
     setActiveTab, 
     unreadMessagesCount, 
     unreadNotificationsCount, 
@@ -31,7 +31,15 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
     theme,
     isDarkMode,
     toggleTheme,
-    setIsInvitationsModalOpen
+    setIsInvitationsModalOpen,
+    isMusicPlayerOpen,
+    setIsMusicPlayerOpen,
+    isMusicPlayerMinimized,
+    setIsMusicPlayerMinimized,
+    isMusicPlaying,
+    currentTrack,
+    playTrack,
+    musicPlaylist
   } = useInkorium();
 
   const [soundOn, setSoundOn] = useState(isSoundEnabled());
@@ -167,6 +175,44 @@ export const Navbar: React.FC<{ onOpenAuth: () => void; onOpenUpload?: () => voi
             <span className="bg-amber-400 text-[#1a365d] text-[10px] px-1.5 py-0.2 rounded-full font-black">
               {currentUser.invitacionesDisponibles ?? 10}
             </span>
+          </button>
+
+          {/* Botón Icono Música (Abre/Cierra el Reproductor Flotante en Pantalla) */}
+          <button
+            id="floating-music-player-btn"
+            onClick={() => {
+              if (!isMusicPlayerOpen || isMusicPlayerMinimized) {
+                setIsMusicPlayerOpen(true);
+                setIsMusicPlayerMinimized(false);
+                if (!currentTrack) {
+                  const userSong = currentUser?.musica;
+                  const matched = userSong ? musicPlaylist.find(t => `${t.title} - ${t.artist}` === userSong || userSong.toLowerCase().includes(t.title.toLowerCase())) : null;
+                  const targetTrack = matched || musicPlaylist[0];
+                  if (targetTrack) {
+                    playTrack(targetTrack, true);
+                  }
+                }
+              } else {
+                setIsMusicPlayerOpen(false);
+              }
+            }}
+            className={`p-1.5 rounded transition relative cursor-pointer ${
+              isMusicPlayerOpen && !isMusicPlayerMinimized
+                ? 'bg-[#24466d] text-white ring-1 ring-blue-300/60 shadow-inner'
+                : isMusicPlaying
+                ? 'hover:bg-[#2f5988] text-emerald-300'
+                : 'hover:bg-[#2f5988] text-blue-100 hover:text-white'
+            }`}
+            title={
+              !isMusicPlayerOpen || isMusicPlayerMinimized
+                ? 'Mostrar reproductor de música flotante'
+                : 'Ocultar reproductor de música flotante'
+            }
+          >
+            <Music className={`w-4 h-4 ${isMusicPlaying ? 'text-emerald-300 animate-pulse' : 'text-blue-100'}`} />
+            {isMusicPlaying && (
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+            )}
           </button>
 
           <button
