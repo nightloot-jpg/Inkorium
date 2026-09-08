@@ -1,23 +1,29 @@
 import React, { useState, useMemo } from 'react';
 import { useInkorium } from '../context/InkoriumContext';
-import { Search, UserPlus, Users, MapPin, Check, Filter, MessageSquare, Mail, Globe, RefreshCw } from 'lucide-react';
-import { COUNTRIES_LIST, getZonesForCountry, formatFullLocation } from '../types';
+import { Search, UserPlus, Users, MapPin, Check, Filter, MessageSquare, Mail, Globe, RefreshCw, Ban, UserMinus, UserCheck } from 'lucide-react';
+import { COUNTRIES_LIST, getZonesForCountry, formatFullLocation, User } from '../types';
+import { BlockUserConfirmModal } from './BlockUserConfirmModal';
 
 export const PeopleSearch: React.FC = () => {
   const {
     currentUser,
     users,
     viewUserProfile,
+    addFriend,
     sendFriendRequest,
+    removeFriendship,
     isFriend,
     hasPendingRequest,
     isUserBlocked,
+    blockUser,
+    unblockUser,
     openChatWith,
     openComposeMessage,
     refreshProfiles
   } = useInkorium();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [userToBlock, setUserToBlock] = useState<User | null>(null);
 
   const [generalQuery, setGeneralQuery] = useState('');
   const [nombre, setNombre] = useState('');
@@ -457,29 +463,68 @@ export const PeopleSearch: React.FC = () => {
                         </div>
 
                         {friend ? (
-                          <button
-                            disabled
-                            className="w-full py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded border border-emerald-200 flex items-center justify-center gap-1 cursor-default"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Amigos</span>
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <div className="flex-1 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded border border-emerald-200 flex items-center justify-center gap-1">
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Amigos</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`¿Seguro que deseas eliminar a ${user.nombre} de tu lista de amigos?`)) {
+                                  removeFriendship(user.id);
+                                }
+                              }}
+                              className="py-1 px-1.5 bg-white hover:bg-amber-50 text-gray-400 hover:text-amber-700 border border-gray-200 hover:border-amber-300 text-[11px] rounded transition cursor-pointer"
+                              title="Eliminar de amigos"
+                            >
+                              <UserMinus className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setUserToBlock(user)}
+                              className="py-1 px-1.5 bg-white hover:bg-rose-50 text-gray-400 hover:text-rose-600 border border-gray-200 hover:border-rose-300 text-[11px] rounded transition cursor-pointer"
+                              title="Bloquear perfil"
+                            >
+                              <Ban className="w-3 h-3" />
+                            </button>
+                          </div>
                         ) : pending ? (
-                          <button
-                            disabled
-                            className="w-full py-1 bg-gray-100 text-gray-500 font-semibold text-xs rounded border border-gray-200 cursor-default text-center"
-                          >
-                            Petición enviada
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              disabled
+                              className="flex-1 py-1 bg-gray-100 text-gray-500 font-semibold text-xs rounded border border-gray-200 cursor-default text-center"
+                            >
+                              Petición enviada
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setUserToBlock(user)}
+                              className="py-1 px-1.5 bg-white hover:bg-rose-50 text-gray-400 hover:text-rose-600 border border-gray-200 hover:border-rose-300 text-[11px] rounded transition cursor-pointer"
+                              title="Bloquear perfil"
+                            >
+                              <Ban className="w-3 h-3" />
+                            </button>
+                          </div>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => sendFriendRequest(user.id)}
-                            className="w-full py-1 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold text-xs rounded transition flex items-center justify-center gap-1 shadow-xs cursor-pointer"
-                          >
-                            <UserPlus className="w-3.5 h-3.5" />
-                            <span>Añadir amigo</span>
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => addFriend(user.id)}
+                              className="flex-1 py-1 bg-[#3869A0] hover:bg-[#2c537f] text-white font-bold text-xs rounded transition flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+                            >
+                              <UserPlus className="w-3.5 h-3.5" />
+                              <span>Añadir amigo</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setUserToBlock(user)}
+                              className="py-1 px-1.5 bg-white hover:bg-rose-50 text-gray-400 hover:text-rose-600 border border-gray-200 hover:border-rose-300 text-[11px] rounded transition cursor-pointer"
+                              title="Bloquear perfil"
+                            >
+                              <Ban className="w-3 h-3" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -515,6 +560,21 @@ export const PeopleSearch: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Block User Confirmation Modal */}
+      {userToBlock && (
+        <BlockUserConfirmModal
+          isOpen={!!userToBlock}
+          targetUser={userToBlock}
+          onClose={() => setUserToBlock(null)}
+          onConfirm={() => {
+            if (userToBlock) {
+              blockUser(userToBlock.id);
+            }
+            setUserToBlock(null);
+          }}
+        />
+      )}
     </div>
   );
 };

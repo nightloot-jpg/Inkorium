@@ -268,11 +268,86 @@ export interface FriendRequest {
   estado: 'pendiente' | 'aceptada' | 'ignorada' | 'rechazada';
 }
 
+export type FriendCategory = 'mejores_amigos' | 'familia' | 'colegas' | 'fiesta' | 'general';
+
+export interface FriendCategoryConfig {
+  id: FriendCategory;
+  label: string;
+  shortLabel: string;
+  description: string;
+  emoji: string;
+  badgeBg: string;
+  badgeText: string;
+  badgeBorder: string;
+  colorName: string;
+}
+
+export const PREDEFINED_FRIEND_CATEGORIES: FriendCategoryConfig[] = [
+  {
+    id: 'mejores_amigos',
+    label: 'Mejores Amigos',
+    shortLabel: 'Mejores',
+    description: 'Tus amistades más cercanas y de máxima confianza',
+    emoji: '⭐',
+    badgeBg: 'bg-amber-50 dark:bg-amber-950/40',
+    badgeText: 'text-amber-700 dark:text-amber-300',
+    badgeBorder: 'border-amber-200 dark:border-amber-800/60',
+    colorName: 'amber'
+  },
+  {
+    id: 'familia',
+    label: 'Familia',
+    shortLabel: 'Familia',
+    description: 'Familiares y parientes cercanos',
+    emoji: '❤️',
+    badgeBg: 'bg-rose-50 dark:bg-rose-950/40',
+    badgeText: 'text-rose-700 dark:text-rose-300',
+    badgeBorder: 'border-rose-200 dark:border-rose-800/60',
+    colorName: 'rose'
+  },
+  {
+    id: 'colegas',
+    label: 'Colegas / Uni / Trabajo',
+    shortLabel: 'Colegas',
+    description: 'Compañeros de clase, universidad o trabajo',
+    emoji: '🎓',
+    badgeBg: 'bg-sky-50 dark:bg-sky-950/40',
+    badgeText: 'text-sky-700 dark:text-sky-300',
+    badgeBorder: 'border-sky-200 dark:border-sky-800/60',
+    colorName: 'sky'
+  },
+  {
+    id: 'fiesta',
+    label: 'Fiesta & Salir',
+    shortLabel: 'Fiesta',
+    description: 'Gente para salir de fiesta, festivales y conciertos',
+    emoji: '🎉',
+    badgeBg: 'bg-purple-50 dark:bg-purple-950/40',
+    badgeText: 'text-purple-700 dark:text-purple-300',
+    badgeBorder: 'border-purple-200 dark:border-purple-800/60',
+    colorName: 'purple'
+  },
+  {
+    id: 'general',
+    label: 'Amigos (General)',
+    shortLabel: 'Amigos',
+    description: 'Círculo general de amigos y conocidos',
+    emoji: '👥',
+    badgeBg: 'bg-emerald-50 dark:bg-emerald-950/40',
+    badgeText: 'text-emerald-700 dark:text-emerald-300',
+    badgeBorder: 'border-emerald-200 dark:border-emerald-800/60',
+    colorName: 'emerald'
+  }
+];
+
 export interface Friendship {
   id: string;
   user1: string;
   user2: string;
   fecha: string;
+  categoria?: FriendCategory;
+  categoriaPorUsuario?: Record<string, FriendCategory>;
+  notaPrivada?: string;
 }
 
 export interface ChatWindow {

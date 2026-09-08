@@ -29,7 +29,8 @@ export type InkoriumCrossTabEvent =
   | { type: 'PROFILE_UPDATE'; payload: { userId: string; data: any } }
   | { type: 'WALL_COMMENT'; payload: { comment: WallComment } }
   | { type: 'WALL_COMMENT_DELETE'; payload: { commentId: string } }
-  | { type: 'CHAT_BLOCK_UPDATE'; payload: { blockerId: string; blockedId: string; isBlocked: boolean } };
+  | { type: 'CHAT_BLOCK_UPDATE'; payload: { blockerId: string; blockedId: string; isBlocked: boolean } }
+  | { type: 'FRIENDSHIP_UPDATE'; payload: { user1: string; user2: string; action: 'add' | 'remove' } };
 
 export function broadcastCrossTabEvent(event: InkoriumCrossTabEvent): void {
   try {

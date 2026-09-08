@@ -42,6 +42,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     viewUserProfile,
     viewPhoto,
     viewAlbum,
+    addFriend,
     sendFriendRequest,
     acceptFriendRequest,
     ignoreFriendRequest,
@@ -52,6 +53,7 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
     getFriendsOf,
     sendPrivateMessage,
     openChatWith,
+    blockedUserIds,
     isUserBlocked,
     blockUser,
     unblockUser,
@@ -159,8 +161,9 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
   // Profile View Sub-tab
   const [profileSubTab, setProfileSubTab] = useState<'perfil' | 'amigos' | 'fotos'>('perfil');
   const [friendSearchQuery, setFriendSearchQuery] = useState('');
-  const [friendFilter, setFriendFilter] = useState<'todos' | 'online' | 'solicitudes'>('todos');
+  const [friendFilter, setFriendFilter] = useState<'todos' | 'online' | 'solicitudes' | 'bloqueados'>('todos');
   const [confirmRemoveFriendId, setConfirmRemoveFriendId] = useState<string | null>(null);
+  const [userToBlockForModal, setUserToBlockForModal] = useState<User | null>(null);
 
   const [editingStatus, setEditingStatus] = useState(false);
   const [newStatusText, setNewStatusText] = useState(profileUser.estado || '');
@@ -524,11 +527,12 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                   </div>
                 ) : (
                   <button
-                    onClick={() => sendFriendRequest(profileUser.id)}
+                    onClick={() => addFriend(profileUser.id)}
                     className="px-3.5 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white rounded text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                    title="Añadir a este usuario como amigo"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
-                    <span>Añadir amigo</span>
+                    <span>Añadir a mis amigos</span>
                   </button>
                 )}
 
@@ -543,7 +547,10 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                   </button>
                 ) : (
                   <button
-                    onClick={() => setShowBlockConfirmModal(true)}
+                    onClick={() => {
+                      setUserToBlockForModal(profileUser);
+                      setShowBlockConfirmModal(true);
+                    }}
                     className="px-2.5 py-1.5 bg-white hover:bg-rose-50 text-gray-500 hover:text-rose-700 border border-gray-300 hover:border-rose-300 rounded text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                     title="Bloquear este usuario"
                   >
@@ -931,9 +938,77 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                     </span>
                   </button>
                 )}
+                {isOwnProfile && blockedUserIds.length > 0 && (
+                  <button
+                    onClick={() => setFriendFilter('bloqueados')}
+                    className={`px-2.5 py-1 rounded text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                      friendFilter === 'bloqueados' ? 'bg-rose-600 text-white shadow-xs' : 'text-rose-700 bg-rose-50 hover:bg-rose-100'
+                    }`}
+                  >
+                    <Ban className="w-3 h-3" />
+                    <span>Bloqueados ({blockedUserIds.length})</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Blocked Users Section (if filter selected) */}
+          {isOwnProfile && friendFilter === 'bloqueados' && (
+            <div className="bg-rose-50/70 rounded border border-rose-200 p-4 shadow-xs space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-rose-200">
+                <div className="flex items-center gap-2 text-rose-900 font-bold text-xs">
+                  <Ban className="w-4 h-4 text-rose-700" />
+                  <span>Usuarios bloqueados ({blockedUserIds.length})</span>
+                </div>
+                <span className="text-[11px] text-rose-700 font-medium">
+                  Estos perfiles no pueden ver tu tablón, enviarte mensajes ni interactuar contigo
+                </span>
+              </div>
+
+              {blockedUserIds.length === 0 ? (
+                <div className="text-center py-6 text-gray-500 text-xs">
+                  No tienes usuarios bloqueados actualmente.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {blockedUserIds.map(blockedId => {
+                    const blockedUser = users.find(u => u.id === blockedId);
+                    return (
+                      <div key={blockedId} className="bg-white rounded border border-rose-200 p-3 shadow-xs space-y-2 flex flex-col justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={blockedUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'}
+                            alt={blockedUser?.nombre || 'Usuario'}
+                            className="w-10 h-10 rounded object-cover border border-rose-200 flex-shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-xs text-gray-800 truncate">
+                              {blockedUser ? `${blockedUser.nombre} ${blockedUser.apellidos || ''}` : 'Usuario'}
+                            </h4>
+                            <p className="text-[10px] text-rose-600 font-semibold flex items-center gap-0.5">
+                              <Ban className="w-2.5 h-2.5" />
+                              <span>Perfil bloqueado</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-100">
+                          <button
+                            onClick={() => unblockUser(blockedId)}
+                            className="w-full py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer"
+                          >
+                            <Ban className="w-3.5 h-3.5" />
+                            <span>Desbloquear usuario</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Pending Friend Requests Section (if on own profile or if filter selected) */}
           {isOwnProfile && (friendFilter === 'solicitudes' || friendFilter === 'todos') && allMyPendingRequests.length > 0 && (
@@ -1114,17 +1189,29 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
                           </button>
 
                           {isOwnProfile && (
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`¿Seguro que deseas eliminar a ${friend.nombre} de tu lista de amigos?`)) {
-                                  removeFriendship(friend.id);
-                                }
-                              }}
-                              className="py-1 px-2 bg-white hover:bg-red-50 text-gray-400 hover:text-red-600 border border-gray-200 hover:border-red-200 text-[11px] rounded transition cursor-pointer"
-                              title="Eliminar de amigos"
-                            >
-                              <UserMinus className="w-3 h-3" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`¿Seguro que deseas eliminar a ${friend.nombre} de tu lista de amigos?`)) {
+                                    removeFriendship(friend.id);
+                                  }
+                                }}
+                                className="py-1 px-1.5 bg-white hover:bg-amber-50 text-gray-400 hover:text-amber-700 border border-gray-200 hover:border-amber-300 text-[11px] rounded transition cursor-pointer"
+                                title="Eliminar de amigos"
+                              >
+                                <UserMinus className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setUserToBlockForModal(friend);
+                                  setShowBlockConfirmModal(true);
+                                }}
+                                className="py-1 px-1.5 bg-white hover:bg-rose-50 text-gray-400 hover:text-rose-600 border border-gray-200 hover:border-rose-300 text-[11px] rounded transition cursor-pointer"
+                                title="Bloquear perfil"
+                              >
+                                <Ban className="w-3 h-3" />
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1844,9 +1931,19 @@ export const ProfileView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUplo
       {/* ================= BLOCK USER CONFIRMATION MODAL ================= */}
       <BlockUserConfirmModal
         isOpen={showBlockConfirmModal}
-        targetUser={profileUser}
-        onClose={() => setShowBlockConfirmModal(false)}
-        onConfirm={() => blockUser(profileUser.id)}
+        targetUser={userToBlockForModal || profileUser}
+        onClose={() => {
+          setShowBlockConfirmModal(false);
+          setUserToBlockForModal(null);
+        }}
+        onConfirm={() => {
+          const userToBlock = userToBlockForModal || profileUser;
+          if (userToBlock) {
+            blockUser(userToBlock.id);
+          }
+          setShowBlockConfirmModal(false);
+          setUserToBlockForModal(null);
+        }}
       />
     </div>
   );

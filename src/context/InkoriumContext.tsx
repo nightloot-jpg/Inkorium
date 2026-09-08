@@ -221,6 +221,7 @@ interface InkoriumContextType {
   uploadMultiplePhotos: (photosList: Array<{ titulo: string; archivoUrl: string; privacidad?: PhotoPrivacy; allowedUserIds?: string[] }>, albumId: string) => void;
   reorderAlbumPhotos: (albumId: string, orderedPhotoIds: string[], timelineNotes?: Record<string, string>) => void;
   renameAlbum: (albumId: string, nuevoNombre: string) => void; deleteAlbum: (albumId: string) => void;
+  addFriend: (targetUserId: string) => void;
   sendFriendRequest: (targetUserId: string) => void; acceptFriendRequest: (requestId: string) => void; ignoreFriendRequest: (requestId: string) => void;
   removeFriendship: (targetUserId: string) => void; cancelFriendRequest: (targetUserId: string) => void;
   isFriend: (userId1: string, userId2: string) => boolean; hasPendingRequest: (fromId: string, toId: string) => boolean; getFriendsOf: (userId: string) => User[];
@@ -3431,16 +3432,31 @@ const addDeletedMessageIds = (ids: string[]) => {
   }, [currentUserId]);
 
   const removeFriendship = useCallback((targetUserId: string) => {
-    setFriendships(prev => prev.filter(f => 
-      !((f.user1 === currentUserId && f.user2 === targetUserId) || (f.user1 === targetUserId && f.user2 === currentUserId))
-    ));
+    const normCurrent = normalizeUserId(currentUserId);
+    const normTarget = normalizeUserId(targetUserId);
+    setFriendships(prev => {
+      const updated = prev.filter(f => 
+        !((normalizeUserId(f.user1) === normCurrent && normalizeUserId(f.user2) === normTarget) ||
+          (normalizeUserId(f.user1) === normTarget && normalizeUserId(f.user2) === normCurrent))
+      );
+      safeSetLocalStorage('inkorium:friendships', JSON.stringify(updated));
+      return updated;
+    });
     setFriendRequests(prev => prev.filter(r => 
-      !((r.emisorId === currentUserId && r.receptorId === targetUserId) || (r.emisorId === targetUserId && r.receptorId === currentUserId))
+      !((normalizeUserId(r.emisorId) === normCurrent && normalizeUserId(r.receptorId) === normTarget) ||
+        (normalizeUserId(r.emisorId) === normTarget && normalizeUserId(r.receptorId) === normCurrent))
     ));
+    broadcastCrossTabEvent({
+      type: 'FRIENDSHIP_UPDATE',
+      payload: { user1: currentUserId, user2: targetUserId, action: 'remove' }
+    });
   }, [currentUserId]);
 
-  const sendFriendRequest = useCallback((targetUserId: string) => {
-    if (!currentUserId || !targetUserId || targetUserId === currentUserId) return;
+  const addFriend = useCallback((targetUserId: string) => {
+    if (!currentUserId || !targetUserId || normalizeUserId(targetUserId) === normalizeUserId(currentUserId)) return;
+    const normTarget = normalizeUserId(targetUserId);
+    const normCurrent = normalizeUserId(currentUserId);
+
     if (isUserBlocked(targetUserId)) {
       pushNotification({
         id: `block-notif-${Date.now()}`,
@@ -3448,38 +3464,72 @@ const addDeletedMessageIds = (ids: string[]) => {
         userId: currentUserId,
         fromUserId: currentUserId,
         fromUserName: 'Inkorium',
-        mensaje: 'No puedes enviar solicitudes de amistad a un usuario que tienes bloqueado.',
+        mensaje: 'No puedes añadir como amigo a un usuario bloqueado. Desbloquéalo primero.',
         fecha: 'Ahora mismo',
         leido: false
       });
       return;
     }
-    const newReq: FriendRequest = {
-      id: `req-${Date.now()}`,
-      emisorId: currentUserId,
-      emisorNombre: `${currentUser.nombre} ${currentUser.apellidos}`.trim() || 'Usuario',
-      emisorAvatar: currentUser.avatar,
-      emisorProvincia: currentUser.provincia,
-      receptorId: targetUserId,
-      fecha: 'Ahora mismo',
-      estado: 'pendiente'
-    };
-    setFriendRequests(prev => [newReq, ...prev]);
+
+    // 1. Establish real bidirectional friendship
+    setFriendships(prev => {
+      const alreadyFriends = prev.some(f => 
+        (normalizeUserId(f.user1) === normCurrent && normalizeUserId(f.user2) === normTarget) ||
+        (normalizeUserId(f.user1) === normTarget && normalizeUserId(f.user2) === normCurrent)
+      );
+      if (alreadyFriends) return prev;
+      const newFriendship: Friendship = {
+        id: `f-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        user1: currentUserId,
+        user2: targetUserId,
+        fecha: new Date().toLocaleDateString('es-ES')
+      };
+      const updated = [newFriendship, ...prev];
+      safeSetLocalStorage('inkorium:friendships', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 2. Clear any pending friend requests between them
+    setFriendRequests(prev => prev.filter(r => 
+      !((normalizeUserId(r.emisorId) === normCurrent && normalizeUserId(r.receptorId) === normTarget) ||
+        (normalizeUserId(r.emisorId) === normTarget && normalizeUserId(r.receptorId) === normCurrent))
+    ));
+
+    // 3. Mark notifications as accepted
+    setNotifications(prev => prev.map(n => 
+      (n.tipo === 'peticion' && (normalizeUserId(n.fromUserId) === normTarget || normalizeUserId(n.userId) === normTarget))
+        ? { ...n, leido: true, estadoPeticion: 'aceptada', mensaje: 'y tú ahora sois amigos en Inkorium.' }
+        : n
+    ));
+
+    // 4. Send positive confirmation notification
+    const targetObj = users.find(u => normalizeUserId(u.id) === normTarget);
+    const targetName = targetObj 
+      ? (targetObj.full_name || `${targetObj.nombre} ${targetObj.apellidos || ''}`.trim() || targetObj.username || 'Usuario')
+      : 'Usuario';
+
     pushNotification({
-      id: `notif-req-${Date.now()}`,
-      tipo: 'peticion',
-      userId: targetUserId,
-      fromUserId: currentUserId,
-      fromUserName: `${currentUser.nombre} ${currentUser.apellidos}`.trim() || 'Usuario',
-      fromUserAvatar: currentUser.avatar,
-      mensaje: 'te ha enviado una petición de amistad.',
-      enlace: 'notificaciones',
-      targetId: newReq.id,
-      estadoPeticion: 'pendiente',
+      id: `notif-added-${Date.now()}`,
+      tipo: 'sistema',
+      userId: currentUserId,
+      fromUserId: targetUserId,
+      fromUserName: targetName,
+      fromUserAvatar: targetObj?.avatar,
+      mensaje: `¡Has añadido a ${targetName} a tus amigos! Ahora podéis ver vuestras fotos, firmar en el tablón y chatear.`,
       fecha: 'Ahora mismo',
       leido: false
     });
-  }, [currentUserId, currentUser, isUserBlocked, pushNotification]);
+
+    broadcastCrossTabEvent({
+      type: 'FRIENDSHIP_UPDATE',
+      payload: { user1: currentUserId, user2: targetUserId, action: 'add' }
+    });
+  }, [currentUserId, isUserBlocked, users, pushNotification]);
+
+  const sendFriendRequest = useCallback((targetUserId: string) => {
+    // Adding a real friend directly
+    addFriend(targetUserId);
+  }, [addFriend]);
 
   const isFriend = useCallback((userId1: string, userId2: string) => {
     return friendships.some(f => 
@@ -4567,7 +4617,7 @@ const addDeletedMessageIds = (ids: string[]) => {
       likeFeedItem, commentFeedItem, postWallComment, deleteWallComment,
       uploadPhoto, updatePhotoPrivacy, canUserViewPhoto, addPhotoTag, removePhotoTag, addPhotoComment, likePhoto,
       setPhotoAsAvatar, deletePhoto, createAlbum, updateAlbum, addCollaboratorsToAlbum, removeCollaboratorFromAlbum, canUserUploadToAlbum, uploadMultiplePhotos, reorderAlbumPhotos, renameAlbum, deleteAlbum,
-      sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, removeFriendship, cancelFriendRequest, isFriend, hasPendingRequest, getFriendsOf,
+      addFriend, sendFriendRequest, acceptFriendRequest, ignoreFriendRequest, removeFriendship, cancelFriendRequest, isFriend, hasPendingRequest, getFriendsOf,
       sendPrivateMessage, markMessageAsRead, deleteMessage, deleteConversation,
       sendChatMessage, sendChatNudge, reactToChatMessage, sendChatTyping, sendChatReadReceipt, openChatWith, closeChat, toggleMinimizeChat, setChatEstado,
       blockedUserIds, blockUser, unblockUser, isUserBlocked,
