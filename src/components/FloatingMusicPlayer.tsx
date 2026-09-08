@@ -271,6 +271,33 @@ export const FloatingMusicPlayer: React.FC = () => {
   };
 
   // ==============================================================
+  // ACTIVE BACKGROUND AUDIO ENGINE (Unthrottled YouTube Stream)
+  // ==============================================================
+  const youtubeAudioEngineNode = isYouTubeTrack && activeTrack?.youtubeId && isMusicPlaying ? (
+    <div 
+      style={{
+        position: 'fixed',
+        bottom: '-9999px',
+        right: '-9999px',
+        width: '200px',
+        height: '200px',
+        opacity: 0.001,
+        pointerEvents: 'none',
+        zIndex: -9999
+      }}
+      aria-hidden="true"
+    >
+      <iframe
+        key={`yt-audio-floating-${activeTrack.youtubeId}`}
+        src={`https://www.youtube-nocookie.com/embed/${activeTrack.youtubeId}?autoplay=1&enablejsapi=1&rel=0`}
+        title={activeTrack.title}
+        allow="autoplay; encrypted-media"
+        style={{ width: '100%', height: '100%', border: 'none' }}
+      />
+    </div>
+  ) : null;
+
+  // ==============================================================
   // MINIMIZED FLOATING PILL / MINI-PLAYER
   // ==============================================================
   if (isMusicPlayerMinimized) {
@@ -280,85 +307,88 @@ export const FloatingMusicPlayer: React.FC = () => {
     const progressPercent = effectiveDuration > 0 ? (currentSeconds / effectiveDuration) * 100 : 0;
 
     return (
-      <div className="fixed bottom-12 left-4 z-50 flex items-center gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[#ccd5df] dark:border-slate-700 shadow-xl rounded-full px-3 py-1.5 transition-all duration-300 animate-in fade-in slide-in-from-bottom-3 hover:shadow-2xl select-none group overflow-hidden">
-        {/* Interactive Bottom Progress Track */}
-        <div 
-          ref={miniProgressBarRef}
-          onClick={handleMiniSeekClick}
-          className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200/60 dark:bg-slate-800/80 cursor-pointer hover:h-2 transition-all group/minibar"
-          title="Clic para saltar en la canción"
-        >
+      <>
+        {youtubeAudioEngineNode}
+        <div className="fixed bottom-12 left-4 z-50 flex items-center gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[#ccd5df] dark:border-slate-700 shadow-xl rounded-full px-3 py-1.5 transition-all duration-300 animate-in fade-in slide-in-from-bottom-3 hover:shadow-2xl select-none group overflow-hidden">
+          {/* Interactive Bottom Progress Track */}
           <div 
-            className="h-full bg-[#3869A0] dark:bg-blue-400 transition-all duration-150 group-hover/minibar:bg-blue-500"
-            style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
-          />
-        </div>
-
-        {/* Spinning Vinyl Cover */}
-        <div 
-          onClick={() => setIsMusicPlayerMinimized(false)}
-          className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 cursor-pointer border border-[#3869A0]/40 shadow-xs group-hover:scale-105 transition-transform"
-          title="Clic para expandir reproductor completo"
-        >
-          <img 
-            src={activeTrack?.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&auto=format&fit=crop&q=80'} 
-            alt={activeTrack?.title} 
-            className={`w-full h-full object-cover ${isMusicPlaying ? 'animate-spin' : ''}`}
-            style={{ animationDuration: '6s' }}
-          />
-          <div className="absolute inset-0 m-auto w-2.5 h-2.5 rounded-full bg-white dark:bg-slate-900 border border-gray-400" />
-        </div>
-
-        {/* Info text with auto scroll */}
-        <div 
-          onClick={() => setIsMusicPlayerMinimized(false)}
-          className="cursor-pointer max-w-[140px] sm:max-w-[180px] overflow-hidden"
-          title="Clic para expandir reproductor completo"
-        >
-          <p className="text-xs font-bold text-gray-900 dark:text-white truncate leading-tight flex items-center gap-1">
-            <Music className="w-3 h-3 text-[#3869A0] dark:text-blue-400 flex-shrink-0" />
-            <span>{activeTrack?.title || 'Reproductor Inkorium'}</span>
-          </p>
-          <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
-            {activeTrack?.artist || 'Música retro'} {isMusicPlaying ? `• ${formatTime(currentSeconds)}` : ''}
-          </p>
-        </div>
-
-        {/* Mini Controls */}
-        <div className="flex items-center gap-1 pl-1 border-l border-gray-200 dark:border-slate-700">
-          <button
-            onClick={togglePlayMusic}
-            className="p-1.5 rounded-full bg-[#3869A0] hover:bg-[#2c537f] text-white transition cursor-pointer shadow-xs"
-            title={isMusicPlaying ? 'Pausar' : 'Reproducir'}
+            ref={miniProgressBarRef}
+            onClick={handleMiniSeekClick}
+            className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200/60 dark:bg-slate-800/80 cursor-pointer hover:h-2 transition-all group/minibar"
+            title="Clic para saltar en la canción"
           >
-            {isMusicPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
-          </button>
+            <div 
+              className="h-full bg-[#3869A0] dark:bg-blue-400 transition-all duration-150 group-hover/minibar:bg-blue-500"
+              style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
+            />
+          </div>
 
-          <button
-            onClick={nextTrack}
-            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-gray-300 transition cursor-pointer"
-            title="Siguiente canción"
-          >
-            <SkipForward className="w-3.5 h-3.5" />
-          </button>
-
-          <button
+          {/* Spinning Vinyl Cover */}
+          <div 
             onClick={() => setIsMusicPlayerMinimized(false)}
-            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-gray-300 transition cursor-pointer"
-            title="Expandir reproductor"
+            className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 cursor-pointer border border-[#3869A0]/40 shadow-xs group-hover:scale-105 transition-transform"
+            title="Clic para expandir reproductor completo"
           >
-            <Maximize2 className="w-3.5 h-3.5" />
-          </button>
+            <img 
+              src={activeTrack?.coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&auto=format&fit=crop&q=80'} 
+              alt={activeTrack?.title} 
+              className={`w-full h-full object-cover ${isMusicPlaying ? 'animate-spin' : ''}`}
+              style={{ animationDuration: '6s' }}
+            />
+            <div className="absolute inset-0 m-auto w-2.5 h-2.5 rounded-full bg-white dark:bg-slate-900 border border-gray-400" />
+          </div>
 
-          <button
-            onClick={() => setIsMusicPlayerOpen(false)}
-            className="p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-gray-400 hover:text-red-500 transition cursor-pointer"
-            title="Cerrar reproductor"
+          {/* Info text with auto scroll */}
+          <div 
+            onClick={() => setIsMusicPlayerMinimized(false)}
+            className="cursor-pointer max-w-[140px] sm:max-w-[180px] overflow-hidden"
+            title="Clic para expandir reproductor completo"
           >
-            <X className="w-3 h-3" />
-          </button>
+            <p className="text-xs font-bold text-gray-900 dark:text-white truncate leading-tight flex items-center gap-1">
+              <Music className="w-3 h-3 text-[#3869A0] dark:text-blue-400 flex-shrink-0" />
+              <span>{activeTrack?.title || 'Reproductor Inkorium'}</span>
+            </p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+              {activeTrack?.artist || 'Música retro'} {isMusicPlaying ? `• ${formatTime(currentSeconds)}` : ''}
+            </p>
+          </div>
+
+          {/* Mini Controls */}
+          <div className="flex items-center gap-1 pl-1 border-l border-gray-200 dark:border-slate-700">
+            <button
+              onClick={togglePlayMusic}
+              className="p-1.5 rounded-full bg-[#3869A0] hover:bg-[#2c537f] text-white transition cursor-pointer shadow-xs"
+              title={isMusicPlaying ? 'Pausar' : 'Reproducir'}
+            >
+              {isMusicPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
+            </button>
+
+            <button
+              onClick={nextTrack}
+              className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-gray-300 transition cursor-pointer"
+              title="Siguiente canción"
+            >
+              <SkipForward className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => setIsMusicPlayerMinimized(false)}
+              className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-gray-300 transition cursor-pointer"
+              title="Expandir reproductor"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => setIsMusicPlayerOpen(false)}
+              className="p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-gray-400 hover:text-red-500 transition cursor-pointer"
+              title="Cerrar reproductor"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -366,7 +396,9 @@ export const FloatingMusicPlayer: React.FC = () => {
   // EXPANDED HIGH-FIDELITY FLOATING MUSIC PLAYER
   // ==============================================================
   return (
-    <div className="fixed bottom-12 left-4 z-50 w-[320px] sm:w-[350px] bg-white dark:bg-slate-900 border border-[#ccd5df] dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 select-none">
+    <>
+      {youtubeAudioEngineNode}
+      <div className="fixed bottom-12 left-4 z-50 w-[320px] sm:w-[350px] bg-white dark:bg-slate-900 border border-[#ccd5df] dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 select-none">
       {/* Retro Header Bar */}
       <div className="bg-[#3869A0] text-white px-3 py-2 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-2">
@@ -786,20 +818,7 @@ export const FloatingMusicPlayer: React.FC = () => {
             </button>
           </div>
 
-          {/* YouTube Hidden Audio Node if active track has youtubeId */}
-          {isYouTubeTrack && isMusicPlaying && activeTrack.youtubeId && (
-            <div className="hidden" aria-hidden="true">
-              <iframe
-                key={activeTrack.youtubeId + '-floating-bg'}
-                src={`https://www.youtube-nocookie.com/embed/${activeTrack.youtubeId}?autoplay=1&enablejsapi=1&rel=0`}
-                title={activeTrack.title}
-                allow="autoplay"
-                className="w-0 h-0 border-0 pointer-events-none"
-              />
-            </div>
-          )}
-
-          {/* Volume Control Bar */}
+            {/* Volume Control Bar */}
           <div className="pt-2 border-t border-gray-100 dark:border-slate-800/80 flex items-center gap-2">
             <button
               onClick={toggleMusicMute}
@@ -949,5 +968,6 @@ export const FloatingMusicPlayer: React.FC = () => {
         </div>
       )}
     </div>
+    </>
   );
 };

@@ -234,16 +234,28 @@ export const PersistentMusicBottomBar: React.FC = () => {
 
   return (
     <>
-      {/* 1. PERSISTENT HIDDEN YOUTUBE BACKGROUND AUDIO IFRAME */}
+      {/* 1. PERSISTENT UNTHROTTLED YOUTUBE BACKGROUND AUDIO IFRAME */}
       {/* Keeps audio seamlessly playing across all tabs/pages */}
       {isYouTubeTrack && !showVideoPopup && isMusicPlaying && (
-        <div className="hidden" aria-hidden="true">
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: '-9999px',
+            right: '-9999px',
+            width: '200px',
+            height: '200px',
+            opacity: 0.001,
+            pointerEvents: 'none',
+            zIndex: -9999
+          }} 
+          aria-hidden="true"
+        >
           <iframe
             key={currentTrack.youtubeId + '-persistent-bg'}
             src={`https://www.youtube-nocookie.com/embed/${currentTrack.youtubeId}?autoplay=1&enablejsapi=1&rel=0`}
             title={currentTrack.title}
-            allow="autoplay"
-            className="w-0 h-0 border-0 pointer-events-none"
+            allow="autoplay; encrypted-media"
+            style={{ width: '100%', height: '100%', border: 'none' }}
           />
         </div>
       )}

@@ -27,7 +27,7 @@ export const FeedTrackMiniPlayer: React.FC<FeedTrackMiniPlayerProps> = ({ track 
   const [isSavedToProfile, setIsSavedToProfile] = useState(false);
   const [hoverSeekPercent, setHoverSeekPercent] = useState<number | null>(null);
 
-  const isCurrent = currentTrack?.id === track.id;
+  const isCurrent = currentTrack?.id === track.id || (Boolean(track.youtubeId) && Boolean(currentTrack?.youtubeId) && track.youtubeId === currentTrack?.youtubeId);
   const isPlayingThis = isCurrent && isMusicPlaying;
 
   const handlePlayToggle = (e: React.MouseEvent) => {

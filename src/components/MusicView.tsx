@@ -258,7 +258,7 @@ export const MusicView: React.FC = () => {
       </div>
 
       {/* ========================================================= */}
-      {/* 2. BUSCADOR & CATEGORÍAS (CONECTADO A YOUTUBE)             */}
+      {/* 2. BUSCADOR & CATEGORÍAS (CONECTADO A YOUTUBE & PLAYLISTS)  */}
       {/* ========================================================= */}
       <div className="bg-white dark:bg-slate-900 rounded border border-[#ccd5df] dark:border-slate-800 p-3 sm:p-4 shadow-xs space-y-3">
         {/* Large Input with Form Submit */}
@@ -269,7 +269,7 @@ export const MusicView: React.FC = () => {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Buscar canciones o artistas en YouTube y en Inkorium (ej. El Canto del Loco, Bad Bunny, Cascada)..."
+              placeholder="Buscar canciones, artistas o playlists en YouTube y en Inkorium (ej. Rock 2000s, Cascada, Bad Bunny, Tuenti)..."
               className="w-full pl-11 pr-24 py-2.5 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#3869A0] focus:ring-1 focus:ring-[#3869A0]/20 transition"
             />
             {searchInput && (
@@ -308,21 +308,55 @@ export const MusicView: React.FC = () => {
         {/* Category Pills */}
         <div className="flex items-center justify-between gap-2.5 pt-1 border-t border-gray-100 dark:border-slate-800">
           {/* Main Categories */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-            {(['todas', 'youtube', 'canciones', 'artistas', 'albumes', 'playlists'] as const).map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1 rounded text-xs font-semibold capitalize transition cursor-pointer whitespace-nowrap flex items-center gap-1 ${
-                  selectedCategory === cat
-                    ? 'bg-[#3869A0] text-white'
-                    : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                {cat === 'youtube' && <Youtube className="w-3 h-3 text-red-500" />}
-                {cat === 'todas' ? 'Todos los resultados' : cat === 'youtube' ? 'YouTube' : cat}
-              </button>
-            ))}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            {([
+              { id: 'todas', label: 'Todos los resultados', icon: null, badgeColor: '' },
+              { id: 'playlists', label: 'Playlists', icon: ListMusic, badgeColor: 'text-indigo-500' },
+              { id: 'canciones', label: 'Canciones', icon: Music, badgeColor: 'text-emerald-500' },
+              { id: 'youtube', label: 'YouTube', icon: Youtube, badgeColor: 'text-red-500' },
+              { id: 'artistas', label: 'Artistas', icon: User, badgeColor: 'text-amber-500' },
+              { id: 'albumes', label: 'Álbumes', icon: Disc, badgeColor: 'text-purple-500' },
+            ] as const).map(({ id, label, icon: IconComponent, badgeColor }) => {
+              const isSelected = selectedCategory === id;
+              const countBadge = debouncedSearch
+                ? id === 'playlists'
+                  ? filteredPlaylists.length
+                  : id === 'canciones'
+                  ? filteredTracks.length
+                  : id === 'youtube'
+                  ? youtubeResults.length
+                  : null
+                : id === 'playlists'
+                ? playlists.length
+                : null;
+
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setSelectedCategory(id as any)}
+                  className={`px-3 py-1.5 rounded text-xs font-semibold capitalize transition cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-[#3869A0] text-white shadow-xs'
+                      : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {IconComponent && (
+                    <IconComponent className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : badgeColor || ''}`} />
+                  )}
+                  <span>{label}</span>
+                  {countBadge !== null && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      isSelected 
+                        ? 'bg-white/25 text-white' 
+                        : 'bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300'
+                    }`}>
+                      {countBadge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -510,23 +544,58 @@ export const MusicView: React.FC = () => {
                 </div>
               )}
 
-              {/* Matched Playlists if applicable */}
-              {(selectedCategory === 'todas' || selectedCategory === 'playlists') && filteredPlaylists.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="font-bold text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                    <ListMusic className="w-3.5 h-3.5 text-[#3869A0]" />
-                    Playlists Coincidentes ({filteredPlaylists.length})
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {filteredPlaylists.map(pl => (
-                      <PlaylistCard
-                        key={pl.id}
-                        playlist={pl}
-                        onSelectPlaylist={(p) => setSelectedPlaylistIdForDetail(p.id)}
-                        onPlayPlaylist={handlePlayPlaylist}
-                      />
-                    ))}
+              {/* Matched Playlists Section (Shown first if playlists category selected or if matches exist in 'todas') */}
+              {(selectedCategory === 'todas' || selectedCategory === 'playlists') && (
+                <div className="space-y-3 bg-indigo-50/40 dark:bg-indigo-950/20 p-3.5 rounded border border-indigo-200/80 dark:border-indigo-900/40">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded bg-[#3869A0] text-white flex items-center justify-center shadow-xs">
+                        <ListMusic className="w-3.5 h-3.5" />
+                      </div>
+                      <h3 className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
+                        Playlists Coincidentes ({filteredPlaylists.length})
+                      </h3>
+                    </div>
+                    {filteredPlaylists.length > 0 && (
+                      <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider">
+                        {filteredPlaylists.length} encontrada{filteredPlaylists.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
+
+                  {filteredPlaylists.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {filteredPlaylists.map(pl => (
+                        <PlaylistCard
+                          key={pl.id}
+                          playlist={pl}
+                          onSelectPlaylist={(p) => setSelectedPlaylistIdForDetail(p.id)}
+                          onPlayPlaylist={handlePlayPlaylist}
+                        />
+                      ))}
+                    </div>
+                  ) : selectedCategory === 'playlists' ? (
+                    <div className="py-8 text-center text-xs text-gray-500 flex flex-col items-center justify-center gap-2 bg-white/60 dark:bg-slate-900/60 rounded border border-indigo-100 dark:border-slate-800 p-4">
+                      <ListMusic className="w-8 h-8 text-indigo-400/80" />
+                      <p className="font-medium text-gray-700 dark:text-gray-300">
+                        No se encontraron playlists para "{searchInput}"
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        ¿Quieres crear una playlist con este nombre?
+                      </p>
+                      <button
+                        onClick={() => setComposerMode('create_playlist')}
+                        className="mt-1 px-3 py-1.5 bg-[#3869A0] hover:bg-[#2c537f] text-white rounded text-xs font-semibold cursor-pointer shadow-xs flex items-center gap-1.5"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Crear playlist "{searchInput}"</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 py-1">
+                      No se encontraron playlists con el nombre o contenido "{searchInput}".
+                    </p>
+                  )}
                 </div>
               )}
 
