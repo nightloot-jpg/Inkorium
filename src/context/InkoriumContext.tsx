@@ -1046,7 +1046,10 @@ const addDeletedMessageIds = (ids: string[]) => {
         return combined;
       });
     } catch (error) {
-      console.error('Profiles load failed:', error);
+      // Graceful offline fallback: preserve existing and initial users without uncaught exception spam
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('Remote profiles currently unreachable, maintaining local state.');
+      }
     }
   }, [mapProfileToUser]);
 

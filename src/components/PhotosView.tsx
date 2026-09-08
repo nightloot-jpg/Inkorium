@@ -5,7 +5,7 @@ import {
   Tag, Folder, Sparkles, Heart, MessageSquare,
   Globe, Users, Lock, UserCheck, Calendar, UserPlus,
   Layers, Filter, ArrowLeft, Shield, CheckCircle2, ChevronRight,
-  Clock, ArrowUpDown, SlidersHorizontal, GripVertical
+  Clock, ArrowUpDown, SlidersHorizontal, GripVertical, Camera
 } from 'lucide-react';
 import { Album, Photo } from '../types';
 import { CollaborativeAlbumCreateModal } from './CollaborativeAlbumCreateModal';
@@ -373,13 +373,16 @@ export const PhotosView: React.FC<{ onOpenUpload: () => void }> = ({ onOpenUploa
                 )}
 
                 {canUploadToCurrentAlbum && (
-                  <button
-                    onClick={() => handleOpenBatchUploadForAlbum(currentAlbum.id)}
-                    className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Subir fotos</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleOpenBatchUploadForAlbum(currentAlbum.id)}
+                      className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+                      title="Sube fotos aplicando los filtros y sello LED de fecha estilo Cámara 2008"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>Cámara 2008 / Subir</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

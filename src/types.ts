@@ -13,6 +13,22 @@ export interface Track {
   genre?: string;
   year?: number;
   synthStyle?: 'retro_pop' | 'chiptune' | 'electro' | 'lofi' | 'indie_rock' | 'ambient';
+  youtubeId?: string;
+  youtubeUrl?: string;
+  channelTitle?: string;
+  views?: string;
+}
+
+export interface YouTubeVideoResult {
+  id: string; // videoId
+  title: string;
+  channelTitle: string;
+  thumbnail: string;
+  duration: string;
+  durationSeconds: number;
+  views?: string;
+  publishedAt?: string;
+  youtubeUrl: string;
 }
 
 export type RepeatMode = 'off' | 'all' | 'one';
@@ -138,6 +154,37 @@ export interface Album {
   categoria?: string;
   photoOrder?: string[]; // IDs de las fotos ordenadas cronológicamente para el evento
   timelineNotes?: Record<string, string>; // Notas/hitos cronológicos asociados a fotos específicas (ej: "Llegada al evento", "Brindis", "Fin de fiesta")
+}
+
+export interface SocialPlaylist {
+  id: string;
+  name: string;
+  title?: string;
+  description?: string;
+  creatorId: string;
+  creatorName: string;
+  creatorAvatar?: string;
+  coverUrl: string;
+  tracks: Track[];
+  songsCount: number;
+  duration: number; // in seconds
+  durationFormatted?: string;
+  category: 'populares' | 'nuevas' | 'amigos' | 'tuenti_classic' | 'verano' | 'indie' | 'reggaeton';
+  likes?: string[];
+  isCommunity?: boolean;
+  createdAt?: string;
+}
+
+export interface CommunityListeningActivity {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  userCity?: string;
+  track: Track;
+  timestamp: string;
+  isProfileSong?: boolean;
+  isPlayingNow?: boolean;
 }
 
 export interface WallComment {

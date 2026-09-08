@@ -389,3 +389,354 @@ export async function bakeEditedImage(imageUrl: string, state: PhotoEditState): 
     img.src = imageUrl;
   });
 }
+
+export interface Camera2008Config {
+  presetId: string;
+  brightness: number; // 70 to 140
+  contrast: number; // 70 to 150
+  saturation: number; // 0 to 180
+  warmth: number; // -30 to 50
+  vignette: boolean;
+  addDateStamp: boolean;
+  dateStampText: string;
+  dateStampColor: 'amber' | 'yellow' | 'red' | 'green';
+  dateStampPosition: 'bottom-right' | 'bottom-left';
+  addSensorGrain: boolean;
+}
+
+export interface Camera2008Preset {
+  id: string;
+  name: string;
+  badge: string;
+  description: string;
+  config: Omit<Camera2008Config, 'presetId' | 'dateStampText'>;
+}
+
+export const CAMERA_2008_PRESETS: Camera2008Preset[] = [
+  {
+    id: 'tuenti_party',
+    name: 'Tuenti Fiesta 2008',
+    badge: '★ Más Clásico',
+    description: 'Tonos cálidos y saturación viva típicos de las fotos de fin de semana en 2008',
+    config: {
+      brightness: 106,
+      contrast: 114,
+      saturation: 122,
+      warmth: 18,
+      vignette: true,
+      addDateStamp: true,
+      dateStampColor: 'amber',
+      dateStampPosition: 'bottom-right',
+      addSensorGrain: true
+    }
+  },
+  {
+    id: 'cybershot_5mp',
+    name: 'Cyber-shot 5.0 MP Flash',
+    badge: 'Compacta Y2K',
+    description: 'Luz directa de flash de cámara de bolsillo, nitidez central y sombras suaves',
+    config: {
+      brightness: 114,
+      contrast: 122,
+      saturation: 128,
+      warmth: 6,
+      vignette: true,
+      addDateStamp: true,
+      dateStampColor: 'amber',
+      dateStampPosition: 'bottom-right',
+      addSensorGrain: true
+    }
+  },
+  {
+    id: 'discoteca_flash',
+    name: 'Discoteca & Noche',
+    badge: 'Clubbing',
+    description: 'Fondo oscuro con caída de luz y resplandor directo sobre los amigos',
+    config: {
+      brightness: 102,
+      contrast: 130,
+      saturation: 135,
+      warmth: 12,
+      vignette: true,
+      addDateStamp: true,
+      dateStampColor: 'amber',
+      dateStampPosition: 'bottom-right',
+      addSensorGrain: true
+    }
+  },
+  {
+    id: 'lomography_retro',
+    name: 'Lomografía ToyCam',
+    badge: 'Lomo Retro',
+    description: 'Viñeteado pronunciado, colores cruzados y calidez analógica',
+    config: {
+      brightness: 100,
+      contrast: 136,
+      saturation: 142,
+      warmth: 32,
+      vignette: true,
+      addDateStamp: true,
+      dateStampColor: 'yellow',
+      dateStampPosition: 'bottom-right',
+      addSensorGrain: false
+    }
+  },
+  {
+    id: 'nostalgia_sepia',
+    name: 'Sepia Nostalgia',
+    badge: 'Vintage 2000s',
+    description: 'Tono marrón suave de álbum nostálgico con fecha LED naranja',
+    config: {
+      brightness: 98,
+      contrast: 108,
+      saturation: 85,
+      warmth: 48,
+      vignette: true,
+      addDateStamp: true,
+      dateStampColor: 'amber',
+      dateStampPosition: 'bottom-right',
+      addSensorGrain: true
+    }
+  },
+  {
+    id: 'fotolog_bw',
+    name: 'B&N Fotolog',
+    badge: 'Monocromo',
+    description: 'Blanco y negro contrastado con sello de fecha digital naranja fluorescente',
+    config: {
+      brightness: 104,
+      contrast: 132,
+      saturation: 0,
+      warmth: 0,
+      vignette: true,
+      addDateStamp: true,
+      dateStampColor: 'amber',
+      dateStampPosition: 'bottom-right',
+      addSensorGrain: true
+    }
+  },
+  {
+    id: 'verano_costa',
+    name: 'Verano & Costa 2008',
+    badge: 'Golden Sun',
+    description: 'Luz dorada de atardecer en la playa con calidez intensa',
+    config: {
+      brightness: 108,
+      contrast: 110,
+      saturation: 138,
+      warmth: 36,
+      vignette: false,
+      addDateStamp: true,
+      dateStampColor: 'yellow',
+      dateStampPosition: 'bottom-right',
+      addSensorGrain: false
+    }
+  }
+];
+
+export const DEFAULT_CAMERA_2008_CONFIG: Camera2008Config = {
+  presetId: 'tuenti_party',
+  brightness: 106,
+  contrast: 114,
+  saturation: 122,
+  warmth: 18,
+  vignette: true,
+  addDateStamp: true,
+  dateStampText: "'08 09 14",
+  dateStampColor: 'amber',
+  dateStampPosition: 'bottom-right',
+  addSensorGrain: true
+};
+
+/**
+ * Generates the default 2008 retro date stamp string (e.g. '08 09 14)
+ */
+export function getDefault2008DateStamp(): string {
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `'08 ${mm} ${dd}`;
+}
+
+/**
+ * Renders the 2008 Camera effects onto an HTML5 Canvas context
+ */
+export function render2008CameraToCanvas(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement | HTMLCanvasElement,
+  width: number,
+  height: number,
+  config: Camera2008Config
+): void {
+  // 1. Base filter setup
+  const filters: string[] = [];
+  if (config.brightness !== 100) filters.push(`brightness(${config.brightness / 100})`);
+  if (config.contrast !== 100) filters.push(`contrast(${config.contrast / 100})`);
+  if (config.saturation !== 100) filters.push(`saturate(${config.saturation / 100})`);
+  if (config.warmth > 0) {
+    filters.push(`sepia(${Math.min(100, config.warmth * 1.5) / 100})`);
+    filters.push(`hue-rotate(-${Math.round(config.warmth * 0.4)}deg)`);
+  } else if (config.warmth < 0) {
+    filters.push(`hue-rotate(${Math.round(Math.abs(config.warmth) * 2)}deg)`);
+  }
+
+  ctx.filter = filters.length > 0 ? filters.join(' ') : 'none';
+  ctx.drawImage(img, 0, 0, width, height);
+  ctx.filter = 'none';
+
+  // 2. Warm 2008 flash overlay
+  if (config.warmth > 10) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'soft-light';
+    ctx.fillStyle = `rgba(255, 170, 50, ${Math.min(0.25, config.warmth / 140)})`;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+
+  // 3. Vignette
+  if (config.vignette) {
+    ctx.save();
+    const radius = Math.max(width, height) * 0.72;
+    const gradient = ctx.createRadialGradient(
+      width / 2,
+      height / 2,
+      radius * 0.42,
+      width / 2,
+      height / 2,
+      radius
+    );
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    gradient.addColorStop(0.7, 'rgba(0, 0, 0, 0.22)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.62)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+
+  // 4. Subtle Digicam sensor grain
+  if (config.addSensorGrain) {
+    ctx.save();
+    const grainCanvas = document.createElement('canvas');
+    grainCanvas.width = Math.min(256, width);
+    grainCanvas.height = Math.min(256, height);
+    const gCtx = grainCanvas.getContext('2d');
+    if (gCtx) {
+      const gImgData = gCtx.createImageData(grainCanvas.width, grainCanvas.height);
+      const data = gImgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const val = (Math.random() - 0.5) * 45;
+        data[i] = 128 + val;     // R
+        data[i + 1] = 128 + val; // G
+        data[i + 2] = 128 + val; // B
+        data[i + 3] = 18;        // Alpha
+      }
+      gCtx.putImageData(gImgData, 0, 0);
+
+      ctx.globalCompositeOperation = 'overlay';
+      const pattern = ctx.createPattern(grainCanvas, 'repeat');
+      if (pattern) {
+        ctx.fillStyle = pattern;
+        ctx.fillRect(0, 0, width, height);
+      }
+    }
+    ctx.restore();
+  }
+
+  // 5. Analog LED Digital Camera Date Stamp
+  if (config.addDateStamp && config.dateStampText) {
+    ctx.save();
+    const fontSize = Math.max(14, Math.round(height * 0.042));
+    const paddingX = Math.round(width * 0.04);
+    const paddingY = Math.round(height * 0.04);
+
+    ctx.font = `bold ${fontSize}px "Courier New", "Consolas", monospace, sans-serif`;
+    ctx.textBaseline = 'bottom';
+
+    let posX = width - paddingX;
+    if (config.dateStampPosition === 'bottom-left') {
+      ctx.textAlign = 'left';
+      posX = paddingX;
+    } else {
+      ctx.textAlign = 'right';
+      posX = width - paddingX;
+    }
+
+    const posY = height - paddingY;
+
+    // Color schemes for digital camera LED
+    let glowColor = 'rgba(255, 110, 0, 0.85)';
+    let primaryColor = '#ff7b00';
+    let highlightColor = '#ff9900';
+
+    if (config.dateStampColor === 'yellow') {
+      glowColor = 'rgba(255, 230, 0, 0.85)';
+      primaryColor = '#ffd000';
+      highlightColor = '#ffea50';
+    } else if (config.dateStampColor === 'red') {
+      glowColor = 'rgba(255, 30, 0, 0.85)';
+      primaryColor = '#ff2200';
+      highlightColor = '#ff4422';
+    } else if (config.dateStampColor === 'green') {
+      glowColor = 'rgba(0, 255, 90, 0.85)';
+      primaryColor = '#00dd55';
+      highlightColor = '#33ff77';
+    }
+
+    // Pass 1: Dark drop shadow outline for high contrast on light backgrounds
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    ctx.shadowBlur = Math.round(fontSize * 0.4);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.fillText(config.dateStampText, posX + 1, posY + 1);
+
+    // Pass 2: LED glowing aura
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = Math.round(fontSize * 0.45);
+    ctx.fillStyle = primaryColor;
+    ctx.fillText(config.dateStampText, posX, posY);
+
+    // Pass 3: Crisp LED core
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = highlightColor;
+    ctx.fillText(config.dateStampText, posX, posY);
+
+    ctx.restore();
+  }
+}
+
+/**
+ * Bakes the 2008 camera effects into a new JPEG data URL via HTML5 Canvas
+ */
+export async function bakeCamera2008Image(imageUrl: string, config: Camera2008Config): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          resolve(imageUrl);
+          return;
+        }
+
+        render2008CameraToCanvas(ctx, img, canvas.width, canvas.height, config);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        resolve(dataUrl);
+      } catch (err) {
+        console.warn('Camera 2008 bake fallback:', err);
+        resolve(imageUrl);
+      }
+    };
+
+    img.onerror = () => {
+      resolve(imageUrl);
+    };
+
+    img.src = imageUrl;
+  });
+}
+

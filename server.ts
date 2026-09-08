@@ -47,6 +47,123 @@ app.get('/api/storage/status', (_req, res) => {
   res.json({ hetznerConfigured: !!configured, bucket: configured?.bucket || null, endpoint: process.env.HETZNER_S3_ENDPOINT ? 'Configured' : 'Not configured' });
 });
 
+// YouTube Music Search API proxy
+app.get('/api/youtube/search', async (req, res) => {
+  const query = String(req.query.q || '').trim();
+  if (!query) {
+    return res.json({ results: [] });
+  }
+
+  try {
+    // Check if query is directly a YouTube video ID or URL
+    const ytUrlMatch = query.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    if (ytUrlMatch && ytUrlMatch[1]) {
+      const vid = ytUrlMatch[1];
+      return res.json({
+        results: [{
+          id: vid,
+          title: `Video de YouTube (${vid})`,
+          channelTitle: 'YouTube',
+          thumbnail: `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`,
+          duration: '3:30',
+          durationSeconds: 210,
+          views: 'Enlace directo',
+          youtubeUrl: `https://www.youtube.com/watch?v=${vid}`
+        }]
+      });
+    }
+
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' music audio')}`;
+    const ytRes = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
+      }
+    });
+
+    if (!ytRes.ok) {
+      return res.json({ results: [] });
+    }
+
+    const html = await ytRes.text();
+    const results: any[] = [];
+    
+    // Extract ytInitialData json from html
+    const jsonMatch = html.match(/var ytInitialData = ({.*?});<\/script>/s) || html.match(/ytInitialData\s*=\s*({.+?});/s);
+    if (jsonMatch && jsonMatch[1]) {
+      try {
+        const data = JSON.parse(jsonMatch[1]);
+        const contents = data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents || [];
+        
+        for (const item of contents) {
+          const v = item?.videoRenderer;
+          if (v && v.videoId) {
+            const title = v.title?.runs?.[0]?.text || v.title?.simpleText || 'Canción de YouTube';
+            const channel = v.ownerText?.runs?.[0]?.text || v.shortBylineText?.runs?.[0]?.text || 'Artista';
+            const duration = v.lengthText?.simpleText || v.lengthText?.runs?.[0]?.text || '3:30';
+            const views = v.viewCountText?.simpleText || v.shortViewCountText?.simpleText || '';
+            const thumbnail = v.thumbnail?.thumbnails?.[v.thumbnail.thumbnails.length - 1]?.url || `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`;
+            
+            // Parse duration to seconds
+            let durationSeconds = 210;
+            if (duration) {
+              const parts = duration.split(':').map(Number);
+              if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                durationSeconds = parts[0] * 60 + parts[1];
+              } else if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+                durationSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+              }
+            }
+
+            results.push({
+              id: v.videoId,
+              title,
+              channelTitle: channel,
+              thumbnail,
+              duration,
+              durationSeconds,
+              views,
+              youtubeUrl: `https://www.youtube.com/watch?v=${v.videoId}`
+            });
+
+            if (results.length >= 15) break;
+          }
+        }
+      } catch (parseErr) {
+        console.warn('Could not parse ytInitialData JSON:', parseErr);
+      }
+    }
+
+    // Fallback regex if initial data structure varied
+    if (results.length === 0) {
+      const videoRegex = /"videoId":"([a-zA-Z0-9_-]{11})".+?"title":{"runs":\[{"text":"([^"]+)"}\]}.+?"ownerText":{"runs":\[{"text":"([^"]+)"}\]}/g;
+      let match;
+      const seen = new Set<string>();
+      while ((match = videoRegex.exec(html)) !== null && results.length < 12) {
+        const vid = match[1];
+        if (!seen.has(vid)) {
+          seen.add(vid);
+          results.push({
+            id: vid,
+            title: match[2],
+            channelTitle: match[3],
+            thumbnail: `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`,
+            duration: '3:30',
+            durationSeconds: 210,
+            views: 'YouTube',
+            youtubeUrl: `https://www.youtube.com/watch?v=${vid}`
+          });
+        }
+      }
+    }
+
+    return res.json({ results });
+  } catch (err: any) {
+    console.warn('YouTube search API error:', err?.message || err);
+    return res.json({ results: [] });
+  }
+});
+
 // In-memory fallback stores to guarantee 100% uptime even if Supabase is offline or misconfigured
 const inMemoryPosts: any[] = [];
 const inMemoryMessages: any[] = [];
